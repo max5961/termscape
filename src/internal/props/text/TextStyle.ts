@@ -1,6 +1,6 @@
 type Color = any;
 
-export type TextProps = {
+export type TextStyle = {
     color?: Color;
     backgroundColor?: Color;
     dimColor?: boolean;
