@@ -9,5 +9,4 @@ export type TextStyle = {
     underline?: boolean;
     strikethrough?: boolean;
     inverse?: boolean;
-    type?: "area" | "line";
 };

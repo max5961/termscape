@@ -1,5 +1,5 @@
 import Yoga, { Node as YogaNode } from "yoga-wasm-web/auto";
-import { BoxProps } from "../props/box/BoxProps.js";
+import { BoxStyle } from "../props/box/BoxStyle.js";
 
 /*
  * Used by DomElement.setProps
@@ -9,7 +9,7 @@ type SetProps<T extends object> = Partial<{
     [P in keyof T]: (node: YogaNode, value: T[P]) => void;
 }>;
 
-export const Box: SetProps<BoxProps> = {
+export const Box: SetProps<BoxStyle> = {
     justifyContent(node, value) {
         node.setJustifyContent(
             (() => {
