@@ -21,13 +21,27 @@ export function useScroll(opts: Scroll["opts"]): {
     const scroll = React.useMemo(() => new Scroll(opts), []);
     scroll.updateOpts(opts);
 
+    const [data, setData] = React.useState<ScrollData>(scroll.getData());
+
+    // Changes to opts may effect scroll data
+    React.useEffect(() => {
+        if (!deepStrictEqual(scroll.getData(), data)) {
+            setData(scroll.getData());
+        }
+    }, [
+        opts.length,
+        opts.windowsize,
+        opts.stickyIdxOnShift,
+        opts.autoShiftOnAppend,
+        opts.centerScroll,
+        opts.fallthrough,
+    ]);
+
     React.useEffect(() => {
         if (opts.startIndex) {
             scroll.goToIndex(opts.startIndex);
         }
     }, []);
-
-    const [data, setData] = React.useState<ScrollData>(scroll.getData());
 
     const control = scroll.getControl((nextData) => {
         if (!deepStrictEqual(data, nextData)) {
