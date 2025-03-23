@@ -1,6 +1,6 @@
 import ReactReconciler from "react-reconciler";
 import { Document } from "../dom/Document.js";
-import { DomElement, Props, TagName } from "../dom/DomElement.js";
+import { DomElement, Props, TTagName } from "../dom/DomElement.js";
 import { TextElement } from "../dom/elements/TextElement.js";
 import { deepStrictEqual } from "../util/deepStrictEqual.js";
 
@@ -18,7 +18,7 @@ type K = "K";
 type L = "L";
 type M = "M";
 
-type Type = TagName;
+type Type = TTagName;
 type P = Props;
 type Container = DomElement; // The root node
 type Instance = DomElement;

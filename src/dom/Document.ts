@@ -1,9 +1,9 @@
-import { DomElement, TagName } from "./DomElement.js";
+import { DomElement, TTagName } from "./DomElement.js";
 import { BoxElement } from "./elements/BoxElement.js";
 import { TextElement } from "./elements/TextElement.js";
 
 export class Document {
-    public static createElement(type: TagName): DomElement {
+    public static createElement(type: TTagName): DomElement {
         // if (type === "BOX_ELEMENT") return new BoxElement();
         return new BoxElement();
     }

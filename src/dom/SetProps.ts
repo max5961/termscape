@@ -5,11 +5,11 @@ import { BoxStyle } from "../props/box/BoxStyle.js";
  * Used by DomElement.setProps
  * */
 
-type SetProps<T extends object> = Partial<{
+type SetStyle<T extends object> = Partial<{
     [P in keyof T]: (node: YogaNode, value: T[P]) => void;
 }>;
 
-export const Box: SetProps<BoxStyle> = {
+export const Box: SetStyle<BoxStyle> = {
     justifyContent(node, value) {
         node.setJustifyContent(
             (() => {
@@ -54,4 +54,4 @@ export const Box: SetProps<BoxStyle> = {
     },
 };
 
-export const SetProps = { Box } as const;
+export const SetStyle = { Box } as const;

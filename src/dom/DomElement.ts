@@ -1,14 +1,21 @@
 import Yoga, { Node as YogaNode } from "yoga-wasm-web/auto";
 import { BoxProps } from "../props/box/BoxProps.js";
 import { TextProps } from "../props/text/TextProps.js";
+import { BoxStyle } from "../props/box/BoxStyle.js";
+import { TextStyle } from "../props/text/TextStyle.js";
 
-export type TagName = "BOX_ELEMENT" | "TEXT_ELEMENT";
+export const TagNames = {
+    Box: "BOX_ELEMENT",
+    Text: "TEXT_ELEMENT",
+} as const;
+
+export type TTagName = typeof TagNames.Box | typeof TagNames.Text;
 export type Props = BoxProps | TextProps;
 export type MetaData = { ID?: string } & { [key: string]: any };
 export type Node = YogaNode;
 
 export abstract class DomElement {
-    public tagname!: TagName;
+    public tagname!: TTagName;
     public props: Props;
     public metadata: MetaData;
     public node: Node;
@@ -25,7 +32,7 @@ export abstract class DomElement {
         this.parentNode = null;
     }
 
-    // Like element.setAttribute, but for all props provided from the react layer
+    public abstract setStyle(style: BoxStyle | TextStyle): void;
     public abstract setProps(props: BoxProps | TextProps): void;
     public abstract addEventListener(): void;
 

@@ -1,7 +1,7 @@
 import { TextStyle } from "./TextStyle.js";
 
 export type TextProps = {
-    style?: TextStyle;
+    style?: TextStyle | TextStyle[];
     numberOfLines?: number | "auto"; // default: auto (textarea)
     ellipsizeMode?: "start" | "middle" | "end"; // default: "end"
     onClick?: Function;
