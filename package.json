@@ -2,10 +2,14 @@
     "name": "tuir",
     "version": "2.0.0",
     "description": "",
+    "main": "./dist/index.js",
     "exports": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
     },
+    "files": [
+        "./dist"
+    ],
     "scripts": {
         "test": "tsc && TEST_ENV=true vitest",
         "compile": "tsc"
@@ -24,13 +28,13 @@
         "react": "^18.3.1",
         "react-reconciler": "^0.29.2",
         "vitest": "^3.0.9",
-        "yoga-wasm-web": "^0.3.3"
+        "yoga-wasm-web": "^0.3.3",
+        "chalk": "^4.1.2"
     },
     "devDependencies": {
         "@types/node": "^22.13.10",
         "@types/react": "^18.2.43",
         "@types/react-reconciler": "^0.28.9",
-        "chalk": "^4.1.2",
         "vite-tsconfig-paths": "^5.1.4"
     }
 }

@@ -1,11 +1,12 @@
 import chalk from "chalk";
 import fs from "node:fs";
 import path from "node:path";
+import { parseRgb } from "../util/parseRgb.js";
 
 type Configuration = {
     file?: string;
     time?: boolean | (() => string);
-    color?: string | [number, number, number];
+    color?: string;
     warnColor?: string;
     errorColor?: string;
     prefix?: string;
@@ -86,7 +87,7 @@ export class Logger<T extends string> {
         t.warnColor = c.warnColor ?? "yellow";
         t.errorColor = c.errorColor ?? "red";
         t.prefix = c.prefix ?? "";
-        t.prefixSeparator = c.prefixSeparator ?? "⇒";
+        t.prefixSeparator = c.prefixSeparator ?? "";
         return t;
     }
 
@@ -168,7 +169,8 @@ export class Logger<T extends string> {
 
         let str = "";
         if (time) str += time + " ";
-        if (prefix) str += prefix + ` ${prefixSeparator} `;
+        if (prefix) str += prefix + " ";
+        if (prefixSeparator) str += prefixSeparator + " ";
         str += dataString;
 
         return str;
@@ -190,21 +192,24 @@ export class Logger<T extends string> {
         const s = date.getSeconds().toString().padStart(2, "0");
         const ms = date.getMilliseconds().toString().padStart(3, "0");
 
-        return `${h}:${m}:${s}:${ms}`;
+        return `${h}:${m}:${s}:${ms}:`;
     }
 
     private colorString(s: string, color?: Configuration["color"]): string {
         if (!color) return s;
 
-        if (Array.isArray(color)) {
-            return chalk.rgb(color[0], color[1], color[2])(s);
-        }
-
+        // Hex
         if (color.startsWith("#")) {
             return chalk.hex(color)(s);
         }
 
-        return (chalk as any)[color]?.(s);
+        // rgb
+        const rgb = parseRgb(color);
+        if (rgb) {
+            return chalk.rgb(...rgb)(s);
+        }
+
+        return (chalk as any)[color]?.(s) ?? s;
     }
 
     private appendFile(file: string, str: string): void {
