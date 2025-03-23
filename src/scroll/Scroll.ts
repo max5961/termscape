@@ -95,7 +95,7 @@ export class Scroll {
     };
 
     // Modifies the windowsize and in the event that the windowsize is greater than
-    // the length, shrinks the windowsize to the length
+    // the length, shrinks the windowsize to the length.
     public modifyWinSize = (nextWinSize: number): void => {
         if (nextWinSize === 0) {
             this.start = this.idx;
@@ -103,6 +103,7 @@ export class Scroll {
             return;
         }
 
+        // Always start by shifting end index as much as possible, *then* start index
         const d = this.end - this.start > nextWinSize ? -1 : 1;
         while (this.end - this.start !== nextWinSize) {
             if (this.isValidEnds(this.start, this.end + d)) {
@@ -116,29 +117,24 @@ export class Scroll {
         }
     };
 
+    // Todo: ensure its impossible for start and end to go out of range here, which
+    // should be the case as long as the nextIdx value is valid
     public goToIndex = (nextIdx: number, center?: boolean): void => {
         nextIdx = Math.floor(nextIdx);
         if (!this.isValidIdx(nextIdx)) return;
 
-        // Ascending
-        while (this.idx < nextIdx) {
-            if (++this.idx === this.end) {
-                ++this.end;
-                ++this.start;
+        // Shift idx until nextIdx or until idx bumps end of window
+        const d = this.idx < nextIdx ? 1 : -1;
+        while (this.idx !== nextIdx) {
+            this.idx += d;
+            if (this.idx === this.end || this.idx === this.start - 1) {
+                this.end += d;
+                this.start += d;
+                break;
             }
         }
 
-        // Descending
-        while (this.idx > nextIdx) {
-            if (--this.idx === this.start - 1) {
-                --this.start;
-                --this.end;
-            }
-        }
-
-        // No need for isValidEnds here.  If its a valid idx, then we can assume
-        // that the displaced ends will also be valid.  If we already found the
-        // idx, then diff will be 0 and this won't do anything.
+        // slide window and idx together until idx === nextIdx
         const diff = nextIdx - this.idx;
         this.idx += diff;
         this.start += diff;

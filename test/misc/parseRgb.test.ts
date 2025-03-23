@@ -21,4 +21,9 @@ describe("parseRgb - converts rgb string to [number,number, number]", () => {
         const rgb = "rgb(255 0 0)";
         expect(parseRgb(rgb)).toEqual([255, 0, 0]);
     });
+
+    test("no commas, extra spaces", () => {
+        const rgb = "rgb ( 255   0   0 )";
+        expect(parseRgb(rgb)).toEqual([255, 0, 0]);
+    });
 });
