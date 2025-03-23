@@ -198,6 +198,8 @@ export class Logger<T extends string> {
     private colorString(s: string, color?: Configuration["color"]): string {
         if (!color) return s;
 
+        color = color.trim();
+
         // Hex
         if (color.startsWith("#")) {
             return chalk.hex(color)(s);
