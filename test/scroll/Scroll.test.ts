@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { Scroll } from "@src/internal/scroll/Scroll.js";
+import { Scroll } from "@src/scroll/Scroll.js";
 
 // Todo: Account for deleting items from end of list which will force an invalid idx
 describe("Scroll", () => {

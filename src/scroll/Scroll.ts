@@ -76,7 +76,7 @@ export class Scroll {
         this.opts.windowsize = Math.min(this.opts.length, this.opts.windowsize);
 
         // Its possible that the new length cannot account for the *idx* or the
-        // *end* value.  For example, This would be the case when you are at the
+        // *end* value.  For example, this would be the case when you are at the
         // end of a list and delete an item.  The idx and end must be shifted
         // within the new range of possible values
         this.idx = Math.min(this.opts.length - 1, this.idx);

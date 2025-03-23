@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { deepStrictEqual } from "@src/internal/util/deepStrictEqual.js";
+import { deepStrictEqual } from "@src/util/deepStrictEqual.js";
 
 describe("deepStrictEqual, no recursive", () => {
     test("null, null", () => expect(deepStrictEqual(null, null)).toBe(true));

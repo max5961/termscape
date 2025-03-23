@@ -1,5 +1,5 @@
-import { BoxStyle } from "./box/BoxStyle.js";
-import { TextStyle } from "./text/TextStyle.js";
+import { BoxStyle } from "../props/box/BoxStyle.js";
+import { TextStyle } from "../props/text/TextStyle.js";
 
 type Box = "Box";
 type Text = "Text";

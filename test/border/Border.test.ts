@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import Border, { IBorder } from "@src/internal/Border.js";
+import Border, { IBorder } from "@src/util/Borders.js";
 
 describe("Border chars are correct", () => {
     test("single", () => {
