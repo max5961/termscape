@@ -81,7 +81,7 @@ export class Logger<T extends string> {
     }
 
     private assignProfile(c: Configuration, t: Configuration): Configuration {
-        t.file = this.touchFile(t.file ?? "console.log");
+        t.file = t.file ?? "console.log";
         t.time = c.time ?? (() => this.getTime());
         t.color = c.color ?? "";
         t.warnColor = c.warnColor ?? "yellow";
@@ -176,11 +176,9 @@ export class Logger<T extends string> {
         return str;
     }
 
-    private touchFile(file: string): string {
+    private validatePath(file: string): string {
         let fpath = path.resolve(file);
         fs.mkdirSync(path.dirname(fpath), { recursive: true });
-        const fd = fs.openSync(fpath, "a");
-        fs.closeSync(fd);
 
         return fpath;
     }
@@ -215,7 +213,7 @@ export class Logger<T extends string> {
     }
 
     private appendFile(file: string, str: string): void {
-        file = this.touchFile(file);
+        file = this.validatePath(file);
 
         fs.appendFileSync(
             file,

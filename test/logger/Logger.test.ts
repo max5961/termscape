@@ -173,5 +173,7 @@ function readFile(fpath: string): string {
 }
 
 function removeFile(fpath: string): void {
-    fs.unlinkSync(fpath);
+    if (fs.existsSync(fpath)) {
+        fs.unlinkSync(fpath);
+    }
 }

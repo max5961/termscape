@@ -13,6 +13,54 @@ type Stylers<T extends object> = {
 };
 
 export const Box: Stylers<BoxStyle> = {
+    height(node, value) {
+        if (typeof value === "string") {
+            const number = Number.parseInt(value, 10);
+            if (!Number.isNaN(number)) {
+                return node.setHeightPercent(number);
+            }
+        }
+
+        if (typeof value === "number") {
+            return node.setHeight(value);
+        }
+
+        return node.setHeightAuto();
+    },
+    width(node, value) {
+        if (typeof value === "string") {
+            const number = Number.parseInt(value, 10);
+            if (!Number.isNaN(number)) {
+                return node.setWidthPercent(number);
+            }
+        }
+
+        if (typeof value === "number") {
+            return node.setWidth(value);
+        }
+
+        return node.setWidthAuto();
+    },
+    minHeight(node, value) {
+        if (typeof value === "string") {
+            const number = Number.parseInt(value, 10);
+            if (!Number.isNaN(number)) {
+                return node.setMinWidthPercent(number);
+            }
+        }
+
+        return node.setMinWidth(value ?? 0);
+    },
+    minWidth(node, value) {
+        if (typeof value === "string") {
+            const number = Number.parseInt(value, 10);
+            if (!Number.isNaN(number)) {
+                return node.setMinHeightPercent(number);
+            }
+        }
+
+        return node.setMinHeight(value ?? 0);
+    },
     position(node, value) {
         node.setPositionType(
             (() => {
@@ -22,11 +70,10 @@ export const Box: Stylers<BoxStyle> = {
             })(),
         );
     },
-    zIndex(node, value) {
-        // This is an outlier, because it goes more with the style prop, but its
-        // not related to Yoga, so there are no Yoga settings for it.  Its only
-        // used during rendering... can pull from styles when setting props
-    },
+    // zIndex(node, value) {
+    //     // there is no Yoga style for zIndex, but the DomElement pulls this during
+    //     // rendering
+    // },
     gap(node, value) {
         node.setGap(Yoga.GUTTER_ALL, value ?? 0);
     },
@@ -94,21 +141,6 @@ export const Box: Stylers<BoxStyle> = {
                 return Yoga.ALIGN_FLEX_START;
             })(),
         );
-    },
-
-    width(node, value) {
-        if (typeof value === "string") {
-            const number = Number.parseInt(value, 10);
-            if (!Number.isNaN(number)) {
-                return node.setWidthPercent(number);
-            }
-        }
-
-        if (typeof value === "number") {
-            return node.setWidth(value);
-        }
-
-        return node.setWidthAuto();
     },
 } as const;
 

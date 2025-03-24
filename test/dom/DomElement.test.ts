@@ -55,8 +55,8 @@ describe("DOMElement mirrors YogaNode operations", () => {
 });
 
 function getElements() {
-    // Setting attr to ensure each child has a different strict equality since
-    // YogaNode.getChild doesn't return references
+    // Setting attr so that nodes can get checked for identity with getComputedWidth
+    // root.getComputedLayout();
     const root = Document.createElement("BOX_ELEMENT");
     const c1 = Document.createElement("BOX_ELEMENT");
     const c2 = Document.createElement("BOX_ELEMENT");
