@@ -1,7 +1,5 @@
-import { TextProps } from "../../props/text/TextProps.js";
-import { TextStyle } from "../../props/text/TextStyle.js";
 import { DomElement } from "../DomElement.js";
-import { SetStyle } from "../SetStyle.js";
+import { IntrinsicAttr } from "../../global.js";
 
 export class TextElement extends DomElement {
     public textContent: string;
@@ -12,14 +10,7 @@ export class TextElement extends DomElement {
         this.textContent = textContent;
     }
 
-    public setStyle(style: TextStyle): void {
-        // for (const key in style) {
-        //     const k = key as keyof TextStyle;
-        //     SetStyle.Text[k]?.(this.node, style[k]);
-        // }
-    }
-
-    public setProps(props: TextProps): void {
+    public setAttributes(attr: IntrinsicAttr["Text"]): void {
         //
     }
 

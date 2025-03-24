@@ -1,5 +1,5 @@
 import Yoga, { Node as YogaNode } from "yoga-wasm-web/auto";
-import { BoxStyle } from "../props/box/BoxStyle.js";
+import { BoxStyle } from "../elements/attributes/box/BoxStyle.js";
 
 /*
  * Used by DomElement.setProps
@@ -8,11 +8,11 @@ import { BoxStyle } from "../props/box/BoxStyle.js";
 // The logic needs to be the *opposite* of what it currently is.  Currently iterating
 // over the style prop, so if a diff goes from having a value to undefined, the
 // YogaNode never gets reset.  The logic needs to be flipped
-type SetStyle<T extends object> = {
+type Stylers<T extends object> = {
     [P in keyof T]: (node: YogaNode, value: T[P]) => void;
 };
 
-export const Box: SetStyle<BoxStyle> = {
+export const Box: Stylers<BoxStyle> = {
     position(node, value) {
         node.setPositionType(
             (() => {
@@ -112,4 +112,4 @@ export const Box: SetStyle<BoxStyle> = {
     },
 } as const;
 
-export const SetStyle = { Box } as const;
+export const Stylers = { Box } as const;

@@ -3,6 +3,7 @@ import { Document } from "../dom/Document.js";
 import { DomElement, Props, TTagName } from "../dom/DomElement.js";
 import { TextElement } from "../dom/elements/TextElement.js";
 import { deepStrictEqual } from "../util/deepStrictEqual.js";
+import { getUpdatePayload } from "./getUpdatePayload.js";
 
 type A = "A";
 type B = "B";
@@ -50,9 +51,9 @@ type NoTimeout = M;
 // >({
 //     supportsMutation: true,
 //     supportsPersistence: false,
-//     createInstance(type, newProps, rootContainer, hostContext, internalHandle) {
+//     createInstance(type, attributes, rootContainer, hostContext, internalHandle) {
 //         const element = Document.createElement(type);
-//         element.setProps(newProps);
+//         element.setAttributes(attributes);
 //         return element;
 //     },
 //
@@ -145,7 +146,7 @@ type NoTimeout = M;
 //     // on the node.  null return = no commitUpdate on this node.  What is returned
 //     // is passed to the UpdatePaylaod argument for commitUpdate on the node
 //     prepareUpdate(instance, type, oldProps, newProps, rootContainer, hostContext) {
-//         return deepStrictEqual(oldProps, newProps) ? newProps : null;
+//         return internalDiff(oldProps, newProps);
 //     },
 //
 //     resetAfterCommit(containerInfo) {

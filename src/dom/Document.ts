@@ -3,8 +3,7 @@ import { BoxElement } from "./elements/BoxElement.js";
 import { TextElement } from "./elements/TextElement.js";
 
 export class Document {
-    public static createElement(type: TTagName): DomElement {
-        // if (type === "BOX_ELEMENT") return new BoxElement();
+    public static createElement(_type: TTagName): DomElement {
         return new BoxElement();
     }
 

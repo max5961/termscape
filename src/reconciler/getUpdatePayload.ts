@@ -1,6 +1,8 @@
-type TObject = Record<string, unknown>;
+type Obj = Record<string, unknown>;
 
-const objectProps = new Set([
+const validObjKeys = new Set([
+    "props",
+    "metadata",
     "style",
     "titleTopLeft",
     "titleTopCenter",
@@ -12,32 +14,36 @@ const objectProps = new Set([
     "scrollbar",
 ]);
 
-// internalDiff needs to be able to handle 1 level of recursion but not more and only for
-// certain props such as the style prop.
-export function internalDiff(prev: TObject, next: TObject, level = 0): TObject | null {
+/*
+ * Used during prepareUpdate to diff the prev and next props. Returns null if
+ * nothing has changed or else returns the update payload.  Handles recursion on
+ * valid keys because the payload/intrinsic element props contain 2 obj keys.
+ * 'props' key is for props for the exposed component and the 'metadata' key is
+ * for encapsulated data from the wrapper fn body
+ * */
+export function getUpdatePayload(prev: Obj, next: Obj): Obj | null {
     if (prev === next) return null;
     if (!prev) return next || null;
     if (!next && !Object.keys(prev).length) return {};
     prev = prev ?? {};
     next = next ?? {};
 
-    let mod: TObject | null = null;
-    const final: TObject = {};
+    let mod: Obj | null = null;
+    const final: Obj = {};
 
     for (const key of Object.keys(prev)) {
         if (!Object.hasOwn(next, key)) {
             // Handle **remove** nested obj prop in next
-            if (level === 0 && objectProps.has(key)) {
-                final[key] = internalDiff(prev[key] as TObject, {} as TObject);
+            if (validObjKeys.has(key)) {
+                final[key] = getUpdatePayload(prev[key] as Obj, {} as Obj);
             } else {
                 final[key] = undefined;
             }
             mod = final;
         }
 
-        // Do not check for strict equality on certain known object based props
-        // We will recursively for that
-        if (!objectProps.has(key) && prev[key] !== next[key]) {
+        // Do not check for strict equality here, will check recursively later
+        if (!validObjKeys.has(key) && prev[key] !== next[key]) {
             mod = final;
         }
     }
@@ -46,13 +52,13 @@ export function internalDiff(prev: TObject, next: TObject, level = 0): TObject |
         for (const key of Object.keys(next)) {
             // Handle **add** nested obj prop in next
             if (
-                level === 0 &&
-                objectProps.has(key) &&
+                validObjKeys.has(key) &&
+                !Array.isArray(next[key]) &&
                 next[key] &&
                 typeof next[key] === "object"
             ) {
                 // prettier-ignore
-                const nestedDiff = internalDiff(prev[key] as TObject, next[key] as TObject, ++level);
+                const nestedDiff = getUpdatePayload(prev[key] as Obj, next[key] as Obj);
                 if (nestedDiff) {
                     final[key] = nestedDiff;
                     mod = final;
