@@ -25,11 +25,11 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
+        "chalk": "^4.1.2",
         "react": "^18.3.1",
         "react-reconciler": "^0.29.2",
         "vitest": "^3.0.9",
-        "yoga-wasm-web": "^0.3.3",
-        "chalk": "^4.1.2"
+        "yoga-wasm-web": "^0.3.3"
     },
     "devDependencies": {
         "@types/node": "^22.13.10",
