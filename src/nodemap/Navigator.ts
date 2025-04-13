@@ -67,9 +67,9 @@ export class Navigator {
                 const right = nodes[i][j + 1];
 
                 if (up) node.up.set(up.name, up);
-                if (down) node.up.set(down.name, down);
-                if (left) node.up.set(left.name, left);
-                if (right) node.up.set(right.name, right);
+                if (down) node.down.set(down.name, down);
+                if (left) node.left.set(left.name, left);
+                if (right) node.right.set(right.name, right);
             }
         }
     };
@@ -88,19 +88,20 @@ export class Navigator {
 
     private move = (d: "up" | "down" | "left" | "right", update?: () => void): string => {
         const prev = this.head;
-        const backref = this.head?.backRef;
         const map = this.head?.[d] ?? new Map<string, Node>();
 
-        // Need to find either the backref or just an arbitrary node, which will be
-        // the first insertion
-        if (map.size) {
-            for (const [name, node] of map.entries()) {
-                if (backref) {
-                    if (backref.name === name) {
-                        this.head = node;
-                        break;
-                    }
-                } else {
+        // Is the backref one of the possible destination Nodes? If it is, then
+        // we go straight to that node.  Otherwise we arbitrarily grab the first
+        // inserted Node
+        const backref = Array.from(map.values()).find(
+            (n) => n.name === this.head?.backRef?.name,
+        );
+
+        if (map.size || backref) {
+            if (backref) {
+                this.head = backref;
+            } else {
+                for (const node of map.values()) {
                     this.head = node;
                     break;
                 }
