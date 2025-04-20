@@ -12,7 +12,7 @@ declare global {
         dimColor?: boolean;
     };
 
-    type RenderLayer = ReturnType<Layout["getRenderLayer"]>;
+    type RenderLayer = ReturnType<ReturnType<Layout["createGetRenderLayer"]>>;
 
-    type Overflow = { x: number; y: number };
+    type OverflowBounds = { x: number; y: number };
 }
