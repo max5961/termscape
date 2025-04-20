@@ -13,6 +13,4 @@ declare global {
     };
 
     type RenderLayer = ReturnType<ReturnType<Layout["createGetRenderLayer"]>>;
-
-    type OverflowBounds = { x: number; y: number };
 }

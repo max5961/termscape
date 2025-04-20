@@ -9,7 +9,7 @@ import { BoxStyle } from "../dom/elements/attributes/box/BoxStyle.js";
  * to its child nodes.
  *
  * Reasons for this:
- * 1. Each node gets an api to draw to the grid that has relevant overflow context
+ * 1. Each node gets an API to draw to the grid that has relevant overflow context
  * so that its easy to keep the draw function from going out of bounds
  * 2. Other context that would be tedious to reset such as pos and increasing the
  * columns is updated automatically.  pos gets set to the TL corner position of
@@ -18,32 +18,30 @@ import { BoxStyle } from "../dom/elements/attributes/box/BoxStyle.js";
 export class Layout {
     private stdout: NodeJS.WriteStream;
     private grid: string[][];
-    private deepestColumn: number;
     private pos: { x: number; y: number };
 
     constructor(stdout: NodeJS.WriteStream) {
         this.stdout = stdout;
-
-        // Could consider pushing new rows when necessary instead of using the
-        // deepestColumn...
-        this.grid = Array.from({ length: this.stdout.rows }).map((_row) => {
-            return Array.from({ length: this.stdout.columns }).fill(" ");
-        }) as string[][];
-
-        this.deepestColumn = 0;
         this.pos = { x: 0, y: 0 };
+        this.grid = [];
     }
 
-    public createGetRenderLayer = (
-        bounds: OverflowBounds = { x: Infinity, y: Infinity },
-    ) => {
-        // anonymous - getRenderLayer
+    private pushNewRow(count: number): void {
+        for (let i = 0; i < count; ++i) {
+            this.grid.push(
+                Array.from({ length: this.stdout.columns }).fill(" ") as string[],
+            );
+        }
+    }
+
+    public createGetRenderLayer = (bounds = { x: Infinity, y: Infinity }) => {
+        // return getRenderLayer
         return (x: number, y: number, node: DomElement) => {
             // Update the context
-            this.deepestColumn = Math.max(
-                x + node.node.getComputedHeight(),
-                this.deepestColumn,
-            );
+            const depth = x + node.node.getComputedHeight();
+            const diff = depth - this.grid.length;
+            if (diff > 0) this.pushNewRow(diff);
+
             this.pos.x = x;
             this.pos.y = y;
 
@@ -61,13 +59,23 @@ export class Layout {
                 localBounds.y = overflowY === "visible" ? bounds.y : localBounds.y;
             }
 
-            // API fn
+            // Sets draw start point
             const moveTo = (x: number, y: number): void => {
                 this.pos.x = x;
                 this.pos.y = y;
             };
 
-            // API fn
+            // For when you know the relative way to the target position, but calculating
+            // it would be tedious, such as when draw leaves you in an undesirable
+            // position for the next draw
+            const move = (dir: "U" | "D" | "L" | "R", units: number): void => {
+                if (dir === "U") this.pos.y += units;
+                if (dir === "D") this.pos.y -= units;
+                if (dir === "L") this.pos.x -= units;
+                if (dir === "R") this.pos.x += units;
+            };
+
+            // Drawing N units in any direction shifts pos N+1 units in that direction
             const draw = (
                 glyph: Glyph,
                 dir: "U" | "D" | "L" | "R",
@@ -77,24 +85,28 @@ export class Layout {
 
                 let dx = 0;
                 let dy = 0;
-                if (dir === "U") dx = 1;
-                if (dir === "D") dx = -1;
-                if (dir === "L") dy = -1;
-                if (dir === "R") dy = 1;
+                if (dir === "U") dy = 1;
+                if (dir === "D") dy = -1;
+                if (dir === "L") dx = -1;
+                if (dir === "R") dx = 1;
 
                 let { x, y } = this.pos;
 
                 for (let i = 0; i < length; ++i) {
-                    if (x < localBounds.x && y < localBounds.y && this.grid[x]?.[y]) {
-                        this.grid[x][y] = char;
+                    if (x < localBounds.x && y < localBounds.y && this.grid[y]?.[x]) {
+                        this.grid[y][x] = char;
                     }
                     x += dx;
                     y += dy;
                 }
+
+                this.pos.x = x;
+                this.pos.y = y;
             };
 
             return {
                 moveTo,
+                move,
                 draw,
                 getRenderLayer: this.createGetRenderLayer(localBounds),
             };
@@ -102,13 +114,10 @@ export class Layout {
     };
 
     public getOutputString(): string {
-        const rows = this.grid.map((row) => row.join("").trimEnd() + "\n");
-        let output = "";
-        for (let i = 0; i < this.deepestColumn; ++i) {
-            output += rows[i];
-        }
-
-        return output;
+        // prettier-ignore
+        return this.grid
+            .map((row) => row.join("").trimEnd() + "\n")
+            .join("");
     }
 
     public writeToStdout(s: string): void {
@@ -116,7 +125,12 @@ export class Layout {
     }
 }
 
-class Glyph {
+/*
+ * layer.draw requires a Glyph to be created.  A Glyph is just an ansi styled (or
+ * not styled at all) character, which ends up being inserted into a single grid
+ * cell.  This makes sure that the ansi styles dont need to be parsed.
+ * */
+export class Glyph {
     private char!: string;
 
     constructor(glyph: GlyphConfig) {
