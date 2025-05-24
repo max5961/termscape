@@ -1,4 +1,5 @@
 import { DomElement, MetaData, Props } from "./DomElement.js";
+import { Event } from "./MouseEvent.js";
 
 export class RootElement extends DomElement {
     constructor() {
@@ -6,11 +7,27 @@ export class RootElement extends DomElement {
         this.isRoot = true;
     }
 
-    public setAttributes(props: Props & MetaData): void {
-        //
-    }
+    public setAttributes(props: Props & MetaData): void {}
+    public addEventListener(): void {}
 
-    public addEventListener(): void {
+    public handleMouseEvent(e: Event) {
+        // 1) Update real screen positions for each element
+        // 2) Handle mouse events (which is post order traversal so that leaf nodes
+        // are handled first and can stop propagation)
         //
+        // RootElement does not actually handle any traversal itself
+
+        for (const child of this.children) {
+            // imported CURSOR_POSITION_Y would be updated before every render/paint
+            // and would reflect the final terminal row before the TUI.  That way
+            // clicking is possible without fullscreen mode
+
+            // child.updateScreenPosition(0, CURSOR_POSITION_Y);
+            child.updateScreenPosition(0, 0);
+        }
+
+        for (const child of this.children) {
+            child.handleEvent(e);
+        }
     }
 }

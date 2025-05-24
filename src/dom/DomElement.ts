@@ -4,6 +4,7 @@ import { BoxProps } from "./elements/attributes/box/BoxProps.js";
 import { TextProps } from "./elements/attributes/text/TextProps.js";
 import { BoxMetaData } from "./elements/attributes/box/BoxMetaData.js";
 import { TextMetaData } from "./elements/attributes/text/TextMetaData.js";
+import { Event, EventHandler, MouseEvent } from "./MouseEvent.js";
 
 export const TagNames = {
     Box: "BOX_ELEMENT",
@@ -15,6 +16,7 @@ export type Props = BoxProps | TextProps;
 export type MetaData = (BoxMetaData | TextMetaData) & { ID?: string } & {
     [key: string]: any;
 };
+export type Point = { x: number; y: number };
 
 export abstract class DomElement {
     public tagname!: TTagName;
@@ -23,7 +25,9 @@ export abstract class DomElement {
     public node: YogaNode;
     public children: DomElement[];
     public parentNode: null | DomElement;
+    public screenposition: { tl: Point; tr: Point; bl: Point; br: Point };
     protected isRoot: boolean;
+    public eventListeners: Map<MouseEvent, EventHandler>;
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -32,6 +36,13 @@ export abstract class DomElement {
         this.metadata = {};
         this.children = [];
         this.parentNode = null;
+        this.screenposition = {
+            tl: { x: 0, y: 0 },
+            tr: { x: 0, y: 0 },
+            bl: { x: 0, y: 0 },
+            br: { x: 0, y: 0 },
+        };
+        this.eventListeners = new Map();
     }
 
     public abstract setAttributes(props: Props & MetaData): void;
@@ -90,5 +101,61 @@ export abstract class DomElement {
             yogaNodes.push(this.node.getChild(i));
         }
         return yogaNodes;
+    }
+
+    public updateScreenPosition(sx: number, sy: number): void {
+        // TODO: actually check if these operations make any sense
+
+        // TL
+        this.screenposition.tl.x = sx;
+        this.screenposition.tl.y = sy;
+
+        // TR
+        this.screenposition.tr.x =
+            this.screenposition.tl.x + this.node.getComputedWidth();
+        this.screenposition.tr.y = this.screenposition.tl.y;
+
+        // BL
+        this.screenposition.bl.x = this.screenposition.tl.x;
+        this.screenposition.bl.y =
+            this.screenposition.tl.y + this.node.getComputedHeight();
+
+        // BR
+        this.screenposition.br.x = this.screenposition.bl.x;
+        this.screenposition.br.y = this.screenposition.tr.x;
+
+        for (const child of this.children) {
+            child.updateScreenPosition(
+                this.screenposition.tl.x,
+                this.screenposition.tl.y,
+            );
+        }
+    }
+
+    // TODO: Handle zindexed nodes which means zindexed nodes will need to be the
+    // first to handle and then they will update a cache that invalidates certain
+    // positions
+    public handleEvent(e: Event, opts = { isPropagating: true, iter: 0 }): void {
+        if (opts.iter++ === 0) {
+            e.stopPropagation = () => (opts.isPropagating = false);
+            e = Object.freeze(e);
+        }
+
+        if (!opts.isPropagating) return;
+
+        for (const child of this.children) {
+            child.handleEvent(e, opts);
+        }
+
+        if (
+            e.clientX < this.screenposition.tl.x ||
+            e.clientX > this.screenposition.tr.x ||
+            e.clientY < this.screenposition.tl.y ||
+            e.clientY > this.screenposition.bl.y
+        ) {
+            return;
+        }
+
+        this.eventListeners.get(e.type)?.(e);
     }
 }
