@@ -1,5 +1,7 @@
 import { DomElement } from "../dom/DomElement.js";
 import { BoxStyle } from "../dom/elements/attributes/box/BoxStyle.js";
+import chalk from "chalk/index.js";
+import { parseRgb } from "../util/parseRgb.js";
 
 /*
  * createGetRenderLayer returns a function we will call getRenderLayer which is a
@@ -75,7 +77,9 @@ export class Layout {
                 if (dir === "R") this.pos.x += units;
             };
 
-            // Drawing N units in any direction shifts pos N+1 units in that direction
+            // Drawing N units in any direction shifts pos N units in that direction.
+            // This requires you to move the position after every draw so that
+            // the last cell isn't overwritten by the next draw
             const draw = (
                 glyph: Glyph,
                 dir: "U" | "D" | "L" | "R",
@@ -96,8 +100,11 @@ export class Layout {
                     if (x < localBounds.x && y < localBounds.y && this.grid[y]?.[x]) {
                         this.grid[y][x] = char;
                     }
-                    x += dx;
-                    y += dy;
+
+                    if (i !== length - 1) {
+                        x += dx;
+                        y += dy;
+                    }
                 }
 
                 this.pos.x = x;
@@ -138,8 +145,31 @@ export class Glyph {
     }
 
     public setGlyph(glyph: GlyphConfig): string {
-        // TODO: Actually apply the ansi styles to brush
         this.char = glyph.char;
+
+        if (glyph.bold) {
+            this.char = chalk.bold(this.char);
+        }
+
+        if (glyph.dimColor) {
+            this.char = chalk.dim(this.char);
+        }
+
+        if (glyph.color) {
+            const rgb = parseRgb(glyph.color);
+            const hex = glyph.color.startsWith("#");
+
+            if (rgb) {
+                const gen = chalk.rgb(rgb[0], rgb[1], rgb[2])(this.char);
+                if (gen) this.char = gen;
+            } else if (hex) {
+                const gen = chalk.hex(glyph.color)(this.char);
+                if (gen) this.char = gen;
+            } else {
+                const gen = chalk[glyph.color]?.(this.char);
+                if (gen) this.char = gen;
+            }
+        }
 
         return this.char;
     }
