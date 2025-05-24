@@ -104,7 +104,7 @@ export abstract class DomElement {
     }
 
     public updateScreenPosition(sx: number, sy: number): void {
-        // TODO: actually check if these operations make any sense
+        // TODO: you only *really* need tl.x, tx.y, bl (the y), and tr (the x)
 
         // TL
         this.screenposition.tl.x = sx;
@@ -135,16 +135,9 @@ export abstract class DomElement {
     // TODO: Handle zindexed nodes which means zindexed nodes will need to be the
     // first to handle and then they will update a cache that invalidates certain
     // positions
-    public handleEvent(e: Event, opts = { isPropagating: true, iter: 0 }): void {
-        if (opts.iter++ === 0) {
-            e.stopPropagation = () => (opts.isPropagating = false);
-            e = Object.freeze(e);
-        }
-
-        if (!opts.isPropagating) return;
-
+    public handleEvent(e: Event, handlers: Record<string, EventHandler[]>): void {
         for (const child of this.children) {
-            child.handleEvent(e, opts);
+            child.handleEvent(e, handlers);
         }
 
         if (
@@ -156,6 +149,10 @@ export abstract class DomElement {
             return;
         }
 
-        this.eventListeners.get(e.type)?.(e);
+        const h = this.eventListeners.get(e.type);
+        if (h) {
+            // @ts-expect-error
+            handlers[this.props.style.zIndex].push(h);
+        }
     }
 }

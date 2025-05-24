@@ -1,5 +1,5 @@
 import { DomElement, MetaData, Props } from "./DomElement.js";
-import { Event } from "./MouseEvent.js";
+import { Event, EventHandler } from "./MouseEvent.js";
 
 export class RootElement extends DomElement {
     constructor() {
@@ -26,8 +26,24 @@ export class RootElement extends DomElement {
             child.updateScreenPosition(0, 0);
         }
 
+        const handlers = {} as Record<number, EventHandler[]>;
         for (const child of this.children) {
-            child.handleEvent(e);
+            child.handleEvent(e, handlers);
+        }
+
+        let stopped = false;
+        e.stopPropagation = () => (stopped = true);
+        Object.freeze(e);
+        const keys = Object.keys(handlers).sort();
+        for (let i = keys.length - 1; i >= 0; --i) {
+            const zindex = Number(keys[i]);
+
+            for (let j = 0; j < handlers[zindex].length; ++j) {
+                if (stopped) {
+                    break;
+                }
+                handlers[zindex]?.[j]?.(e);
+            }
         }
     }
 }
