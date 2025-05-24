@@ -22,11 +22,11 @@ export function parseColorNotation(
     const matches = regex.exec(s);
 
     if (matches && matches.length > 4) {
-<<<<<<< Updated upstream
-        [];
-=======
-        return [matches[0] as "rgb" | "hsl" | "hsv", matches.filter()];
->>>>>>> Stashed changes
+        // @ts-ignore
+        return [
+            matches[0] as "rgb" | "hsl" | "hsv",
+            matches.map((m) => Number(m)).filter((m) => Number.isNaN(m)),
+        ].slice(0, 4);
     }
 
     return null;
