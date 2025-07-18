@@ -1,10 +1,14 @@
+import { Scheduler } from "../render/Scheduler.js";
 import { DomElement, MetaData, Props } from "./DomElement.js";
 import { Event, EventHandler } from "./MouseEvent.js";
 
 export class RootElement extends DomElement {
+    public scheduler: Scheduler;
+
     constructor() {
         super();
         this.isRoot = true;
+        this.scheduler = new Scheduler({ root: this, debounceMs: 8 });
     }
 
     public setAttributes(props: Props & MetaData): void {}
