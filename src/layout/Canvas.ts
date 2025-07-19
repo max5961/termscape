@@ -25,8 +25,8 @@ type CanvasProps = {
 export class Canvas {
     public grid: Required<CanvasProps>["grid"];
     public corner: Readonly<Required<CanvasProps>["corner"]>;
-    private max: { x: number; y: number };
-    private min: { x: number; y: number };
+    public max: { x: number; y: number };
+    public min: { x: number; y: number };
     private pos: { x: number; y: number };
 
     constructor(props: CanvasProps = {}) {

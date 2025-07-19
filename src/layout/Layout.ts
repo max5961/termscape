@@ -4,29 +4,49 @@ import { parseRgb } from "../util/parseRgb.js";
 import { BoxStyle } from "../dom/elements/attributes/box/BoxStyle.js";
 import { Canvas } from "./Canvas.js";
 
+/**
+ * Used in mouse event handling
+ */
+export type PositionLayer = {
+    x: Record<number, DomElement[]>;
+    y: Record<number, DomElement[]>;
+};
+
 export class Layout {
     private canvas: Canvas;
     private layers: Record<number, (() => void)[]>;
 
     /**
      * In order to correctly handle z-indexes, Boxes on top of other layers must
-     * wipe their backgrounds.  In order to not arbitrarily wipe background, this
-     * is used to make sure that only nodes with z-indexes > minLayer wipe bg
+     * wipe their backgrounds.  This ensures that nodes that don't need to wipe
+     * backgrounds don't waste time doing so.
      */
     private minLayer: number;
+
+    private positionLayers: Record<number, PositionLayer>;
 
     constructor() {
         this.canvas = new Canvas();
         this.layers = {};
         this.minLayer = 0;
+        this.positionLayers = {};
     }
 
     public renderNode(elem: DomElement, canvas: Canvas, root = false) {
         if (root) canvas = this.canvas;
 
+        if ((elem.props.style as BoxStyle).display === "none") return;
+
         const zIndex = (elem.props.style as BoxStyle).zIndex;
         const layer = typeof zIndex === "number" ? zIndex : 0;
         this.minLayer = Math.min(this.minLayer, layer);
+
+        this.pushToPositionLayer({
+            layer: layer,
+            elem: elem,
+            x: canvas.corner.x,
+            y: canvas.corner.y,
+        });
 
         if (elem.tagname === "BOX_ELEMENT") {
             // this.deferOp(layer, () => this.renderBox(elem, canvas));
@@ -45,7 +65,7 @@ export class Layout {
             }
 
             const offsetX = child.node.getComputedLeft() + this.canvas.corner.x;
-            const offsetY = child.node.getComputedHeight() + this.canvas.corner.y;
+            const offsetY = child.node.getComputedTop() + this.canvas.corner.y;
 
             const childCanvas = new Canvas({
                 grid: this.canvas.grid,
@@ -57,19 +77,77 @@ export class Layout {
         }
 
         if (root) {
-            const layers = Object.keys(this.layers)
-                .sort((a, b) => Number(a) - Number(b))
-                .map((s) => Number(s));
+            const callInOrder = (obj: Record<number, (() => unknown)[]>) => {
+                const layers = Object.keys(this.layers)
+                    .sort((a, b) => Number(a) - Number(b))
+                    .map((s) => Number(s));
 
-            for (const layer of layers) {
-                this.layers[layer]?.forEach((operation) => operation());
-            }
+                for (const layer of layers) {
+                    this.layers[layer]?.forEach((operation) => operation());
+                }
+            };
+
+            callInOrder(this.layers);
         }
     }
 
     public deferOp(layer: number, cb: () => unknown): void {
         this.layers[layer] = this.layers[layer] ?? [];
         this.layers[layer].push(cb);
+    }
+
+    public pushToPositionLayer({
+        layer,
+        x,
+        y,
+        elem,
+    }: {
+        layer: number;
+        x: number;
+        y: number;
+        elem: DomElement;
+    }) {
+        this.positionLayers[layer] = this.positionLayers[layer] ?? {
+            x: {},
+            y: {},
+        };
+
+        this.positionLayers[layer].x[x] = this.positionLayers[layer].x[x] ?? [];
+        this.positionLayers[layer].y[y] = this.positionLayers[layer].y[y] ?? [];
+
+        this.positionLayers[layer].x[x].push(elem);
+        this.positionLayers[layer].y[y].push(elem);
+    }
+
+    public findTargetElement(x: number, y: number): DomElement | undefined {
+        // Sort descending
+        const sortedLayers = Object.keys(this.positionLayers)
+            .sort((a, b) => Number(b) - Number(a))
+            .map((s) => Number(s));
+
+        for (const layerIdx of sortedLayers) {
+            // Decide if we should traverse the X or Y axis. It makes more sense
+            // to traverse whichever contains the most unique points.  For example,
+            // imagine an up-down list/stack of elements.  We'd need to check every
+            // element if we checked the X axis, but if we check the Y axis, the
+            // first element we bump into will be a match.
+
+            const layer = this.positionLayers[layerIdx];
+            const traverseX = Object.keys(layer.x).length > Object.keys(layer.y).length;
+            const map = traverseX ? layer.x : layer.y;
+            let i = traverseX ? x : y;
+
+            while (i >= 0) {
+                if (map[i]) {
+                    for (const elem of map[i]) {
+                        // if (elem.contains(x, y)) return elem
+                    }
+                }
+                --i;
+            }
+        }
+
+        return undefined;
     }
 }
 
