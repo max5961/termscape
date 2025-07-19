@@ -1,13 +1,13 @@
-import { RootElement } from "../dom/RootElement.js";
+import { Root } from "../dom/Root.js";
 
 export class Scheduler {
-    private root: RootElement;
+    private root: Root;
     private debounceMs: number;
     private tickScheduled: boolean;
     private renderPending: boolean;
     private inTimeout: boolean;
 
-    constructor({ root, debounceMs }: { root: RootElement; debounceMs?: number }) {
+    constructor({ root, debounceMs }: { root: Root; debounceMs?: number }) {
         this.root = root;
         this.debounceMs = debounceMs ?? 8;
         this.tickScheduled = false;
@@ -29,12 +29,12 @@ export class Scheduler {
                 return;
             }
 
-            // this.root.render();
+            this.root.render();
 
             this.inTimeout = true;
             setTimeout(() => {
                 if (this.renderPending) {
-                    // this.root.render();
+                    this.root.render();
                 }
 
                 this.inTimeout = false;
