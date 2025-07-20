@@ -1,9 +1,9 @@
 import { BoxStyle } from "./BoxStyle.js";
 
 export type BoxProps = {
-    style?: BoxStyle | BoxStyle[];
-    leftActive?: BoxStyle | BoxStyle[];
-    rightActive?: BoxStyle | BoxStyle[];
+    style?: BoxStyle;
+    leftActive?: BoxStyle;
+    rightActive?: BoxStyle;
     onClick?: Function;
     onDoubleClick?: Function;
     onMouseDown?: Function;
