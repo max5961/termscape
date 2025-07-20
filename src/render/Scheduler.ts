@@ -15,7 +15,7 @@ export class Scheduler {
         this.inTimeout = false;
     }
 
-    public scheduleRender(cb?: () => unknown) {
+    public scheduleRender = (cb?: () => unknown) => {
         cb?.();
 
         if (this.tickScheduled) return;
@@ -41,5 +41,5 @@ export class Scheduler {
                 this.renderPending = false;
             }, this.debounceMs);
         });
-    }
+    };
 }

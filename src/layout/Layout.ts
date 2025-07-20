@@ -38,7 +38,7 @@ export class Layout {
         this.pushToPositionLayer(zIndex, elem);
 
         if (elem.tagName === "BOX_ELEMENT") {
-            // this.deferOp(layer, () => this.renderBox(elem, canvas));
+            this.deferOp(zIndex, () => this.renderBox(elem, canvas));
         }
 
         for (const child of elem.children) {
@@ -160,5 +160,24 @@ export class Layout {
 
     public getStdout(): string {
         return this.canvas.toString();
+    }
+
+    private renderBox(elem: FriendDomElement, canvas: Canvas) {
+        if (elem.style.borderStyle === "round") {
+            this.renderBorder(elem, canvas);
+        }
+    }
+
+    /** renders only round borders for now */
+    private renderBorder(elem: FriendDomElement, canvas: Canvas) {
+        canvas
+            .draw("╭", "R", 1)
+            .draw("─", "R", canvas.max.x - 2)
+            .draw("╮", "D", 1)
+            .draw("│", "D", canvas.max.y - 2)
+            .draw("╯", "L", 1)
+            .draw("─", "L", canvas.max.x - 2)
+            .draw("╰", "U", 1)
+            .draw("│", "U", canvas.max.y - 2);
     }
 }

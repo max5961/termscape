@@ -84,9 +84,6 @@ export class Canvas {
         let { x, y } = this.pos;
 
         for (let i = 0; i < units; ++i) {
-            x += dx;
-            y += dy;
-
             if (x > this.max.x || x < this.min.x || y > this.max.y || y < this.min.y) {
                 break;
             }
@@ -101,7 +98,11 @@ export class Canvas {
             if (this.grid[y]?.[x] !== undefined) {
                 this.grid[y][x] = char;
             }
+            x += dx;
+            y += dy;
         }
+
+        this.pos = { x, y };
 
         return this;
     }

@@ -20,9 +20,9 @@ export class Renderer {
         });
     }
 
-    public writeToStdout() {
+    public writeToStdout = () => {
         this.layout = new Layout();
-        this.layout.renderNode(this.root, this.layout.canvas, true);
+        this.layout.renderNode(this.root, this.layout.canvas);
 
         this.hooks.forEach((hook) => hook(this.layout.canvas));
 
@@ -34,17 +34,17 @@ export class Renderer {
             process.stdout.write(stdout);
             this.lastStdout = stdout;
         }
-    }
+    };
 
-    public clearPrevRows() {
+    public clearPrevRows = () => {
         if (this.lastHeight <= 0) return;
         // Send csi sequences
-    }
+    };
 
     /**
      * Draw to the finalized root canvas before its written to stdout.
      * */
-    public postLayoutHook(cb: (canvas: Canvas) => unknown) {
+    public postLayoutHook = (cb: (canvas: Canvas) => unknown) => {
         this.hooks.push(cb);
-    }
+    };
 }

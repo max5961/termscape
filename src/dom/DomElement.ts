@@ -2,13 +2,14 @@ import Yoga from "yoga-wasm-web/auto";
 import { YogaNode } from "../util/types.js";
 import { EventHandler, MouseEvent } from "./MouseEvent.js";
 import type { DOMRect, TTagNames, Style } from "./dom-types.js";
+import { Root } from "./Root.js";
 
 /** For accessing private members in trusted private package modules */
 export type FriendDomElement = {
-    // !!! These are changed to DomElement[] in DomElement
+    // !!! This are changed to DomElement[] in DomElement
     children: FriendDomElement[];
-    root: null | FriendDomElement;
 
+    root: null | Root;
     tagName: TTagNames;
     node: YogaNode;
     parentElement: null | DomElement;
@@ -21,20 +22,19 @@ export type FriendDomElement = {
 };
 
 export abstract class DomElement {
-    protected root: null | DomElement;
     public children: DomElement[];
 
-    public tagName!: FriendDomElement["tagName"]; // set in implementation classes
     public node: FriendDomElement["node"];
     public parentElement: FriendDomElement["parentElement"];
     private eventListeners: FriendDomElement["eventListeners"];
     private rect: FriendDomElement["rect"];
     private attributes: FriendDomElement["attributes"];
-    public style: FriendDomElement["style"];
+
+    public abstract tagName: FriendDomElement["tagName"];
+    public abstract style: FriendDomElement["style"];
 
     constructor() {
         this.node = Yoga.Node.create();
-        this.root = null;
         this.children = [];
         this.parentElement = null;
         this.rect = {
@@ -53,16 +53,6 @@ export abstract class DomElement {
 
         // Define custom attributes
         this.attributes = new Map();
-
-        // `style` passes down *most* styles to the YogaNode
-        this.style = {};
-        this.style.zIndex = 0;
-
-        // Default Yoga styles
-        this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
-        this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
-        this.node.setFlexGrow(0);
-        this.node.setFlexShrink(1);
     }
 
     public abstract setAttribute(): void;
@@ -72,7 +62,6 @@ export abstract class DomElement {
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
         child.parentElement = this;
-        child.root = this.root;
     }
 
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
@@ -89,7 +78,6 @@ export abstract class DomElement {
         this.children = nextChildren;
         this.node.insertChild(child.node, idx);
         child.parentElement = this;
-        child.root = this.root;
     }
 
     public removeParent(): void {
