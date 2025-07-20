@@ -5,8 +5,9 @@ import type { DOMRect, TTagNames, Style } from "./dom-types.js";
 
 /** For accessing private members in trusted private package modules */
 export type FriendDomElement = {
-    // !This is changed to DomElement[] in DomElement
+    // !!! These are changed to DomElement[] in DomElement
     children: FriendDomElement[];
+    root: null | FriendDomElement;
 
     tagName: TTagNames;
     node: YogaNode;
@@ -15,9 +16,12 @@ export type FriendDomElement = {
     rect: DOMRect;
     attributes: Map<string, unknown>;
     style: Style;
+
+    containsPoint: (x: number, y: number) => boolean;
 };
 
 export abstract class DomElement {
+    protected root: null | DomElement;
     public children: DomElement[];
 
     public tagName!: FriendDomElement["tagName"]; // set in implementation classes
@@ -30,6 +34,7 @@ export abstract class DomElement {
 
     constructor() {
         this.node = Yoga.Node.create();
+        this.root = null;
         this.children = [];
         this.parentElement = null;
         this.rect = {
@@ -67,6 +72,7 @@ export abstract class DomElement {
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
         child.parentElement = this;
+        child.root = this.root;
     }
 
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
@@ -83,6 +89,7 @@ export abstract class DomElement {
         this.children = nextChildren;
         this.node.insertChild(child.node, idx);
         child.parentElement = this;
+        child.root = this.root;
     }
 
     public removeParent(): void {
@@ -118,7 +125,10 @@ export abstract class DomElement {
         return this.rect;
     }
 
-    public containsPoint = (x: number, y: number): boolean => {
+    public containsPoint: FriendDomElement["containsPoint"] = (
+        x: number,
+        y: number,
+    ): boolean => {
         if (x < this.rect.x) return false;
         if (y > this.rect.y) return false;
         if (x > this.rect.right) return false;
