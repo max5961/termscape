@@ -1,54 +1,53 @@
-import { DomElement } from "../dom/DomElement.js";
-import chalk from "chalk/index.js";
-import { parseRgb } from "../util/parseRgb.js";
-import { BoxStyle } from "../dom/elements/attributes/box/BoxStyle.js";
+import { FriendDomElement } from "../dom/DomElement.js";
 import { Canvas } from "./Canvas.js";
 
 /**
  * Used in mouse event handling
  */
 export type PositionLayer = {
-    x: Record<number, DomElement[]>;
-    y: Record<number, DomElement[]>;
+    x: Record<number, FriendDomElement[]>;
+    y: Record<number, FriendDomElement[]>;
 };
 
 export class Layout {
     private canvas: Canvas;
     private layers: Record<number, (() => void)[]>;
+    private positionLayers: Record<number, PositionLayer>;
 
     /**
      * In order to correctly handle z-indexes, Boxes on top of other layers must
      * wipe their backgrounds.  This ensures that nodes that don't need to wipe
      * backgrounds don't waste time doing so.
      */
-    private minLayer: number;
-
-    private positionLayers: Record<number, PositionLayer>;
+    private minZIndex?: number;
 
     constructor() {
         this.canvas = new Canvas();
         this.layers = {};
-        this.minLayer = 0;
         this.positionLayers = {};
     }
 
-    public renderNode(elem: DomElement, canvas: Canvas, root = false) {
+    public renderNode(elem: FriendDomElement, canvas: Canvas, root = false) {
         if (root) canvas = this.canvas;
+        if (elem.style.display === "none") return;
 
-        if ((elem.props.style as BoxStyle).display === "none") return;
-
-        const zIndex = (elem.props.style as BoxStyle).zIndex;
-        const layer = typeof zIndex === "number" ? zIndex : 0;
-        this.minLayer = Math.min(this.minLayer, layer);
-
-        this.pushToPositionLayer({
-            layer: layer,
-            elem: elem,
+        elem.rect = {
             x: canvas.corner.x,
             y: canvas.corner.y,
-        });
+            height: canvas.corner.y + canvas.max.y,
+            width: canvas.corner.x + canvas.max.x,
+            top: canvas.corner.y,
+            left: canvas.corner.x,
+            right: canvas.corner.x + canvas.max.x,
+            bottom: canvas.corner.y + canvas.max.y,
+        };
 
-        if (elem.tagname === "BOX_ELEMENT") {
+        const zIndex = typeof elem.style.zIndex === "number" ? elem.style.zIndex : 0;
+        this.minZIndex = Math.min(this.minZIndex ?? zIndex, zIndex);
+
+        this.pushToPositionLayer(zIndex, elem);
+
+        if (elem.tagName === "BOX_ELEMENT") {
             // this.deferOp(layer, () => this.renderBox(elem, canvas));
         }
 
@@ -56,11 +55,11 @@ export class Layout {
             let width = child.node.getComputedWidth();
             let height = child.node.getComputedHeight();
 
-            const isOverflow = (elem.props.style as BoxStyle).overflow === "hidden";
-            if (isOverflow || (elem.props.style as BoxStyle).overflowX === "hidden") {
-                width = Math.min(elem.node.getComputedHeight(), width);
+            const overflowHidden = elem.style.overflow === "hidden";
+            if (overflowHidden || elem.style.overflowX === "hidden") {
+                width = Math.min(elem.node.getComputedWidth(), width);
             }
-            if (isOverflow || (elem.props.style as BoxStyle).overflowY === "hidden") {
+            if (overflowHidden || elem.style.overflowY === "hidden") {
                 height = Math.min(elem.node.getComputedHeight(), height);
             }
 
@@ -77,17 +76,13 @@ export class Layout {
         }
 
         if (root) {
-            const callInOrder = (obj: Record<number, (() => unknown)[]>) => {
-                const layers = Object.keys(this.layers)
-                    .sort((a, b) => Number(a) - Number(b))
-                    .map((s) => Number(s));
+            const layers = Object.keys(this.layers)
+                .sort((a, b) => Number(a) - Number(b))
+                .map((s) => Number(s));
 
-                for (const layer of layers) {
-                    this.layers[layer]?.forEach((operation) => operation());
-                }
-            };
-
-            callInOrder(this.layers);
+            for (const layer of layers) {
+                this.layers[layer]?.forEach((operation) => operation());
+            }
         }
     }
 
@@ -96,30 +91,23 @@ export class Layout {
         this.layers[layer].push(cb);
     }
 
-    public pushToPositionLayer({
-        layer,
-        x,
-        y,
-        elem,
-    }: {
-        layer: number;
-        x: number;
-        y: number;
-        elem: DomElement;
-    }) {
-        this.positionLayers[layer] = this.positionLayers[layer] ?? {
+    public pushToPositionLayer(zIndex: number, elem: FriendDomElement) {
+        const x = elem.rect!.x;
+        const y = elem.rect!.y;
+
+        this.positionLayers[zIndex] = this.positionLayers[zIndex] ?? {
             x: {},
             y: {},
         };
 
-        this.positionLayers[layer].x[x] = this.positionLayers[layer].x[x] ?? [];
-        this.positionLayers[layer].y[y] = this.positionLayers[layer].y[y] ?? [];
+        this.positionLayers[zIndex].x[x] = this.positionLayers[zIndex].x[x] ?? [];
+        this.positionLayers[zIndex].y[y] = this.positionLayers[zIndex].y[y] ?? [];
 
-        this.positionLayers[layer].x[x].push(elem);
-        this.positionLayers[layer].y[y].push(elem);
+        this.positionLayers[zIndex].x[x].push(elem);
+        this.positionLayers[zIndex].y[y].push(elem);
     }
 
-    public findTargetElement(x: number, y: number): DomElement | undefined {
+    public findTargetElement(x: number, y: number): FriendDomElement | undefined {
         // Sort descending
         const sortedLayers = Object.keys(this.positionLayers)
             .sort((a, b) => Number(b) - Number(a))
@@ -129,8 +117,8 @@ export class Layout {
             // Decide if we should traverse the X or Y axis. It makes more sense
             // to traverse whichever contains the most unique points.  For example,
             // imagine an up-down list/stack of elements.  We'd need to check every
-            // element if we checked the X axis, but if we check the Y axis, the
-            // first element we bump into will be a match.
+            // element if we checked the X axis, but if we check the Y axis, there
+            // is a good chance the first element we bump into is a match.
 
             const layer = this.positionLayers[layerIdx];
             const traverseX = Object.keys(layer.x).length > Object.keys(layer.y).length;
@@ -140,7 +128,7 @@ export class Layout {
             while (i >= 0) {
                 if (map[i]) {
                     for (const elem of map[i]) {
-                        // if (elem.contains(x, y)) return elem
+                        if (elem.containsPoint(x, y)) return elem;
                     }
                 }
                 --i;
@@ -148,52 +136,5 @@ export class Layout {
         }
 
         return undefined;
-    }
-}
-
-/*
- * layer.draw requires a Glyph to be created.  A Glyph is just an ansi styled (or
- * not styled at all) character, which ends up being inserted into a single grid
- * cell.  This makes sure that the ansi styles dont need to be parsed.
- * */
-export class Glyph {
-    private char!: string;
-
-    constructor(glyph: GlyphConfig) {
-        this.char = this.setGlyph(glyph);
-    }
-
-    public setGlyph(glyph: GlyphConfig): string {
-        this.char = glyph.char;
-
-        if (glyph.bold) {
-            this.char = chalk.bold(this.char);
-        }
-
-        if (glyph.dimColor) {
-            this.char = chalk.dim(this.char);
-        }
-
-        if (glyph.color) {
-            const rgb = parseRgb(glyph.color);
-            const hex = glyph.color.startsWith("#");
-
-            if (rgb) {
-                const gen = chalk.rgb(rgb[0], rgb[1], rgb[2])(this.char);
-                if (gen) this.char = gen;
-            } else if (hex) {
-                const gen = chalk.hex(glyph.color)(this.char);
-                if (gen) this.char = gen;
-            } else {
-                const gen = chalk[glyph.color]?.(this.char);
-                if (gen) this.char = gen;
-            }
-        }
-
-        return this.char;
-    }
-
-    public render(): string {
-        return this.char;
     }
 }

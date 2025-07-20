@@ -1,8 +1,4 @@
-import { BoxStyle } from "./attributes/box/BoxStyle.js";
-import { DomElement, FriendDomElement } from "../DomElement.js";
-import { Stylers } from "../helpers/Stylers.js";
-import { IntrinsicAttr } from "../../global.js";
-import { TTagNames } from "../dom-types.js";
+import { DomElement } from "../DomElement.js";
 
 export class BoxElement extends DomElement {
     constructor() {
@@ -15,3 +11,5 @@ export class BoxElement extends DomElement {
     }
     public addEventListener(): void {}
 }
+
+const box = new BoxElement();

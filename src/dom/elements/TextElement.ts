@@ -6,11 +6,11 @@ export class TextElement extends DomElement {
 
     constructor(textContent: string) {
         super();
-        this.tagname === "TEXT_ELEMENT";
+        this.tagName === "TEXT_ELEMENT";
         this.textContent = textContent;
     }
 
-    public setAttributes(attr: IntrinsicAttr["Text"]): void {
+    public setAttribute(): void {
         //
     }
 

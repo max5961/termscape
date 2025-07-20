@@ -1,5 +1,5 @@
 type Data = any;
-const parseBuffer = (buf: Buffer) => Data;
+const parseBuffer = (buf: Buffer) => {};
 
 export class InputRelay {
     protected _stream: NodeJS.ReadStream;

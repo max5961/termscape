@@ -9,7 +9,7 @@ export type PenOpts = {
 };
 
 export class Pen {
-    constructor(context, opts: PenOpts = {}) {
+    constructor(context: unknown, opts: PenOpts = {}) {
         //
     }
 }

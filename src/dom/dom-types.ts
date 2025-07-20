@@ -17,4 +17,4 @@ export type DOMRect = {
     right: number;
 };
 
-export type Style = BoxStyle | TextStyle;
+export type Style = BoxStyle & TextStyle;

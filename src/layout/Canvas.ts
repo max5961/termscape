@@ -43,7 +43,8 @@ export class Canvas {
         this.min = { ...this.corner };
         this.pos = { ...this.corner };
 
-        // Start out with an empty grid, add rows as needed.
+        // NOTE: grid rows are added on demand, so that empty rows are not added
+        // to the output string
         this.grid = props.grid ?? [];
     }
 

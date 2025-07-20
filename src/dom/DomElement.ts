@@ -5,20 +5,23 @@ import type { DOMRect, TTagNames, Style } from "./dom-types.js";
 
 /** For accessing private members in trusted private package modules */
 export type FriendDomElement = {
+    // !This is changed to DomElement[] in DomElement
+    children: FriendDomElement[];
+
     tagName: TTagNames;
     node: YogaNode;
-    children: DomElement[];
     parentElement: null | DomElement;
     eventListeners: Map<MouseEvent, EventHandler>;
-    rect: DOMRect | null;
+    rect: DOMRect;
     attributes: Map<string, unknown>;
     style: Style;
 };
 
 export abstract class DomElement {
+    public children: DomElement[];
+
     public tagName!: FriendDomElement["tagName"]; // set in implementation classes
     public node: FriendDomElement["node"];
-    public children: FriendDomElement["children"];
     public parentElement: FriendDomElement["parentElement"];
     private eventListeners: FriendDomElement["eventListeners"];
     private rect: FriendDomElement["rect"];
@@ -29,14 +32,32 @@ export abstract class DomElement {
         this.node = Yoga.Node.create();
         this.children = [];
         this.parentElement = null;
-        this.rect = null;
+        this.rect = {
+            x: -1,
+            y: -1,
+            top: -1,
+            bottom: -1,
+            right: -1,
+            left: -1,
+            width: -1,
+            height: -1,
+        };
 
-        // Maps
+        // Currently for mouse events only
         this.eventListeners = new Map();
+
+        // Define custom attributes
         this.attributes = new Map();
 
-        // Constant Attributes
+        // `style` passes down *most* styles to the YogaNode
         this.style = {};
+        this.style.zIndex = 0;
+
+        // Default Yoga styles
+        this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
+        this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
+        this.node.setFlexGrow(0);
+        this.node.setFlexShrink(1);
     }
 
     public abstract setAttribute(): void;
@@ -94,6 +115,14 @@ export abstract class DomElement {
     }
 
     public getBoundingClientRect(): DOMRect {
-        return this.rect!;
+        return this.rect;
     }
+
+    public containsPoint = (x: number, y: number): boolean => {
+        if (x < this.rect.x) return false;
+        if (y > this.rect.y) return false;
+        if (x > this.rect.right) return false;
+        if (y < this.rect.bottom) return false;
+        return true;
+    };
 }
