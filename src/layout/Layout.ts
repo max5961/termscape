@@ -19,31 +19,31 @@ export class Layout {
      * wipe their backgrounds.  This ensures that nodes that don't need to wipe
      * backgrounds don't waste time doing so.
      */
-    private minZIndex?: number;
+    private minZIndex: number;
 
     constructor() {
         this.canvas = new Canvas();
         this.layers = {};
         this.positionLayers = {};
+        this.minZIndex = 0;
     }
 
-    public renderNode(elem: FriendDomElement, canvas: Canvas) {
-        if (elem.tagName === "ROOT_ELEMENT") canvas = this.canvas;
+    public draw(elem: FriendDomElement, canvas: Canvas = this.canvas) {
         if (elem.style.display === "none") return;
 
         this.setRect(elem, canvas);
 
         const zIndex = typeof elem.style.zIndex === "number" ? elem.style.zIndex : 0;
-        this.minZIndex = Math.min(this.minZIndex ?? zIndex, zIndex);
+        this.minZIndex = Math.min(this.minZIndex, zIndex);
         this.pushToPositionLayer(zIndex, elem);
 
         if (elem.tagName === "BOX_ELEMENT") {
-            this.deferOp(zIndex, () => this.renderBox(elem, canvas));
+            this.deferOp(zIndex, () => this.renderBox(elem, canvas, zIndex));
         }
 
         for (const child of elem.children) {
             const childCanvas = this.getChildCanvas(elem, canvas, child);
-            this.renderNode(child, childCanvas);
+            this.draw(child, childCanvas);
         }
 
         if (elem.tagName === "ROOT_ELEMENT") {
@@ -162,7 +162,11 @@ export class Layout {
         return this.canvas.toString();
     }
 
-    private renderBox(elem: FriendDomElement, canvas: Canvas) {
+    private renderBox(elem: FriendDomElement, canvas: Canvas, zIndex: number) {
+        if (zIndex > this.minZIndex) {
+            this.clearBackground(canvas);
+        }
+
         if (elem.style.borderStyle === "round") {
             this.renderBorder(elem, canvas);
         }
@@ -170,14 +174,25 @@ export class Layout {
 
     /** renders only round borders for now */
     private renderBorder(elem: FriendDomElement, canvas: Canvas) {
+        const width = elem.node.getComputedWidth();
+        const height = elem.node.getComputedHeight();
+
         canvas
             .draw("╭", "R", 1)
-            .draw("─", "R", canvas.max.x - 2)
+            .draw("─", "R", width - 2)
             .draw("╮", "D", 1)
-            .draw("│", "D", canvas.max.y - 2)
+            .draw("│", "D", height - 2)
             .draw("╯", "L", 1)
-            .draw("─", "L", canvas.max.x - 2)
+            .draw("─", "L", width - 2)
             .draw("╰", "U", 1)
-            .draw("│", "U", canvas.max.y - 2);
+            .draw("│", "U", height - 2);
+    }
+
+    private clearBackground(canvas: Canvas) {
+        for (let y = canvas.corner.y; y < canvas.max.y; ++y) {
+            canvas.moveTo(canvas.corner.x, y);
+            canvas.draw(" ", "R", canvas.max.x);
+        }
+        canvas.moveTo(canvas.corner.x, canvas.corner.y);
     }
 }

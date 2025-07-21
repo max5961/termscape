@@ -8,14 +8,14 @@ export class Root extends DomElement {
     public scheduler: Scheduler;
     public renderer: Renderer;
     public tagName: TTagNames;
+    public style: {}; // abstract implementation noop;
     public static current: Root;
-    public style: {}; // noop;
 
     constructor({ debounceMs }: { debounceMs?: number }) {
         super();
         this.tagName = "ROOT_ELEMENT";
-        this.renderer = new Renderer(this);
-        this.scheduler = new Scheduler({ root: this, debounceMs: debounceMs });
+        this.renderer = new Renderer();
+        this.scheduler = new Scheduler({ debounceMs: debounceMs });
 
         this.style = {};
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
@@ -35,7 +35,7 @@ export class Root extends DomElement {
     };
 
     public scheduleRender = () => {
-        this.scheduler.scheduleRender();
+        this.scheduler.scheduleUpdate(() => this.render());
     };
 }
 

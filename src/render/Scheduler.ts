@@ -1,23 +1,22 @@
-import { Root } from "../dom/Root.js";
-
 export class Scheduler {
-    private root: Root;
     private debounceMs: number;
     private tickScheduled: boolean;
     private renderPending: boolean;
     private inTimeout: boolean;
 
-    constructor({ root, debounceMs }: { root: Root; debounceMs?: number }) {
-        this.root = root;
+    constructor({ debounceMs }: { debounceMs?: number }) {
         this.debounceMs = debounceMs ?? 8;
         this.tickScheduled = false;
         this.renderPending = false;
         this.inTimeout = false;
     }
 
-    public scheduleRender = (cb?: () => unknown) => {
-        cb?.();
-
+    /**
+     * Schedule calls to an updater callback.  Calls made during the same
+     * event loop will be coalesced.  Calls to the updater will be debounced every
+     * `debounceMs` ms.
+     */
+    public scheduleUpdate = (updater: () => unknown) => {
         if (this.tickScheduled) return;
 
         this.tickScheduled = true;
@@ -29,12 +28,12 @@ export class Scheduler {
                 return;
             }
 
-            this.root.render();
+            updater();
 
             this.inTimeout = true;
             setTimeout(() => {
                 if (this.renderPending) {
-                    this.root.render();
+                    updater();
                 }
 
                 this.inTimeout = false;

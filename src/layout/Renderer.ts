@@ -1,17 +1,14 @@
 import { Layout } from "./Layout.js";
-import { DomElement, FriendDomElement } from "../dom/DomElement.js";
+import { FriendDomElement } from "../dom/DomElement.js";
 import { Canvas } from "./Canvas.js";
+import { Root } from "../dom/Root.js";
 
 export class Renderer {
-    private layout: Layout;
     private lastHeight: number;
     private lastStdout: string;
     private hooks: ((canvas: Canvas) => unknown)[];
-    private root: FriendDomElement;
 
-    constructor(root: DomElement) {
-        this.root = root as unknown as FriendDomElement;
-        this.layout = new Layout();
+    constructor() {
         this.lastHeight = -1;
         this.lastStdout = "";
         this.hooks = [];
@@ -21,14 +18,14 @@ export class Renderer {
     }
 
     public writeToStdout = () => {
-        this.layout = new Layout();
-        this.layout.renderNode(this.root, this.layout.canvas);
+        const layout = new Layout();
+        layout.draw(Root.current as unknown as FriendDomElement);
 
-        this.hooks.forEach((hook) => hook(this.layout.canvas));
+        this.hooks.forEach((hook) => hook(layout.canvas));
 
         this.clearPrevRows();
-        this.lastHeight = this.layout.getHeight();
-        const stdout = this.layout.getStdout();
+        this.lastHeight = layout.getHeight();
+        const stdout = layout.getStdout();
 
         if (stdout !== this.lastStdout) {
             process.stdout.write(stdout);

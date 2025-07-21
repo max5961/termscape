@@ -48,29 +48,29 @@ export class Canvas {
         this.grid = props.grid ?? [];
     }
 
-    private pushRow(): void {
+    private pushRow = (): void => {
         if (this.grid.length >= this.max.y) return;
 
         this.grid.push(
             Array.from({ length: process.stdout.columns }).fill(" ") as string[],
         );
-    }
+    };
 
-    public moveTo(x: number, y: number): Canvas {
+    public moveTo = (x: number, y: number): Canvas => {
         this.pos.x = this.corner.x + x;
         this.pos.y = this.corner.y + y;
         return this;
-    }
+    };
 
-    public move(dir: "U" | "D" | "L" | "R", units: number): Canvas {
+    public move = (dir: "U" | "D" | "L" | "R", units: number): Canvas => {
         if (dir === "U") this.pos.y -= units;
         if (dir === "D") this.pos.y += units;
         if (dir === "L") this.pos.x -= units;
         if (dir === "R") this.pos.x += units;
         return this;
-    }
+    };
 
-    public draw(char: string, dir: "U" | "D" | "L" | "R", units: number): Canvas {
+    public draw = (char: string, dir: "U" | "D" | "L" | "R", units: number): Canvas => {
         if (char === "") return this;
 
         let dx = 0;
@@ -92,12 +92,15 @@ export class Canvas {
             // we can only draw straight lines, there's a possibility we go back in
             // bounds, but we can handle pushing a new row if and when that occurs.
             if (this.grid[y] === undefined && x <= this.max.x) {
-                this.pushRow();
+                while (!this.grid[y]) {
+                    this.pushRow();
+                }
             }
 
             if (this.grid[y]?.[x] !== undefined) {
                 this.grid[y][x] = char;
             }
+
             x += dx;
             y += dy;
         }
@@ -105,13 +108,13 @@ export class Canvas {
         this.pos = { x, y };
 
         return this;
-    }
+    };
 
-    public toString() {
+    public toString = () => {
         return this.grid
             .map((row) => {
                 return row.join("").trimEnd() + "\n";
             })
             .join("");
-    }
+    };
 }

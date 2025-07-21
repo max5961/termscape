@@ -26,8 +26,8 @@ export abstract class DomElement {
 
     public node: FriendDomElement["node"];
     public parentElement: FriendDomElement["parentElement"];
-    private eventListeners: FriendDomElement["eventListeners"];
     private rect: FriendDomElement["rect"];
+    private eventListeners: FriendDomElement["eventListeners"];
     private attributes: FriendDomElement["attributes"];
 
     public abstract tagName: FriendDomElement["tagName"];

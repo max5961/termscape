@@ -223,3 +223,5 @@ export class Logger<T extends string> {
         );
     }
 }
+
+export const logger = new Logger();
