@@ -4,10 +4,11 @@ import { Document } from "./dom/Document.js";
 const root = new Root({ debounceMs: 16 });
 
 root.renderer.postLayoutHook((canvas) => {
-    canvas.moveTo(2, 2);
+    const pen = canvas.getPen();
+    pen.moveTo(2, 2);
     const word = "watermark";
     for (let i = 0; i < word.length; ++i) {
-        canvas.draw(`\x1b[33m${word[i]}\x1b[0m`, "R", 1);
+        pen.draw(`\x1b[33m${word[i]}\x1b[0m`, "R", 1);
     }
 });
 

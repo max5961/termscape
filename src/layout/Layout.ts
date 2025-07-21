@@ -70,12 +70,12 @@ export class Layout {
         elem.rect = {
             x: canvas.corner.x,
             y: canvas.corner.y,
-            height: canvas.corner.y + canvas.max.y,
-            width: canvas.corner.x + canvas.max.x,
+            height: canvas.height,
+            width: canvas.width,
             top: canvas.corner.y,
             left: canvas.corner.x,
-            right: canvas.corner.x + canvas.max.x,
-            bottom: canvas.corner.y + canvas.max.y,
+            right: canvas.corner.x + canvas.width,
+            bottom: canvas.corner.y + canvas.height,
         };
     }
 
@@ -94,10 +94,10 @@ export class Layout {
         const yHideOverflow = parent.style.overflowY === "hidden";
 
         if (hideOverflow || xHideOverflow) {
-            width = Math.min(parentCanvas.max.x, width);
+            width = Math.min(parentCanvas.width, width);
         }
         if (hideOverflow || yHideOverflow) {
-            height = Math.min(parentCanvas.max.y, height);
+            height = Math.min(parentCanvas.height, height);
         }
 
         return new Canvas({
@@ -164,7 +164,7 @@ export class Layout {
 
     private renderBox(elem: FriendDomElement, canvas: Canvas, zIndex: number) {
         if (zIndex > this.minZIndex) {
-            this.clearBackground(canvas);
+            this.fillBackground(canvas);
         }
 
         if (elem.style.borderStyle === "round") {
@@ -177,8 +177,9 @@ export class Layout {
         const width = elem.node.getComputedWidth();
         const height = elem.node.getComputedHeight();
 
-        canvas
-            .draw("╭", "R", 1)
+        const pen = canvas.getPen({ linked: false });
+
+        pen.draw("╭", "R", 1)
             .draw("─", "R", width - 2)
             .draw("╮", "D", 1)
             .draw("│", "D", height - 2)
@@ -188,11 +189,12 @@ export class Layout {
             .draw("│", "U", height - 2);
     }
 
-    private clearBackground(canvas: Canvas) {
-        for (let y = canvas.corner.y; y < canvas.max.y; ++y) {
-            canvas.moveTo(canvas.corner.x, y);
-            canvas.draw(" ", "R", canvas.max.x);
+    private fillBackground(canvas: Canvas, color?: string) {
+        const pen = canvas.getPen();
+
+        for (let y = canvas.corner.y; y < canvas.height; ++y) {
+            pen.moveTo(canvas.corner.x, y);
+            pen.draw(" ", "R", canvas.width);
         }
-        canvas.moveTo(canvas.corner.x, canvas.corner.y);
     }
 }

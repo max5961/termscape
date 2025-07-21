@@ -1,3 +1,5 @@
+import { Pen } from "./Pen.js";
+
 type CanvasProps = {
     /**
      * If not provided, a new grid will be created with dimensions of 0x0.  Subgrids
@@ -25,90 +27,38 @@ type CanvasProps = {
 export class Canvas {
     public grid: Required<CanvasProps>["grid"];
     public corner: Readonly<Required<CanvasProps>["corner"]>;
-    public max: { x: number; y: number };
-    public min: { x: number; y: number };
     private pos: { x: number; y: number };
+    public height: number;
+    public width: number;
 
     constructor(props: CanvasProps = {}) {
-        props.dim = props.dim ?? {
-            width: process.stdout.columns,
-            height: process.stdout.rows,
-        };
+        const cols = process.stdout.columns;
+        const rows = process.stdout.rows;
+
+        props.dim = props.dim ?? { width: cols, height: rows };
 
         this.corner = props.corner ?? { x: 0, y: 0 };
-        this.max = {
-            x: Math.min(this.corner.x + props.dim.width, process.stdout.columns),
-            y: Math.min(this.corner.y + props.dim.height, process.stdout.rows),
-        };
-        this.min = { ...this.corner };
         this.pos = { ...this.corner };
+
+        const xBorder = Math.min(this.corner.x + props.dim.width, cols);
+        const yBorder = Math.min(this.corner.y + props.dim.height, rows);
+        this.width = xBorder - this.corner.x;
+        this.height = yBorder - this.corner.y;
 
         // NOTE: grid rows are added on demand, so that empty rows are not added
         // to the output string
         this.grid = props.grid ?? [];
     }
 
-    private pushRow = (): void => {
-        if (this.grid.length >= this.max.y) return;
+    public getPen(opts: { linked?: boolean } = {}) {
+        const { linked = false } = opts;
 
-        this.grid.push(
-            Array.from({ length: process.stdout.columns }).fill(" ") as string[],
-        );
-    };
-
-    public moveTo = (x: number, y: number): Canvas => {
-        this.pos.x = this.corner.x + x;
-        this.pos.y = this.corner.y + y;
-        return this;
-    };
-
-    public move = (dir: "U" | "D" | "L" | "R", units: number): Canvas => {
-        if (dir === "U") this.pos.y -= units;
-        if (dir === "D") this.pos.y += units;
-        if (dir === "L") this.pos.x -= units;
-        if (dir === "R") this.pos.x += units;
-        return this;
-    };
-
-    public draw = (char: string, dir: "U" | "D" | "L" | "R", units: number): Canvas => {
-        if (char === "") return this;
-
-        let dx = 0;
-        let dy = 0;
-
-        if (dir === "U") dy = -1;
-        if (dir === "D") dy = 1;
-        if (dir === "L") dx = -1;
-        if (dir === "R") dx = 1;
-
-        let { x, y } = this.pos;
-
-        for (let i = 0; i < units; ++i) {
-            if (x > this.max.x || x < this.min.x || y > this.max.y || y < this.min.y) {
-                break;
-            }
-
-            // Don't push a row if we are attempting to draw out of bounds.  Since
-            // we can only draw straight lines, there's a possibility we go back in
-            // bounds, but we can handle pushing a new row if and when that occurs.
-            if (this.grid[y] === undefined && x <= this.max.x) {
-                while (!this.grid[y]) {
-                    this.pushRow();
-                }
-            }
-
-            if (this.grid[y]?.[x] !== undefined) {
-                this.grid[y][x] = char;
-            }
-
-            x += dx;
-            y += dy;
-        }
-
-        this.pos = { x, y };
-
-        return this;
-    };
+        return new Pen({
+            linked,
+            pos: this.pos,
+            canvas: this,
+        });
+    }
 
     public toString = () => {
         return this.grid
