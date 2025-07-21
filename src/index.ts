@@ -17,6 +17,7 @@ const child1 = Document.createElement("BOX_ELEMENT");
 child1.style.height = 10;
 child1.style.width = 20;
 child1.style.borderStyle = "round";
+child1.style.backgroundColor = "yellow";
 
 const child1child1 = Document.createElement("BOX_ELEMENT");
 child1child1.style.height = "50";

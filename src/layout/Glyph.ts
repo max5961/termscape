@@ -1,49 +1,50 @@
-import chalk from "chalk/index.js";
-import { parseRgb } from "../util/parseRgb.js";
+import chalk from "chalk";
+import { Color } from "../util/types.js";
 
-/*
- * layer.draw requires a Glyph to be created.  A Glyph is just an ansi styled (or
- * not styled at all) character, which ends up being inserted into a single grid
- * cell.  This makes sure that the ansi styles dont need to be parsed.
- * */
-export class Glyph {
-    private char!: string;
+export function glyphFactory(): {
+    color?: Color;
+    backgroundColor?: Color;
+    bold?: boolean;
+    dimColor?: boolean;
+    create(char: string): string;
+    reset(): void;
+} {
+    const defaults = {
+        color: undefined,
+        backgroundColor: undefined,
+        bold: false,
+        dimColor: false,
+    } as Glyph;
 
-    constructor(glyph: GlyphConfig) {
-        this.char = this.setGlyph(glyph);
-    }
-
-    public setGlyph(glyph: GlyphConfig): string {
-        this.char = glyph.char;
-
-        if (glyph.bold) {
-            this.char = chalk.bold(this.char);
-        }
-
-        if (glyph.dimColor) {
-            this.char = chalk.dim(this.char);
-        }
-
-        if (glyph.color) {
-            const rgb = parseRgb(glyph.color);
-            const hex = glyph.color.startsWith("#");
-
-            if (rgb) {
-                const gen = chalk.rgb(rgb[0], rgb[1], rgb[2])(this.char);
-                if (gen) this.char = gen;
-            } else if (hex) {
-                const gen = chalk.hex(glyph.color)(this.char);
-                if (gen) this.char = gen;
-            } else {
-                const gen = chalk[glyph.color]?.(this.char);
-                if (gen) this.char = gen;
+    return {
+        ...defaults,
+        create(char: string): string {
+            if (this.bold) {
+                char = chalk.bold(char);
             }
-        }
+            if (this.dimColor) {
+                char = chalk.dim(char);
+            }
+            if (this.color && chalk[this.color]) {
+                char = chalk[this.color](char);
+            }
+            if (this.backgroundColor) {
+                const postfix =
+                    this.backgroundColor[0].toUpperCase() + this.backgroundColor.slice(1);
+                const method = `bg${postfix}`;
+                // @ts-expect-error bcuz...
+                char = chalk[method]?.(char) ?? char;
+            }
 
-        return this.char;
-    }
-
-    public render(): string {
-        return this.char;
-    }
+            return char;
+        },
+        reset() {
+            this.color = defaults.color;
+            this.backgroundColor = defaults.backgroundColor;
+            this.bold = defaults.bold;
+            this.dimColor = defaults.dimColor;
+        },
+    };
 }
+
+export type Glyph = ReturnType<typeof glyphFactory>;

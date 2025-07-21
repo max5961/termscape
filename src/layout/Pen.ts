@@ -1,5 +1,5 @@
-import { Point } from "../dom/dom-types.js";
 import { Canvas } from "./Canvas.js";
+import { Glyph, glyphFactory } from "./Glyph.js";
 
 export type PenConfig = {
     /**
@@ -21,6 +21,7 @@ export class Pen {
     private max: Canvas["pos"];
     private corner: Canvas["corner"];
     private grid: Canvas["grid"];
+    private glyph: Glyph;
 
     constructor(opts: PenConfig) {
         this.pos = opts.pos;
@@ -37,6 +38,8 @@ export class Pen {
         } else {
             this.localPos = { x: opts.canvas.corner.x, y: opts.canvas.corner.y };
         }
+
+        this.glyph = glyphFactory();
     }
 
     private pushRowsUntil = (y: number): void => {
@@ -67,6 +70,8 @@ export class Pen {
     public draw = (char: string, dir: "U" | "D" | "L" | "R", units: number): Pen => {
         if (char === "") return this;
 
+        char = this.glyph.create(char);
+
         let dx = 0;
         let dy = 0;
 
@@ -94,6 +99,31 @@ export class Pen {
         this.pos.y = y;
         this.localPos = { ...this.pos };
 
+        return this;
+    };
+
+    public color = (color: Glyph["color"]) => {
+        this.glyph.color = color;
+        return this;
+    };
+
+    public dimColor = (bool: Glyph["dimColor"]) => {
+        this.glyph.dimColor = bool;
+        return this;
+    };
+
+    public bold = (bool: Glyph["bold"]) => {
+        this.glyph.bold = bool;
+        return this;
+    };
+
+    public backgroundColor = (color: Glyph["backgroundColor"]) => {
+        this.glyph.backgroundColor = color;
+        return this;
+    };
+
+    public reset = () => {
+        this.glyph.reset();
         return this;
     };
 }

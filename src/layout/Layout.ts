@@ -1,4 +1,5 @@
 import { FriendDomElement } from "../dom/DomElement.js";
+import { Color } from "../util/types.js";
 import { Canvas } from "./Canvas.js";
 
 /**
@@ -163,8 +164,8 @@ export class Layout {
     }
 
     private renderBox(elem: FriendDomElement, canvas: Canvas, zIndex: number) {
-        if (zIndex > this.minZIndex) {
-            this.fillBackground(canvas);
+        if (zIndex > this.minZIndex || elem.style.backgroundColor) {
+            this.fillBackground(canvas, elem.style.backgroundColor);
         }
 
         if (elem.style.borderStyle === "round") {
@@ -189,8 +190,9 @@ export class Layout {
             .draw("│", "U", height - 2);
     }
 
-    private fillBackground(canvas: Canvas, color?: string) {
+    private fillBackground(canvas: Canvas, color?: Color) {
         const pen = canvas.getPen();
+        pen.backgroundColor(color);
 
         for (let y = canvas.corner.y; y < canvas.height; ++y) {
             pen.moveTo(canvas.corner.x, y);
