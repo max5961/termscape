@@ -1,4 +1,5 @@
-import { Renderer } from "../layout/Renderer.js";
+import { Renderer } from "../render/Renderer.js";
+import { RenderHooksManager } from "../render/RenderHooks.js";
 import { Scheduler } from "../render/Scheduler.js";
 import { TTagNames } from "./dom-types.js";
 import { DomElement } from "./DomElement.js";
@@ -10,12 +11,14 @@ export class Root extends DomElement {
     public tagName: TTagNames;
     public style: {}; // abstract implementation noop;
     public static current: Root;
+    public hooks: RenderHooksManager;
 
     constructor({ debounceMs }: { debounceMs?: number }) {
         super();
         this.tagName = "ROOT_ELEMENT";
-        this.renderer = new Renderer();
         this.scheduler = new Scheduler({ debounceMs: debounceMs });
+        this.renderer = new Renderer();
+        this.hooks = new RenderHooksManager(this.renderer.hooks);
 
         this.style = {};
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
@@ -29,7 +32,7 @@ export class Root extends DomElement {
     public setAttribute(): void {}
     public addEventListener(): void {}
 
-    public render = () => {
+    private render = () => {
         this.node.calculateLayout();
         this.renderer.writeToStdout();
     };

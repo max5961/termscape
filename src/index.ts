@@ -3,13 +3,17 @@ import { Document } from "./dom/Document.js";
 
 const root = new Root({ debounceMs: 8 });
 
-root.renderer.postLayoutHook((canvas) => {
+root.hooks.postLayout((canvas) => {
     const pen = canvas.getPen();
     pen.moveTo(2, 2);
     const word = "watermark";
     for (let i = 0; i < word.length; ++i) {
         pen.draw(`\x1b[33m${word[i]}\x1b[0m`, "R", 1);
     }
+});
+
+root.hooks.renderPerf((data) => {
+    console.log(data);
 });
 
 const c1 = Document.createElement("BOX_ELEMENT");
