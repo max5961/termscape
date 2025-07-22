@@ -1,7 +1,7 @@
 import { Root } from "./dom/Root.js";
 import { Document } from "./dom/Document.js";
 
-const root = new Root({ debounceMs: 64 });
+const root = new Root({ debounceMs: 8 });
 
 root.renderer.postLayoutHook((canvas) => {
     const pen = canvas.getPen();
@@ -49,4 +49,4 @@ let width = 1;
 const id = setInterval(() => {
     if (++width > process.stdout.columns) clearInterval(id);
     c1.style.width = width;
-}, 5);
+}, 1);
