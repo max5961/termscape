@@ -1,8 +1,8 @@
 import { Layout } from "../layout/Layout.js";
 import { FriendDomElement } from "../dom/DomElement.js";
-import { Root } from "../dom/Root.js";
 import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
+import { root } from "../dom/Root.js";
 
 export class Renderer {
     private lastHeight: number;
@@ -28,7 +28,7 @@ export class Renderer {
         this.perf.preLayout();
 
         const layout = new Layout();
-        layout.draw(Root.current as unknown as FriendDomElement);
+        layout.draw(root as unknown as FriendDomElement);
 
         /**** POST-LAYOUT ****/
         this.perf.postLayout();

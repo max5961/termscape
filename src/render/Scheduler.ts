@@ -1,5 +1,5 @@
 export class Scheduler {
-    private debounceMs: number;
+    public debounceMs: number;
     private tickScheduled: boolean;
     private wait: boolean;
     private updater: null | (() => unknown);

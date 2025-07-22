@@ -1,10 +1,10 @@
 import Yoga from "yoga-wasm-web/auto";
 import { DomElement } from "../DomElement.js";
 import { BoxStyle } from "./attributes/box/BoxStyle.js";
-import { Root } from "../Root.js";
 import { Stylers } from "../helpers/Stylers.js";
 import { TTagNames } from "../dom-types.js";
 import { createStyleProxy } from "../createStyleProxy.js";
+import { root } from "../Root.js";
 
 export class BoxElement extends DomElement {
     public tagName: TTagNames;
@@ -24,7 +24,7 @@ export class BoxElement extends DomElement {
             (prop, val) => {
                 Stylers.Box[prop]?.(this.node, val);
             },
-            Root.current.scheduleRender,
+            root.scheduleRender,
         );
 
         // Default Yoga styles

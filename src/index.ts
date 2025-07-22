@@ -1,7 +1,7 @@
-import { Root } from "./dom/Root.js";
 import { Document } from "./dom/Document.js";
+import { root } from "./dom/Root.js";
 
-const root = new Root({ debounceMs: 8 });
+root.configure({ debounceMs: 16 });
 
 root.hooks.postLayout((canvas) => {
     const pen = canvas.getPen();
