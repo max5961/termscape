@@ -1,7 +1,7 @@
 import { Root } from "./dom/Root.js";
 import { Document } from "./dom/Document.js";
 
-const root = new Root({ debounceMs: 16 });
+const root = new Root({ debounceMs: 64 });
 
 root.renderer.postLayoutHook((canvas) => {
     const pen = canvas.getPen();
@@ -12,26 +12,41 @@ root.renderer.postLayoutHook((canvas) => {
     }
 });
 
-const child1 = Document.createElement("BOX_ELEMENT");
+const c1 = Document.createElement("BOX_ELEMENT");
 
-child1.style.height = 10;
-child1.style.width = 20;
-child1.style.borderStyle = "round";
-child1.style.backgroundColor = "yellow";
+c1.style.height = 10;
+c1.style.width = 20;
+c1.style.borderStyle = "round";
+c1.style.backgroundColor = "yellow";
 
-const child1child1 = Document.createElement("BOX_ELEMENT");
-child1child1.style.height = "50";
-child1child1.style.width = "50";
-child1child1.style.borderStyle = "round";
-child1child1.style.zIndex = 5;
+const c1c1 = Document.createElement("BOX_ELEMENT");
+c1c1.style.height = "50";
+c1c1.style.width = "50";
+c1c1.style.borderStyle = "round";
+c1c1.style.zIndex = 5;
 
-child1.appendChild(child1child1);
+c1.appendChild(c1c1);
 
-root.appendChild(child1);
+// const c2c2 = Document.createElement("BOX_ELEMENT");
+// c2c2.style.height = "50";
+// c2c2.style.width = "50";
+// c2c2.style.borderStyle = "round";
+// c2c2.style.zIndex = 5;
+// c1.appendChild(c2c2);
 
-// let width = 1;
-//
-// const id = setInterval(() => {
-//     if (++width > process.stdout.columns) clearTimeout(id);
-//     child1.style.width = width;
-// }, 5);
+root.appendChild(c1);
+
+// setTimeout(() => {
+//     c1.style.height = 10;
+// }, 100);
+
+// c1.node.setMeasureFunc((a, b, c, d) => {
+//     //
+// });
+
+let width = 1;
+
+const id = setInterval(() => {
+    if (++width > process.stdout.columns) clearInterval(id);
+    c1.style.width = width;
+}, 5);
