@@ -3,6 +3,7 @@ import { FriendDomElement } from "../dom/DomElement.js";
 import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
 import { root } from "../dom/Root.js";
+import ansi from "ansi-escapes";
 
 export class Renderer {
     private lastHeight: number;
@@ -17,6 +18,9 @@ export class Renderer {
         this.hooks = new RenderHooks();
 
         process.stdout.on("resize", this.writeToStdout);
+        process.stdout.write(ansi.cursorHide);
+
+        process.on("beforeExit", () => process.stdout.write(ansi.cursorShow));
     }
 
     public writeToStdout = () => {
@@ -34,17 +38,15 @@ export class Renderer {
         this.perf.postLayout();
         this.hooks.postLayout.forEach((cb) => cb(layout.canvas));
 
-        this.clearPrevRows();
-        this.lastHeight = layout.getHeight();
-
         /**** PRE-WRITE ****/
         this.perf.preWrite();
         const stdout = layout.getStdout();
 
         if (stdout !== this.lastStdout) {
             this.hooks.preWrite.forEach((cb) => cb(stdout));
-            process.stdout.write(stdout);
+            process.stdout.write(this.clearPrevRows() + stdout);
             this.lastStdout = stdout;
+            this.lastHeight = layout.getHeight();
 
             /**** POST-WRITE ****/
             this.perf.postWrite();
@@ -58,7 +60,7 @@ export class Renderer {
     };
 
     public clearPrevRows = () => {
-        if (this.lastHeight <= 0) return;
-        // Send csi sequences
+        if (this.lastHeight <= 0) return "";
+        return ansi.eraseLines(this.lastHeight);
     };
 }

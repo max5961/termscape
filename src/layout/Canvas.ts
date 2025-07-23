@@ -65,6 +65,7 @@ export class Canvas {
             .map((row) => {
                 return row.join("").trimEnd() + "\n";
             })
-            .join("");
+            .join("")
+            .trimEnd();
     };
 }

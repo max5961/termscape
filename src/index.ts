@@ -1,7 +1,7 @@
 import { Document } from "./dom/Document.js";
 import { root } from "./dom/Root.js";
 
-root.configure({ debounceMs: 16 });
+root.configure({ debounceMs: 32 });
 
 root.hooks.postLayout((canvas) => {
     const pen = canvas.getPen();
@@ -13,21 +13,22 @@ root.hooks.postLayout((canvas) => {
 });
 
 root.hooks.renderPerf((data) => {
-    console.log(data);
+    // console.log(data);
 });
 
 const c1 = Document.createElement("BOX_ELEMENT");
 
-c1.style.height = 10;
+c1.style.height = process.stdout.rows;
 c1.style.width = 20;
 c1.style.borderStyle = "round";
-c1.style.backgroundColor = "yellow";
+// c1.style.backgroundColor = "yellow";
 
 const c1c1 = Document.createElement("BOX_ELEMENT");
 c1c1.style.height = "50";
 c1c1.style.width = "50";
 c1c1.style.borderStyle = "round";
 c1c1.style.zIndex = 5;
+c1c1.style.backgroundColor = "green";
 
 c1.appendChild(c1c1);
 
@@ -50,7 +51,22 @@ root.appendChild(c1);
 
 let width = 1;
 
+let forward = true;
 const id = setInterval(() => {
-    if (++width > process.stdout.columns) clearInterval(id);
+    if (forward) {
+        if (width + 1 < process.stdout.columns) {
+            ++width;
+        } else {
+            forward = false;
+        }
+    }
+
+    if (!forward) {
+        if (width - 1 >= 0) {
+            --width;
+        } else {
+            forward = true;
+        }
+    }
     c1.style.width = width;
-}, 1);
+}, 10);
