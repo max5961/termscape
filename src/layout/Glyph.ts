@@ -1,50 +1,43 @@
-import chalk from "chalk";
+import ansi from "ansi-escape-sequences";
 import { Color } from "../util/types.js";
 
-export function glyphFactory(): {
+export type GlyphConfig = {
     color?: Color;
     backgroundColor?: Color;
     bold?: boolean;
     dimColor?: boolean;
-    create(char: string): string;
-    reset(): void;
-} {
-    const defaults = {
-        color: undefined,
-        backgroundColor: undefined,
-        bold: false,
-        dimColor: false,
-    } as Glyph;
+};
 
-    return {
-        ...defaults,
-        create(char: string): string {
-            if (this.bold) {
-                char = chalk.bold(char);
-            }
-            if (this.dimColor) {
-                char = chalk.dim(char);
-            }
-            if (this.color && chalk[this.color]) {
-                char = chalk[this.color](char);
-            }
-            if (this.backgroundColor) {
-                const postfix =
-                    this.backgroundColor[0].toUpperCase() + this.backgroundColor.slice(1);
-                const method = `bg${postfix}`;
-                // @ts-expect-error bcuz...
-                char = chalk[method]?.(char) ?? char;
-            }
+export class Glyph {
+    public color?: Color;
+    public backgroundColor?: Color;
+    public bold?: boolean;
+    public dimColor?: boolean;
 
-            return char;
-        },
-        reset() {
-            this.color = defaults.color;
-            this.backgroundColor = defaults.backgroundColor;
-            this.bold = defaults.bold;
-            this.dimColor = defaults.dimColor;
-        },
-    };
+    constructor(c: GlyphConfig) {
+        this.color = c.color ?? undefined;
+        this.backgroundColor = c.backgroundColor ?? undefined;
+        this.bold = c.bold ?? false;
+        this.dimColor = c.dimColor ?? false;
+    }
+
+    public open() {
+        // @ts-expect-error fuck you
+        const color = ansi.style[this.color ?? ""] ?? "";
+        // @ts-expect-error fuck you
+        const bgColor = ansi.style[this.backgroundColor ?? ""] ?? "";
+
+        return color + bgColor;
+    }
+
+    public close() {
+        return ansi.style.reset;
+    }
+
+    public reset() {
+        this.color = undefined;
+        this.backgroundColor = undefined;
+        this.bold = false;
+        this.dimColor = false;
+    }
 }
-
-export type Glyph = ReturnType<typeof glyphFactory>;

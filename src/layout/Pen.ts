@@ -1,5 +1,5 @@
 import { Canvas } from "./Canvas.js";
-import { Glyph, glyphFactory } from "./Glyph.js";
+import { Glyph } from "./Glyph.js";
 
 export type PenConfig = {
     /**
@@ -39,7 +39,7 @@ export class Pen {
             this.localPos = { x: opts.canvas.corner.x, y: opts.canvas.corner.y };
         }
 
-        this.glyph = glyphFactory();
+        this.glyph = new Glyph({});
     }
 
     private pushRowsUntil = (y: number): void => {
@@ -70,8 +70,6 @@ export class Pen {
     public draw = (char: string, dir: "U" | "D" | "L" | "R", units: number): Pen => {
         if (char === "") return this;
 
-        char = this.glyph.create(char);
-
         let dx = 0;
         let dy = 0;
 
@@ -82,13 +80,26 @@ export class Pen {
 
         let { x, y } = this.localPos;
 
+        let firstDraw = true;
         for (let i = 0; i < units; ++i) {
             if (this.grid[y] === undefined && y <= this.max.y) {
                 this.pushRowsUntil(y);
             }
 
             if (this.grid[y]?.[x] !== undefined) {
-                this.grid[y][x] = char;
+                let cell = char;
+
+                // THis only works for L & R (for obvious reasons....) Up/Down needs
+                // to be open and close around char
+                if (firstDraw) {
+                    cell = `${"\x1b[32m"}${char}`;
+                    firstDraw = false;
+                }
+                if (i === units - 1 || this.grid[y + dy]?.[x + dx] === undefined) {
+                    cell = `${cell}${this.glyph.close()}`;
+                }
+
+                this.grid[y][x] = cell;
             }
 
             x += dx;

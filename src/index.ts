@@ -18,7 +18,7 @@ root.hooks.renderPerf((data) => {
 
 const c1 = Document.createElement("BOX_ELEMENT");
 
-c1.style.height = process.stdout.rows;
+c1.style.height = 20;
 c1.style.width = 20;
 c1.style.borderStyle = "round";
 // c1.style.backgroundColor = "yellow";
