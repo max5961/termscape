@@ -33,7 +33,7 @@ declare module "ansi-escape-sequences" {
         | "imageNegative"
         | "imagePositive";
 
-    export type AnsiStyle = "reset" | Color | BgColor | TextEffect;
+    export type AnsiStyle = Color | BgColor | TextEffect;
 
     /**
      * @exports ansi-escape-sequences
@@ -135,9 +135,7 @@ declare module "ansi-escape-sequences" {
          * > ansi.styles([ 'bg-red', 'rgb(200,200,200)' ])
          * '\u001b[41m\u001b[38;2;200;200;200m'
          */
-        styles(
-            styles: Exclude<AnsiStyle, "reset"> | Exclude<AnsiStyle, "reset">[],
-        ): string;
+        styles(styles: AnsiStyle | AnsiStyle[]): string;
 
         /**
          * A convenience function, applying the styles provided in `styleArray` to the input string.
@@ -165,7 +163,7 @@ declare module "ansi-escape-sequences" {
          * > ansi.format('Inline styling: [bg-rgb(255,128,0) bold]{something}')
          * 'Inline styling: \u001b[48;2;255;128;0m\u001b[1msomething\u001b[0m'
          */
-        format(str: string, styles: Exclude<AnsiStyle, "reset">[]): string;
+        format(str: string, styles: AnsiStyle[]): string;
 
         /**
          * cursor-related sequences

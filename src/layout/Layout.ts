@@ -1,6 +1,6 @@
 import { FriendDomElement } from "../dom/DomElement.js";
 import { Canvas } from "./Canvas.js";
-import { Color } from "../types.js";
+import { BgColor, Color } from "../types.js";
 
 /**
  * Used in mouse event handling
@@ -190,9 +190,9 @@ export class Layout {
             .draw("│", "U", height - 2);
     }
 
-    private fillBackground(canvas: Canvas, color?: Color) {
+    private fillBackground(canvas: Canvas, color?: BgColor) {
         const pen = canvas.getPen();
-        pen.backgroundColor(color);
+        pen.set.bgColor(color);
 
         for (let y = canvas.corner.y; y < canvas.height; ++y) {
             pen.moveTo(canvas.corner.x, y);

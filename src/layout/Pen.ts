@@ -1,5 +1,5 @@
 import { Canvas } from "./Canvas.js";
-import { Glyph } from "./Glyph.js";
+import { createGlyphManager, Glyph, GlyphManager } from "./Glyph.js";
 
 export type PenConfig = {
     /**
@@ -22,6 +22,7 @@ export class Pen {
     private corner: Canvas["corner"];
     private grid: Canvas["grid"];
     private glyph: Glyph;
+    public set: GlyphManager;
 
     constructor(opts: PenConfig) {
         this.pos = opts.pos;
@@ -40,6 +41,7 @@ export class Pen {
         }
 
         this.glyph = new Glyph({});
+        this.set = createGlyphManager(this.glyph, this);
     }
 
     private pushRowsUntil = (y: number): void => {
@@ -92,11 +94,11 @@ export class Pen {
                 // THis only works for L & R (for obvious reasons....) Up/Down needs
                 // to be open and close around char
                 if (firstDraw) {
-                    cell = `${"\x1b[32m"}${char}`;
+                    cell = this.glyph.open(char);
                     firstDraw = false;
                 }
                 if (i === units - 1 || this.grid[y + dy]?.[x + dx] === undefined) {
-                    cell = `${cell}${this.glyph.close()}`;
+                    cell = this.glyph.close(char);
                 }
 
                 this.grid[y][x] = cell;
@@ -110,31 +112,6 @@ export class Pen {
         this.pos.y = y;
         this.localPos = { ...this.pos };
 
-        return this;
-    };
-
-    public color = (color: Glyph["color"]) => {
-        this.glyph.color = color;
-        return this;
-    };
-
-    public dimColor = (bool: Glyph["dimColor"]) => {
-        this.glyph.dimColor = bool;
-        return this;
-    };
-
-    public bold = (bool: Glyph["bold"]) => {
-        this.glyph.bold = bool;
-        return this;
-    };
-
-    public backgroundColor = (color: Glyph["backgroundColor"]) => {
-        this.glyph.backgroundColor = color;
-        return this;
-    };
-
-    public reset = () => {
-        this.glyph.reset();
         return this;
     };
 }

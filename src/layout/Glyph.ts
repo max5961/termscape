@@ -1,43 +1,129 @@
 import ansi from "ansi-escape-sequences";
-import type { Color } from "../types.js";
+import type { AnsiStyle, BgColor, Color, TextEffect } from "../types.js";
+import { DIM_COLOR } from "../util/dimColor.js";
+import { Pen } from "./Pen.js";
 
 export type GlyphConfig = {
     color?: Color;
-    backgroundColor?: Color;
-    bold?: boolean;
+    bgColor?: BgColor;
+    effects?: Partial<Record<TextEffect, boolean>>;
     dimColor?: boolean;
 };
 
 export class Glyph {
-    public color?: Color;
-    public backgroundColor?: Color;
-    public bold?: boolean;
-    public dimColor?: boolean;
+    public color: GlyphConfig["color"];
+    public bgColor: GlyphConfig["bgColor"];
+    public effects: Exclude<GlyphConfig["effects"], undefined>;
+    public dimColor: boolean;
 
-    constructor(c: GlyphConfig) {
-        this.color = c.color ?? undefined;
-        this.backgroundColor = c.backgroundColor ?? undefined;
-        this.bold = c.bold ?? false;
+    constructor(c: GlyphConfig = {}) {
+        this.color = c.color;
+        this.bgColor = c.bgColor;
         this.dimColor = c.dimColor ?? false;
+        this.effects = c.effects ?? {};
     }
 
-    public open() {
-        // @ts-expect-error fuck you
-        const color = ansi.style[this.color ?? ""] ?? "";
-        // @ts-expect-error fuck you
-        const bgColor = ansi.style[this.backgroundColor ?? ""] ?? "";
+    public open(char: string) {
+        const styles: AnsiStyle[] = [];
 
-        return color + bgColor;
+        if (this.color) styles.push(this.color);
+        if (this.bgColor) styles.push(this.bgColor);
+        const dimAnsi = this.dimColor ? DIM_COLOR : "";
+
+        for (const [k, v] of Object.entries(this.effects)) {
+            if (v) styles.push(k as TextEffect);
+        }
+
+        return ansi.styles(styles) + dimAnsi + char;
     }
 
-    public close() {
-        return ansi.style.reset;
+    public close(char: string) {
+        return char + ansi.style.reset;
     }
 
     public reset() {
         this.color = undefined;
-        this.backgroundColor = undefined;
-        this.bold = false;
+        this.bgColor = undefined;
         this.dimColor = false;
+        this.effects = {};
     }
+
+    /** noop - todo */
+    private hexAnsi(hex: string) {
+        return "";
+    }
+
+    /** noop - todo */
+    private rgbAnsi(rgb: string) {
+        return "";
+    }
+
+    /** noop - todo */
+    private hslAnsi(hsl: string) {
+        return "";
+    }
+}
+
+const textEffects = new Set([
+    "underline",
+    "bold",
+    "italic",
+    "imageNegative",
+    "imagePositive",
+    "font1",
+    "font2",
+    "font3",
+    "font4",
+    "font5",
+    "font6",
+    "fontDefault",
+] as TextEffect[]);
+
+export type GlyphManager = ReturnType<typeof createGlyphManager>;
+
+export function createGlyphManager(glyph: Glyph, pen: Pen) {
+    return new Proxy(
+        {
+            color: (val: GlyphConfig["color"]) => pen,
+            bgColor: (val: GlyphConfig["bgColor"]) => pen,
+            bold: (val: boolean) => pen,
+            italic: (val: boolean) => pen,
+            imageNegative: (val: boolean) => pen,
+            imagePositive: (val: boolean) => pen,
+            font1: (val: boolean) => pen,
+            font2: (val: boolean) => pen,
+            font3: (val: boolean) => pen,
+            font4: (val: boolean) => pen,
+            font5: (val: boolean) => pen,
+            font6: (val: boolean) => pen,
+            fontDefault: (val: boolean) => pen,
+            dimColor: (val: boolean) => pen,
+        },
+        {
+            get(_, p) {
+                if (textEffects.has(p as TextEffect)) {
+                    return (val: boolean) => {
+                        glyph.effects[p as TextEffect] = val ?? false;
+                    };
+                }
+                if (p === "color") {
+                    return (val: GlyphConfig["color"]) => {
+                        glyph.color = val;
+                    };
+                }
+                if (p === "bgColor") {
+                    return (val: GlyphConfig["bgColor"]) => {
+                        glyph.bgColor = val;
+                    };
+                }
+                if (p === "dimColor") {
+                    return (val: GlyphConfig["dimColor"]) => {
+                        glyph.dimColor = val ?? false;
+                    };
+                }
+
+                return undefined;
+            },
+        },
+    );
 }
