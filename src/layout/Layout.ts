@@ -1,6 +1,6 @@
 import { FriendDomElement } from "../dom/DomElement.js";
-import { Color } from "../util/types.js";
 import { Canvas } from "./Canvas.js";
+import { Color } from "../types.js";
 
 /**
  * Used in mouse event handling

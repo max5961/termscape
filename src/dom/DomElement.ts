@@ -1,5 +1,5 @@
 import Yoga from "yoga-wasm-web/auto";
-import { YogaNode } from "../util/types.js";
+import { YogaNode } from "../types.js";
 import { EventHandler, MouseEvent } from "./MouseEvent.js";
 import type { DOMRect, TTagNames, Style } from "./dom-types.js";
 import { Root } from "./Root.js";

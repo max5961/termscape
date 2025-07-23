@@ -1,5 +1,5 @@
 import ansi from "ansi-escape-sequences";
-import { Color } from "../util/types.js";
+import type { Color } from "../types.js";
 
 export type GlyphConfig = {
     color?: Color;

@@ -1,4 +1,40 @@
 declare module "ansi-escape-sequences" {
+    export type Color =
+        | "black"
+        | "red"
+        | "green"
+        | "yellow"
+        | "blue"
+        | "magenta"
+        | "cyan"
+        | "white"
+        | "grey"
+        | "gray"
+        | "brightRed"
+        | "brightGreen"
+        | "brightYellow"
+        | "brightBlue"
+        | "brightMagenta"
+        | "brightCyan"
+        | "brightWhite";
+
+    export type BgColor = `bg-${Color}`;
+
+    export type TextEffect =
+        | "bold"
+        | "italic"
+        | "underline"
+        | "fontDefault"
+        | "font2"
+        | "font3"
+        | "font4"
+        | "font5"
+        | "font6"
+        | "imageNegative"
+        | "imagePositive";
+
+    export type AnsiStyle = "reset" | Color | BgColor | TextEffect;
+
     /**
      * @exports ansi-escape-sequences
      * @typicalname ansi
@@ -85,7 +121,142 @@ declare module "ansi-escape-sequences" {
          */
         bgRgb(r: number, g: number, b: number): string;
 
-        styles(styles: string[]): string;
+        /**
+         * Returns an ansi sequence setting one or more styles.
+         * @param {string | string[]} - One or more style strings.
+         * @returns {string}
+         * @example
+         * > ansi.styles('green')
+         * '\u001b[32m'
+         *
+         * > ansi.styles([ 'green', 'underline' ])
+         * '\u001b[32m\u001b[4m'
+         *
+         * > ansi.styles([ 'bg-red', 'rgb(200,200,200)' ])
+         * '\u001b[41m\u001b[38;2;200;200;200m'
+         */
+        styles(
+            styles: Exclude<AnsiStyle, "reset"> | Exclude<AnsiStyle, "reset">[],
+        ): string;
+
+        /**
+         * A convenience function, applying the styles provided in `styleArray` to the input string.
+         *
+         * Partial, inline styling can also be applied using the syntax `[style-list]{text to format}` anywhere within the input string, where `style-list` is a space-separated list of styles from {@link module:ansi-escape-sequences.style ansi.style}. For example `[bold white bg-red]{bold white text on a red background}`.
+         *
+         * 24-bit "true colour" values can be set using `rgb(n,n,n)` syntax (no spaces), for example `[rgb(255,128,0) underline]{orange underlined}`. Background 24-bit colours can be set using `bg-rgb(n,n,n)` syntax.
+         *
+         * @param {string} - The string to format. Can also include inline-formatting using the syntax `[style-list]{text to format}` anywhere within the string.
+         * @param [styleArray] {string|string[]} - One or more style strings to apply to the input string. Valid strings are any property from the [`ansi.style`](https://github.com/75lb/ansi-escape-sequences#ansistyle--enum) object (e.g. `red` or `bg-red`), `rgb(n,n,n)` or `bg-rgb(n,n,n)`.
+         * @returns {string}
+         * @example
+         * > ansi.format('what?', 'green')
+         * '\u001b[32mwhat?\u001b[0m'
+         *
+         * > ansi.format('what?', ['green', 'bold'])
+         * '\u001b[32m\u001b[1mwhat?\u001b[0m'
+         *
+         * > ansi.format('something', ['rgb(255,128,0)', 'bold'])
+         * '\u001b[38;2;255;128;0m\u001b[1msomething\u001b[0m'
+         *
+         * > ansi.format('Inline styling: [rgb(255,128,0) bold]{something}')
+         * 'Inline styling: \u001b[38;2;255;128;0m\u001b[1msomething\u001b[0m'
+         *
+         * > ansi.format('Inline styling: [bg-rgb(255,128,0) bold]{something}')
+         * 'Inline styling: \u001b[48;2;255;128;0m\u001b[1msomething\u001b[0m'
+         */
+        format(str: string, styles: Exclude<AnsiStyle, "reset">[]): string;
+
+        /**
+         * cursor-related sequences
+         */
+        cursor: {
+            /**
+             * Moves the cursor `lines` cells up. If the cursor is already at the edge of the screen, this has no effect
+             * @param [lines=1] {number}
+             * @return {string}
+             */
+            up(lines: number): string;
+
+            /**
+             * Moves the cursor `lines` cells down. If the cursor is already at the edge of the screen, this has no effect
+             * @param [lines=1] {number}
+             * @return {string}
+             */
+            down(lines: number): string;
+
+            /**
+             * Moves the cursor `lines` cells forward. If the cursor is already at the edge of the screen, this has no effect
+             * @param [lines=1] {number}
+             * @return {string}
+             */
+            forward(lines: number): string;
+
+            /**
+             * Moves the cursor `lines` cells back. If the cursor is already at the edge of the screen, this has no effect
+             * @param [lines=1] {number}
+             * @return {string}
+             */
+            back(lines: number): string;
+
+            /**
+             * Moves cursor to beginning of the line n lines down.
+             * @param [lines=1] {number}
+             * @return {string}
+             */
+            nextLine(lines: number): string;
+
+            /**
+             * Moves cursor to beginning of the line n lines up.
+             * @param [lines=1] {number}
+             * @return {string}
+             */
+            previousLine(lines: number): string;
+
+            /**
+             * Moves the cursor to column n.
+             * @param n {number} - column number
+             * @return {string}
+             */
+            horizontalAbsolute(n: number): string;
+
+            /**
+             * Moves the cursor to row n, column m. The values are 1-based, and default to 1 (top left corner) if omitted.
+             * @param n {number} - row number
+             * @param m {number} - column number
+             * @return {string}
+             */
+            position(n: number, m: number): number;
+
+            /**
+             * Hides the cursor
+             */
+            hide: string;
+
+            /**
+             * Shows the cursor
+             */
+            show: string;
+        };
+        /**
+         * erase sequences
+         */
+        erase: {
+            /**
+             * Clears part of the screen. If n is 0 (or missing), clear from cursor to end of screen. If n is 1, clear from cursor to beginning of the screen. If n is 2, clear entire screen.
+             * @param n {number}
+             * @return {string}
+             */
+            display(n: number): string;
+
+            /**
+             * Erases part of the line. If n is zero (or missing), clear from cursor to the end of the line. If n is one, clear from cursor to beginning of the line. If n is two, clear entire line. Cursor position does not change.
+             * @param n {number}
+             * @return {string}
+             */
+            inLine(n: number): string;
+        };
     };
+
     export default ansi;
 }
