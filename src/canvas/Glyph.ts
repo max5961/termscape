@@ -24,7 +24,7 @@ export class Glyph {
         this.effects = c.effects ?? {};
     }
 
-    public open(char: string) {
+    public open() {
         const styles: AnsiStyle[] = [];
 
         if (this.color) styles.push(this.color);
@@ -35,11 +35,11 @@ export class Glyph {
             if (v) styles.push(k as TextEffect);
         }
 
-        return ansi.styles(styles) + dimAnsi + char;
+        return ansi.styles(styles) + dimAnsi;
     }
 
-    public close(char: string) {
-        return char + ansi.style.reset;
+    public close() {
+        return ansi.style.reset;
     }
 
     public reset() {

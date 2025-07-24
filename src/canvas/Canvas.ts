@@ -1,3 +1,4 @@
+import { GridTokens, IGridToken } from "./GridToken.js";
 import { Pen } from "./Pen.js";
 
 type CanvasProps = {
@@ -5,7 +6,7 @@ type CanvasProps = {
      * If not provided, a new grid will be created with dimensions of 0x0.  Subgrids
      * will then inherit from this grid.
      * */
-    grid?: string[][];
+    grid?: (string | IGridToken)[][];
 
     /**
      * The corner position of the grid, which also acts helps define minimum x and
@@ -26,6 +27,7 @@ type CanvasProps = {
 
 export class Canvas {
     public grid: Required<CanvasProps>["grid"];
+    public gridTokens: GridTokens;
     public corner: Readonly<Required<CanvasProps>["corner"]>;
     private pos: { x: number; y: number };
     public height: number;
@@ -48,6 +50,7 @@ export class Canvas {
         // NOTE: grid rows are added on demand, so that empty rows are not added
         // to the output string
         this.grid = props.grid ?? [];
+        this.gridTokens = new GridTokens(this.grid);
     }
 
     public getPen(opts: { linked?: boolean } = {}) {
@@ -57,11 +60,17 @@ export class Canvas {
             linked,
             pos: this.pos,
             canvas: this,
+            gridTokens: this.gridTokens,
         });
     }
 
+    public getGrid = (): string[][] => {
+        return this.gridTokens.convertTokens();
+    };
+
     public toString = () => {
-        return this.grid
+        return this.gridTokens
+            .convertTokens()
             .map((row) => {
                 return row.join("").trimEnd() + "\n";
             })

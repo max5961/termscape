@@ -1,5 +1,6 @@
 import { Canvas } from "./Canvas.js";
 import { createGlyphManager, Glyph, GlyphManager } from "./Glyph.js";
+import { GridTokens } from "./GridToken.js";
 
 export type PenConfig = {
     /**
@@ -11,6 +12,7 @@ export type PenConfig = {
     linked?: boolean;
     canvas: Canvas;
     pos: Canvas["pos"];
+    gridTokens: GridTokens;
 };
 
 export class Pen {
@@ -23,6 +25,7 @@ export class Pen {
     private grid: Canvas["grid"];
     private glyph: Glyph;
     public set: GlyphManager;
+    private gridTokens: GridTokens;
 
     constructor(opts: PenConfig) {
         this.pos = opts.pos;
@@ -42,6 +45,7 @@ export class Pen {
 
         this.glyph = new Glyph({});
         this.set = createGlyphManager(this.glyph, this);
+        this.gridTokens = opts.gridTokens;
     }
 
     private pushRowsUntil = (y: number): void => {
@@ -72,6 +76,8 @@ export class Pen {
     public draw = (char: string, dir: "U" | "D" | "L" | "R", units: number): Pen => {
         if (char === "") return this;
 
+        const ansi = this.glyph.open();
+
         let dx = 0;
         let dy = 0;
 
@@ -82,26 +88,18 @@ export class Pen {
 
         let { x, y } = this.localPos;
 
-        let firstDraw = true;
         for (let i = 0; i < units; ++i) {
             if (this.grid[y] === undefined && y <= this.max.y) {
                 this.pushRowsUntil(y);
             }
 
             if (this.grid[y]?.[x] !== undefined) {
-                let cell = char;
-
-                // THis only works for L & R (for obvious reasons....) Up/Down needs
-                // to be open and close around char
-                if (firstDraw) {
-                    cell = this.glyph.open(char);
-                    firstDraw = false;
+                if (ansi) {
+                    this.gridTokens.pushToken(x, y);
+                    this.grid[y][x] = { ansi, char, charWidth: 1 };
+                } else {
+                    this.grid[y][x] = char;
                 }
-                if (i === units - 1 || this.grid[y + dy]?.[x + dx] === undefined) {
-                    cell = this.glyph.close(char);
-                }
-
-                this.grid[y][x] = cell;
             }
 
             x += dx;
