@@ -1,6 +1,6 @@
 import { FriendDomElement } from "../dom/DomElement.js";
 import { BgColor } from "../types.js";
-import { Canvas } from "./Canvas.js";
+import { Canvas } from "../canvas/Canvas.js";
 
 export class Draw {
     /**

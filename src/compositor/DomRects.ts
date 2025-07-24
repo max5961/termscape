@@ -1,5 +1,5 @@
 import { FriendDomElement } from "../dom/DomElement.js";
-import { Canvas } from "./Canvas.js";
+import { Canvas } from "../canvas/Canvas.js";
 
 export type DomRectLayer = {
     x: Record<number, FriendDomElement[]>;

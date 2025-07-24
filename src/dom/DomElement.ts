@@ -1,8 +1,8 @@
 import Yoga from "yoga-wasm-web/auto";
 import { YogaNode } from "../types.js";
 import { EventHandler, MouseEvent } from "./MouseEvent.js";
-import type { DOMRect, TTagNames, Style } from "./dom-types.js";
 import { Root } from "./Root.js";
+import type { DOMRect, TTagNames, Style } from "../types.js";
 
 /** For accessing private members in trusted private package modules */
 export type FriendDomElement = {

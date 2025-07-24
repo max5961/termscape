@@ -2,7 +2,7 @@ import Yoga from "yoga-wasm-web/auto";
 import { DomElement } from "../DomElement.js";
 import { BoxStyle } from "./attributes/box/BoxStyle.js";
 import { Stylers } from "../helpers/Stylers.js";
-import { TTagNames } from "../dom-types.js";
+import type { TTagNames } from "../../types.js";
 import { createStyleProxy } from "../createStyleProxy.js";
 import { root } from "../Root.js";
 

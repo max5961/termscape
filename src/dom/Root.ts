@@ -1,9 +1,9 @@
 import { Renderer } from "../render/Renderer.js";
 import { RenderHooksManager } from "../render/RenderHooks.js";
 import { Scheduler } from "../render/Scheduler.js";
-import { TTagNames } from "./dom-types.js";
 import { DomElement } from "./DomElement.js";
 import Yoga from "yoga-wasm-web/auto";
+import type { TTagNames } from "../types.js";
 
 export type ConfigureRoot = {
     debounceMs?: number;

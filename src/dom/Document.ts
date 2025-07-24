@@ -1,7 +1,7 @@
 import { DomElement } from "./DomElement.js";
 import { BoxElement } from "./elements/BoxElement.js";
 import { TextElement } from "./elements/TextElement.js";
-import type { TTagNames } from "./dom-types.js";
+import type { TTagNames } from "../types.js";
 
 export class Document {
     public static createElement(tagName: Exclude<TTagNames, "ROOT_ELEMENT">): DomElement {

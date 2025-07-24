@@ -1,5 +1,22 @@
+import { TagNames } from "./constants.js";
+import { BoxStyle } from "./dom/elements/attributes/box/BoxStyle.js";
+import { TextStyle } from "./dom/elements/attributes/text/TextStyle.js";
+
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
 export type { Node as YogaNode } from "yoga-wasm-web/auto";
 
 export type Hex = `#${string}`;
 export type Rgb = `rgb(${string}${string}${string})`;
+export type TTagNames = (typeof TagNames)[keyof typeof TagNames];
+export type Point = { x: number; y: number };
+export type DOMRect = {
+    x: number;
+    y: number;
+    height: number;
+    bottom: number;
+    width: number;
+    top: number;
+    left: number;
+    right: number;
+};
+export type Style = BoxStyle & TextStyle;

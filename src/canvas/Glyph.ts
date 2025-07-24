@@ -2,19 +2,20 @@ import ansi from "ansi-escape-sequences";
 import type { AnsiStyle, BgColor, Color, TextEffect } from "../types.js";
 import { DIM_COLOR } from "../util/dimColor.js";
 import { Pen } from "./Pen.js";
+import { TextEffectSet } from "../constants.js";
 
 export type GlyphConfig = {
     color?: Color;
     bgColor?: BgColor;
-    effects?: Partial<Record<TextEffect, boolean>>;
     dimColor?: boolean;
+    effects?: Partial<Record<TextEffect, boolean>>;
 };
 
 export class Glyph {
     public color: GlyphConfig["color"];
     public bgColor: GlyphConfig["bgColor"];
+    public dimColor: GlyphConfig["dimColor"];
     public effects: Exclude<GlyphConfig["effects"], undefined>;
-    public dimColor: boolean;
 
     constructor(c: GlyphConfig = {}) {
         this.color = c.color;
@@ -64,21 +65,6 @@ export class Glyph {
     }
 }
 
-const textEffects = new Set([
-    "underline",
-    "bold",
-    "italic",
-    "imageNegative",
-    "imagePositive",
-    "font1",
-    "font2",
-    "font3",
-    "font4",
-    "font5",
-    "font6",
-    "fontDefault",
-] as TextEffect[]);
-
 export type GlyphManager = ReturnType<typeof createGlyphManager>;
 
 export function createGlyphManager(glyph: Glyph, pen: Pen) {
@@ -101,7 +87,7 @@ export function createGlyphManager(glyph: Glyph, pen: Pen) {
         },
         {
             get(_, p) {
-                if (textEffects.has(p as TextEffect)) {
+                if (TextEffectSet.has(p as TextEffect)) {
                     return (val: boolean) => {
                         glyph.effects[p as TextEffect] = val ?? false;
                     };

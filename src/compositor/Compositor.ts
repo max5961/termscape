@@ -1,5 +1,5 @@
 import { FriendDomElement } from "../dom/DomElement.js";
-import { Canvas } from "./Canvas.js";
+import { Canvas } from "../canvas/Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";

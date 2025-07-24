@@ -25,6 +25,7 @@ declare module "ansi-escape-sequences" {
         | "italic"
         | "underline"
         | "fontDefault"
+        | "font1"
         | "font2"
         | "font3"
         | "font4"

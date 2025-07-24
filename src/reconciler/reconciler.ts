@@ -4,7 +4,7 @@ import { DomElement } from "../dom/DomElement.js";
 import { TextElement } from "../dom/elements/TextElement.js";
 import { deepStrictEqual } from "../util/deepStrictEqual.js";
 import { getUpdatePayload } from "./getUpdatePayload.js";
-import { TTagNames } from "../dom/dom-types.js";
+import type { TTagNames } from "../types.js";
 
 type A = "A";
 type B = "B";
