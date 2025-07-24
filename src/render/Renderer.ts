@@ -1,10 +1,14 @@
-import { Layout } from "../layout/Layout.js";
+import { Compositor } from "../compositor/Compositor.js";
 import { FriendDomElement } from "../dom/DomElement.js";
 import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
 import { root } from "../dom/Root.js";
 import ansi from "ansi-escapes";
 
+// Compose classes:
+// Write (handles tracking cursor position and overwriting changes)
+// Performance (already implemented)
+// RenderHooks (already implemented)
 export class Renderer {
     private lastHeight: number;
     private lastStdout: string;
@@ -31,8 +35,8 @@ export class Renderer {
         /**** PRE-LAYOUT ****/
         this.perf.preLayout();
 
-        const layout = new Layout();
-        layout.draw(root as unknown as FriendDomElement);
+        const layout = new Compositor();
+        layout.composeTree(root as unknown as FriendDomElement);
 
         /**** POST-LAYOUT ****/
         this.perf.postLayout();
