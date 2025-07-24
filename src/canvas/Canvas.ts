@@ -1,56 +1,56 @@
+import { Point } from "../types.js";
 import { GridTokens, IGridToken } from "./GridToken.js";
 import { Pen } from "./Pen.js";
 
-type CanvasProps = {
+type SubCanvasConfig = {
     /**
-     * If not provided, a new grid will be created with dimensions of 0x0.  Subgrids
-     * will then inherit from this grid.
-     * */
-    grid?: (string | IGridToken)[][];
-
-    /**
-     * The corner position of the grid, which also acts helps define minimum x and
-     * y values.  For example, cannot fill a 2d array at [-1][-1], and a subgrid
-     * should not be allowed to retreat past its corner in either direction.
-     *
-     * @default `{x: 0; y: 0}`
+     * If not provided a 0x0 grid will be created, by which subgrids will inherit
+     * from.
      */
-    corner?: { x: number; y: number };
-
-    /**
-     * The dimensions of the grid or subgrid.  How far from the corner can we draw?
-     *
-     * @default `{ x: process.stdout.columns; y: process.stdout.rows }`
-     */
-    dim?: { width: number; height: number };
+    grid: (string | IGridToken)[][];
+    /** Used to store tokens for conversion after drawing operations are finished */
+    tokens: GridTokens;
+    /** How far down from the corner can we legally draw? */
+    height: number;
+    /** How far right from the corner can we legally draw? */
+    width: number;
+    /** Corner position of the grid.  This helps define boundaries. */
+    corner: Point;
 };
 
 export class Canvas {
-    public grid: Required<CanvasProps>["grid"];
-    public gridTokens: GridTokens;
-    public corner: Readonly<Required<CanvasProps>["corner"]>;
     private pos: { x: number; y: number };
+    public grid: (string | IGridToken)[][];
+    public corner: Readonly<Point>;
     public height: number;
     public width: number;
+    public tokens: GridTokens;
 
-    constructor(props: CanvasProps = {}) {
+    constructor(config?: SubCanvasConfig) {
         const cols = process.stdout.columns;
         const rows = process.stdout.rows;
 
-        props.dim = props.dim ?? { width: cols, height: rows };
+        if (config) {
+            this.grid = config.grid;
+            this.tokens = config.tokens;
+            this.height = config.height;
+            this.width = config.width;
+            this.corner = config.corner;
+        } else {
+            // NOTE: rows are added on demand so that mt rows aren't part of output str
+            this.grid = [];
+            this.tokens = new GridTokens(this.grid);
+            this.height = rows;
+            this.width = cols;
+            this.corner = { x: 0, y: 0 };
+        }
 
-        this.corner = props.corner ?? { x: 0, y: 0 };
         this.pos = { ...this.corner };
 
-        const xBorder = Math.min(this.corner.x + props.dim.width, cols);
-        const yBorder = Math.min(this.corner.y + props.dim.height, rows);
+        const xBorder = Math.min(this.corner.x + this.width, cols);
+        const yBorder = Math.min(this.corner.y + this.height, rows);
         this.width = xBorder - this.corner.x;
         this.height = yBorder - this.corner.y;
-
-        // NOTE: grid rows are added on demand, so that empty rows are not added
-        // to the output string
-        this.grid = props.grid ?? [];
-        this.gridTokens = new GridTokens(this.grid);
     }
 
     public getPen(opts: { linked?: boolean } = {}) {
@@ -60,16 +60,11 @@ export class Canvas {
             linked,
             pos: this.pos,
             canvas: this,
-            gridTokens: this.gridTokens,
         });
     }
 
-    public getGrid = (): string[][] => {
-        return this.gridTokens.convertTokens();
-    };
-
     public toString = () => {
-        return this.gridTokens
+        return this.tokens
             .convertTokens()
             .map((row) => {
                 return row.join("").trimEnd() + "\n";

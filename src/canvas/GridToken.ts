@@ -25,7 +25,7 @@ export class GridTokens {
     }
 
     public convertTokens() {
-        const operations = [] as { x: number; y: number; char: string }[];
+        const operations = [] as { x: number; y: number; cell: string }[];
 
         const rows = Array.from(this.tokens.entries());
         rows.forEach(([y, set]) => {
@@ -38,25 +38,25 @@ export class GridTokens {
 
                 // Left and right share same ansi - NO ANSI
                 if (token.ansi === left && token.ansi === right) {
-                    operations.push({ x, y, char: token.char });
+                    operations.push({ x, y, cell: token.char });
 
                     // Only right shares ansi - OPEN ANSI
                 } else if (token.ansi !== left && token.ansi === right) {
-                    operations.push({ x, y, char: token.ansi + token.char });
+                    operations.push({ x, y, cell: token.ansi + token.char });
 
                     // Only left shares ansi - CLOSE ANSI
                 } else if (token.ansi === left && token.ansi !== right) {
-                    operations.push({ x, y, char: token.char + ANSI_RESET });
+                    operations.push({ x, y, cell: token.char + ANSI_RESET });
 
                     // Left and right share no ansi similarities - OPEN AND CLOSE ANSI
                 } else {
-                    operations.push({ x, y, char: token.ansi + token.char + ANSI_RESET });
+                    operations.push({ x, y, cell: token.ansi + token.char + ANSI_RESET });
                 }
             });
         });
 
         operations.forEach((op) => {
-            this.grid[op.y][op.x] = op.char;
+            this.grid[op.y][op.x] = op.cell;
         });
 
         return this.grid as string[][];
@@ -67,6 +67,12 @@ export class GridTokens {
             this.tokens.set(y, new Set([x]));
         } else {
             this.tokens.get(y)!.add(x);
+        }
+    }
+
+    public removeToken(x: number, y: number): void {
+        if (this.tokens.has(y)) {
+            this.tokens.get(y)!.delete(x);
         }
     }
 }

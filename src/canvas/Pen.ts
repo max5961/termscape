@@ -12,7 +12,6 @@ export type PenConfig = {
     linked?: boolean;
     canvas: Canvas;
     pos: Canvas["pos"];
-    gridTokens: GridTokens;
 };
 
 export class Pen {
@@ -25,7 +24,7 @@ export class Pen {
     private grid: Canvas["grid"];
     private glyph: Glyph;
     public set: GlyphManager;
-    private gridTokens: GridTokens;
+    private canvas: Canvas;
 
     constructor(opts: PenConfig) {
         this.pos = opts.pos;
@@ -45,7 +44,7 @@ export class Pen {
 
         this.glyph = new Glyph({});
         this.set = createGlyphManager(this.glyph, this);
-        this.gridTokens = opts.gridTokens;
+        this.canvas = opts.canvas;
     }
 
     private pushRowsUntil = (y: number): void => {
@@ -95,9 +94,10 @@ export class Pen {
 
             if (this.grid[y]?.[x] !== undefined) {
                 if (ansi) {
-                    this.gridTokens.pushToken(x, y);
+                    this.canvas.tokens.pushToken(x, y);
                     this.grid[y][x] = { ansi, char, charWidth: 1 };
                 } else {
+                    this.canvas.tokens.removeToken(x, y);
                     this.grid[y][x] = char;
                 }
             }

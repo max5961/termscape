@@ -63,7 +63,9 @@ export class Compositor {
 
         return new Canvas({
             grid: this.canvas.grid,
-            dim: { width, height },
+            tokens: this.canvas.tokens,
+            width: width,
+            height: height,
             corner: { x: xoff, y: yoff },
         });
     }

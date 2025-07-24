@@ -1,7 +1,7 @@
 import { Document } from "./dom/Document.js";
 import { root } from "./dom/Root.js";
 
-root.configure({ debounceMs: 32 });
+root.configure({ debounceMs: 8 });
 
 root.hooks.postLayout((canvas) => {
     const pen = canvas.getPen();
@@ -18,17 +18,17 @@ root.hooks.renderPerf((data) => {
 
 const c1 = Document.createElement("BOX_ELEMENT");
 
-c1.style.height = 20;
+c1.style.height = 50;
 c1.style.width = 20;
 c1.style.borderStyle = "round";
-// c1.style.backgroundColor = "yellow";
+c1.style.backgroundColor = "bg-blue";
 
 const c1c1 = Document.createElement("BOX_ELEMENT");
 c1c1.style.height = "50";
 c1c1.style.width = "50";
 c1c1.style.borderStyle = "round";
 c1c1.style.zIndex = 5;
-c1c1.style.backgroundColor = "green";
+c1c1.style.backgroundColor = "bg-green";
 
 c1.appendChild(c1c1);
 
@@ -41,16 +41,7 @@ c1.appendChild(c1c1);
 
 root.appendChild(c1);
 
-// setTimeout(() => {
-//     c1.style.height = 10;
-// }, 100);
-
-// c1.node.setMeasureFunc((a, b, c, d) => {
-//     //
-// });
-
 let width = 1;
-
 let forward = true;
 const id = setInterval(() => {
     if (forward) {
@@ -69,4 +60,4 @@ const id = setInterval(() => {
         }
     }
     c1.style.width = width;
-}, 10);
+}, 2);
