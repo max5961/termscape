@@ -4,6 +4,7 @@ import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
 import { root } from "../dom/Root.js";
 import ansi from "ansi-escapes";
+import { BEGIN_SYNCHRONIZED_UPDATE, END_SYNCHRONIZED_UPDATE } from "../constants.js";
 
 // Compose classes:
 // Write (handles tracking cursor position and overwriting changes)
@@ -48,7 +49,9 @@ export class Renderer {
 
         if (stdout !== this.lastStdout) {
             this.hooks.preWrite.forEach((cb) => cb(stdout));
+            process.stdout.write(BEGIN_SYNCHRONIZED_UPDATE);
             process.stdout.write(this.clearPrevRows() + stdout);
+            process.stdout.write(END_SYNCHRONIZED_UPDATE);
             this.lastStdout = stdout;
             this.lastHeight = layout.getHeight();
 
