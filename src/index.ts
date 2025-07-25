@@ -1,7 +1,7 @@
 import { Document } from "./dom/Document.js";
 import { root } from "./dom/Root.js";
 
-root.configure({ debounceMs: 8 });
+root.configure({ debounceMs: 16 });
 
 root.hooks.postLayout((canvas) => {
     const pen = canvas.getPen();
@@ -21,14 +21,14 @@ const c1 = Document.createElement("BOX_ELEMENT");
 c1.style.height = 50;
 c1.style.width = 20;
 c1.style.borderStyle = "round";
-c1.style.backgroundColor = "bg-blue";
+c1.style.backgroundColor = "magenta";
 
 const c1c1 = Document.createElement("BOX_ELEMENT");
 c1c1.style.height = "50";
 c1c1.style.width = "50";
 c1c1.style.borderStyle = "round";
 c1c1.style.zIndex = 5;
-c1c1.style.backgroundColor = "bg-green";
+c1c1.style.backgroundColor = "brightMagenta";
 
 c1.appendChild(c1c1);
 

@@ -7,9 +7,12 @@ import { BoxStyle } from "../elements/attributes/box/BoxStyle.js";
 
 // The logic needs to be the *opposite* of what it currently is.  Currently iterating
 // over the style prop, so if a diff goes from having a value to undefined, the
-// YogaNode never gets reset.  The logic needs to be flipped
+// YogaNode never gets reset.  The logic needs to be flipped.
+//
+// This is NOT true ^^^.  If a diff sets a prop to undefined, then the property still
+// exists.  `delete` keyword actually removes property.
 type Stylers<T extends object> = {
-    [P in keyof T]: (node: YogaNode, value: T[P]) => void;
+    [P in keyof T]: (elem: YogaNode, value: T[P]) => void;
 };
 
 export const Box: Stylers<BoxStyle> = {

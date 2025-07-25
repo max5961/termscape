@@ -1,5 +1,5 @@
 import { FriendDomElement } from "../dom/DomElement.js";
-import { BgColor } from "../types.js";
+import { BgColor, Color } from "../types.js";
 import { Canvas } from "../canvas/Canvas.js";
 
 export class Draw {
@@ -28,9 +28,11 @@ export class Draw {
         }
     }
 
-    private fillBg(canvas: Canvas, color?: BgColor) {
+    private fillBg(canvas: Canvas, color?: Color) {
         const pen = canvas.getPen();
-        pen.set.bgColor(color);
+        if (color) {
+            pen.set.bgColor(`bg-${color}`);
+        }
 
         for (let y = canvas.corner.y; y < canvas.height; ++y) {
             pen.moveTo(canvas.corner.x, y);

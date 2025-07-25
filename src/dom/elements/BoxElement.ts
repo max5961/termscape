@@ -4,7 +4,6 @@ import { BoxStyle } from "./attributes/box/BoxStyle.js";
 import { Stylers } from "../helpers/Stylers.js";
 import type { TTagNames } from "../../types.js";
 import { createStyleProxy } from "../createStyleProxy.js";
-import { root } from "../Root.js";
 
 export class BoxElement extends DomElement {
     public tagName: TTagNames;
@@ -22,16 +21,28 @@ export class BoxElement extends DomElement {
                 flexShrink: 1,
             } as BoxStyle,
             (prop, val) => {
+                if (prop === "zIndex") {
+                    if (typeof val === "number") {
+                        this.style.zIndex = val;
+                    } else {
+                        this.style.zIndex = 0;
+                    }
+                }
+
                 Stylers.Box[prop]?.(this.node, val);
             },
-            root.scheduleRender,
         );
 
-        // Default Yoga styles
+        // Default styles
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
         this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
         this.node.setFlexGrow(0);
         this.node.setFlexShrink(1);
+
+        this.style.flexWrap = "nowrap";
+        this.style.flexDirection = "row";
+        this.style.flexGrow = 0;
+        this.style.flexShrink = 1;
     }
 
     public setAttribute(): void {

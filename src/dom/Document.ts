@@ -1,10 +1,12 @@
-import { DomElement } from "./DomElement.js";
 import { BoxElement } from "./elements/BoxElement.js";
 import { TextElement } from "./elements/TextElement.js";
 import type { TTagNames } from "../types.js";
+import { TagNames } from "../constants.js";
 
 export class Document {
-    public static createElement(tagName: Exclude<TTagNames, "ROOT_ELEMENT">): DomElement {
+    // public static createElement(tagName)
+    public static createElement(tagName: typeof TagNames.Box): BoxElement;
+    public static createElement(tagName: Exclude<TTagNames, "ROOT_ELEMENT">): BoxElement {
         return new BoxElement();
     }
 

@@ -1,14 +1,15 @@
+import { root } from "./Root.js";
+
 export function createStyleProxy<T extends object>(
     target: T,
-    applyStyleToYoga: (p: keyof T, newValue: unknown) => void,
-    scheduleRender: () => void,
+    applyStyles: (p: keyof T, newValue: unknown) => void,
 ) {
     return new Proxy<T>(target, {
         set(target, p, newValue) {
             if (target[p as keyof T] !== newValue) {
                 target[p as keyof T] = newValue;
-                applyStyleToYoga(p as keyof T, newValue);
-                scheduleRender();
+                applyStyles(p as keyof T, newValue);
+                root.scheduleRender();
             }
             return true;
         },

@@ -1,4 +1,4 @@
-type Color = any;
+import type { Color } from "../../../../types.js";
 type BorderStyle = any;
 
 export type BoxStyle = {
