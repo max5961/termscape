@@ -63,6 +63,10 @@ export class Canvas {
         });
     }
 
+    public getStringCanvas(): string[][] {
+        return this.tokens.convertTokens();
+    }
+
     public toString = () => {
         return this.tokens
             .convertTokens()

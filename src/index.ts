@@ -4,11 +4,12 @@ import { root } from "./dom/Root.js";
 root.configure({ debounceMs: 16 });
 
 root.hooks.postLayout((canvas) => {
+    const word = "watermark";
     const pen = canvas.getPen();
     pen.moveTo(2, 2);
-    const word = "watermark";
+    pen.set.color("red");
     for (let i = 0; i < word.length; ++i) {
-        pen.draw(`\x1b[33m${word[i]}\x1b[0m`, "R", 1);
+        pen.draw(word[i], "R", 1);
     }
 });
 
@@ -18,7 +19,7 @@ root.hooks.renderPerf((data) => {
 
 const c1 = Document.createElement("BOX_ELEMENT");
 
-c1.style.height = 50;
+c1.style.height = 10;
 c1.style.width = 20;
 c1.style.borderStyle = "round";
 c1.style.backgroundColor = "magenta";
@@ -41,23 +42,22 @@ c1.appendChild(c1c1);
 
 root.appendChild(c1);
 
-let width = 1;
-let forward = true;
+let i = -1;
 const id = setInterval(() => {
-    if (forward) {
-        if (width + 1 < process.stdout.columns) {
-            ++width;
-        } else {
-            forward = false;
-        }
+    if (++i === 0) {
+        return;
     }
+    if (c1.style.height === 10) {
+        c1.style.height = 5;
+    } else {
+        c1.style.height = 10;
+    }
+}, 2000);
 
-    if (!forward) {
-        if (width - 1 >= 0) {
-            --width;
-        } else {
-            forward = true;
-        }
-    }
-    c1.style.width = width;
-}, 2);
+// setInterval(() => {
+//     if (c1.style.height === 50) {
+//         c1.style.height = 25;
+//     } else {
+//         c1.style.height = 50;
+//     }
+// }, 2000);

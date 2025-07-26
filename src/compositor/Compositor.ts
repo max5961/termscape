@@ -3,7 +3,6 @@ import { Canvas } from "../canvas/Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
-import { Style } from "../types.js";
 
 export class Compositor {
     public canvas: Canvas;

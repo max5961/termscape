@@ -3,8 +3,10 @@ import { FriendDomElement } from "../dom/DomElement.js";
 import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
 import { root } from "../dom/Root.js";
-import ansi from "ansi-escapes";
 import { BEGIN_SYNCHRONIZED_UPDATE, END_SYNCHRONIZED_UPDATE } from "../constants.js";
+import ansi from "ansi-escape-sequences";
+import ansiescapes from "ansi-escapes";
+import { Write } from "./Write.js";
 
 // Compose classes:
 // Write (handles tracking cursor position and overwriting changes)
@@ -15,18 +17,29 @@ export class Renderer {
     private lastStdout: string;
     private perf: Performance;
     public hooks: RenderHooks;
+    private write: Write;
 
     constructor() {
         this.lastHeight = -1;
         this.lastStdout = "";
         this.perf = new Performance(false);
         this.hooks = new RenderHooks();
+        this.write = new Write();
 
         process.stdout.on("resize", this.writeToStdout);
-        process.stdout.write(ansi.cursorHide);
 
-        process.on("beforeExit", () => process.stdout.write(ansi.cursorShow));
+        // process.stdout.write(ansi.cursor.hide);
+        const showCursor = () => process.stdout.write(ansi.cursor.show);
+        process.on("beforeExit", () => showCursor());
+        process.on("SIGINT", () => showCursor() && process.exit());
     }
+
+    public writePrecise = () => {
+        const layout = new Compositor();
+        layout.composeTree(root as unknown as FriendDomElement);
+
+        this.write.writeToStdout(layout.canvas.getStringCanvas());
+    };
 
     public writeToStdout = () => {
         if (this.hooks.renderIsBlocked) return;
@@ -68,6 +81,6 @@ export class Renderer {
 
     public clearPrevRows = () => {
         if (this.lastHeight <= 0) return "";
-        return ansi.eraseLines(this.lastHeight);
+        return ansiescapes.eraseLines(this.lastHeight);
     };
 }
