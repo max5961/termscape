@@ -15,36 +15,60 @@ export class Write {
 
     constructor() {
         this.last = [];
-        this.ansi = new WriteAnsi({ batch: true, debug: false });
+        this.ansi = new WriteAnsi({ debug: !!process.env.RENDER_DEBUG });
     }
 
+    /** This doesn't account for the fact that we normalized excess ansi-sequences!
+     * Now if a diff occurs in a row between an open and close ansi, the styles
+     * won't be applied! Gosh darnit! */
     public writeToStdout(next: string[][]) {
         this.clearLostRows(next);
 
         /** maps dirty row #s to the index where there is a diff */
-        const dirtyRows = [] as number[];
+        const dirtyRows = [] as [number, { s: number; e: number }[]][];
 
         for (let y = 0; y < next.length; ++y) {
             // `next` has new rows
             if (this.last[y] === undefined) {
-                dirtyRows.push(y);
+                dirtyRows.push([y, [{ s: 0, e: next[y].length }]]);
                 continue;
             }
 
+            const slices = [] as { s: number; e: number }[];
+            let slice = { s: -1, e: -1 };
+            let push = false;
             for (let x = 0; x < next[y].length; ++x) {
-                if (next[y][x] !== this.last[y][x]) {
-                    dirtyRows.push(y);
-                    break;
+                if (this.last[y][x] === next[y][x]) {
+                    if (slice.s !== -1) {
+                        slice.e = x;
+                        push = true;
+                    }
+                } else if (slice.s === -1) {
+                    slice.s = x;
+                    if (x === next[y].length - 1) {
+                        slice.e = next[y].length;
+                        push = true;
+                    }
+                }
+
+                if (push) {
+                    slices.push(slice);
+                    slice = { s: -1, e: -1 };
                 }
             }
+
+            if (slices.length) dirtyRows.push([y, slices]);
         }
 
-        dirtyRows.forEach((row) => {
+        dirtyRows.forEach(([row, indexes]) => {
             this.ansi.moveToRow(row);
+            for (const slice of indexes) {
+                const output = next[row].slice(slice.s, slice.e).join("");
+                this.ansi.moveToCol(slice.s);
+                this.ansi.deferWrite(output);
+            }
+            this.ansi.moveToCol(next[row].length - 1);
             this.ansi.clearFromCursor();
-
-            const output = next[row].join("");
-            this.ansi.pushOutput(output);
         });
 
         this.ansi.moveToRow(next.length - 1);

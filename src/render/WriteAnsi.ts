@@ -1,13 +1,11 @@
 import ansi from "ansi-escape-sequences";
 
 export class WriteAnsi {
-    private batch: boolean;
     private debug: boolean;
     private sequence: string[];
     public currentRow: number;
 
-    constructor({ batch, debug }: { batch?: boolean; debug?: boolean }) {
-        this.batch = batch ?? true;
+    constructor({ debug }: { debug?: boolean }) {
         this.debug = debug ?? false;
         this.sequence = [];
         this.currentRow = 0;
@@ -18,20 +16,38 @@ export class WriteAnsi {
         }
     }
 
+    /** Write the string sequence to stdout */
     public execute(): void {
         const stdout = this.sequence.join("");
-        if (stdout && this.batch) {
+        if (stdout) {
             process.stdout.write(stdout);
-            this.sleepSync();
         }
         this.sequence = [];
     }
 
-    public pushOutput(stdout: string): void {
-        this.sequence.push(stdout);
-        if (!this.batch) {
+    /**
+     * Batch any ansi sequences or plain output so that it can be flushed all
+     * at once.  If debugging, it will be written immediately and `sleepSync` will
+     * run to allow for observation.
+     * */
+    public deferWrite(stdout: string): void {
+        if (!this.debug) {
+            this.sequence.push(stdout);
+        } else {
             process.stdout.write(stdout);
             this.sleepSync();
+        }
+    }
+
+    /** For debug - to slow things down so that cursor movements can be seen */
+    private sleepSync() {
+        if (!this.debug) return;
+        const ms = Number(process.env.DEBUG_MS ?? 1000);
+
+        const start = Date.now();
+        let end = Date.now();
+        while (end - start < ms) {
+            end = Date.now();
         }
     }
 
@@ -54,55 +70,32 @@ export class WriteAnsi {
     public rowsUp(rows: number): void {
         if (rows <= 0) return;
         this.updateCurrentRow(-rows);
-        this.sequence.push(ansi.cursor.previousLine(rows));
-        if (!this.batch) {
-            process.stdout.write(ansi.cursor.previousLine(rows));
-            this.sleepSync();
-        }
+        this.deferWrite(ansi.cursor.previousLine(rows));
     }
 
     /** Move to col 0 of the next row down - `\x1b[<rows>E` */
     public rowsDown(rows: number): void {
         if (rows <= 0) return;
         this.updateCurrentRow(rows);
-        this.sequence.push(ansi.cursor.nextLine(rows));
-        if (!this.batch) {
-            process.stdout.write(ansi.cursor.nextLine(rows));
-            this.sleepSync();
-        }
+        this.deferWrite(ansi.cursor.nextLine(rows));
     }
 
-    /** Move cursor to col - `\x1b[<columns>G` */
+    /**
+     * Move cursor to col - `\x1b[<columns>G`
+     * [NOTE] - Assume zero based indexing for the column, but in actuality the
+     * terminal is 1 based. This fn adds 1 to the col value.
+     * */
     public moveToCol(col: number): void {
-        this.sequence.push(ansi.cursor.horizontalAbsolute(col));
-        if (!this.batch) {
-            process.stdout.write(ansi.cursor.horizontalAbsolute(col));
-            this.sleepSync();
-        }
+        this.deferWrite(ansi.cursor.horizontalAbsolute(col + 1));
     }
 
     /** Clear rest of line from cursor column. */
     public clearFromCursor() {
-        this.sequence.push(ansi.erase.inLine(0));
-        if (!this.batch) {
-            process.stdout.write(ansi.erase.inLine(0));
-            this.sleepSync();
-        }
+        this.deferWrite(ansi.erase.inLine(0));
     }
 
     /** Provide a negative number when the current row has moved **UP**. */
     private updateCurrentRow(displacement: number) {
         this.currentRow = Math.max(0, this.currentRow + displacement);
-    }
-
-    /** For debug */
-    private sleepSync(ms: number = 2000) {
-        if (!this.debug) return;
-
-        const start = Date.now();
-        let end = Date.now();
-        while (end - start < ms) {
-            end = Date.now();
-        }
     }
 }

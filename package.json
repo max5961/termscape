@@ -11,8 +11,10 @@
         "./dist"
     ],
     "scripts": {
+        "compile": "tsc",
         "test": "tsc && TEST_ENV=true vitest",
-        "compile": "tsc"
+        "render": "npm run compile && node ./dist/index.js",
+        "render:debug": "npm run compile && RENDER_DEBUG=true node ./dist/index.js"
     },
     "type": "module",
     "keywords": [
