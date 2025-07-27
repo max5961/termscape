@@ -24,58 +24,27 @@ export class GridTokens {
         this.tokens = new Map();
     }
 
-    public convertTokens() {
-        const operations = [] as { x: number; y: number; cell: string }[];
-
-        const rows = Array.from(this.tokens.entries());
-        rows.forEach(([y, set]) => {
-            const xValues = Array.from(set.values());
-
-            xValues.forEach((x) => {
-                const token = this.grid[y][x] as IGridToken;
-                const left = (this.grid[y][x - 1] as IGridToken)?.ansi;
-                const right = (this.grid[y][x + 1] as IGridToken)?.ansi;
-
-                // Left and right share same ansi - NO ANSI
-                if (token.ansi === left && token.ansi === right) {
-                    operations.push({ x, y, cell: token.char });
-
-                    // Only right shares ansi - OPEN ANSI
-                } else if (token.ansi !== left && token.ansi === right) {
-                    operations.push({ x, y, cell: token.ansi + token.char });
-
-                    // Only left shares ansi - CLOSE ANSI
-                } else if (token.ansi === left && token.ansi !== right) {
-                    operations.push({ x, y, cell: token.char + ANSI_RESET });
-
-                    // Left and right share no ansi similarities - OPEN AND CLOSE ANSI
-                } else {
-                    operations.push({ x, y, cell: token.ansi + token.char + ANSI_RESET });
-                }
-            });
-        });
-
-        operations.forEach((op) => {
-            this.grid[op.y][op.x] = op.cell;
-        });
-
-        return this.grid as string[][];
-    }
-
     /**
-     * Convert just a specific segment.  This is necessary for precision re-renders
-     * since if we diff a segment that has already opened an ansi style but yet
-     * to close, then those styles won't be applied in the `process.stdout.write`
-     * operation. Rather than convert the entire grid, convert just a segment of it.
+     * Convert just a specific section of a row in the 2d grid to a string.  Why
+     * not just convert the entire grid into string cells?  That doesn't allow for
+     * proper diffing.  For example, imagine we need to overwrite row `y` from columns
+     * 5-10.  If an ansi style was applied in col 3 and spanned to col 12, then the
+     * diff would have no way of knowing that 5-10 was supposed to be styled.  So,
+     * redundant ansi styles must be removed just prior to writing, but before diffing.
      */
-    public convertSegment(y: number, segment: (string | IGridToken)[]) {
+    public convertGridSegment(row: number, start?: number, end?: number): string {
+        // copy so that the original grid is untouched and able to be diffed
+        const segment = this.grid[row].slice(start ?? 0, end ? end + 1 : undefined);
+
         const operations = [] as { x: number; cell: string }[];
-        const xValues = Array.from(this.tokens.get(y)?.values() ?? { length: 0 });
+        const xValues = Array.from(this.tokens.get(row)?.values() ?? { length: 0 });
 
         xValues.forEach((x) => {
-            const token = segment[x] as IGridToken;
-            const left = (segment[x - 1] as IGridToken)?.ansi;
-            const right = (segment[x + 1] as IGridToken)?.ansi;
+            const toIndex = x - (start ?? 0);
+
+            const token = segment[toIndex] as IGridToken;
+            const left = (segment[toIndex - 1] as IGridToken)?.ansi;
+            const right = (segment[toIndex + 1] as IGridToken)?.ansi;
 
             // Left and right share same ansi - NO ANSI
             if (token.ansi === left && token.ansi === right) {

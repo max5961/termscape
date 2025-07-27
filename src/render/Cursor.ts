@@ -1,4 +1,5 @@
 import ansi from "ansi-escape-sequences";
+import fs from "fs";
 
 export class Cursor {
     private debug: boolean;
@@ -26,22 +27,51 @@ export class Cursor {
     }
 
     /**
-     * Batch any ansi sequences or plain output so that it can be flushed all
+     * Batch any ansi sequences so that they can be flushed along with any output
      * at once.  If debugging, it will be written immediately and `sleepSync` will
      * run to allow for observation.
      * */
-    public deferWrite(stdout: string): void {
-        if (!this.debug) {
-            this.sequence.push(stdout);
-        } else {
-            process.stdout.write(stdout);
+    public deferAnsi(stdout: string): void {
+        this.sequence.push(stdout);
+        if (this.debug) {
+            this.execute();
+            this.writeRow();
             this.sleepSync();
         }
+    }
+
+    /**
+     * Batch any output strings such as `<content>\n<content>\n`.  In order for
+     * the terminal to properly scroll, we should include \n as delimiters between
+     * rows.  Therefore we should track how many \n the string contains so that
+     * we can adjust our `currentRow` accordingly.
+     */
+    public deferOutput(stdout: string, newlines: number): void {
+        this.currentRow = Math.min(process.stdout.rows - 1, this.currentRow + newlines);
+
+        this.sequence.push(stdout);
+        if (this.debug) {
+            this.execute();
+            this.writeRow();
+            this.sleepSync();
+        }
+    }
+
+    private writeRow() {
+        fs.writeFileSync(
+            "/home/max/repos/termscape/row.log",
+            `[${new Date().getMinutes()}:${new Date().getSeconds()}]${String(this.currentRow)}\n`,
+            {
+                flag: "a",
+                encoding: "utf-8",
+            },
+        );
     }
 
     /** For debug - to slow things down so that cursor movements can be seen */
     private sleepSync() {
         if (!this.debug) return;
+
         const ms = Number(process.env.DEBUG_MS ?? 1000);
 
         const start = Date.now();
@@ -70,14 +100,14 @@ export class Cursor {
     public rowsUp(rows: number): void {
         if (rows <= 0) return;
         this.updateCurrentRow(-rows);
-        this.deferWrite(ansi.cursor.previousLine(rows));
+        this.deferAnsi(ansi.cursor.previousLine(rows));
     }
 
     /** Move to col 0 of the next row down - `\x1b[<rows>E` */
     public rowsDown(rows: number): void {
         if (rows <= 0) return;
         this.updateCurrentRow(rows);
-        this.deferWrite(ansi.cursor.nextLine(rows));
+        this.deferAnsi(ansi.cursor.nextLine(rows));
     }
 
     /**
@@ -86,12 +116,12 @@ export class Cursor {
      * terminal is 1 based. This fn adds 1 to the col value.
      * */
     public moveToCol(col: number): void {
-        this.deferWrite(ansi.cursor.horizontalAbsolute(col + 1));
+        this.deferAnsi(ansi.cursor.horizontalAbsolute(col + 1));
     }
 
     /** Clear rest of line from cursor column. */
     public clearFromCursor() {
-        this.deferWrite(ansi.erase.inLine(0));
+        this.deferAnsi(ansi.erase.inLine(0));
     }
 
     /** Provide a negative number when the current row has moved **UP**. */
@@ -101,17 +131,20 @@ export class Cursor {
 
     /** Show or hide the cursor */
     public show(b: boolean): void {
-        this.deferWrite(b ? ansi.cursor.show : ansi.cursor.hide);
+        this.deferAnsi(b ? ansi.cursor.show : ansi.cursor.hide);
+        this.execute();
     }
 
     /** Clear rows up and execute the operation */
     public clearRowsUp = (n: number) => {
         if (n <= 0) return "";
 
+        this.moveToCol(0);
+
         let i = n;
         while (i--) {
-            this.rowsUp(1);
             this.clearFromCursor();
+            this.rowsUp(1);
         }
 
         this.execute();

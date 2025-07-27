@@ -3,7 +3,7 @@ import { IGridToken } from "../../canvas/GridToken.js";
 import { Cursor } from "../Cursor.js";
 import { Writer } from "./Writer.js";
 
-export class PrecisionWriter extends Writer {
+export class PreciseWriter extends Writer {
     constructor(cursor: Cursor) {
         super(cursor);
     }
@@ -55,13 +55,20 @@ export class PrecisionWriter extends Writer {
 
         dirtyRows.forEach(([row, indexes]) => {
             this.cursor.moveToRow(row);
+
             for (const slice of indexes) {
-                const arr = next[row].slice(slice.s, slice.e);
-                const output = nextCanvas.tokens.convertSegment(row, arr);
+                // console.log(nextCanvas.grid[row].slice(slice.s, slice.e));
+
+                const output = nextCanvas.tokens.convertGridSegment(
+                    row,
+                    slice.s,
+                    slice.e,
+                );
 
                 this.cursor.moveToCol(slice.s);
-                this.cursor.deferWrite(output);
+                this.cursor.deferOutput(output, 0);
             }
+
             this.cursor.moveToCol(next[row].length - 1);
             this.cursor.clearFromCursor();
         });

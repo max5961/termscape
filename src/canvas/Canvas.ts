@@ -62,26 +62,4 @@ export class Canvas {
             canvas: this,
         });
     }
-
-    public getStringCanvas(): string[][] {
-        return this.tokens.convertTokens();
-    }
-
-    public toString = () => {
-        return this.tokens
-            .convertTokens()
-            .map((row) => {
-                return row.join("").trimEnd() + "\n";
-            })
-            .join("")
-            .trimEnd();
-    };
-
-    public getTokenizedGrid(): Canvas["grid"] {
-        return this.grid;
-    }
-
-    public getStringGrid(): string[][] {
-        return this.tokens.convertTokens();
-    }
 }

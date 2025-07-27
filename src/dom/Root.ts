@@ -39,8 +39,7 @@ export class Root extends DomElement {
 
     private render = () => {
         this.node.calculateLayout();
-        // this.renderer.writeToStdout();
-        this.renderer.writePrecise();
+        this.renderer.writeToStdout();
     };
 
     public scheduleRender = () => {
