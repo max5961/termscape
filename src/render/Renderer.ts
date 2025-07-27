@@ -4,34 +4,32 @@ import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
 import { root } from "../dom/Root.js";
 import { BEGIN_SYNCHRONIZED_UPDATE, END_SYNCHRONIZED_UPDATE } from "../constants.js";
-import ansi from "ansi-escape-sequences";
-import ansiescapes from "ansi-escapes";
-import { Write } from "./Write.js";
+import { Cursor } from "./Cursor.js";
+import { Canvas } from "../canvas/Canvas.js";
 
-// Compose classes:
-// Write (handles tracking cursor position and overwriting changes)
-// Performance (already implemented)
-// RenderHooks (already implemented)
+// Composed Classes:
+// - WritePrecise
+// - WriteAll
+// - Performance
+// - RenderHooks
 export class Renderer {
-    private lastHeight: number;
-    private lastStdout: string;
+    private lastCanvas: Canvas | null;
     private perf: Performance;
+    private cursor: Cursor;
     public hooks: RenderHooks;
-    private write: Write;
 
     constructor() {
-        this.lastHeight = -1;
-        this.lastStdout = "";
+        this.lastCanvas = null;
         this.perf = new Performance(false);
         this.hooks = new RenderHooks();
-        this.write = new Write();
+        this.cursor = new Cursor({ debug: false });
 
+        // this.cursor.show(false);
+        process.on("beforeExit", () => this.cursor.show(true));
+        process.on("SIGINT", () => this.cursor.show(true));
+
+        // Re-render on resize
         process.stdout.on("resize", this.writeToStdout);
-
-        // process.stdout.write(ansi.cursor.hide);
-        const showCursor = () => process.stdout.write(ansi.cursor.show);
-        process.on("beforeExit", () => showCursor());
-        process.on("SIGINT", () => showCursor() && process.exit());
     }
 
     public writePrecise = () => {
@@ -77,10 +75,5 @@ export class Renderer {
                 });
             }
         }
-    };
-
-    public clearPrevRows = () => {
-        if (this.lastHeight <= 0) return "";
-        return ansiescapes.eraseLines(this.lastHeight);
     };
 }

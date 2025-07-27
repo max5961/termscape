@@ -76,4 +76,12 @@ export class Canvas {
             .join("")
             .trimEnd();
     };
+
+    public getTokenizedGrid(): Canvas["grid"] {
+        return this.grid;
+    }
+
+    public getStringGrid(): string[][] {
+        return this.tokens.convertTokens();
+    }
 }

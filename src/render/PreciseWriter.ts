@@ -1,4 +1,4 @@
-import { WriteAnsi } from "./WriteAnsi.js";
+import { Cursor } from "./Cursor.js";
 
 /**
  * - `currentRow` is agnostic of the actual position within the terminal.
@@ -9,13 +9,13 @@ import { WriteAnsi } from "./WriteAnsi.js";
  *   move the cursor and clear rows, as well as the height of the grid received
  *   to pushOutput to.
  */
-export class Write {
+export class PreciseWriter {
     private last: string[][];
-    private ansi: WriteAnsi;
+    private ansi: Cursor;
 
     constructor() {
         this.last = [];
-        this.ansi = new WriteAnsi({ debug: !!process.env.RENDER_DEBUG });
+        this.ansi = new Cursor({ debug: !!process.env.RENDER_DEBUG });
     }
 
     /** This doesn't account for the fact that we normalized excess ansi-sequences!

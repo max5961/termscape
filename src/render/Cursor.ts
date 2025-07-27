@@ -1,6 +1,6 @@
 import ansi from "ansi-escape-sequences";
 
-export class WriteAnsi {
+export class Cursor {
     private debug: boolean;
     private sequence: string[];
     public currentRow: number;
@@ -98,4 +98,22 @@ export class WriteAnsi {
     private updateCurrentRow(displacement: number) {
         this.currentRow = Math.max(0, this.currentRow + displacement);
     }
+
+    /** Show or hide the cursor */
+    public show(b: boolean): void {
+        this.deferWrite(b ? ansi.cursor.show : ansi.cursor.hide);
+    }
+
+    /** Clear rows up and execute the operation */
+    public clearRowsUp = (n: number) => {
+        if (n <= 0) return "";
+
+        let i = n;
+        while (i--) {
+            this.rowsUp(1);
+            this.clearFromCursor();
+        }
+
+        this.execute();
+    };
 }
