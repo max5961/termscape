@@ -3,19 +3,19 @@ import { root } from "./dom/Root.js";
 
 root.configure({ debounceMs: 16 });
 
-root.hooks.postLayout((canvas) => {
-    const word = "watermark";
-    const pen = canvas.getPen();
-    pen.moveTo(2, 2);
-    pen.set.color("red");
-    for (let i = 0; i < word.length; ++i) {
-        pen.draw(word[i], "R", 1);
-    }
-});
-
-root.hooks.renderPerf((data) => {
-    // console.log(data);
-});
+// root.hooks.postLayout((canvas) => {
+//     const word = "watermark";
+//     const pen = canvas.getPen();
+//     pen.moveTo(2, 2);
+//     pen.set.color("red");
+//     for (let i = 0; i < word.length; ++i) {
+//         pen.draw(word[i], "R", 1);
+//     }
+// });
+//
+// root.hooks.renderPerf((data) => {
+//     // console.log(data);
+// });
 
 const c1 = Document.createElement("BOX_ELEMENT");
 

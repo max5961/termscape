@@ -31,14 +31,20 @@ export class Renderer {
             this.cursor.show(true);
             process.exit();
         });
-
-        // Re-render on resize
-        process.stdout.on("resize", () => this.writeToStdout(true));
     }
 
     public writeToStdout = (resize = false) => {
+        if (this.hooks.renderIsBlocked) return;
+
+        this.perf.tracking = !!this.hooks.renderPerf.size;
+
+        /**** PRE-LAYOUT ****/
+        this.perf.preLayout();
+
         const compositor = new Compositor();
         compositor.buildLayout(root as unknown as FriendDomElement);
+
+        this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));
 
         process.stdout.write(BEGIN_SYNCHRONIZED_UPDATE);
 
@@ -56,48 +62,24 @@ export class Renderer {
         }
 
         this.cursor.moveToRow(compositor.canvas.grid.length - 1);
+        /**** POST-LAYOUT ****/
+        this.perf.postLayout();
+
+        /**** PRE-WRITE ****/
+        this.perf.preWrite();
+
         this.cursor.execute();
 
         process.stdout.write(END_SYNCHRONIZED_UPDATE);
 
+        /**** POST-WRITE ****/
+        this.perf.postWrite();
+        if (this.perf.tracking) {
+            this.hooks.renderPerf.forEach((cb) => {
+                cb(this.perf.getPerf());
+            });
+        }
+
         this.lastCanvas = compositor.canvas;
     };
-
-    // public writeToStdout = () => {
-    //     if (this.hooks.renderIsBlocked) return;
-    //
-    //     this.perf.tracking = !!this.hooks.renderPerf.size;
-    //
-    //     /**** PRE-LAYOUT ****/
-    //     this.perf.preLayout();
-    //
-    //     const layout = new Compositor();
-    //     layout.composeTree(root as unknown as FriendDomElement);
-    //
-    //     /**** POST-LAYOUT ****/
-    //     this.perf.postLayout();
-    //     this.hooks.postLayout.forEach((cb) => cb(layout.canvas));
-    //
-    //     /**** PRE-WRITE ****/
-    //     this.perf.preWrite();
-    //     const stdout = layout.getStdout();
-    //
-    //     if (stdout !== this.lastStdout) {
-    //         this.hooks.preWrite.forEach((cb) => cb(stdout));
-    //         process.stdout.write(BEGIN_SYNCHRONIZED_UPDATE);
-    //         process.stdout.write(this.clearPrevRows() + stdout);
-    //         process.stdout.write(END_SYNCHRONIZED_UPDATE);
-    //         this.lastStdout = stdout;
-    //         this.lastHeight = layout.getHeight();
-    //
-    //         /**** POST-WRITE ****/
-    //         this.perf.postWrite();
-    //
-    //         if (this.perf.tracking) {
-    //             this.hooks.renderPerf.forEach((cb) => {
-    //                 cb(this.perf.getPerf());
-    //             });
-    //         }
-    //     }
-    // };
 }

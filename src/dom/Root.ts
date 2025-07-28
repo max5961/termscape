@@ -28,6 +28,10 @@ export class Root extends DomElement {
         this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
         this.node.setFlexGrow(0);
         this.node.setFlexShrink(1);
+
+        process.stdout.on("resize", () => {
+            this.render(true);
+        });
     }
 
     public setAttribute(): void {}
@@ -37,9 +41,9 @@ export class Root extends DomElement {
         this.scheduler.debounceMs = c.debounceMs ?? 8;
     }
 
-    private render = () => {
+    private render = (resize = false) => {
         this.node.calculateLayout();
-        this.renderer.writeToStdout();
+        this.renderer.writeToStdout(resize);
     };
 
     public scheduleRender = () => {
