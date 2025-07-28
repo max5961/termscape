@@ -1,5 +1,5 @@
 import { Canvas } from "../../canvas/Canvas.js";
-import { IGridToken } from "../../canvas/GridToken.js";
+import { GridToken } from "../../types.js";
 import { Cursor } from "../Cursor.js";
 import { Writer } from "./Writer.js";
 
@@ -8,10 +8,7 @@ export class PreciseWriter extends Writer {
         super(cursor);
     }
 
-    /**
-     * Tokenizer
-     * */
-    public writeToStdout(lastCanvas: Canvas, nextCanvas: Canvas): void {
+    public instructCursor(lastCanvas: Canvas, nextCanvas: Canvas): void {
         const { grid: last } = lastCanvas;
         const { grid: next } = nextCanvas;
 
@@ -64,20 +61,15 @@ export class PreciseWriter extends Writer {
                 this.cursor.deferOutput(output, 0);
             }
         });
-
-        // Move to row should probably be handled in the Renderer class, since
-        // both write strategies must call it.
-        this.cursor.moveToRow(next.length - 1);
-        this.cursor.execute();
     }
 
-    private isEqual(prev: IGridToken | string, next: IGridToken | string) {
+    private isEqual(prev: GridToken | string, next: GridToken | string) {
         if (typeof prev === "string") {
             return prev === next;
         } else {
             return (
-                prev.ansi === (next as IGridToken).ansi &&
-                prev.char === (next as IGridToken).char
+                prev.ansi === (next as GridToken).ansi &&
+                prev.char === (next as GridToken).char
             );
         }
     }

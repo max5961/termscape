@@ -17,7 +17,7 @@ export class Compositor {
         this.draw = new Draw();
     }
 
-    public composeTree(elem: FriendDomElement, canvas: Canvas = this.canvas) {
+    public buildLayout(elem: FriendDomElement, canvas: Canvas = this.canvas) {
         if (elem.style.display === "none") return;
 
         const zIndex = this.getZIndex(elem);
@@ -32,7 +32,7 @@ export class Compositor {
 
         for (const child of elem.children) {
             const childCanvas = this.getChildCanvas(elem, canvas, child);
-            this.composeTree(child, childCanvas);
+            this.buildLayout(child, childCanvas);
         }
 
         if (elem.tagName === "ROOT_ELEMENT") {
@@ -63,7 +63,6 @@ export class Compositor {
 
         return new Canvas({
             grid: this.canvas.grid,
-            tokens: this.canvas.tokens,
             width: width,
             height: height,
             corner: { x: xoff, y: yoff },

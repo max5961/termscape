@@ -33,20 +33,25 @@ export class Renderer {
         });
 
         // Re-render on resize
-        process.stdout.on("resize", this.writeToStdout);
+        process.stdout.on("resize", () => this.writeToStdout(true));
     }
 
-    public writeToStdout = () => {
+    public writeToStdout = (resize = false) => {
         const compositor = new Compositor();
-        compositor.composeTree(root as unknown as FriendDomElement);
+        compositor.buildLayout(root as unknown as FriendDomElement);
 
         process.stdout.write(BEGIN_SYNCHRONIZED_UPDATE);
 
-        // Add cases here such as `unsupported terminal` or `hasCapturedOutput`
-        if (!this.lastCanvas) {
-            this.refreshWriter.writeToStdout(this.lastCanvas, compositor.canvas);
+        // Cases that should require a full rewrite are
+        // - possible unsupported terminal
+        // - hasCapturedOutput
+        // - rows > stdout rows
+        // - resize
+        // - first write
+        if (!this.lastCanvas || resize) {
+            this.refreshWriter.instructCursor(this.lastCanvas, compositor.canvas);
         } else {
-            this.preciseWriter.writeToStdout(this.lastCanvas, compositor.canvas);
+            this.preciseWriter.instructCursor(this.lastCanvas, compositor.canvas);
             this.refreshWriter.resetLastOutput();
         }
 

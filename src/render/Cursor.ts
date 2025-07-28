@@ -23,6 +23,15 @@ export class Cursor {
         if (stdout) {
             process.stdout.write(stdout);
         }
+        this.clearOps();
+    }
+
+    /**
+     * Clear the saved operations.  Useful for when last stdout === prev stdout
+     * during a full rewrite.  If we didn't clear the sequences, then next render
+     * we would be writing the previous operations we didn't want.
+     * */
+    public clearOps(): void {
         this.sequence = [];
     }
 

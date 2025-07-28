@@ -1,6 +1,5 @@
 import { ANSI_RESET } from "../constants.js";
-import { Point } from "../types.js";
-import { GridTokens, IGridToken } from "./GridToken.js";
+import { GridToken, Point } from "../types.js";
 import { Pen } from "./Pen.js";
 
 type SubCanvasConfig = {
@@ -8,9 +7,7 @@ type SubCanvasConfig = {
      * If not provided a 0x0 grid will be created, by which subgrids will inherit
      * from.
      */
-    grid: (string | IGridToken)[][];
-    /** Used to store tokens for conversion after drawing operations are finished */
-    tokens: GridTokens;
+    grid: (string | GridToken)[][];
     /** How far down from the corner can we legally draw? */
     height: number;
     /** How far right from the corner can we legally draw? */
@@ -21,11 +18,10 @@ type SubCanvasConfig = {
 
 export class Canvas {
     private pos: { x: number; y: number };
-    public grid: (string | IGridToken)[][];
+    public grid: (string | GridToken)[][];
     public corner: Readonly<Point>;
     public height: number;
     public width: number;
-    public tokens: GridTokens;
 
     constructor(config?: SubCanvasConfig) {
         const cols = process.stdout.columns;
@@ -33,14 +29,12 @@ export class Canvas {
 
         if (config) {
             this.grid = config.grid;
-            this.tokens = config.tokens;
             this.height = config.height;
             this.width = config.width;
             this.corner = config.corner;
         } else {
             // NOTE: rows are added on demand so that mt rows aren't part of output str
             this.grid = [];
-            this.tokens = new GridTokens(this.grid);
             this.height = rows;
             this.width = cols;
             this.corner = { x: 0, y: 0 };
@@ -77,8 +71,8 @@ export class Canvas {
 
         for (let i = 0; i < length; ++i) {
             const token = row[i + start];
-            const leftAnsi = (row[i + start - 1] as IGridToken)?.ansi;
-            const rightAnsi = (row[i + start + 1] as IGridToken)?.ansi;
+            const leftAnsi = (row[i + start - 1] as GridToken)?.ansi;
+            const rightAnsi = (row[i + start + 1] as GridToken)?.ansi;
 
             result[i + 1] = this.convertToken(token, leftAnsi, rightAnsi);
         }
@@ -86,11 +80,7 @@ export class Canvas {
         return result.join("");
     }
 
-    private convertToken(
-        token: string | IGridToken,
-        leftAnsi: string,
-        rightAnsi: string,
-    ) {
+    private convertToken(token: string | GridToken, leftAnsi: string, rightAnsi: string) {
         if (typeof token === "string") return token;
 
         // Left and right share same ansi - NO ANSI

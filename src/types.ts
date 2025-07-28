@@ -20,3 +20,9 @@ export type DOMRect = {
     right: number;
 };
 export type Style = BoxStyle & TextStyle;
+
+export type GridToken = {
+    ansi: string;
+    char: string;
+    charWidth: number;
+};

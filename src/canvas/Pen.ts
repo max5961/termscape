@@ -1,6 +1,5 @@
 import { Canvas } from "./Canvas.js";
 import { createGlyphManager, Glyph, GlyphManager } from "./Glyph.js";
-import { GridTokens } from "./GridToken.js";
 
 export type PenConfig = {
     /**
@@ -24,7 +23,6 @@ export class Pen {
     private grid: Canvas["grid"];
     private glyph: Glyph;
     public set: GlyphManager;
-    private canvas: Canvas;
 
     constructor(opts: PenConfig) {
         this.pos = opts.pos;
@@ -44,7 +42,6 @@ export class Pen {
 
         this.glyph = new Glyph({});
         this.set = createGlyphManager(this.glyph, this);
-        this.canvas = opts.canvas;
     }
 
     private pushRowsUntil = (y: number): void => {
@@ -94,10 +91,8 @@ export class Pen {
 
             if (this.grid[y]?.[x] !== undefined) {
                 if (ansi) {
-                    this.canvas.tokens.pushToken(x, y);
                     this.grid[y][x] = { ansi, char, charWidth: 1 };
                 } else {
-                    this.canvas.tokens.removeToken(x, y);
                     this.grid[y][x] = char;
                 }
             }

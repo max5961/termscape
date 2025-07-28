@@ -8,5 +8,9 @@ export abstract class Writer {
         this.cursor = cursor;
     }
 
-    public abstract writeToStdout(last: Canvas, next: Canvas): void;
+    /**
+     * Tells the cursor which operations it needs to perform to render the latest
+     * Canvas.  The cursor will perform (write) these operations later.
+     */
+    public abstract instructCursor(last: Canvas | null, next: Canvas): void;
 }
