@@ -1,4 +1,4 @@
-import { BgColor } from "ansi-escape-sequences";
+import ansi, { BgColor } from "ansi-escape-sequences";
 import { Color, TextEffect } from "./types.js";
 
 /**
@@ -16,6 +16,9 @@ export const END_SYNCHRONIZED_UPDATE = "\x1b[?2026l";
  * @link https://hugotunius.se/2019/12/29/efficient-terminal-drawing-in-rust.html
  * */
 export const QUERY_SYNCHRONIZED_UPDATE = "\x1b[?2026$p";
+
+/** `\x1b[0m` */
+export const ANSI_RESET = ansi.style.reset;
 
 export const TagNames = {
     Box: "BOX_ELEMENT",

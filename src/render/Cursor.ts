@@ -31,12 +31,10 @@ export class Cursor {
      * at once.  If debugging, it will be written immediately and `sleepSync` will
      * run to allow for observation.
      * */
-    public deferAnsi(stdout: string): void {
+    private deferAnsi(stdout: string): void {
         this.sequence.push(stdout);
         if (this.debug) {
-            this.execute();
-            this.writeRow();
-            this.sleepSync();
+            this.performDebug();
         }
     }
 
@@ -51,13 +49,19 @@ export class Cursor {
 
         this.sequence.push(stdout);
         if (this.debug) {
-            this.execute();
-            this.writeRow();
-            this.sleepSync();
+            this.performDebug();
         }
     }
 
-    private writeRow() {
+    /**
+     * Synchronouslys slow things down so that cursor movements and write
+     * operations can be observed visually
+     * */
+    private performDebug() {
+        // Execute the the sequence thus far
+        this.execute();
+
+        // Log the current row number
         fs.writeFileSync(
             "/home/max/repos/termscape/row.log",
             `[${new Date().getMinutes()}:${new Date().getSeconds()}]${String(this.currentRow)}\n`,
@@ -66,12 +70,8 @@ export class Cursor {
                 encoding: "utf-8",
             },
         );
-    }
 
-    /** For debug - to slow things down so that cursor movements can be seen */
-    private sleepSync() {
-        if (!this.debug) return;
-
+        // Synchronously block the operations for DEBUG_MS time.
         const ms = Number(process.env.DEBUG_MS ?? 1000);
 
         const start = Date.now();

@@ -11,16 +11,16 @@ export class RefreshWriter extends Writer {
     }
 
     public writeToStdout(lastCanvas: Canvas | null, nextCanvas: Canvas): void {
-        // NOTE: Rather write each row then move cursor down, use \n to make
-        // sure that terminals not supporting ansi sequences will render properly
+        // Rather write each row then move cursor down, use \n to make
+        // sure that terminals not supporting ansi sequences will render properly.
 
         let newLines = 0;
         const output = nextCanvas.grid
             .map((_row, y) => {
                 ++newLines;
                 // prettier-ignore
-                return nextCanvas.tokens
-                    .convertGridSegment(y)
+                return nextCanvas
+                    .stringifyRowSegment(y)
                     .trimEnd() + "\n";
             })
             .join("")

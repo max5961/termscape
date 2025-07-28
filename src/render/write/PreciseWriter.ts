@@ -47,6 +47,7 @@ export class PreciseWriter extends Writer {
                 if (push) {
                     slices.push(slice);
                     slice = { s: -1, e: -1 };
+                    push = false;
                 }
             }
 
@@ -57,20 +58,11 @@ export class PreciseWriter extends Writer {
             this.cursor.moveToRow(row);
 
             for (const slice of indexes) {
-                // console.log(nextCanvas.grid[row].slice(slice.s, slice.e));
-
-                const output = nextCanvas.tokens.convertGridSegment(
-                    row,
-                    slice.s,
-                    slice.e,
-                );
+                const output = nextCanvas.stringifyRowSegment(row, slice.s, slice.e);
 
                 this.cursor.moveToCol(slice.s);
                 this.cursor.deferOutput(output, 0);
             }
-
-            this.cursor.moveToCol(next[row].length - 1);
-            this.cursor.clearFromCursor();
         });
 
         // Move to row should probably be handled in the Renderer class, since

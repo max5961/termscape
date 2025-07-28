@@ -50,6 +50,9 @@ export class Renderer {
             this.refreshWriter.resetLastOutput();
         }
 
+        this.cursor.moveToRow(compositor.canvas.grid.length - 1);
+        this.cursor.execute();
+
         process.stdout.write(END_SYNCHRONIZED_UPDATE);
 
         this.lastCanvas = compositor.canvas;

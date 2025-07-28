@@ -1,3 +1,4 @@
+import { ANSI_RESET } from "../constants.js";
 import { Point } from "../types.js";
 import { GridTokens, IGridToken } from "./GridToken.js";
 import { Pen } from "./Pen.js";
@@ -61,5 +62,52 @@ export class Canvas {
             pos: this.pos,
             canvas: this,
         });
+    }
+
+    public stringifyRowSegment(y: number, start?: number, end?: number): string {
+        const row = this.grid[y];
+        if (!row) return "";
+
+        start = start ?? 0;
+        end = end ?? row.length;
+
+        const length = end - start;
+        const result = new Array(length + 1);
+        result[0] = ANSI_RESET;
+
+        for (let i = 0; i < length; ++i) {
+            const token = row[i + start];
+            const leftAnsi = (row[i + start - 1] as IGridToken)?.ansi;
+            const rightAnsi = (row[i + start + 1] as IGridToken)?.ansi;
+
+            result[i + 1] = this.convertToken(token, leftAnsi, rightAnsi);
+        }
+
+        return result.join("");
+    }
+
+    private convertToken(
+        token: string | IGridToken,
+        leftAnsi: string,
+        rightAnsi: string,
+    ) {
+        if (typeof token === "string") return token;
+
+        // Left and right share same ansi - NO ANSI
+        if (token.ansi === leftAnsi && token.ansi === rightAnsi) {
+            return token.char;
+
+            // Only right shares ansi - OPEN ANSI
+        } else if (token.ansi !== leftAnsi && token.ansi === rightAnsi) {
+            return token.ansi + token.char;
+
+            // Only left shares ansi - CLOSE ANSI
+        } else if (token.ansi === leftAnsi && token.ansi !== rightAnsi) {
+            return token.char + ANSI_RESET;
+
+            // Left and right share no ansi similarities - OPEN AND CLOSE ANSI
+        } else {
+            return token.ansi + token.char + ANSI_RESET;
+        }
     }
 }
