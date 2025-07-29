@@ -30,7 +30,12 @@ export class Root extends DomElement {
         this.node.setFlexShrink(1);
 
         process.stdout.on("resize", () => {
-            this.render(true);
+            // Probably unnecessary, but doesn't hurt to make sure the term has
+            // completed all tasks so that our repaints aren't overwritten by
+            // repaints the terminal itself does.
+            setTimeout(() => {
+                this.render(true);
+            }, 8);
         });
     }
 
