@@ -3,6 +3,9 @@ import { GridToken } from "../../types.js";
 import { Cursor } from "../Cursor.js";
 import { Writer } from "./Writer.js";
 
+type Row = Canvas["grid"][number];
+type Slice = { s: number; e: number };
+
 export class PreciseWriter extends Writer {
     constructor(cursor: Cursor) {
         super(cursor);
@@ -24,29 +27,7 @@ export class PreciseWriter extends Writer {
                 continue;
             }
 
-            const slices = [] as { s: number; e: number }[];
-            let slice = { s: -1, e: -1 };
-            let push = false;
-            for (let x = 0; x < next[y].length; ++x) {
-                if (this.isEqual(last[y][x], next[y][x])) {
-                    if (slice.s !== -1) {
-                        slice.e = x;
-                        push = true;
-                    }
-                } else if (slice.s === -1) {
-                    slice.s = x;
-                    if (x === next[y].length - 1) {
-                        slice.e = next[y].length;
-                        push = true;
-                    }
-                }
-
-                if (push) {
-                    slices.push(slice);
-                    slice = { s: -1, e: -1 };
-                    push = false;
-                }
-            }
+            const slices = this.createRowDiff(last[y], next[y]);
 
             if (slices.length) dirtyRows.push([y, slices]);
         }
@@ -60,17 +41,57 @@ export class PreciseWriter extends Writer {
                 this.cursor.moveToCol(slice.s);
                 this.cursor.deferOutput(output, 0);
             }
+
+            // If last row is longer than next row, the rest of the row must be cleared.
+            const toClearFrom = nextCanvas.grid[row].length;
+            if (toClearFrom < process.stdout.columns) {
+                this.cursor.moveToCol(toClearFrom);
+                this.cursor.clearFromCursor();
+            }
         });
     }
 
-    private isEqual(prev: GridToken | string, next: GridToken | string) {
-        if (typeof prev === "string") {
-            return prev === next;
+    // - next is shorter than last =>
+    // - last is shorter than next =>
+    // - Must clear from end of next row to end of term every time
+    // public for testing
+    public createRowDiff(prev: Row, next: Row): Slice[] {
+        const slices = [] as Slice[];
+
+        let startDiff: number | undefined;
+        for (let x = 0; x < next.length; ++x) {
+            const diff = this.isDiff(prev[x], next[x]);
+
+            if (diff && startDiff === undefined) {
+                startDiff = x;
+            }
+
+            if (startDiff !== undefined) {
+                if (!diff) {
+                    slices.push({ s: startDiff, e: x });
+                    startDiff = undefined;
+                } else {
+                    if (x === next.length - 1) {
+                        slices.push({ s: startDiff, e: x + 1 });
+                        startDiff = undefined;
+                    }
+                }
+            }
+        }
+
+        return slices;
+    }
+
+    private isDiff(prev: GridToken | string | undefined, next: GridToken | string) {
+        if (
+            typeof prev === "string" ||
+            typeof prev === "undefined" ||
+            typeof next === "string" ||
+            typeof next === "undefined"
+        ) {
+            return prev !== next;
         } else {
-            return (
-                prev.ansi === (next as GridToken).ansi &&
-                prev.char === (next as GridToken).char
-            );
+            return prev.ansi !== next.ansi || prev.char !== next.char;
         }
     }
 

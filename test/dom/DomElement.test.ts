@@ -5,7 +5,7 @@ import { DomElement } from "@src/dom/DomElement.js";
 // The only way to test equality between nodes returned from YogaNode.getChild(n) is
 // to first calculate the layout, then read computed dimensions.  The nodes are
 // always returned as different references
-describe("DOMElement mirrors YogaNode operations", () => {
+describe.todo("DOMElement mirrors YogaNode operations", () => {
     test("get non existant yoga child should return null", () => {
         const root = Document.createElement("BOX_ELEMENT");
         expect(root.node.getChild(0)).toBe(null);

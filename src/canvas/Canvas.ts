@@ -77,7 +77,7 @@ export class Canvas {
             result[i + 1] = this.convertToken(token, leftAnsi, rightAnsi);
         }
 
-        return result.join("");
+        return result.join("") + ANSI_RESET;
     }
 
     private convertToken(token: string | GridToken, leftAnsi: string, rightAnsi: string) {
