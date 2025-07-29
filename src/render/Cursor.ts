@@ -153,7 +153,10 @@ export class Cursor {
         let i = n;
         while (i--) {
             this.clearFromCursor();
-            this.rowsUp(1);
+
+            if (i !== 0) {
+                this.rowsUp(1);
+            }
         }
 
         this.execute();
