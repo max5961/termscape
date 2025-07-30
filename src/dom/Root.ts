@@ -44,7 +44,12 @@ export class Root extends DomElement {
             const element = this.findTargetElement(x, y);
 
             let propagationLegal = true;
-            const propagate = (element?: FriendDomElement) => {
+            let immediatePropagationLegal = true;
+
+            const propagate = (
+                element: FriendDomElement,
+                originalElement: FriendDomElement,
+            ) => {
                 if (element && element.eventListeners[type].size) {
                     const handlers = element.eventListeners[type];
 
@@ -53,22 +58,34 @@ export class Root extends DomElement {
                         clientX: x,
                         clientY: y,
                         target: element as unknown as DomElement,
+                        currentTarget: element as unknown as DomElement,
                         stopPropagation: () => {
+                            propagationLegal = false;
+                        },
+                        stopImmediatePropagation: () => {
+                            immediatePropagationLegal = false;
                             propagationLegal = false;
                         },
                     };
 
                     handlers.forEach((h) => {
-                        h?.call(element, event);
+                        if (immediatePropagationLegal) {
+                            h?.call(element, event);
+                        }
                     });
                 }
 
                 if (propagationLegal && element && element.parentElement) {
-                    propagate(element.parentElement as unknown as FriendDomElement);
+                    propagate(
+                        element.parentElement as unknown as FriendDomElement,
+                        originalElement,
+                    );
                 }
             };
 
-            propagate(element);
+            if (element) {
+                propagate(element, element);
+            }
         });
     }
 
