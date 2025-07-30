@@ -59,7 +59,7 @@ export class Root extends DomElement {
                     };
 
                     handlers.forEach((h) => {
-                        h?.(event);
+                        h?.call(element, event);
                     });
                 }
 

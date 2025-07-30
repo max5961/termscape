@@ -70,7 +70,6 @@ export abstract class DomElement {
     public abstract setAttribute(): void;
 
     public addEventListener(event: MouseEvent, handler: EventHandler): void {
-        handler.bind(this);
         this.eventListeners[event].add(handler);
     }
 

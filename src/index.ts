@@ -1,5 +1,6 @@
 import { Document } from "./dom/Document.js";
 import { DomElement } from "./dom/DomElement.js";
+import { BoxElement } from "./dom/elements/BoxElement.js";
 import { root } from "./dom/Root.js";
 import { Color } from "./types.js";
 
@@ -34,8 +35,8 @@ c1c1.style.zIndex = 5;
 c1c1.style.backgroundColor = "yellow";
 
 const colors: Color[] = ["red", "yellow", "blue", "cyan", "magenta"];
-c1c1.addEventListener("MouseDown", function (this: DomElement, e) {
-    c1c1.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+c1c1.addEventListener("MouseDown", function (this: BoxElement, e) {
+    this.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
 });
 
 c1.appendChild(c1c1);
