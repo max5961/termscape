@@ -1,6 +1,7 @@
 import { Document } from "./dom/Document.js";
 import { DomElement } from "./dom/DomElement.js";
 import { root } from "./dom/Root.js";
+import { Color } from "./types.js";
 
 root.configure({ debounceMs: 16 });
 
@@ -30,14 +31,11 @@ c1c1.style.height = "50";
 c1c1.style.width = "50";
 c1c1.style.borderStyle = "round";
 c1c1.style.zIndex = 5;
-c1c1.style.backgroundColor = "brightMagenta";
+c1c1.style.backgroundColor = "yellow";
 
+const colors: Color[] = ["red", "yellow", "blue", "cyan", "magenta"];
 c1c1.addEventListener("MouseDown", function (this: DomElement, e) {
-    if (this.style.backgroundColor === "brightMagenta") {
-        this.style.backgroundColor = "blue";
-    } else {
-        this.style.backgroundColor = "brightMagenta";
-    }
+    c1c1.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
 });
 
 c1.appendChild(c1c1);

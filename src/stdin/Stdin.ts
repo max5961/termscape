@@ -88,13 +88,6 @@ process.stdin.on("data", (buf: Buffer) => {
                 const virtualX = x;
                 const virtualY = y - yoffset;
 
-                console.log({
-                    virtualX,
-                    virtualY,
-                    topRow,
-                    cursorRow,
-                });
-
                 Emitter.emit("eventOccured", virtualX, virtualY, "MouseDown");
             });
     }

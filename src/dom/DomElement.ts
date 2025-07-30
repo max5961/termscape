@@ -70,6 +70,7 @@ export abstract class DomElement {
     public abstract setAttribute(): void;
 
     public addEventListener(event: MouseEvent, handler: EventHandler): void {
+        handler.bind(this);
         this.eventListeners[event].add(handler);
     }
 
@@ -137,9 +138,9 @@ export abstract class DomElement {
         y: number,
     ): boolean => {
         if (x < this.rect.x) return false;
-        if (y > this.rect.y) return false;
-        if (x > this.rect.right) return false;
-        if (y < this.rect.bottom) return false;
+        if (y < this.rect.y) return false;
+        if (x >= this.rect.right) return false;
+        if (y >= this.rect.bottom) return false;
         return true;
     };
 }

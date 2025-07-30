@@ -43,8 +43,6 @@ export class Root extends DomElement {
         Emitter.on("eventOccured", (x, y, type) => {
             const element = this.findTargetElement(x, y);
 
-            console.log(element);
-
             let propagationLegal = true;
             const propagate = (element?: FriendDomElement) => {
                 if (element && element.eventListeners[type].size) {
