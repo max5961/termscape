@@ -18,10 +18,6 @@ export class TextElement extends DomElement {
         //
     }
 
-    public addEventListener(): void {
-        //
-    }
-
     public setTextContent(text: string): void {
         this.textContent = text;
     }

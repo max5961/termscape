@@ -1,9 +1,11 @@
 import { Renderer } from "../render/Renderer.js";
 import { RenderHooksManager } from "../render/RenderHooks.js";
 import { Scheduler } from "./Scheduler.js";
-import { DomElement } from "./DomElement.js";
+import { DomElement, FriendDomElement } from "./DomElement.js";
 import Yoga from "yoga-wasm-web/auto";
 import type { TTagNames } from "../types.js";
+import { Emitter } from "../stdin/Stdin.js";
+import { Event } from "./MouseEvent.js";
 
 export type ConfigureRoot = {
     debounceMs?: number;
@@ -37,10 +39,42 @@ export class Root extends DomElement {
                 this.render(true);
             }, 8);
         });
+
+        Emitter.on("eventOccured", (x, y, type) => {
+            const element = this.findTargetElement(x, y);
+
+            console.log(element);
+
+            let propagationLegal = true;
+            const propagate = (element?: FriendDomElement) => {
+                if (element && element.eventListeners[type].size) {
+                    const handlers = element.eventListeners[type];
+
+                    const event: Event = {
+                        type,
+                        clientX: x,
+                        clientY: y,
+                        target: element as unknown as DomElement,
+                        stopPropagation: () => {
+                            propagationLegal = false;
+                        },
+                    };
+
+                    handlers.forEach((h) => {
+                        h?.(event);
+                    });
+                }
+
+                if (propagationLegal && element && element.parentElement) {
+                    propagate(element.parentElement as unknown as FriendDomElement);
+                }
+            };
+
+            propagate(element);
+        });
     }
 
     public setAttribute(): void {}
-    public addEventListener(): void {}
 
     public configure(c: ConfigureRoot): void {
         this.scheduler.debounceMs = c.debounceMs ?? 8;
@@ -54,6 +88,14 @@ export class Root extends DomElement {
     public scheduleRender = () => {
         this.scheduler.scheduleUpdate(() => this.render());
     };
+
+    public getLayoutHeight() {
+        return this.renderer.lastCanvas?.grid.length ?? 0;
+    }
+
+    private findTargetElement(x: number, y: number): FriendDomElement | undefined {
+        return this.renderer.rects.findTargetElement(x, y);
+    }
 }
 
 export const root = new Root({ debounceMs: 16 });

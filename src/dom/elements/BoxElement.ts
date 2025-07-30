@@ -48,5 +48,4 @@ export class BoxElement extends DomElement {
     public setAttribute(): void {
         //
     }
-    public addEventListener(): void {}
 }

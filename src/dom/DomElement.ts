@@ -1,6 +1,6 @@
 import Yoga from "yoga-wasm-web/auto";
 import { YogaNode } from "../types.js";
-import { EventHandler, MouseEvent } from "./MouseEvent.js";
+import { Event, EventHandler, MouseEvent } from "./MouseEvent.js";
 import { Root } from "./Root.js";
 import type { DOMRect, TTagNames, Style } from "../types.js";
 
@@ -13,12 +13,13 @@ export type FriendDomElement = {
     tagName: TTagNames;
     node: YogaNode;
     parentElement: null | DomElement;
-    eventListeners: Map<MouseEvent, EventHandler>;
+    eventListeners: Record<MouseEvent, Set<EventHandler>>;
     rect: DOMRect;
     attributes: Map<string, unknown>;
     style: Style;
 
     containsPoint: (x: number, y: number) => boolean;
+    executeListeners: (event: MouseEvent) => void;
 };
 
 export abstract class DomElement {
@@ -49,14 +50,32 @@ export abstract class DomElement {
         };
 
         // Currently for mouse events only
-        this.eventListeners = new Map();
+        this.eventListeners = {
+            MouseDown: new Set(),
+            MouseUp: new Set(),
+            RightMouseDown: new Set(),
+            RightMouseUp: new Set(),
+            Click: new Set(),
+            RightClick: new Set(),
+            ScrollUp: new Set(),
+            ScrollDown: new Set(),
+            DoubleClick: new Set(),
+            RightDoubleClick: new Set(),
+        };
 
         // Define custom attributes
         this.attributes = new Map();
     }
 
     public abstract setAttribute(): void;
-    public abstract addEventListener(): void;
+
+    public addEventListener(event: MouseEvent, handler: EventHandler): void {
+        this.eventListeners[event].add(handler);
+    }
+
+    public removeEventListener(event: MouseEvent, handler: EventHandler): void {
+        this.eventListeners[event].delete(handler);
+    }
 
     public appendChild(child: DomElement): void {
         this.node.insertChild(child.node, this.node.getChildCount());

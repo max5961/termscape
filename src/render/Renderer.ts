@@ -8,9 +8,11 @@ import { Cursor } from "./Cursor.js";
 import { Canvas } from "../canvas/Canvas.js";
 import { RefreshWriter } from "./write/RefreshWriter.js";
 import { PreciseWriter } from "./write/PreciseWriter.js";
+import { DomRects } from "../compositor/DomRects.js";
 
 export class Renderer {
-    private lastCanvas: Canvas | null;
+    public lastCanvas: Canvas | null;
+    public rects: DomRects;
     private perf: Performance;
     private cursor: Cursor;
     private preciseWriter: PreciseWriter;
@@ -20,6 +22,7 @@ export class Renderer {
 
     constructor() {
         this.lastCanvas = null;
+        this.rects = new DomRects();
         this.hooks = new RenderHooks();
         this.perf = new Performance(false);
         this.cursor = new Cursor({ debug: !!process.env.RENDER_DEBUG });
@@ -91,5 +94,6 @@ export class Renderer {
         }
 
         this.lastCanvas = compositor.canvas;
+        this.rects = compositor.rects;
     };
 }

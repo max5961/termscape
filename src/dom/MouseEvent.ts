@@ -42,4 +42,4 @@ export class Event {
     public stopPropagation(): void {}
 }
 
-export type EventHandler = undefined | ((e: Event) => unknown);
+export type EventHandler = (e: Event) => unknown;
