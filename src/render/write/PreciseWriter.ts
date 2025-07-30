@@ -19,11 +19,13 @@ export class PreciseWriter extends Writer {
 
         /** maps dirty row #s to the index where there is a diff */
         const dirtyRows = [] as [number, { s: number; e: number }[]][];
+        const appendedRows = new Set<number>();
 
-        for (let y = 0; y < next.length; ++y) {
+        for (let y = next.length - 1; y >= 0; --y) {
             // `next` has new rows
             if (last[y] === undefined) {
                 dirtyRows.push([y, [{ s: 0, e: next[y].length }]]);
+                appendedRows.add(y);
                 continue;
             }
 
@@ -58,7 +60,9 @@ export class PreciseWriter extends Writer {
              * 50 rows in the term window, then it only goes to row 50, but our
              * row number in the `Cursor` class will think we are on row 100.
              * */
-            this.cursor.deferOutput("\n", 1);
+            if (row !== next.length - 1) {
+                this.cursor.deferOutput("\n", 1);
+            }
         });
     }
 

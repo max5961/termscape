@@ -16,6 +16,7 @@ export class Renderer {
     private preciseWriter: PreciseWriter;
     private refreshWriter: RefreshWriter;
     public hooks: RenderHooks;
+    private lastWasResize: number;
 
     constructor() {
         this.lastCanvas = null;
@@ -24,6 +25,7 @@ export class Renderer {
         this.cursor = new Cursor({ debug: !!process.env.RENDER_DEBUG });
         this.preciseWriter = new PreciseWriter(this.cursor);
         this.refreshWriter = new RefreshWriter(this.cursor);
+        this.lastWasResize = 0;
 
         // this.cursor.show(false);
         process.on("beforeExit", () => this.cursor.show(true));
@@ -54,8 +56,16 @@ export class Renderer {
         // - rows > stdout rows
         // - resize
         // - first write
-        if (!this.lastCanvas || resize) {
+        if (!this.lastCanvas || resize || this.lastWasResize) {
             this.refreshWriter.instructCursor(this.lastCanvas, compositor.canvas);
+            if (resize) {
+                this.lastWasResize = 1;
+            }
+            if (this.lastWasResize) {
+                if (++this.lastWasResize > 3) {
+                    this.lastWasResize = 0;
+                }
+            }
         } else {
             this.preciseWriter.instructCursor(this.lastCanvas, compositor.canvas);
             this.refreshWriter.resetLastOutput();
