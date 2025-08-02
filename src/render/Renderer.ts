@@ -30,7 +30,7 @@ export class Renderer {
         this.refreshWriter = new RefreshWriter(this.cursor);
         this.lastWasResize = 0;
 
-        // this.cursor.show(false);
+        this.cursor.show(false);
         process.on("beforeExit", () => this.cursor.show(true));
         process.on("SIGINT", () => {
             this.cursor.show(true);

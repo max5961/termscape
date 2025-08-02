@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import { configureStdin, ActionStore, InputState } from "term-keymap";
 import { root } from "../dom/Root.js";
 import { MouseEvent } from "../dom/MouseEvent.js";
+import { EventEmitterMap } from "../types.js";
 
 configureStdin({
     stdout: process.stdout,
@@ -19,10 +20,7 @@ store.subscribe({
     callback: () => process.exit(),
 });
 
-export const Emitter = new EventEmitter<{
-    eventOccured: [x: number, y: number, type: MouseEvent];
-    cursorPosition: [y: number];
-}>();
+export const Emitter = new EventEmitter<EventEmitterMap>();
 
 process.stdin.on("data", (buf: Buffer) => {
     const { data } = inputState.process(buf, store.getActions());

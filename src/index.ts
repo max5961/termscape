@@ -35,7 +35,7 @@ const c1c1 = Document.createElement("BOX_ELEMENT");
 c1c1.style.height = "50";
 c1c1.style.width = "50";
 c1c1.style.borderStyle = "round";
-c1c1.style.zIndex = 5;
+c1c1.style.zIndex = 0;
 c1c1.style.backgroundColor = "yellow";
 
 const colors: Color[] = ["red", "yellow", "blue", "cyan", "magenta"];

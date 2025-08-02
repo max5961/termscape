@@ -74,7 +74,9 @@ export class DomRects {
 
             while (i >= 0) {
                 if (map[i]) {
-                    for (const elem of map[i]) {
+                    // Ensure that the last added (most visible) elements are checked first
+                    for (let j = map[i].length - 1; j >= 0; --j) {
+                        const elem = map[i][j];
                         if (elem.containsPoint(x, y)) return elem;
                     }
                 }
