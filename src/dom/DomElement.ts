@@ -1,8 +1,9 @@
 import Yoga from "yoga-wasm-web/auto";
 import { YogaNode } from "../types.js";
-import { Event, EventHandler, MouseEvent } from "./MouseEvent.js";
+import { EventHandler, MouseEvent } from "./MouseEvent.js";
 import { Root } from "./Root.js";
 import type { DOMRect, TTagNames, Style } from "../types.js";
+import { type MouseEventType } from "../stdin/types.js";
 
 /** For accessing private members in trusted private package modules */
 export type FriendDomElement = {
@@ -13,7 +14,7 @@ export type FriendDomElement = {
     tagName: TTagNames;
     node: YogaNode;
     parentElement: null | DomElement;
-    eventListeners: Record<MouseEvent, Set<EventHandler>>;
+    eventListeners: Record<MouseEventType, Set<EventHandler>>;
     rect: DOMRect;
     attributes: Map<string, unknown>;
     style: Style;
@@ -51,16 +52,31 @@ export abstract class DomElement {
 
         // Currently for mouse events only
         this.eventListeners = {
-            MouseDown: new Set(),
-            MouseUp: new Set(),
-            RightMouseDown: new Set(),
-            RightMouseUp: new Set(),
-            Click: new Set(),
-            RightClick: new Set(),
-            ScrollUp: new Set(),
-            ScrollDown: new Set(),
-            DoubleClick: new Set(),
-            RightDoubleClick: new Set(),
+            // LEFT BTN
+            click: new Set(),
+            dblclick: new Set(),
+            mousedown: new Set(),
+            mouseup: new Set(),
+
+            // RIGHT BTN
+            rightclick: new Set(),
+            rightdblclick: new Set(),
+            rightmousedown: new Set(),
+            rightmouseup: new Set(),
+
+            // SCROLL WHEEL
+            scrollup: new Set(),
+            scrolldown: new Set(),
+            scrollclick: new Set(),
+            scrolldblclick: new Set(),
+            scrollbtndown: new Set(),
+            scrollbtnup: new Set(),
+
+            // MOVEMENT
+            mousemove: new Set(),
+            drag: new Set(),
+            dragstart: new Set(),
+            dragend: new Set(),
         };
 
         // Define custom attributes
@@ -69,11 +85,11 @@ export abstract class DomElement {
 
     public abstract setAttribute(): void;
 
-    public addEventListener(event: MouseEvent, handler: EventHandler): void {
+    public addEventListener(event: MouseEventType, handler: EventHandler): void {
         this.eventListeners[event].add(handler);
     }
 
-    public removeEventListener(event: MouseEvent, handler: EventHandler): void {
+    public removeEventListener(event: MouseEventType, handler: EventHandler): void {
         this.eventListeners[event].delete(handler);
     }
 

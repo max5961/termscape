@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import { configureStdin, ActionStore, InputState } from "term-keymap";
 import { root } from "../dom/Root.js";
 import { EventEmitterMap } from "../types.js";
+import { MouseState } from "./MouseState.js";
 
 configureStdin({
     stdout: process.stdout,
@@ -12,6 +13,7 @@ configureStdin({
 
 const store = new ActionStore();
 const inputState = new InputState();
+const mouseState = new MouseState();
 
 store.subscribe({
     name: "quit",
@@ -24,68 +26,5 @@ export const Emitter = new EventEmitter<EventEmitterMap>();
 process.stdin.on("data", (buf: Buffer) => {
     const { data } = inputState.process(buf, store.getActions());
 
-    const cursorPosition = data.raw.utf
-        .match(/\x1b\[(\d+);\d+R/)
-        ?.slice(1, 2)
-        .map(Number);
-    if (cursorPosition) {
-        const [y] = cursorPosition;
-        Emitter.emit("CursorPosition", y - 1);
-    }
-
-    if (data.mouse) {
-        const {
-            leftBtnDown,
-            rightBtnDown,
-            scrollUp,
-            scrollDown,
-            releaseBtn,
-            scrollBtnDown,
-            mousemove,
-            x,
-            y,
-        } = data.mouse;
-
-        if (mousemove || !leftBtnDown) return;
-
-        new Promise<number>((res, rej) => {
-            process.stdout.write("\x1b[6n");
-
-            const resolvePosition = (y: number) => {
-                res(y);
-                Emitter.off("CursorPosition", resolvePosition);
-            };
-
-            setTimeout(() => {
-                Emitter.off("CursorPosition", resolvePosition);
-                rej("Could not query cursor position");
-            }, 10);
-
-            Emitter.on("CursorPosition", resolvePosition);
-        })
-            .catch((err) => {
-                // Term does not support querying for mouse position
-            })
-            .then((cursorRow) => {
-                if (cursorRow === undefined) return;
-
-                /**
-                 * In order to accomodate layouts that aren't fullscreen, the yoffset
-                 * must be calculated.  The cursor position is always on the last
-                 * row of the last output, and this means the top row can be calculated.
-                 *
-                 * `virtualY` is the y-value with applied offset that is meaningful
-                 * to the layout calculated by Yoga.
-                 */
-
-                const height = root.getLayoutHeight();
-                const topRow = cursorRow - height + 1;
-                const yoffset = topRow;
-
-                const virtualX = x;
-                const virtualY = y - yoffset;
-
-                Emitter.emit("MouseEvent", virtualX, virtualY, "MouseDown");
-            });
-    }
+    mouseState.process(data);
 });

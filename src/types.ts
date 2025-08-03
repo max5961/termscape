@@ -1,7 +1,7 @@
 import { TagNames } from "./constants.js";
 import { BoxStyle } from "./dom/elements/attributes/box/BoxStyle.js";
 import { TextStyle } from "./dom/elements/attributes/text/TextStyle.js";
-import { MouseEvent } from "./dom/MouseEvent.js";
+import { MouseEventType } from "./stdin/types.js";
 
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
 export type { Node as YogaNode } from "yoga-wasm-web/auto";
@@ -29,6 +29,6 @@ export type GridToken = {
 };
 
 export type EventEmitterMap = {
-    MouseEvent: [x: number, y: number, type: MouseEvent];
+    MouseEvent: [x: number, y: number, type: MouseEventType];
     CursorPosition: [y: number];
 };

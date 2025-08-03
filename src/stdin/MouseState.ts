@@ -5,11 +5,12 @@ import { MouseEventType } from "./types.js";
 import EventEmitter from "events";
 
 type MouseData = Exclude<Data["mouse"], undefined>;
-
 type Button = Extract<MouseEventType, "click" | "rightclick" | "scrollclick">;
 
-type Args = [number, number];
-const DoubleEmitter = new EventEmitter<Record<Button, Args>>();
+const CURSOR_POS_REGEX = /\x1b\[(\d+);\d+R/;
+const QUERY_CURSOR_POS_ANSI = "\x1b[6n";
+
+const DblClickEmitter = new EventEmitter<Record<Button, [number, number]>>();
 
 export class MouseState {
     private prev: MouseData | null;
@@ -18,18 +19,12 @@ export class MouseState {
         this.prev = null;
     }
 
-    private static CursorPositionRegex = /\x1b\[(\d+);\d+R/;
-    private static QueryCursorPositionAnsi = "\x1b[6n";
-
     /**
      * Checks if the data being sent over is from a cursor position query and if
      * it is, resolves the Promise that sent the query.
      */
-    private resolveCursorPosition(utf: string) {
-        const cursorPosition = utf
-            .match(MouseState.CursorPositionRegex)
-            ?.slice(1, 2)
-            .map(Number);
+    private resolveCursorRow(utf: string) {
+        const cursorPosition = utf.match(CURSOR_POS_REGEX)?.slice(1, 2).map(Number);
 
         if (cursorPosition) {
             const [y] = cursorPosition;
@@ -37,17 +32,23 @@ export class MouseState {
         }
     }
 
-    public process(data: Data) {
-        this.resolveCursorPosition(data.raw.utf);
+    /**
+     * Processes mouse data and emits events
+     */
+    public process(data: Data, fullscreen: boolean = false) {
+        this.resolveCursorRow(data.raw.utf);
 
         if (!data.mouse) return;
 
         const realX = data.mouse.x;
         const realY = data.mouse.y;
 
-        return new Promise<number>((res, rej) => {
-            process.stdout.write(MouseState.QueryCursorPositionAnsi);
+        if (fullscreen) {
+            this.handleMouseEvent(data.mouse!, realX, realY);
+            return;
+        }
 
+        return new Promise<number>((res, rej) => {
             const resolvePosition = (y: number) => {
                 res(y);
                 Emitter.off("CursorPosition", resolvePosition);
@@ -59,6 +60,8 @@ export class MouseState {
             }, 10);
 
             Emitter.on("CursorPosition", resolvePosition);
+
+            process.stdout.write(QUERY_CURSOR_POS_ANSI);
         })
             .catch(() => {
                 // I think silent failure is best here, but could eventually add
@@ -90,12 +93,15 @@ export class MouseState {
     private handleMouseEvent(mouse: MouseData, x: number, y: number) {
         const dispatch = this.dispatchEvent(x, y);
 
+        // SCROLL
         if (mouse.scrollUp) {
             dispatch("scrollup");
         }
         if (mouse.scrollDown) {
             dispatch("scrolldown");
         }
+
+        // MOVEMENT
         if (mouse.mousemove) {
             dispatch("mousemove");
             if (mouse.leftBtnDown) {
@@ -106,6 +112,18 @@ export class MouseState {
             }
         }
 
+        // BUTTON DOWN
+        if (mouse.leftBtnDown) {
+            dispatch("mousedown");
+        }
+        if (mouse.rightBtnDown) {
+            dispatch("rightmousedown");
+        }
+        if (mouse.scrollBtnDown) {
+            dispatch("scrollbtndown");
+        }
+
+        // CLICKS
         if (mouse.releaseBtn && this.prev) {
             if (this.prev.leftBtnDown) {
                 handleRelease("click");
@@ -128,13 +146,13 @@ export class MouseState {
 
                 // If there is still a listener for this type, emit the double event.
                 // Then create a listener with a timeout for the same event.
-                DoubleEmitter.emit(type, x, y);
+                DblClickEmitter.emit(type, x, y);
                 listenForDbl(type);
             }
 
             function listenForDbl(event: Button): void {
                 const handler = (nx: number, ny: number) => {
-                    DoubleEmitter.off(event, handler);
+                    DblClickEmitter.off(event, handler);
 
                     // If mouse moves, the double click is considered invalid
                     if (nx !== x || ny !== y) return;
@@ -144,15 +162,17 @@ export class MouseState {
                     else if (event === "scrollclick") dispatch("scrolldblclick");
                 };
 
-                DoubleEmitter.on(event, handler);
+                DblClickEmitter.on(event, handler);
                 setTimeout(() => {
-                    DoubleEmitter.off(event, handler);
+                    DblClickEmitter.off(event, handler);
                 }, 500);
             }
         }
+
+        this.prev = mouse;
     }
 
     private dispatchEvent = (x: number, y: number) => (event: MouseEventType) => {
-        // Emitter.emit("MouseEvent", x, y, event);
+        Emitter.emit("MouseEvent", x, y, event);
     };
 }

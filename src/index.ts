@@ -16,17 +16,17 @@ root.hooks.postLayout((canvas) => {
 });
 
 root.hooks.renderPerf((data) => {
-    // console.log(data);
+    console.log(data);
 });
 
 const c1 = Document.createElement("BOX_ELEMENT");
 
-c1.style.height = 35;
+c1.style.height = 10;
 c1.style.width = 20;
 c1.style.borderStyle = "round";
 c1.style.backgroundColor = "magenta";
 
-c1.addEventListener("MouseDown", (e) => {
+c1.addEventListener("click", (e) => {
     console.log("c1 LOL");
 });
 
@@ -38,12 +38,15 @@ c1c1.style.zIndex = 0;
 c1c1.style.backgroundColor = "yellow";
 
 const colors: Color[] = ["red", "yellow", "blue", "cyan", "magenta"];
-c1c1.addEventListener("MouseDown", function (this: BoxElement, e) {
+c1c1.addEventListener("dblclick", function (this: BoxElement, e) {
     this.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    // e.stopImmediatePropagation();
+    e.stopImmediatePropagation();
 });
-c1c1.addEventListener("MouseDown", () => {
+c1c1.addEventListener("dblclick", () => {
     console.log("c1c1 LOL");
+});
+c1c1.addEventListener("click", (e) => {
+    e.stopPropagation();
 });
 
 c1.appendChild(c1c1);
@@ -53,22 +56,22 @@ root.appendChild(c1);
 let width = 1;
 let asc = true;
 
-setInterval(() => {
-    if (asc) {
-        if (width < process.stdout.columns) {
-            ++width;
-        } else {
-            asc = false;
-        }
-    }
-
-    if (!asc) {
-        if (width > 1) {
-            --width;
-        } else {
-            asc = true;
-        }
-    }
-
-    c1.style.width = width;
-}, 5);
+// setInterval(() => {
+//     if (asc) {
+//         if (width < process.stdout.columns) {
+//             ++width;
+//         } else {
+//             asc = false;
+//         }
+//     }
+//
+//     if (!asc) {
+//         if (width > 1) {
+//             --width;
+//         } else {
+//             asc = true;
+//         }
+//     }
+//
+//     c1.style.width = width;
+// }, 5);

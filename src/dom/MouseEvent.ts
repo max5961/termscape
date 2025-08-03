@@ -1,3 +1,4 @@
+import { MouseEventType } from "../stdin/types.js";
 import { stringEnum } from "../util/stringEnum.js";
 import { DomElement } from "./DomElement.js";
 
@@ -17,7 +18,7 @@ export const MouseEvent = stringEnum(
 export type MouseEvent = keyof typeof MouseEvent;
 
 export type Event = {
-    type: MouseEvent;
+    type: MouseEventType;
     clientX: number;
     clientY: number;
     target: DomElement;

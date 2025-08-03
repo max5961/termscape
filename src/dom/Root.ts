@@ -59,7 +59,7 @@ export class Root extends DomElement {
         return this.renderer.rects.findTargetElement(x, y);
     }
 
-    private handleMouseEvent: (...args: EventEmitterMap["eventOccured"]) => unknown = (
+    private handleMouseEvent: (...args: EventEmitterMap["MouseEvent"]) => unknown = (
         x,
         y,
         type,
@@ -138,12 +138,12 @@ export class Root extends DomElement {
         };
 
         process.stdout.on("resize", handleResize);
-        Emitter.on("eventOccured", this.handleMouseEvent);
+        Emitter.on("MouseEvent", this.handleMouseEvent);
 
         /***** Return cleanup function *****/
         return () => {
             process.stdout.off("resize", handleResize);
-            Emitter.off("eventOccured", this.handleMouseEvent);
+            Emitter.off("MouseEvent", this.handleMouseEvent);
         };
     }
 }
