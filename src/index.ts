@@ -1,24 +1,23 @@
 import { Document } from "./dom/Document.js";
-import { DomElement } from "./dom/DomElement.js";
 import { BoxElement } from "./dom/elements/BoxElement.js";
 import { root } from "./dom/Root.js";
 import { Color } from "./types.js";
 
 root.configure({ debounceMs: 16 });
 
-// root.hooks.postLayout((canvas) => {
-//     const word = "watermark";
-//     const pen = canvas.getPen();
-//     pen.moveTo(2, 2);
-//     pen.set.color("red");
-//     for (let i = 0; i < word.length; ++i) {
-//         pen.draw(word[i], "R", 1);
-//     }
-// });
-//
-// root.hooks.renderPerf((data) => {
-//     // console.log(data);
-// });
+root.hooks.postLayout((canvas) => {
+    const word = "watermark";
+    const pen = canvas.getPen();
+    pen.moveTo(2, 2);
+    pen.set.color("red");
+    for (let i = 0; i < word.length; ++i) {
+        pen.draw(word[i], "R", 1);
+    }
+});
+
+root.hooks.renderPerf((data) => {
+    console.log(data);
+});
 
 const c1 = Document.createElement("BOX_ELEMENT");
 
@@ -51,8 +50,25 @@ c1.appendChild(c1c1);
 
 root.appendChild(c1);
 
+let width = 1;
+let asc = true;
+
 setInterval(() => {
-    console.count("LOL");
-    console.count("LOL");
-    console.count("LOL");
-}, 1000);
+    if (asc) {
+        if (width < process.stdout.columns) {
+            ++width;
+        } else {
+            asc = false;
+        }
+    }
+
+    if (!asc) {
+        if (width > 1) {
+            --width;
+        } else {
+            asc = true;
+        }
+    }
+
+    c1.style.width = width;
+}, 10);

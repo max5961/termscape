@@ -37,11 +37,15 @@ export class Scheduler {
 
     private dispatchUpdater() {
         if (this.updater) {
+            // Join together captured output, then reset BEFORE the updater runs.
+            // By resetting before the updater runs, this allows Renderer methods
+            // to accrue console output and render hooks to utilize logging
             const console = this.capturedOutput.join("");
+            this.capturedOutput = [];
+
             this.updater({ resize: false, capturedOutput: console });
         }
 
-        this.capturedOutput = [];
         this.updater = null;
         this.wait = true;
 
