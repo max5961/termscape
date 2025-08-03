@@ -51,18 +51,7 @@ export class Renderer {
 
         process.stdout.write(BEGIN_SYNCHRONIZED_UPDATE);
 
-        // Cases that should require a full rewrite are
-        // - possible unsupported terminal
-        // - hasCapturedOutput
-        // - rows > stdout rows
-        // - resize
-        // - first write
-        if (
-            !this.lastCanvas ||
-            opts.resize ||
-            this.lastWasResize ||
-            opts.capturedOutput
-        ) {
+        if (this.shouldRefreshWrite(opts, compositor.canvas)) {
             this.refreshWriter.instructCursor(
                 this.lastCanvas,
                 compositor.canvas,
@@ -71,13 +60,11 @@ export class Renderer {
             if (opts.resize) {
                 this.lastWasResize = 1;
             }
-            if (this.lastWasResize) {
-                if (++this.lastWasResize > 3) {
-                    this.lastWasResize = 0;
-                }
+            if (this.lastWasResize && ++this.lastWasResize > 3) {
+                this.lastWasResize = 0;
             }
         } else {
-            this.preciseWriter.instructCursor(this.lastCanvas, compositor.canvas);
+            this.preciseWriter.instructCursor(this.lastCanvas!, compositor.canvas);
             this.refreshWriter.resetLastOutput();
         }
 
@@ -103,4 +90,43 @@ export class Renderer {
         this.lastCanvas = compositor.canvas;
         this.rects = compositor.rects;
     };
+
+    private shouldRefreshWrite(opts: WriteOpts, canvas: Canvas) {
+        // First write
+        if (!this.lastCanvas) {
+            return true;
+        }
+
+        // Resize
+        if (opts.resize) {
+            return true;
+        }
+
+        // Resizes are messy and make tracking the cursor row difficult, so refresh
+        // write again to make sure goes where it should.
+        if (this.lastWasResize) {
+            return true;
+        }
+
+        // `console` statements should be printed above output, but don't bother
+        // if fullscreen as it won't be seen anyways.
+        if (opts.capturedOutput && canvas.grid.length < process.stdout.rows) {
+            return true;
+        }
+
+        if (!this.termSupportsAnsiCursor()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Greenlight only terminals that *definitely* support ansi cursor control to
+     * use the `PreciseWriter` strategy.
+     */
+    private termSupportsAnsiCursor(): boolean {
+        const term = process.env.TERM;
+        return !!term?.match(/xterm|kitty|alacritty|ghostty/);
+    }
 }

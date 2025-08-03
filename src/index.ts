@@ -21,8 +21,8 @@ root.hooks.renderPerf((data) => {
 
 const c1 = Document.createElement("BOX_ELEMENT");
 
-c1.style.height = 10;
-c1.style.width = 20;
+c1.style.height = process.stdout.rows;
+c1.style.width = "50";
 c1.style.borderStyle = "round";
 c1.style.backgroundColor = "magenta";
 
@@ -56,22 +56,22 @@ root.appendChild(c1);
 let width = 1;
 let asc = true;
 
-// setInterval(() => {
-//     if (asc) {
-//         if (width < process.stdout.columns) {
-//             ++width;
-//         } else {
-//             asc = false;
-//         }
-//     }
-//
-//     if (!asc) {
-//         if (width > 1) {
-//             --width;
-//         } else {
-//             asc = true;
-//         }
-//     }
-//
-//     c1.style.width = width;
-// }, 5);
+setInterval(() => {
+    if (asc) {
+        if (width < process.stdout.columns) {
+            ++width;
+        } else {
+            asc = false;
+        }
+    }
+
+    if (!asc) {
+        if (width > 1) {
+            --width;
+        } else {
+            asc = true;
+        }
+    }
+
+    c1.style.width = width;
+}, 5);

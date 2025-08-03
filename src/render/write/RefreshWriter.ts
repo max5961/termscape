@@ -34,7 +34,7 @@ export class RefreshWriter extends Writer {
             if (lastCanvas) {
                 this.cursor.clearRowsUp(lastCanvas.grid.length);
             }
-            if (capturedOutput) {
+            if (capturedOutput && !this.isFullscreen(nextCanvas)) {
                 process.stdout.write(capturedOutput);
             }
             this.cursor.deferOutput(output, newLines - 1);
@@ -45,5 +45,9 @@ export class RefreshWriter extends Writer {
 
     public resetLastOutput() {
         this.lastOutput = "";
+    }
+
+    public isFullscreen(nextCanvas: Canvas) {
+        return nextCanvas.height === process.stdout.rows;
     }
 }
