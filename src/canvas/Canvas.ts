@@ -71,8 +71,13 @@ export class Canvas {
 
         for (let i = 0; i < length; ++i) {
             const token = row[i + start];
-            const leftAnsi = (row[i + start - 1] as GridToken)?.ansi;
-            const rightAnsi = (row[i + start + 1] as GridToken)?.ansi;
+
+            // prettier-ignore
+            const leftAnsi = 
+                i === 0 ? "" : (row[i + start - 1] as GridToken)?.ansi;
+            // prettier-ignore
+            const rightAnsi =
+                i === length - 1 ? "" : (row[i + start + 1] as GridToken)?.ansi;
 
             result[i + 1] = this.convertToken(token, leftAnsi, rightAnsi);
         }

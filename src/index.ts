@@ -16,12 +16,12 @@ root.hooks.postLayout((canvas) => {
 });
 
 root.hooks.renderPerf((data) => {
-    console.log(data);
+    // console.log(data);
 });
 
 const c1 = Document.createElement("BOX_ELEMENT");
 
-c1.style.height = 10;
+c1.style.height = 35;
 c1.style.width = 20;
 c1.style.borderStyle = "round";
 c1.style.backgroundColor = "magenta";
@@ -71,4 +71,4 @@ setInterval(() => {
     }
 
     c1.style.width = width;
-}, 10);
+}, 5);

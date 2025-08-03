@@ -34,13 +34,6 @@ export class Renderer {
         this.preciseWriter = new PreciseWriter(this.cursor);
         this.refreshWriter = new RefreshWriter(this.cursor);
         this.lastWasResize = 0;
-
-        this.cursor.show(false);
-        process.on("beforeExit", () => this.cursor.show(true));
-        process.on("SIGINT", () => {
-            this.cursor.show(true);
-            process.exit();
-        });
     }
 
     public writeToStdout = (opts: WriteOpts) => {

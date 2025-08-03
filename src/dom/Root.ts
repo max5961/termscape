@@ -113,7 +113,9 @@ export class Root extends DomElement {
         capture.start();
 
         /***** Cursor *****/
-        process.stdout.write(ansi.cursor.hide);
+        if (!process.env.RENDER_DEBUG) {
+            process.stdout.write(ansi.cursor.hide);
+        }
         process.on("exit", () => process.stdout.write(ansi.cursor.show));
         process.on("SIGINT", () => {
             // process.stdout.write(ansi.cursor.show);
