@@ -10,6 +10,11 @@ import { RefreshWriter } from "./write/RefreshWriter.js";
 import { PreciseWriter } from "./write/PreciseWriter.js";
 import { DomRects } from "../compositor/DomRects.js";
 
+export type WriteOpts = {
+    resize: boolean;
+    capturedOutput?: string;
+};
+
 export class Renderer {
     public lastCanvas: Canvas | null;
     public rects: DomRects;
@@ -38,7 +43,7 @@ export class Renderer {
         });
     }
 
-    public writeToStdout = (resize = false) => {
+    public writeToStdout = (opts: WriteOpts) => {
         if (this.hooks.renderIsBlocked) return;
 
         this.perf.tracking = !!this.hooks.renderPerf.size;
@@ -59,9 +64,18 @@ export class Renderer {
         // - rows > stdout rows
         // - resize
         // - first write
-        if (!this.lastCanvas || resize || this.lastWasResize) {
-            this.refreshWriter.instructCursor(this.lastCanvas, compositor.canvas);
-            if (resize) {
+        if (
+            !this.lastCanvas ||
+            opts.resize ||
+            this.lastWasResize ||
+            opts.capturedOutput
+        ) {
+            this.refreshWriter.instructCursor(
+                this.lastCanvas,
+                compositor.canvas,
+                opts.capturedOutput,
+            );
+            if (opts.resize) {
                 this.lastWasResize = 1;
             }
             if (this.lastWasResize) {

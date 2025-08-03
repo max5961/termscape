@@ -10,7 +10,11 @@ export class RefreshWriter extends Writer {
         this.lastOutput = "";
     }
 
-    public instructCursor(lastCanvas: Canvas | null, nextCanvas: Canvas): void {
+    public instructCursor(
+        lastCanvas: Canvas | null,
+        nextCanvas: Canvas,
+        capturedOutput?: string,
+    ): void {
         // Rather write each row then move cursor down, use \n to make
         // sure that terminals not supporting ansi sequences will render properly.
 
@@ -26,9 +30,12 @@ export class RefreshWriter extends Writer {
             .join("")
             .trimEnd();
 
-        if (output !== this.lastOutput) {
+        if (output !== this.lastOutput || capturedOutput) {
             if (lastCanvas) {
                 this.cursor.clearRowsUp(lastCanvas.grid.length);
+            }
+            if (capturedOutput) {
+                process.stdout.write(capturedOutput);
             }
             this.cursor.deferOutput(output, newLines - 1);
         } else {

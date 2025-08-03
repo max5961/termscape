@@ -41,7 +41,7 @@ c1c1.style.backgroundColor = "yellow";
 const colors: Color[] = ["red", "yellow", "blue", "cyan", "magenta"];
 c1c1.addEventListener("MouseDown", function (this: BoxElement, e) {
     this.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    e.stopImmediatePropagation();
+    // e.stopImmediatePropagation();
 });
 c1c1.addEventListener("MouseDown", () => {
     console.log("c1c1 LOL");
@@ -50,3 +50,9 @@ c1c1.addEventListener("MouseDown", () => {
 c1.appendChild(c1c1);
 
 root.appendChild(c1);
+
+setInterval(() => {
+    console.count("LOL");
+    console.count("LOL");
+    console.count("LOL");
+}, 1000);

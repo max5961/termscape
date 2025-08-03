@@ -1,14 +1,20 @@
+import { Root } from "./Root.js";
+
+type Updater = (typeof Root)["prototype"]["render"];
+
 export class Scheduler {
     public debounceMs: number;
     private tickScheduled: boolean;
     private wait: boolean;
-    private updater: null | (() => unknown);
+    private updater: null | Updater;
+    private capturedOutput: string[];
 
     constructor({ debounceMs }: { debounceMs?: number }) {
         this.debounceMs = debounceMs ?? 8;
         this.tickScheduled = false;
         this.wait = false;
         this.updater = null;
+        this.capturedOutput = [];
     }
 
     /**
@@ -16,8 +22,9 @@ export class Scheduler {
      * same event loop will be coalesced.  Calls to the updater may run only once
      * every `debounceMs` ms.
      */
-    public scheduleUpdate = (updater: () => unknown) => {
+    public scheduleUpdate = (updater: Updater, capturedOutput?: string) => {
         this.updater = updater;
+        if (capturedOutput) this.capturedOutput.push(capturedOutput);
 
         if (this.tickScheduled || this.wait) return;
 
@@ -29,7 +36,12 @@ export class Scheduler {
     };
 
     private dispatchUpdater() {
-        this.updater?.();
+        if (this.updater) {
+            const console = this.capturedOutput.join("");
+            this.updater({ resize: false, capturedOutput: console });
+        }
+
+        this.capturedOutput = [];
         this.updater = null;
         this.wait = true;
 

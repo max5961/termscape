@@ -9,7 +9,7 @@ export function createStyleProxy<T extends object>(
             if (target[p as keyof T] !== newValue) {
                 target[p as keyof T] = newValue;
                 applyStyles(p as keyof T, newValue);
-                root.scheduleRender();
+                root.scheduleRender({ resize: false });
             }
             return true;
         },

@@ -1,4 +1,4 @@
-import { Renderer } from "../render/Renderer.js";
+import { Renderer, WriteOpts } from "../render/Renderer.js";
 import { RenderHooksManager } from "../render/RenderHooks.js";
 import { Scheduler } from "./Scheduler.js";
 import { DomElement, FriendDomElement } from "./DomElement.js";
@@ -7,6 +7,7 @@ import type { EventEmitterMap, TTagNames } from "../types.js";
 import { Emitter } from "../stdin/Stdin.js";
 import { Event } from "./MouseEvent.js";
 import ansi from "ansi-escape-sequences";
+import { Capture } from "log-goblin";
 
 export type ConfigureRoot = {
     debounceMs?: number;
@@ -41,13 +42,13 @@ export class Root extends DomElement {
         this.scheduler.debounceMs = c.debounceMs ?? 8;
     }
 
-    private render = (resize = false) => {
+    private render = (opts: WriteOpts) => {
         this.node.calculateLayout();
-        this.renderer.writeToStdout(resize);
+        this.renderer.writeToStdout(opts);
     };
 
-    public scheduleRender = () => {
-        this.scheduler.scheduleUpdate(() => this.render());
+    public scheduleRender = (opts: WriteOpts) => {
+        this.scheduler.scheduleUpdate(this.render, opts.capturedOutput);
     };
 
     public getLayoutHeight() {
@@ -69,16 +70,16 @@ export class Root extends DomElement {
         let propagationLegal = true;
         let immediatePropagationLegal = true;
 
-        const propagate = (currentTarget: FriendDomElement, target: FriendDomElement) => {
-            if (element && element.eventListeners[type].size) {
-                const handlers = element.eventListeners[type];
+        const propagate = (curr: FriendDomElement, target: FriendDomElement) => {
+            if (curr && curr.eventListeners[type].size) {
+                const handlers = curr.eventListeners[type];
 
                 const event: Event = {
                     type,
                     clientX: x,
                     clientY: y,
                     target: target as unknown as DomElement,
-                    currentTarget: currentTarget as unknown as DomElement,
+                    currentTarget: curr as unknown as DomElement,
                     stopPropagation: () => {
                         propagationLegal = false;
                     },
@@ -90,13 +91,13 @@ export class Root extends DomElement {
 
                 handlers.forEach((h) => {
                     if (immediatePropagationLegal) {
-                        h?.call(element, event);
+                        h?.call(curr, event);
                     }
                 });
             }
 
-            if (propagationLegal && element.parentElement) {
-                propagate(element.parentElement as unknown as FriendDomElement, target);
+            if (propagationLegal && curr.parentElement) {
+                propagate(curr.parentElement as unknown as FriendDomElement, target);
             }
         };
 
@@ -105,20 +106,11 @@ export class Root extends DomElement {
 
     private beginRuntime() {
         /***** Capture console *****/
-        // This does support the scheduler...might need to extend Scheduler to accrue
-        // logged output, so that renders can still be debounced when they are caused
-        // by log statements.
-        //
-        // const capture = new Capture();
-        // capture.on("output", (data) => {
-        //     // with the `log` option, refresh clears all rows, writes the data
-        //     // then writes the canvas
-        //     this.renderer.render({ log: data })
-        // })
-        //
-        // // never capture.end(), console methods should be captured for the
-        // // entirety of the application
-        // capture.start();
+        const capture = new Capture();
+        capture.on("output", (data) => {
+            this.scheduleRender({ resize: false, capturedOutput: data });
+        });
+        capture.start();
 
         /***** Cursor *****/
         process.stdout.write(ansi.cursor.hide);
@@ -139,7 +131,7 @@ export class Root extends DomElement {
         // this occurs before the resize event is dispatched, but it doesn't hurt.
         const handleResize = () => {
             setTimeout(() => {
-                this.render(true);
+                this.render({ resize: true });
             }, 8);
         };
 
