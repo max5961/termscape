@@ -29,6 +29,6 @@ export type GridToken = {
 };
 
 export type EventEmitterMap = {
-    eventOccured: [x: number, y: number, type: MouseEvent];
-    cursorPosition: [y: number];
+    MouseEvent: [x: number, y: number, type: MouseEvent];
+    CursorPosition: [y: number];
 };

@@ -1,7 +1,6 @@
 import { EventEmitter } from "node:events";
 import { configureStdin, ActionStore, InputState } from "term-keymap";
 import { root } from "../dom/Root.js";
-import { MouseEvent } from "../dom/MouseEvent.js";
 import { EventEmitterMap } from "../types.js";
 
 configureStdin({
@@ -31,7 +30,7 @@ process.stdin.on("data", (buf: Buffer) => {
         .map(Number);
     if (cursorPosition) {
         const [y] = cursorPosition;
-        Emitter.emit("cursorPosition", y - 1);
+        Emitter.emit("CursorPosition", y - 1);
     }
 
     if (data.mouse) {
@@ -54,15 +53,15 @@ process.stdin.on("data", (buf: Buffer) => {
 
             const resolvePosition = (y: number) => {
                 res(y);
-                Emitter.off("cursorPosition", resolvePosition);
+                Emitter.off("CursorPosition", resolvePosition);
             };
 
             setTimeout(() => {
-                Emitter.off("cursorPosition", resolvePosition);
+                Emitter.off("CursorPosition", resolvePosition);
                 rej("Could not query cursor position");
             }, 10);
 
-            Emitter.on("cursorPosition", resolvePosition);
+            Emitter.on("CursorPosition", resolvePosition);
         })
             .catch((err) => {
                 // Term does not support querying for mouse position
@@ -86,7 +85,7 @@ process.stdin.on("data", (buf: Buffer) => {
                 const virtualX = x;
                 const virtualY = y - yoffset;
 
-                Emitter.emit("eventOccured", virtualX, virtualY, "MouseDown");
+                Emitter.emit("MouseEvent", virtualX, virtualY, "MouseDown");
             });
     }
 });
