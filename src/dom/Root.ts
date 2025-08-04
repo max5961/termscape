@@ -3,15 +3,18 @@ import { RenderHooksManager } from "../render/RenderHooks.js";
 import { Scheduler } from "./Scheduler.js";
 import { DomElement, FriendDomElement } from "./DomElement.js";
 import Yoga from "yoga-wasm-web/auto";
-import type { EventEmitterMap, TTagNames } from "../types.js";
+import type { ConfigureStdin, EventEmitterMap, TTagNames } from "../types.js";
 import { Emitter, Stdin } from "../stdin/Stdin.js";
 import { Event } from "./MouseEvent.js";
 import ansi from "ansi-escape-sequences";
 import { Capture } from "log-goblin";
+import { Ansi } from "../util/Ansi.js";
+import { configureStdin } from "term-keymap";
 
 export type ConfigureRoot = {
     debounceMs?: number;
-};
+    altScreen?: boolean;
+} & ConfigureStdin;
 
 export class Root extends DomElement {
     private scheduler: Scheduler;
@@ -20,11 +23,13 @@ export class Root extends DomElement {
     public tagName: TTagNames;
     public style: {}; // abstract implementation noop;
     public hooks: RenderHooksManager;
+    private prevConfig: ConfigureRoot;
+    private isAltScreen: boolean;
 
-    constructor({ debounceMs }: ConfigureRoot) {
+    constructor(c: ConfigureRoot) {
         super();
         this.tagName = "ROOT_ELEMENT";
-        this.scheduler = new Scheduler({ debounceMs: debounceMs });
+        this.scheduler = new Scheduler({ debounceMs: c.debounceMs });
         this.renderer = new Renderer();
         this.hooks = new RenderHooksManager(this.renderer.hooks);
         this.stdin = new Stdin();
@@ -35,13 +40,63 @@ export class Root extends DomElement {
         this.node.setFlexGrow(0);
         this.node.setFlexShrink(1);
 
-        this.beginRuntime();
+        this.isAltScreen = false;
+        this.prevConfig = {};
+        this.configure(c);
+
+        const cleanup = this.beginRuntime();
+
+        // For now, but could also use cleanup for a 'clean' exit function that
+        // can be called to end the process naturally by stopping all listeners.
+        process.on("exit", cleanup);
+        process.on("SIGINT", cleanup);
     }
 
     public setAttribute(): void {}
 
     public configure(c: ConfigureRoot): void {
-        this.scheduler.debounceMs = c.debounceMs ?? 8;
+        /** Allow updates to individual keys without defaulting those previously set. */
+        const update = <T extends keyof ConfigureRoot>(
+            prop: T,
+            dft: ConfigureRoot[T],
+        ): Pick<ConfigureRoot, T> => {
+            return { [prop]: c[prop] ?? this.prevConfig[prop] ?? dft } as Pick<
+                ConfigureRoot,
+                T
+            >;
+        };
+
+        const nextConfig: ConfigureRoot = {
+            ...update("debounceMs", 16),
+            ...update("altScreen", false),
+            ...update("stdout", process.stdout),
+            ...update("enableMouse", true),
+            ...update("mouseMode", 3),
+            ...update("enableKittyProtocol", true),
+        };
+
+        configureStdin(nextConfig);
+        this.scheduler.debounceMs = nextConfig.debounceMs!;
+
+        if (this.prevConfig.altScreen !== nextConfig.altScreen) {
+            if (nextConfig.altScreen && !this.isAltScreen) {
+                process.stdout.write(Ansi.enterAltScreen);
+                this.isAltScreen = true;
+            } else if (!nextConfig.altScreen && this.isAltScreen) {
+                process.stdout.write(Ansi.exitAltScreen);
+                this.isAltScreen = false;
+            }
+        }
+
+        this.prevConfig = nextConfig;
+    }
+
+    public useAltScreen(): void {
+        this.configure({ altScreen: true });
+    }
+
+    public useDefaultScreen(): void {
+        this.configure({ altScreen: false });
     }
 
     private render = (opts: WriteOpts) => {
@@ -118,16 +173,6 @@ export class Root extends DomElement {
         if (!process.env.RENDER_DEBUG) {
             process.stdout.write(ansi.cursor.hide);
         }
-        process.on("exit", () => process.stdout.write(ansi.cursor.show));
-        process.on("SIGINT", () => {
-            // process.stdout.write(ansi.cursor.show);
-
-            // if (!this.renderer.lastWasRefresh) {
-            //     process.stdout.write("\n");
-            // }
-
-            process.exit();
-        });
 
         /***** Set Listeners *****/
         // setTimeout to ensure that the term has completed all tasks so that repaints
@@ -150,6 +195,10 @@ export class Root extends DomElement {
             process.stdout.off("resize", handleResize);
             Emitter.off("MouseEvent", this.handleMouseEvent);
             this.stdin.pause();
+            process.stdout.write(Ansi.cursor.show);
+            if (this.isAltScreen) {
+                process.stdout.write(Ansi.exitAltScreen);
+            }
         };
     }
 }

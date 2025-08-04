@@ -1,3 +1,4 @@
+import { configureStdin } from "term-keymap";
 import { TagNames } from "./constants.js";
 import { BoxStyle } from "./dom/elements/attributes/box/BoxStyle.js";
 import { TextStyle } from "./dom/elements/attributes/text/TextStyle.js";
@@ -32,3 +33,5 @@ export type EventEmitterMap = {
     MouseEvent: [x: number, y: number, type: MouseEventType];
     CursorPosition: [y: number];
 };
+
+export type ConfigureStdin = Parameters<typeof configureStdin>[0];

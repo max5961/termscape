@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { configureStdin, ActionStore, InputState } from "term-keymap";
+import { ActionStore, InputState } from "term-keymap";
 import { EventEmitterMap } from "../types.js";
 import { MouseState } from "./MouseState.js";
 
@@ -19,16 +19,6 @@ export class Stdin {
             name: "quit",
             keymap: "<C-c>",
             callback: () => process.exit(),
-        });
-    }
-
-    /** Resends configuration ansi-escapes.  Necessary for entering alt screens */
-    public configureRuntime() {
-        configureStdin({
-            stdout: process.stdout,
-            mouseMode: 3,
-            enableMouse: true,
-            enableKittyProtocol: true,
         });
     }
 
