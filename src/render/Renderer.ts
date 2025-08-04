@@ -77,6 +77,13 @@ export class Renderer {
 
         this.cursor.execute();
 
+        if (this.termSupportsAnsiCursor() && opts.capturedOutput) {
+            const lines = opts.capturedOutput.split("\n").length;
+            this.cursor.rowsUp(lines);
+            this.cursor.deferOutput(opts.capturedOutput, lines);
+            this.cursor.execute();
+        }
+
         process.stdout.write(END_SYNCHRONIZED_UPDATE);
 
         /**** POST-WRITE ****/
@@ -108,9 +115,9 @@ export class Renderer {
             return true;
         }
 
-        // `console` statements should be printed above output, but don't bother
-        // if fullscreen as it won't be seen anyways.
-        if (opts.capturedOutput && canvas.grid.length < process.stdout.rows) {
+        // `console` statements should be printed above output, or overlayed on top of
+        // output if fullscreen
+        if (opts.capturedOutput) {
             return true;
         }
 
