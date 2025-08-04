@@ -3,7 +3,7 @@ import { BoxElement } from "./dom/elements/BoxElement.js";
 import { root } from "./dom/Root.js";
 import { Color } from "./types.js";
 
-root.configure({ debounceMs: 16 });
+root.configure({ debounceMs: 16, altScreen: true });
 
 root.hooks.postLayout((canvas) => {
     const word = "watermark";
@@ -22,7 +22,7 @@ root.hooks.renderPerf((data) => {
 const c1 = Document.createElement("BOX_ELEMENT");
 
 c1.style.height = process.stdout.rows;
-c1.style.width = "50";
+c1.style.width = 20;
 c1.style.borderStyle = "round";
 c1.style.backgroundColor = "magenta";
 
@@ -53,7 +53,7 @@ c1.appendChild(c1c1);
 
 root.appendChild(c1);
 
-let width = 1;
+let width = 20;
 let asc = true;
 
 setInterval(() => {
@@ -63,6 +63,7 @@ setInterval(() => {
         } else {
             asc = false;
         }
+        // root.useAltScreen();
     }
 
     if (!asc) {
@@ -71,7 +72,8 @@ setInterval(() => {
         } else {
             asc = true;
         }
+        // root.useDefaultScreen();
     }
 
     c1.style.width = width;
-}, 5);
+}, 10);

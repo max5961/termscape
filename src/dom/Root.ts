@@ -82,9 +82,11 @@ export class Root extends DomElement {
             if (nextConfig.altScreen && !this.isAltScreen) {
                 process.stdout.write(Ansi.enterAltScreen);
                 this.isAltScreen = true;
+                this.render({ screenChange: true });
             } else if (!nextConfig.altScreen && this.isAltScreen) {
                 process.stdout.write(Ansi.exitAltScreen);
                 this.isAltScreen = false;
+                this.render({ screenChange: true });
             }
         }
 

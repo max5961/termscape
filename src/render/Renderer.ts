@@ -16,8 +16,9 @@ import { DomRects } from "../compositor/DomRects.js";
 import { isFullscreen } from "./util/isFullscreen.js";
 
 export type WriteOpts = {
-    resize: boolean;
+    resize?: boolean;
     capturedOutput?: string;
+    screenChange?: boolean;
 };
 
 export class Renderer {
@@ -119,6 +120,11 @@ export class Renderer {
 
         // Resize
         if (opts.resize) {
+            return true;
+        }
+
+        // Enter/Exit alt screen
+        if (opts.screenChange) {
             return true;
         }
 

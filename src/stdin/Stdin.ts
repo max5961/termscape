@@ -22,16 +22,16 @@ export class Stdin {
         });
     }
 
-    public listen() {
+    public listen = () => {
         process.stdin.on("data", this.handleBuffer);
-    }
+    };
 
-    public pause() {
+    public pause = () => {
         process.stdin.off("data", this.handleBuffer);
-    }
+    };
 
-    private handleBuffer(buf: Buffer) {
+    private handleBuffer = (buf: Buffer) => {
         const { data } = this.inputState.process(buf, this.store.getActions());
         this.mouseState.process(data);
-    }
+    };
 }
