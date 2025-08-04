@@ -1,30 +1,47 @@
 import { EventEmitter } from "node:events";
 import { configureStdin, ActionStore, InputState } from "term-keymap";
-import { root } from "../dom/Root.js";
 import { EventEmitterMap } from "../types.js";
 import { MouseState } from "./MouseState.js";
 
-configureStdin({
-    stdout: process.stdout,
-    mouseMode: 3,
-    enableMouse: true,
-    enableKittyProtocol: true,
-});
-
-const store = new ActionStore();
-const inputState = new InputState();
-const mouseState = new MouseState();
-
-store.subscribe({
-    name: "quit",
-    keymap: "<C-c>",
-    callback: () => process.exit(),
-});
-
 export const Emitter = new EventEmitter<EventEmitterMap>();
 
-process.stdin.on("data", (buf: Buffer) => {
-    const { data } = inputState.process(buf, store.getActions());
+export class Stdin {
+    private store: ActionStore;
+    private inputState: InputState;
+    private mouseState: MouseState;
 
-    mouseState.process(data);
-});
+    constructor() {
+        this.store = new ActionStore();
+        this.inputState = new InputState();
+        this.mouseState = new MouseState();
+
+        this.store.subscribe({
+            name: "quit",
+            keymap: "<C-c>",
+            callback: () => process.exit(),
+        });
+    }
+
+    /** Resends configuration ansi-escapes.  Necessary for entering alt screens */
+    public configureRuntime() {
+        configureStdin({
+            stdout: process.stdout,
+            mouseMode: 3,
+            enableMouse: true,
+            enableKittyProtocol: true,
+        });
+    }
+
+    public listen() {
+        process.stdin.on("data", this.handleBuffer);
+    }
+
+    public pause() {
+        process.stdin.off("data", this.handleBuffer);
+    }
+
+    private handleBuffer(buf: Buffer) {
+        const { data } = this.inputState.process(buf, this.store.getActions());
+        this.mouseState.process(data);
+    }
+}

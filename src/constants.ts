@@ -20,6 +20,12 @@ export const QUERY_SYNCHRONIZED_UPDATE = "\x1b[?2026$p";
 /** `\x1b[0m` */
 export const ANSI_RESET = ansi.style.reset;
 
+/** Enter alternate term screen */
+export const ENTER_ALT_SCREEN = "\x1b[?1049h";
+
+/** Exit alt term screen */
+export const EXIT_ALT_SCREEN = "\x1b[?1049l";
+
 export const TagNames = {
     Box: "BOX_ELEMENT",
     Text: "TEXT_ELEMENT",

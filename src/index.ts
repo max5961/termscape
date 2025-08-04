@@ -16,7 +16,7 @@ root.hooks.postLayout((canvas) => {
 });
 
 root.hooks.renderPerf((data) => {
-    console.log(data);
+    // console.log(data);
 });
 
 const c1 = Document.createElement("BOX_ELEMENT");
@@ -56,22 +56,22 @@ root.appendChild(c1);
 let width = 1;
 let asc = true;
 
-// setInterval(() => {
-//     if (asc) {
-//         if (width < process.stdout.columns) {
-//             ++width;
-//         } else {
-//             asc = false;
-//         }
-//     }
-//
-//     if (!asc) {
-//         if (width > 1) {
-//             --width;
-//         } else {
-//             asc = true;
-//         }
-//     }
-//
-//     c1.style.width = width;
-// }, 5);
+setInterval(() => {
+    if (asc) {
+        if (width < process.stdout.columns) {
+            ++width;
+        } else {
+            asc = false;
+        }
+    }
+
+    if (!asc) {
+        if (width > 1) {
+            --width;
+        } else {
+            asc = true;
+        }
+    }
+
+    c1.style.width = width;
+}, 5);

@@ -4,7 +4,7 @@ import { Scheduler } from "./Scheduler.js";
 import { DomElement, FriendDomElement } from "./DomElement.js";
 import Yoga from "yoga-wasm-web/auto";
 import type { EventEmitterMap, TTagNames } from "../types.js";
-import { Emitter } from "../stdin/Stdin.js";
+import { Emitter, Stdin } from "../stdin/Stdin.js";
 import { Event } from "./MouseEvent.js";
 import ansi from "ansi-escape-sequences";
 import { Capture } from "log-goblin";
@@ -16,6 +16,7 @@ export type ConfigureRoot = {
 export class Root extends DomElement {
     private scheduler: Scheduler;
     private renderer: Renderer;
+    private stdin: Stdin;
     public tagName: TTagNames;
     public style: {}; // abstract implementation noop;
     public hooks: RenderHooksManager;
@@ -26,6 +27,7 @@ export class Root extends DomElement {
         this.scheduler = new Scheduler({ debounceMs: debounceMs });
         this.renderer = new Renderer();
         this.hooks = new RenderHooksManager(this.renderer.hooks);
+        this.stdin = new Stdin();
 
         this.style = {};
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
@@ -140,10 +142,14 @@ export class Root extends DomElement {
         process.stdout.on("resize", handleResize);
         Emitter.on("MouseEvent", this.handleMouseEvent);
 
+        /***** Stdin *****/
+        this.stdin.listen();
+
         /***** Return cleanup function *****/
         return () => {
             process.stdout.off("resize", handleResize);
             Emitter.off("MouseEvent", this.handleMouseEvent);
+            this.stdin.pause();
         };
     }
 }
