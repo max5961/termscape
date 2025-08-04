@@ -3,17 +3,12 @@ import { FriendDomElement } from "../dom/DomElement.js";
 import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
 import { root } from "../dom/Root.js";
-import {
-    BEGIN_SYNCHRONIZED_UPDATE,
-    END_SYNCHRONIZED_UPDATE,
-    ENTER_ALT_SCREEN,
-} from "../constants.js";
+import { BEGIN_SYNCHRONIZED_UPDATE, END_SYNCHRONIZED_UPDATE } from "../constants.js";
 import { Cursor } from "./Cursor.js";
 import { Canvas } from "../canvas/Canvas.js";
 import { RefreshWriter } from "./write/RefreshWriter.js";
 import { PreciseWriter } from "./write/PreciseWriter.js";
 import { DomRects } from "../compositor/DomRects.js";
-import { isFullscreen } from "./util/isFullscreen.js";
 
 export type WriteOpts = {
     resize?: boolean;
@@ -30,7 +25,6 @@ export class Renderer {
     private refreshWriter: RefreshWriter;
     public hooks: RenderHooks;
     private lastWasResize: number;
-    private lastWasFullscreen: boolean;
 
     constructor() {
         this.lastCanvas = null;
@@ -41,7 +35,6 @@ export class Renderer {
         this.preciseWriter = new PreciseWriter(this.cursor);
         this.refreshWriter = new RefreshWriter(this.cursor);
         this.lastWasResize = 0;
-        this.lastWasFullscreen = false;
     }
 
     public writeToStdout = (opts: WriteOpts) => {
@@ -56,11 +49,6 @@ export class Renderer {
         compositor.buildLayout(root as unknown as FriendDomElement);
 
         this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));
-
-        if (isFullscreen(compositor.canvas) && !this.lastWasFullscreen) {
-            process.stdout.write(ENTER_ALT_SCREEN);
-            // Need to reconfigure stdin
-        }
 
         process.stdout.write(BEGIN_SYNCHRONIZED_UPDATE);
 
@@ -109,7 +97,6 @@ export class Renderer {
 
         this.lastCanvas = compositor.canvas;
         this.rects = compositor.rects;
-        this.lastWasFullscreen = isFullscreen(compositor.canvas);
     };
 
     private shouldRefreshWrite(opts: WriteOpts, canvas: Canvas) {

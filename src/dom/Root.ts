@@ -198,6 +198,7 @@ export class Root extends DomElement {
             Emitter.off("MouseEvent", this.handleMouseEvent);
             this.stdin.pause();
             process.stdout.write(Ansi.cursor.show);
+            capture.stop();
             if (this.isAltScreen) {
                 process.stdout.write(Ansi.exitAltScreen);
             }
