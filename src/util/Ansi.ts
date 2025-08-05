@@ -34,4 +34,10 @@ export const Ansi = {
 
     /** Exit alt term screen */
     exitAltScreen: "\x1b[?1049l",
+
+    /** This must occur for stdin to work properly once the process exits. */
+    restoreFromKittyProtocol: "\x1b[<u",
+
+    /** Returns the 1-based index cursor position. Term responds with `\x1b[<x>;<y>R` */
+    queryCursorPosition: "\x1b[6n",
 } as const;

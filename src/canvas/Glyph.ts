@@ -1,8 +1,8 @@
-import ansi from "ansi-escape-sequences";
 import type { AnsiStyle, BgColor, Color, TextEffect } from "../types.js";
 import { DIM_COLOR } from "../util/dimColor.js";
 import { Pen } from "./Pen.js";
 import { TextEffectSet } from "../constants.js";
+import { Ansi } from "../util/Ansi.js";
 
 export type GlyphConfig = {
     color?: Color;
@@ -35,11 +35,11 @@ export class Glyph {
             if (v) styles.push(k as TextEffect);
         }
 
-        return ansi.styles(styles) + dimAnsi;
+        return Ansi.styles(styles) + dimAnsi;
     }
 
     public close() {
-        return ansi.style.reset;
+        return Ansi.style.reset;
     }
 
     public reset() {

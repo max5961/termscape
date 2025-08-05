@@ -3,12 +3,12 @@ import { FriendDomElement } from "../dom/DomElement.js";
 import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
 import { root } from "../dom/Root.js";
-import { BEGIN_SYNCHRONIZED_UPDATE, END_SYNCHRONIZED_UPDATE } from "../constants.js";
 import { Cursor } from "./Cursor.js";
 import { Canvas } from "../canvas/Canvas.js";
 import { RefreshWriter } from "./write/RefreshWriter.js";
 import { PreciseWriter } from "./write/PreciseWriter.js";
 import { DomRects } from "../compositor/DomRects.js";
+import { Ansi } from "../util/Ansi.js";
 
 export type WriteOpts = {
     resize?: boolean;
@@ -50,7 +50,7 @@ export class Renderer {
 
         this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));
 
-        process.stdout.write(BEGIN_SYNCHRONIZED_UPDATE);
+        process.stdout.write(Ansi.beginSynchronizedUpdate);
 
         if (this.shouldRefreshWrite(opts, compositor.canvas)) {
             this.refreshWriter.instructCursor(
@@ -85,7 +85,7 @@ export class Renderer {
             this.cursor.execute();
         }
 
-        process.stdout.write(END_SYNCHRONIZED_UPDATE);
+        process.stdout.write(Ansi.endSynchronizedUpdate);
 
         /**** POST-WRITE ****/
         this.perf.postWrite();

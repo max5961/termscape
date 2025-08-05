@@ -3,12 +3,12 @@ import { Emitter } from "./Stdin.js";
 import { root } from "../dom/Root.js";
 import { MouseEventType } from "./types.js";
 import EventEmitter from "events";
+import { Ansi } from "../util/Ansi.js";
 
 type MouseData = Exclude<Data["mouse"], undefined>;
 type Button = Extract<MouseEventType, "click" | "rightclick" | "scrollclick">;
 
 const CURSOR_POS_REGEX = /\x1b\[(\d+);\d+R/;
-const QUERY_CURSOR_POS_ANSI = "\x1b[6n";
 
 const DblClickEmitter = new EventEmitter<Record<Button, [number, number]>>();
 
@@ -61,7 +61,7 @@ export class MouseState {
 
             Emitter.on("CursorPosition", resolvePosition);
 
-            process.stdout.write(QUERY_CURSOR_POS_ANSI);
+            process.stdout.write(Ansi.queryCursorPosition);
         })
             .catch(() => {
                 // I think silent failure is best here, but could eventually add

@@ -1,4 +1,4 @@
-import ansi from "ansi-escape-sequences";
+import { Ansi } from "../util/Ansi.js";
 import fs from "fs";
 
 export class Cursor {
@@ -36,7 +36,7 @@ export class Cursor {
     }
 
     /**
-     * Batch any ansi sequences so that they can be flushed along with any output
+     * Batch any Ansi sequences so that they can be flushed along with any output
      * at once.  If debugging, it will be written immediately and `sleepSync` will
      * run to allow for observation.
      * */
@@ -109,14 +109,14 @@ export class Cursor {
     public rowsUp(rows: number): void {
         if (rows <= 0) return;
         this.updateCurrentRow(-rows);
-        this.deferAnsi(ansi.cursor.previousLine(rows));
+        this.deferAnsi(Ansi.cursor.previousLine(rows));
     }
 
     /** Move to col 0 of the next row down - `\x1b[<rows>E` */
     public rowsDown(rows: number): void {
         if (rows <= 0) return;
         this.updateCurrentRow(rows);
-        this.deferAnsi(ansi.cursor.nextLine(rows));
+        this.deferAnsi(Ansi.cursor.nextLine(rows));
     }
 
     /**
@@ -125,12 +125,12 @@ export class Cursor {
      * terminal is 1 based. This fn adds 1 to the col value.
      * */
     public moveToCol(col: number): void {
-        this.deferAnsi(ansi.cursor.horizontalAbsolute(col + 1));
+        this.deferAnsi(Ansi.cursor.horizontalAbsolute(col + 1));
     }
 
     /** Clear rest of line from cursor column. */
     public clearFromCursor() {
-        this.deferAnsi(ansi.erase.inLine(0));
+        this.deferAnsi(Ansi.erase.inLine(0));
     }
 
     /** Provide a negative number when the current row has moved **UP**. */
@@ -140,7 +140,7 @@ export class Cursor {
 
     /** Show or hide the cursor */
     public show(b: boolean): void {
-        this.deferAnsi(b ? ansi.cursor.show : ansi.cursor.hide);
+        this.deferAnsi(b ? Ansi.cursor.show : Ansi.cursor.hide);
         this.execute();
     }
 

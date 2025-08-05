@@ -1,5 +1,5 @@
-import { ANSI_RESET } from "../constants.js";
 import { GridToken, Point } from "../types.js";
+import { Ansi } from "../util/Ansi.js";
 import { Pen } from "./Pen.js";
 
 type SubCanvasConfig = {
@@ -67,7 +67,7 @@ export class Canvas {
 
         const length = end - start;
         const result = new Array(length + 1);
-        result[0] = ANSI_RESET;
+        result[0] = Ansi.style.reset;
 
         for (let i = 0; i < length; ++i) {
             const token = row[i + start];
@@ -82,7 +82,7 @@ export class Canvas {
             result[i + 1] = this.convertToken(token, leftAnsi, rightAnsi);
         }
 
-        return result.join("") + ANSI_RESET;
+        return result.join("") + Ansi.style.reset;
     }
 
     private convertToken(token: string | GridToken, leftAnsi: string, rightAnsi: string) {
@@ -98,11 +98,11 @@ export class Canvas {
 
             // Only left shares ansi - CLOSE ANSI
         } else if (token.ansi === leftAnsi && token.ansi !== rightAnsi) {
-            return token.char + ANSI_RESET;
+            return token.char + Ansi.style.reset;
 
             // Left and right share no ansi similarities - OPEN AND CLOSE ANSI
         } else {
-            return token.ansi + token.char + ANSI_RESET;
+            return token.ansi + token.char + Ansi.style.reset;
         }
     }
 }

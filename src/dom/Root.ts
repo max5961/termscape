@@ -48,11 +48,6 @@ export class Root extends DomElement {
         const cleanup = this.beginRuntime();
 
         this.exit = cleanup;
-
-        // For now, but could also use cleanup for a 'clean' exit function that
-        // can be called to end the process naturally by stopping all listeners.
-        // process.on("exit", cleanup);
-        // process.on("SIGINT", cleanup);
     }
 
     public setAttribute(): void {}
@@ -221,7 +216,7 @@ export class Root extends DomElement {
             process.stdin.setRawMode(true);
             process.stdin.on("data", (buf) => {
                 if (buf[0] === 3 || buf.toString("utf8") === "\x1b[99;5u") {
-                    process.stdout.write("^C");
+                    process.stdout.write("^C\n");
                     process.exit();
                 }
             });
