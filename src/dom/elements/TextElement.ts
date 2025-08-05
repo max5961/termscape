@@ -1,15 +1,13 @@
 import { DomElement } from "../DomElement.js";
 import { TextStyle } from "./attributes/text/TextStyle.js";
-import type { TTagNames } from "../../types.js";
+import { Root } from "../Root.js";
 
 export class TextElement extends DomElement {
     public textContent: string;
     public style: TextStyle;
-    public tagName: TTagNames;
 
-    constructor(textContent: string) {
-        super();
-        this.tagName = "TEXT_ELEMENT";
+    constructor(root: Root, textContent: string) {
+        super(root, "TEXT_ELEMENT");
         this.textContent = textContent;
         this.style = {} as TextStyle;
     }

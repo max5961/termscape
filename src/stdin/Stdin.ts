@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { ActionStore, InputState } from "term-keymap";
 import { EventEmitterMap } from "../types.js";
 import { MouseState } from "./MouseState.js";
-import { root } from "../dom/Root.js";
+import { Root, root } from "../dom/Root.js";
 
 export const Emitter = new EventEmitter<EventEmitterMap>();
 
@@ -11,19 +11,20 @@ export class Stdin {
     private inputState: InputState;
     private mouseState: MouseState;
 
-    constructor() {
+    constructor(root: Root) {
         this.store = new ActionStore();
         this.inputState = new InputState();
-        this.mouseState = new MouseState();
+        this.mouseState = new MouseState(root);
 
+        // if (root.opts.exitOnCtrlC) {
         this.store.subscribe({
             name: "quit",
             keymap: "<C-c>",
             callback: () => {
                 root.exit();
-                // process.exit();
             },
         });
+        // }
     }
 
     public listen = () => {

@@ -10,7 +10,8 @@ export type FriendDomElement = {
     // !!! This are changed to DomElement[] in DomElement
     children: FriendDomElement[];
 
-    root: null | Root;
+    root: Root | null;
+    isAttached: boolean;
     tagName: TTagNames;
     node: YogaNode;
     parentElement: null | DomElement;
@@ -31,11 +32,16 @@ export abstract class DomElement {
     private rect: FriendDomElement["rect"];
     private eventListeners: FriendDomElement["eventListeners"];
     private attributes: FriendDomElement["attributes"];
+    #root: FriendDomElement["root"];
+    protected isAttached: FriendDomElement["isAttached"];
+    public tagName: TTagNames;
 
-    public abstract tagName: FriendDomElement["tagName"];
     public abstract style: FriendDomElement["style"];
 
-    constructor() {
+    constructor(root: Root | null, tagName: TTagNames) {
+        this.#root = root;
+        this.tagName = tagName;
+        this.isAttached = false;
         this.node = Yoga.Node.create();
         this.children = [];
         this.parentElement = null;
@@ -94,12 +100,24 @@ export abstract class DomElement {
     }
 
     public appendChild(child: DomElement): void {
+        this.exitIfRootMismatch(
+            child,
+            "Cannot append child created by one root into another root",
+        );
+
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
         child.parentElement = this;
+
+        this.updateAttachState(child, true);
     }
 
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
+        this.exitIfRootMismatch(
+            child,
+            "Cannot insert child created by one root into another root",
+        );
+
         const nextChildren = [] as DomElement[];
         const idx = this.children.findIndex((el) => el === beforeChild);
 
@@ -113,6 +131,8 @@ export abstract class DomElement {
         this.children = nextChildren;
         this.node.insertChild(child.node, idx);
         child.parentElement = this;
+
+        this.updateAttachState(child, true);
     }
 
     public removeParent(): void {
@@ -125,6 +145,8 @@ export abstract class DomElement {
         this.children.splice(idx, 1);
         this.node.removeChild(child.node);
         child.node.freeRecursive();
+
+        this.updateAttachState(child, false);
     }
 
     public hide(): void {
@@ -158,4 +180,39 @@ export abstract class DomElement {
         if (y >= this.rect.bottom) return false;
         return true;
     };
+
+    public get root(): Root {
+        return this.#root ?? (this as unknown as Root);
+    }
+
+    protected exitIfRootMismatch(element: DomElement, msg: string) {
+        const root = this.root;
+        if (root !== element.root) {
+            root.exit(new Error(msg));
+        }
+    }
+
+    protected updateAttachState(elem: DomElement, appending: boolean): void {
+        const shouldAttach = this.shouldAttach() && appending;
+
+        this.dfs(elem, (elem) => {
+            elem.isAttached = shouldAttach;
+        });
+    }
+
+    /** Is this the root or an element already part of the root tree? */
+    protected shouldAttach() {
+        if (this.root) {
+            return this.isAttached;
+        } else {
+            return true;
+        }
+    }
+
+    private dfs(startNode: DomElement, cb: (elem: DomElement) => void): void {
+        cb(startNode);
+        startNode.children.forEach((child) => {
+            this.dfs(child, cb);
+        });
+    }
 }

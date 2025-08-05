@@ -10,6 +10,8 @@ import ansi from "ansi-escape-sequences";
 import { Capture } from "log-goblin";
 import { Ansi } from "../util/Ansi.js";
 import { configureStdin } from "term-keymap";
+import { BoxElement } from "./elements/BoxElement.js";
+import { TextElement } from "./elements/TextElement.js";
 
 export type ConfigureRoot = {
     debounceMs?: number;
@@ -20,20 +22,18 @@ export class Root extends DomElement {
     private scheduler: Scheduler;
     private renderer: Renderer;
     private stdin: Stdin;
-    public tagName: TTagNames;
     public style: {}; // abstract implementation noop;
     public hooks: RenderHooksManager;
     private prevConfig: ConfigureRoot;
     private isAltScreen: boolean;
-    public exit: () => void;
+    public exit: (error?: Error) => never;
 
     constructor(c: ConfigureRoot) {
-        super();
-        this.tagName = "ROOT_ELEMENT";
+        super(null, "ROOT_ELEMENT");
         this.scheduler = new Scheduler({ debounceMs: c.debounceMs });
         this.renderer = new Renderer();
         this.hooks = new RenderHooksManager(this.renderer.hooks);
-        this.stdin = new Stdin();
+        this.stdin = new Stdin(this);
 
         this.style = {};
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
@@ -46,7 +46,6 @@ export class Root extends DomElement {
         this.configure(c);
 
         const cleanup = this.beginRuntime();
-
         this.exit = cleanup;
     }
 
@@ -192,7 +191,7 @@ export class Root extends DomElement {
         this.stdin.listen();
 
         /***** Return cleanup function *****/
-        return () => {
+        return (error?: Error) => {
             process.stdout.write(Ansi.exitAltScreen);
             process.stdout.write(Ansi.cursor.show);
 
@@ -207,7 +206,7 @@ export class Root extends DomElement {
             Emitter.off("MouseEvent", this.handleMouseEvent);
             this.stdin.pause();
 
-            root.hooks.shouldRender(() => false);
+            this.hooks.shouldRender(() => false);
 
             // Once we have listened to stdin, the default ctrl-c no longer works,
             // so if the app contains any running loops this behavior should
@@ -220,7 +219,28 @@ export class Root extends DomElement {
                     process.exit();
                 }
             });
+
+            if (error) {
+                process.stdout.write(error.message + "\n" + error.stack ?? "");
+                process.exit();
+            }
         };
+    }
+
+    public createElement(tagName: TTagNames) {
+        if (tagName === "BOX_ELEMENT") {
+            return new BoxElement(this);
+        }
+
+        this.exit(new Error("Invalid element tagName"));
+    }
+
+    public createTextElement(tagName: TTagNames, textContent: string) {
+        if (tagName === "TEXT_ELEMENT") {
+            return new TextElement(this, textContent);
+        }
+
+        this.exit(new Error("Invalid textElement tagName"));
     }
 }
 

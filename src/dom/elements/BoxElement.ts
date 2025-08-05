@@ -1,17 +1,15 @@
 import Yoga from "yoga-wasm-web/auto";
-import { DomElement } from "../DomElement.js";
+import { DomElement, FriendDomElement } from "../DomElement.js";
 import { BoxStyle } from "./attributes/box/BoxStyle.js";
 import { Stylers } from "../helpers/Stylers.js";
-import type { TTagNames } from "../../types.js";
 import { createStyleProxy } from "../createStyleProxy.js";
+import { Root } from "../Root.js";
 
 export class BoxElement extends DomElement {
-    public tagName: TTagNames;
     public style: BoxStyle;
 
-    constructor() {
-        super();
-        this.tagName = "BOX_ELEMENT";
+    constructor(root: Root) {
+        super(root, "BOX_ELEMENT");
         this.style = createStyleProxy(
             {
                 zIndex: 0,
@@ -31,6 +29,7 @@ export class BoxElement extends DomElement {
 
                 Stylers.Box[prop]?.(this.node, val);
             },
+            this as unknown as FriendDomElement,
         );
 
         // Default styles

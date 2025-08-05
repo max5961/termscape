@@ -1,6 +1,6 @@
 import { Data } from "term-keymap";
 import { Emitter } from "./Stdin.js";
-import { root } from "../dom/Root.js";
+import { Root } from "../dom/Root.js";
 import { MouseEventType } from "./types.js";
 import EventEmitter from "events";
 import { Ansi } from "../util/Ansi.js";
@@ -14,8 +14,10 @@ const DblClickEmitter = new EventEmitter<Record<Button, [number, number]>>();
 
 export class MouseState {
     private prev: MouseData | null;
+    private root: Root;
 
-    constructor() {
+    constructor(root: Root) {
+        this.root = root;
         this.prev = null;
     }
 
@@ -79,7 +81,7 @@ export class MouseState {
                  * to the layout calculated by Yoga.
                  */
 
-                const height = root.getLayoutHeight();
+                const height = this.root.getLayoutHeight();
                 const topRow = cursorRow - height + 1;
                 const yoffset = topRow;
 
