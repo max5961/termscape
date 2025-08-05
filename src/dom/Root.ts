@@ -8,13 +8,14 @@ import { Emitter, Stdin } from "../stdin/Stdin.js";
 import { Event } from "./MouseEvent.js";
 import { Capture } from "log-goblin";
 import { Ansi } from "../util/Ansi.js";
-import { configureStdin } from "term-keymap";
+import { Action, configureStdin } from "term-keymap";
 import { BoxElement } from "./elements/BoxElement.js";
 import { TextElement } from "./elements/TextElement.js";
 
-export type ConfigureRoot = {
+export type RuntimeConfig = {
     debounceMs?: number;
     altScreen?: boolean;
+    exitOnCtrlC?: boolean;
 } & ConfigureStdin;
 
 export class Root extends DomElement {
@@ -23,22 +24,16 @@ export class Root extends DomElement {
     private stdin: Stdin;
     public style: {}; // abstract implementation noop;
     public hooks: RenderHooksManager;
-    private prevConfig: ConfigureRoot;
+    private config: RuntimeConfig;
     private isAltScreen: boolean;
     private cleanupHandlers: Map<string, () => void>;
 
     /** Safely exit app.  Most importantly, this makes sure that kitty protocol
      * is reset, which ensures proper term functioning post exit. */
-    public endRuntime: (...args: any) => void;
-    // public endRuntime: ReturnType<Root["startRuntime"]>;
+    public endRuntime: ReturnType<Root["startRuntime"]>;
 
-    constructor(c: ConfigureRoot = {}) {
+    constructor(c: RuntimeConfig = {}) {
         super(null, "ROOT_ELEMENT");
-        this.scheduler = new Scheduler({ debounceMs: c.debounceMs });
-        this.renderer = new Renderer(this);
-        this.hooks = new RenderHooksManager(this.renderer.hooks);
-        this.stdin = new Stdin(this);
-
         this.style = {};
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
         this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
@@ -46,44 +41,45 @@ export class Root extends DomElement {
         this.node.setFlexShrink(1);
 
         this.isAltScreen = false;
-        this.prevConfig = {};
-        this.configure(c);
         this.cleanupHandlers = new Map();
+        this.config = {};
+        this.configure(c);
+
+        this.scheduler = new Scheduler({ debounceMs: c.debounceMs });
+        this.renderer = new Renderer(this);
+        this.hooks = new RenderHooksManager(this.renderer.hooks);
+        this.stdin = new Stdin(this, this.config);
 
         this.endRuntime = this.startRuntime();
     }
 
     public setAttribute(): void {}
 
-    public configure(c: ConfigureRoot): void {
+    public configure(c: RuntimeConfig): void {
         /** Allow updates to individual keys without defaulting those previously set. */
-        const update = <T extends keyof ConfigureRoot>(
+        const update = <T extends keyof RuntimeConfig>(
             prop: T,
-            dft: ConfigureRoot[T],
-        ): Pick<ConfigureRoot, T> => {
-            return { [prop]: c[prop] ?? this.prevConfig[prop] ?? dft } as Pick<
-                ConfigureRoot,
+            dft: RuntimeConfig[T],
+        ): Pick<RuntimeConfig, T> => {
+            return { [prop]: c[prop] ?? this.config[prop] ?? dft } as Pick<
+                RuntimeConfig,
                 T
             >;
         };
 
-        const nextConfig: ConfigureRoot = {
+        const nextConfig: RuntimeConfig = {
             ...update("debounceMs", 16),
             ...update("altScreen", false),
             ...update("stdout", process.stdout),
-
-            // These all need to be triggered only during startStdin
-            // startStdin needs to only be triggered when explicitly stated, such as
-            // a mouse event
             ...update("enableMouse", true),
             ...update("mouseMode", 3),
             ...update("enableKittyProtocol", false),
+            ...update("exitOnCtrlC", true),
         };
 
-        configureStdin(nextConfig);
         this.scheduler.debounceMs = nextConfig.debounceMs!;
-        this.handleScreenChange(this.prevConfig.altScreen, nextConfig.altScreen);
-        this.prevConfig = nextConfig;
+        this.handleScreenChange(this.config.altScreen, nextConfig.altScreen);
+        Object.assign(this.config, nextConfig);
     }
 
     public useAltScreen(): void {
@@ -99,7 +95,7 @@ export class Root extends DomElement {
         this.renderer.writeToStdout(opts);
     };
 
-    public scheduleRender = (opts: WriteOpts) => {
+    private scheduleRender = (opts: WriteOpts) => {
         this.scheduler.scheduleUpdate(this.render, opts.capturedOutput);
     };
 
@@ -143,6 +139,7 @@ export class Root extends DomElement {
     }
 
     private startStdin() {
+        configureStdin(this.config);
         this.stdin.listen();
         this.updateCleanupHandler("STDIN", () => this.stdin.pause());
     }
@@ -169,22 +166,22 @@ export class Root extends DomElement {
     }
 
     private startResizeHandler() {
-        // setTimeout to ensure that the term has completed all tasks so that repaints
-        // aren't overwritten by repaints from the terminal itself.  Most likely
-        // this occurs before the resize event is dispatched, but it doesn't hurt.
-        const startResizeHandler = () => {
+        const handler = () => {
+            // setTimeout ensures the term has completed all tasks so that re-renders
+            // aren't overwritten by the terminal itself.  Most likely this occurs
+            // before the resize event is dispatched, but it doesn't hurt.
             setTimeout(() => {
                 this.render({ resize: true });
             }, 8);
         };
 
-        process.stdout.on("resize", startResizeHandler);
-        this.updateCleanupHandler("RESIZE", () =>
-            process.stdout.off("resize", startResizeHandler),
-        );
+        process.stdout.on("resize", handler);
+        this.updateCleanupHandler("RESIZE", () => process.stdout.off("resize", handler));
     }
 
     private startMouseListening() {
+        // Ideally, `term-keymap` should have a
+        // `const restore = configure("mouse", mouseSetting);` function
         Emitter.on("MouseEvent", this.handleMouseEvent);
         this.updateCleanupHandler("MOUSE_EVENT", () =>
             Emitter.off("MouseEvent", this.handleMouseEvent),
@@ -272,6 +269,12 @@ export class Root extends DomElement {
 
         return this.endRuntime(new Error("Invalid textElement tagName"));
     }
-}
 
-export const root = new Root({ debounceMs: 16 });
+    public addKeyListener(action: Action) {
+        return this.stdin.subscribe(action);
+    }
+
+    public removeKeyListener(action: Action) {
+        this.stdin.remove(action);
+    }
+}
