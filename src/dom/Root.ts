@@ -25,6 +25,7 @@ export class Root extends DomElement {
     public hooks: RenderHooksManager;
     private prevConfig: ConfigureRoot;
     private isAltScreen: boolean;
+    public exit: () => void;
 
     constructor(c: ConfigureRoot) {
         super();
@@ -46,10 +47,12 @@ export class Root extends DomElement {
 
         const cleanup = this.beginRuntime();
 
+        this.exit = cleanup;
+
         // For now, but could also use cleanup for a 'clean' exit function that
         // can be called to end the process naturally by stopping all listeners.
-        process.on("exit", cleanup);
-        process.on("SIGINT", cleanup);
+        // process.on("exit", cleanup);
+        // process.on("SIGINT", cleanup);
     }
 
     public setAttribute(): void {}
@@ -81,6 +84,7 @@ export class Root extends DomElement {
         if (this.prevConfig.altScreen !== nextConfig.altScreen) {
             if (nextConfig.altScreen && !this.isAltScreen) {
                 process.stdout.write(Ansi.enterAltScreen);
+                process.stdout.write(Ansi.cursor.position(1, 1));
                 this.isAltScreen = true;
                 this.render({ screenChange: true });
             } else if (!nextConfig.altScreen && this.isAltScreen) {
@@ -194,14 +198,33 @@ export class Root extends DomElement {
 
         /***** Return cleanup function *****/
         return () => {
+            process.stdout.write(Ansi.exitAltScreen);
+            process.stdout.write(Ansi.cursor.show);
+
+            // term-keymap *does* write this on exit, but it wasn't reliably
+            // taking effect, so running this is part of the cleanup function
+            // makes it more reliable.  Must be ran *after* exiting the alt screen.
+            // If kitty mode is enabled, the mode MUST be restored for normal
+            // term functioning after app exits.
+            process.stdout.write("\x1b[<u");
+
             process.stdout.off("resize", handleResize);
             Emitter.off("MouseEvent", this.handleMouseEvent);
             this.stdin.pause();
-            process.stdout.write(Ansi.cursor.show);
-            capture.stop();
-            if (this.isAltScreen) {
-                process.stdout.write(Ansi.exitAltScreen);
-            }
+
+            root.hooks.shouldRender(() => false);
+
+            // Once we have listened to stdin, the default ctrl-c no longer works,
+            // so if the app contains any running loops this behavior should
+            // still occur.
+            process.stdin.resume();
+            process.stdin.setRawMode(true);
+            process.stdin.on("data", (buf) => {
+                if (buf[0] === 3 || buf.toString("utf8") === "\x1b[99;5u") {
+                    process.stdout.write("^C");
+                    process.exit();
+                }
+            });
         };
     }
 }

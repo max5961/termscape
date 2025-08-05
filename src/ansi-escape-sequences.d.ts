@@ -225,7 +225,7 @@ declare module "ansi-escape-sequences" {
              * @param m {number} - column number
              * @return {string}
              */
-            position(n: number, m: number): number;
+            position(n: number, m: number): string;
 
             /**
              * Hides the cursor
