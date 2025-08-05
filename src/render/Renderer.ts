@@ -2,13 +2,13 @@ import { Compositor } from "../compositor/Compositor.js";
 import { FriendDomElement } from "../dom/DomElement.js";
 import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
-import { root } from "../dom/Root.js";
 import { Cursor } from "./Cursor.js";
 import { Canvas } from "../canvas/Canvas.js";
 import { RefreshWriter } from "./write/RefreshWriter.js";
 import { PreciseWriter } from "./write/PreciseWriter.js";
 import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../util/Ansi.js";
+import { Root } from "../dom/Root.js";
 
 export type WriteOpts = {
     resize?: boolean;
@@ -25,8 +25,10 @@ export class Renderer {
     private refreshWriter: RefreshWriter;
     public hooks: RenderHooks;
     private lastWasResize: number;
+    private root: Root;
 
-    constructor() {
+    constructor(root: Root) {
+        this.root = root;
         this.lastCanvas = null;
         this.rects = new DomRects();
         this.hooks = new RenderHooks();
@@ -46,7 +48,7 @@ export class Renderer {
         this.perf.preLayout();
 
         const compositor = new Compositor();
-        compositor.buildLayout(root as unknown as FriendDomElement);
+        compositor.buildLayout(this.root as unknown as FriendDomElement);
 
         this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));
 

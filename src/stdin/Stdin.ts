@@ -3,6 +3,7 @@ import { ActionStore, InputState } from "term-keymap";
 import { EventEmitterMap } from "../types.js";
 import { MouseState } from "./MouseState.js";
 import { Root, root } from "../dom/Root.js";
+import { Ansi } from "../util/Ansi.js";
 
 export const Emitter = new EventEmitter<EventEmitterMap>();
 
@@ -21,7 +22,7 @@ export class Stdin {
             name: "quit",
             keymap: "<C-c>",
             callback: () => {
-                root.exit();
+                root.endRuntime();
             },
         });
         // }
@@ -35,6 +36,7 @@ export class Stdin {
     public pause = () => {
         process.stdin.pause();
         process.stdin.off("data", this.handleBuffer);
+        process.stdout.write(Ansi.restoreFromKittyProtocol);
     };
 
     private handleBuffer = (buf: Buffer) => {

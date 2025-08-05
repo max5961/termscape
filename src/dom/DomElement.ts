@@ -188,12 +188,12 @@ export abstract class DomElement {
     protected exitIfRootMismatch(element: DomElement, msg: string) {
         const root = this.root;
         if (root !== element.root) {
-            root.exit(new Error(msg));
+            root.endRuntime(new Error(msg));
         }
     }
 
-    protected updateAttachState(elem: DomElement, appending: boolean): void {
-        const shouldAttach = this.shouldAttach() && appending;
+    protected updateAttachState(elem: DomElement, attach: boolean): void {
+        const shouldAttach = this.shouldAttach() && attach;
 
         this.dfs(elem, (elem) => {
             elem.isAttached = shouldAttach;
@@ -209,7 +209,7 @@ export abstract class DomElement {
         }
     }
 
-    private dfs(startNode: DomElement, cb: (elem: DomElement) => void): void {
+    protected dfs(startNode: DomElement, cb: (elem: DomElement) => void): void {
         cb(startNode);
         startNode.children.forEach((child) => {
             this.dfs(child, cb);

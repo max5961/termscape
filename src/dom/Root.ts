@@ -6,7 +6,6 @@ import Yoga from "yoga-wasm-web/auto";
 import type { ConfigureStdin, EventEmitterMap, TTagNames } from "../types.js";
 import { Emitter, Stdin } from "../stdin/Stdin.js";
 import { Event } from "./MouseEvent.js";
-import ansi from "ansi-escape-sequences";
 import { Capture } from "log-goblin";
 import { Ansi } from "../util/Ansi.js";
 import { configureStdin } from "term-keymap";
@@ -26,15 +25,17 @@ export class Root extends DomElement {
     public hooks: RenderHooksManager;
     private prevConfig: ConfigureRoot;
     private isAltScreen: boolean;
+    private cleanupHandlers: Map<string, () => void>;
 
     /** Safely exit app.  Most importantly, this makes sure that kitty protocol
      * is reset, which ensures proper term functioning post exit. */
-    public exit: ReturnType<Root["beginRuntime"]>;
+    public endRuntime: (...args: any) => void;
+    // public endRuntime: ReturnType<Root["startRuntime"]>;
 
-    constructor(c: ConfigureRoot) {
+    constructor(c: ConfigureRoot = {}) {
         super(null, "ROOT_ELEMENT");
         this.scheduler = new Scheduler({ debounceMs: c.debounceMs });
-        this.renderer = new Renderer();
+        this.renderer = new Renderer(this);
         this.hooks = new RenderHooksManager(this.renderer.hooks);
         this.stdin = new Stdin(this);
 
@@ -47,9 +48,9 @@ export class Root extends DomElement {
         this.isAltScreen = false;
         this.prevConfig = {};
         this.configure(c);
+        this.cleanupHandlers = new Map();
 
-        const cleanup = this.beginRuntime();
-        this.exit = cleanup;
+        this.endRuntime = this.startRuntime();
     }
 
     public setAttribute(): void {}
@@ -70,27 +71,18 @@ export class Root extends DomElement {
             ...update("debounceMs", 16),
             ...update("altScreen", false),
             ...update("stdout", process.stdout),
+
+            // These all need to be triggered only during startStdin
+            // startStdin needs to only be triggered when explicitly stated, such as
+            // a mouse event
             ...update("enableMouse", true),
             ...update("mouseMode", 3),
-            ...update("enableKittyProtocol", true),
+            ...update("enableKittyProtocol", false),
         };
 
         configureStdin(nextConfig);
         this.scheduler.debounceMs = nextConfig.debounceMs!;
-
-        if (this.prevConfig.altScreen !== nextConfig.altScreen) {
-            if (nextConfig.altScreen && !this.isAltScreen) {
-                process.stdout.write(Ansi.enterAltScreen);
-                process.stdout.write(Ansi.cursor.position(1, 1));
-                this.isAltScreen = true;
-                this.render({ screenChange: true });
-            } else if (!nextConfig.altScreen && this.isAltScreen) {
-                process.stdout.write(Ansi.exitAltScreen);
-                this.isAltScreen = false;
-                this.render({ screenChange: true });
-            }
-        }
-
+        this.handleScreenChange(this.prevConfig.altScreen, nextConfig.altScreen);
         this.prevConfig = nextConfig;
     }
 
@@ -117,6 +109,86 @@ export class Root extends DomElement {
 
     private findTargetElement(x: number, y: number): FriendDomElement | undefined {
         return this.renderer.rects.findTargetElement(x, y);
+    }
+
+    private startRuntime() {
+        this.startStdin(); // This should be conditional based on adding an input event listener
+        this.startConsoleCapture();
+        this.startCursorHide();
+        this.startResizeHandler();
+        this.startMouseListening();
+
+        this.updateAttachState(this, true);
+
+        return <T extends Error | undefined>(err?: T) => {
+            this.handleScreenChange(this.isAltScreen, false, false);
+
+            this.cleanupHandlers.forEach((handler) => {
+                handler();
+            });
+
+            this.updateAttachState(this, false);
+
+            if (err && err instanceof Error) {
+                throw err;
+            }
+
+            return undefined as T extends Error ? never : void;
+        };
+    }
+
+    private updateCleanupHandler(key: string, handler: () => void) {
+        this.cleanupHandlers.get(key)?.();
+        this.cleanupHandlers.set(key, handler);
+    }
+
+    private startStdin() {
+        this.stdin.listen();
+        this.updateCleanupHandler("STDIN", () => this.stdin.pause());
+    }
+
+    private startConsoleCapture() {
+        const capture = new Capture();
+        capture.on("output", (data) => {
+            this.scheduleRender({ resize: false, capturedOutput: data });
+        });
+        capture.start();
+
+        this.updateCleanupHandler("CONSOLE_CAPTURE", () => capture.stop());
+    }
+
+    private startCursorHide() {
+        const debug = process.env.RENDER_DEBUG;
+        if (!debug) {
+            process.stdout.write(Ansi.cursor.hide);
+        }
+        this.updateCleanupHandler(
+            "CURSOR_HIDE",
+            () => !debug && process.stdout.write(Ansi.cursor.show),
+        );
+    }
+
+    private startResizeHandler() {
+        // setTimeout to ensure that the term has completed all tasks so that repaints
+        // aren't overwritten by repaints from the terminal itself.  Most likely
+        // this occurs before the resize event is dispatched, but it doesn't hurt.
+        const startResizeHandler = () => {
+            setTimeout(() => {
+                this.render({ resize: true });
+            }, 8);
+        };
+
+        process.stdout.on("resize", startResizeHandler);
+        this.updateCleanupHandler("RESIZE", () =>
+            process.stdout.off("resize", startResizeHandler),
+        );
+    }
+
+    private startMouseListening() {
+        Emitter.on("MouseEvent", this.handleMouseEvent);
+        this.updateCleanupHandler("MOUSE_EVENT", () =>
+            Emitter.off("MouseEvent", this.handleMouseEvent),
+        );
     }
 
     private handleMouseEvent: (...args: EventEmitterMap["MouseEvent"]) => unknown = (
@@ -164,71 +236,25 @@ export class Root extends DomElement {
         propagate(element, element);
     };
 
-    private beginRuntime() {
-        /***** Capture console *****/
-        const capture = new Capture();
-        capture.on("output", (data) => {
-            this.scheduleRender({ resize: false, capturedOutput: data });
-        });
-        capture.start();
-
-        /***** Cursor *****/
-        if (!process.env.RENDER_DEBUG) {
-            process.stdout.write(ansi.cursor.hide);
+    private handleScreenChange(
+        prevIsAlt: boolean | undefined,
+        nextIsAlt: boolean | undefined,
+        render = true,
+    ) {
+        // DEFAULT_SCREEN --> ALT_SCREEN
+        if (!prevIsAlt && nextIsAlt) {
+            process.stdout.write(Ansi.enterAltScreen);
+            process.stdout.write(Ansi.cursor.position(1, 1));
+            this.isAltScreen = true;
+            this.root.render({ screenChange: true });
         }
 
-        /***** Set Listeners *****/
-        // setTimeout to ensure that the term has completed all tasks so that repaints
-        // aren't overwritten by repaints from the terminal itself.  Most likely
-        // this occurs before the resize event is dispatched, but it doesn't hurt.
-        const handleResize = () => {
-            setTimeout(() => {
-                this.render({ resize: true });
-            }, 8);
-        };
-
-        process.stdout.on("resize", handleResize);
-        Emitter.on("MouseEvent", this.handleMouseEvent);
-
-        /***** Stdin *****/
-        this.stdin.listen();
-
-        /***** Return cleanup function *****/
-        return <T extends Error | undefined>(err?: T) => {
+        // ALT_SCREEN --> DEFAULT_SCREEN
+        else if (prevIsAlt && !nextIsAlt) {
             process.stdout.write(Ansi.exitAltScreen);
-            process.stdout.write(Ansi.cursor.show);
-
-            // term-keymap *does* write this on exit, but it wasn't reliably
-            // taking effect, so running this is part of the cleanup function
-            // makes it more reliable.  Must be ran *after* exiting the alt screen.
-            // If kitty mode is enabled, the mode MUST be restored for normal
-            // term functioning after app exits.
-            process.stdout.write("\x1b[<u");
-
-            process.stdout.off("resize", handleResize);
-            Emitter.off("MouseEvent", this.handleMouseEvent);
-            this.stdin.pause();
-
-            this.hooks.shouldRender(() => false);
-
-            // Once we have listened to stdin, the default ctrl-c no longer works,
-            // so if the app contains any running loops this behavior should
-            // still occur.
-            process.stdin.resume();
-            process.stdin.setRawMode(true);
-            process.stdin.on("data", (buf) => {
-                if (buf[0] === 3 || buf.toString("utf8") === "\x1b[99;5u") {
-                    process.stdout.write("^C\n");
-                    process.exit();
-                }
-            });
-
-            if (err && err instanceof Error) {
-                throw err;
-            }
-
-            return undefined as T extends Error ? never : void;
-        };
+            this.isAltScreen = false;
+            if (render) this.render({ screenChange: true });
+        }
     }
 
     public createElement(tagName: TTagNames) {
@@ -236,15 +262,15 @@ export class Root extends DomElement {
             return new BoxElement(this);
         }
 
-        return this.exit(new Error("Invalid element tagName"));
+        return this.endRuntime(new Error("Invalid element tagName"));
     }
 
-    public createTextElement(tagName: TTagNames, textContent: string) {
+    public createTextNode(tagName: TTagNames, textContent: string) {
         if (tagName === "TEXT_ELEMENT") {
             return new TextElement(this, textContent);
         }
 
-        return this.exit(new Error("Invalid textElement tagName"));
+        return this.endRuntime(new Error("Invalid textElement tagName"));
     }
 }
 

@@ -1,5 +1,4 @@
 import ReactReconciler from "react-reconciler";
-import { Document } from "../dom/Document.js";
 import { DomElement } from "../dom/DomElement.js";
 import { TextElement } from "../dom/elements/TextElement.js";
 import { deepStrictEqual } from "../util/deepStrictEqual.js";
