@@ -26,7 +26,10 @@ export class Root extends DomElement {
     public hooks: RenderHooksManager;
     private prevConfig: ConfigureRoot;
     private isAltScreen: boolean;
-    public exit: (error?: Error) => never;
+
+    /** Safely exit app.  Most importantly, this makes sure that kitty protocol
+     * is reset, which ensures proper term functioning post exit. */
+    public exit: ReturnType<Root["beginRuntime"]>;
 
     constructor(c: ConfigureRoot) {
         super(null, "ROOT_ELEMENT");
@@ -191,7 +194,7 @@ export class Root extends DomElement {
         this.stdin.listen();
 
         /***** Return cleanup function *****/
-        return (error?: Error) => {
+        return <T extends Error | undefined>(err?: T) => {
             process.stdout.write(Ansi.exitAltScreen);
             process.stdout.write(Ansi.cursor.show);
 
@@ -220,10 +223,11 @@ export class Root extends DomElement {
                 }
             });
 
-            if (error) {
-                process.stdout.write(error.message + "\n" + error.stack ?? "");
-                process.exit();
+            if (err && err instanceof Error) {
+                throw err;
             }
+
+            return undefined as T extends Error ? never : void;
         };
     }
 
@@ -232,7 +236,7 @@ export class Root extends DomElement {
             return new BoxElement(this);
         }
 
-        this.exit(new Error("Invalid element tagName"));
+        return this.exit(new Error("Invalid element tagName"));
     }
 
     public createTextElement(tagName: TTagNames, textContent: string) {
@@ -240,7 +244,7 @@ export class Root extends DomElement {
             return new TextElement(this, textContent);
         }
 
-        this.exit(new Error("Invalid textElement tagName"));
+        return this.exit(new Error("Invalid textElement tagName"));
     }
 }
 
