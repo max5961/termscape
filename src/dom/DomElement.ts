@@ -5,6 +5,11 @@ import { Root } from "./Root.js";
 import type { DOMRect, TTagNames, Style } from "../types.js";
 import { type MouseEventType } from "../stdin/types.js";
 
+export type Helper<T extends keyof DomElement> = T;
+export type TupleUpdaterMethods = Helper<
+    "appendChild" | "insertBefore" | "removeChild" | "removeParent" | "hide" | "unhide"
+>;
+
 /** For accessing private members in trusted private package modules */
 export type FriendDomElement = {
     // !!! This are changed to DomElement[] in DomElement
@@ -19,6 +24,7 @@ export type FriendDomElement = {
     rect: DOMRect;
     attributes: Map<string, unknown>;
     style: Style;
+    scheduleRender: Root["scheduleRender"];
 
     containsPoint: (x: number, y: number) => boolean;
     executeListeners: (event: MouseEvent) => void;
@@ -35,16 +41,22 @@ export abstract class DomElement {
     #root: FriendDomElement["root"];
     protected isAttached: FriendDomElement["isAttached"];
     public tagName: TTagNames;
+    protected scheduleRender: FriendDomElement["scheduleRender"];
 
     public abstract style: FriendDomElement["style"];
 
-    constructor(root: Root | null, tagName: TTagNames) {
+    constructor(
+        root: Root | null,
+        tagName: TTagNames,
+        scheduleRender: Root["scheduleRender"],
+    ) {
         this.#root = root;
         this.tagName = tagName;
         this.isAttached = false;
         this.node = Yoga.Node.create();
         this.children = [];
         this.parentElement = null;
+        this.scheduleRender = scheduleRender;
         this.rect = {
             x: -1,
             y: -1,
@@ -87,9 +99,30 @@ export abstract class DomElement {
 
         // Define custom attributes
         this.attributes = new Map();
+
+        this.wrapAutoRender([
+            "appendChild",
+            "insertBefore",
+            "removeChild",
+            "removeParent",
+            "hide",
+            "unhide",
+        ]);
     }
 
     public abstract setAttribute(): void;
+
+    private wrapAutoRender(methods: TupleUpdaterMethods[]) {
+        for (const method of methods) {
+            const original = this[method] as (...args: any[]) => any;
+            if (typeof original === "function") {
+                (this[method] as (...args: any[]) => any) = (...args) => {
+                    original.apply(this, args);
+                    this.scheduleRender({ resize: true });
+                };
+            }
+        }
+    }
 
     public addEventListener(event: MouseEventType, handler: EventHandler): void {
         this.eventListeners[event].add(handler);
@@ -136,6 +169,8 @@ export abstract class DomElement {
     }
 
     public removeParent(): void {
+        const parent = this.parentElement;
+        parent?.removeChild(this);
         this.parentElement = null;
     }
 
@@ -195,9 +230,15 @@ export abstract class DomElement {
     protected updateAttachState(elem: DomElement, attach: boolean): void {
         const shouldAttach = this.shouldAttach() && attach;
 
-        this.dfs(elem, (elem) => {
-            elem.isAttached = shouldAttach;
-        });
+        const handler = (elem: DomElement) => (elem.isAttached = shouldAttach);
+
+        if (elem instanceof Root) {
+            for (const child of elem.children) {
+                this.dfs(child, handler);
+            }
+        } else {
+            this.dfs(this, handler);
+        }
     }
 
     /** Is this the root or an element already part of the root tree? */

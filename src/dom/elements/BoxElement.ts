@@ -8,8 +8,8 @@ import { Root } from "../Root.js";
 export class BoxElement extends DomElement {
     public style: BoxStyle;
 
-    constructor(root: Root) {
-        super(root, "BOX_ELEMENT");
+    constructor(root: Root, scheduleRender: Root["scheduleRender"]) {
+        super(root, "BOX_ELEMENT", scheduleRender);
         this.style = createStyleProxy(
             {
                 zIndex: 0,
@@ -29,7 +29,11 @@ export class BoxElement extends DomElement {
 
                 Stylers.Box[prop]?.(this.node, val);
             },
-            this as unknown as FriendDomElement,
+            () => {
+                if (this.isAttached) {
+                    this.scheduleRender({ resize: false });
+                }
+            },
         );
 
         // Default styles

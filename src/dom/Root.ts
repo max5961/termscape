@@ -33,21 +33,23 @@ export class Root extends DomElement {
     public endRuntime: ReturnType<Root["startRuntime"]>;
 
     constructor(c: RuntimeConfig = {}) {
-        super(null, "ROOT_ELEMENT");
+        super(null, "ROOT_ELEMENT", () => {});
+        this.isAttached = true;
         this.style = {};
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
         this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
         this.node.setFlexGrow(0);
         this.node.setFlexShrink(1);
 
+        this.scheduler = new Scheduler({ debounceMs: c.debounceMs });
+        this.renderer = new Renderer(this);
+        this.hooks = new RenderHooksManager(this.renderer.hooks);
+
         this.isAltScreen = false;
         this.cleanupHandlers = new Map();
         this.config = {};
         this.configure(c);
 
-        this.scheduler = new Scheduler({ debounceMs: c.debounceMs });
-        this.renderer = new Renderer(this);
-        this.hooks = new RenderHooksManager(this.renderer.hooks);
         this.stdin = new Stdin(this, this.config);
 
         this.endRuntime = this.startRuntime();
@@ -95,7 +97,7 @@ export class Root extends DomElement {
         this.renderer.writeToStdout(opts);
     };
 
-    private scheduleRender = (opts: WriteOpts) => {
+    protected scheduleRender = (opts: WriteOpts) => {
         this.scheduler.scheduleUpdate(this.render, opts.capturedOutput);
     };
 
@@ -256,7 +258,7 @@ export class Root extends DomElement {
 
     public createElement(tagName: TTagNames) {
         if (tagName === "BOX_ELEMENT") {
-            return new BoxElement(this);
+            return new BoxElement(this, this.scheduleRender);
         }
 
         return this.endRuntime(new Error("Invalid element tagName"));
@@ -264,7 +266,7 @@ export class Root extends DomElement {
 
     public createTextNode(tagName: TTagNames, textContent: string) {
         if (tagName === "TEXT_ELEMENT") {
-            return new TextElement(this, textContent);
+            return new TextElement(this, textContent, this.scheduleRender);
         }
 
         return this.endRuntime(new Error("Invalid textElement tagName"));

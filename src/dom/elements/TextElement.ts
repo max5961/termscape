@@ -6,8 +6,8 @@ export class TextElement extends DomElement {
     public textContent: string;
     public style: TextStyle;
 
-    constructor(root: Root, textContent: string) {
-        super(root, "TEXT_ELEMENT");
+    constructor(root: Root, textContent: string, scheduleRender: Root["scheduleRender"]) {
+        super(root, "TEXT_ELEMENT", scheduleRender);
         this.textContent = textContent;
         this.style = {} as TextStyle;
     }
