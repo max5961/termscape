@@ -37,4 +37,4 @@ export type Event = {
     stopImmediatePropagation: () => void;
 };
 
-export type EventHandler = (e: Event) => unknown;
+export type MouseEventHandler = (e: Event) => unknown;

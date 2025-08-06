@@ -8,8 +8,8 @@ import { Root } from "../Root.js";
 export class BoxElement extends DomElement {
     public style: BoxStyle;
 
-    constructor(root: Root, scheduleRender: Root["scheduleRender"]) {
-        super(root, "BOX_ELEMENT", scheduleRender);
+    constructor() {
+        super("BOX_ELEMENT");
         this.style = createStyleProxy(
             {
                 zIndex: 0,

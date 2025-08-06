@@ -15,8 +15,6 @@ export type FriendDomElement = {
     // !!! This are changed to DomElement[] in DomElement
     children: FriendDomElement[];
 
-    root: Root | null;
-    isAttached: boolean;
     tagName: TTagNames;
     node: YogaNode;
     parentElement: null | DomElement;
@@ -25,6 +23,8 @@ export type FriendDomElement = {
     attributes: Map<string, unknown>;
     style: Style;
     scheduleRender: Root["scheduleRender"];
+    removeAutoRenderProxy: () => void;
+    root: Root | DomElement;
 
     containsPoint: (x: number, y: number) => boolean;
     executeListeners: (event: MouseEvent) => void;
@@ -38,25 +38,18 @@ export abstract class DomElement {
     private rect: FriendDomElement["rect"];
     private eventListeners: FriendDomElement["eventListeners"];
     private attributes: FriendDomElement["attributes"];
-    #root: FriendDomElement["root"];
-    protected isAttached: FriendDomElement["isAttached"];
     public tagName: TTagNames;
-    protected scheduleRender: FriendDomElement["scheduleRender"];
+    protected removeAutoRenderProxy: FriendDomElement["removeAutoRenderProxy"];
+    protected root: FriendDomElement["root"];
 
     public abstract style: FriendDomElement["style"];
 
-    constructor(
-        root: Root | null,
-        tagName: TTagNames,
-        scheduleRender: Root["scheduleRender"],
-    ) {
-        this.#root = root;
+    constructor(tagName: TTagNames) {
+        this.root = this;
         this.tagName = tagName;
-        this.isAttached = false;
         this.node = Yoga.Node.create();
         this.children = [];
         this.parentElement = null;
-        this.scheduleRender = scheduleRender;
         this.rect = {
             x: -1,
             y: -1,
@@ -100,29 +93,10 @@ export abstract class DomElement {
         // Define custom attributes
         this.attributes = new Map();
 
-        this.wrapAutoRender([
-            "appendChild",
-            "insertBefore",
-            "removeChild",
-            "removeParent",
-            "hide",
-            "unhide",
-        ]);
+        this.removeAutoRenderProxy = () => {};
     }
 
     public abstract setAttribute(): void;
-
-    private wrapAutoRender(methods: TupleUpdaterMethods[]) {
-        for (const method of methods) {
-            const original = this[method] as (...args: any[]) => any;
-            if (typeof original === "function") {
-                (this[method] as (...args: any[]) => any) = (...args) => {
-                    original.apply(this, args);
-                    this.scheduleRender({ resize: true });
-                };
-            }
-        }
-    }
 
     public addEventListener(event: MouseEventType, handler: EventHandler): void {
         this.eventListeners[event].add(handler);
@@ -133,24 +107,14 @@ export abstract class DomElement {
     }
 
     public appendChild(child: DomElement): void {
-        this.exitIfRootMismatch(
-            child,
-            "Cannot append child created by one root into another root",
-        );
-
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
         child.parentElement = this;
 
-        this.updateAttachState(child, true);
+        child.root = this.root;
     }
 
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
-        this.exitIfRootMismatch(
-            child,
-            "Cannot insert child created by one root into another root",
-        );
-
         const nextChildren = [] as DomElement[];
         const idx = this.children.findIndex((el) => el === beforeChild);
 
@@ -164,14 +128,14 @@ export abstract class DomElement {
         this.children = nextChildren;
         this.node.insertChild(child.node, idx);
         child.parentElement = this;
-
-        this.updateAttachState(child, true);
+        child.root = this.root;
     }
 
     public removeParent(): void {
         const parent = this.parentElement;
         parent?.removeChild(this);
         this.parentElement = null;
+        this.root = this;
     }
 
     public removeChild(child: DomElement): void {
@@ -181,7 +145,7 @@ export abstract class DomElement {
         this.node.removeChild(child.node);
         child.node.freeRecursive();
 
-        this.updateAttachState(child, false);
+        child.root = child;
     }
 
     public hide(): void {
@@ -216,44 +180,61 @@ export abstract class DomElement {
         return true;
     };
 
-    public get root(): Root {
-        return this.#root ?? (this as unknown as Root);
-    }
-
-    protected exitIfRootMismatch(element: DomElement, msg: string) {
-        const root = this.root;
-        if (root !== element.root) {
-            root.endRuntime(new Error(msg));
-        }
-    }
-
-    protected updateAttachState(elem: DomElement, attach: boolean): void {
-        const shouldAttach = this.shouldAttach() && attach;
-
-        const handler = (elem: DomElement) => (elem.isAttached = shouldAttach);
-
-        if (elem instanceof Root) {
-            for (const child of elem.children) {
-                this.dfs(child, handler);
-            }
-        } else {
-            this.dfs(this, handler);
-        }
-    }
-
-    /** Is this the root or an element already part of the root tree? */
-    protected shouldAttach() {
-        if (this.root) {
-            return this.isAttached;
-        } else {
-            return true;
-        }
-    }
-
     protected dfs(startNode: DomElement, cb: (elem: DomElement) => void): void {
         cb(startNode);
         startNode.children.forEach((child) => {
             this.dfs(child, cb);
         });
+    }
+
+    ////////////////////////////////////////
+    // Proxies & Auto-Rendering          //
+    ///////////////////////////////////////
+
+    protected isAttached() {
+        return this.root instanceof Root;
+    }
+
+    private wrapDomMethods(methods: TupleUpdaterMethods[]) {
+        const reset = [] as (() => void)[];
+
+        for (const method of methods) {
+            const original = this[method] as (...args: any[]) => any;
+            if (typeof original === "function") {
+                (this[method] as (...args: any[]) => any) = (...args) => {
+                    original.apply(this, args);
+                    if (this.root instanceof Root) {
+                        this.root.scheduleRender({ resize: true });
+                    }
+                };
+                reset.push(() => {
+                    this[method] = original;
+                });
+            }
+        }
+
+        return () => {
+            reset.forEach((resetter) => resetter());
+        };
+    }
+
+    protected createAutoRenderProxy() {
+        // STYLE PROXY
+        const originalStyle = { ...this.style };
+        // this.style = this.createStyleProxy();
+
+        const unwrapMethods = this.wrapDomMethods([
+            "appendChild",
+            "insertBefore",
+            "removeChild",
+            "removeParent",
+            "hide",
+            "unhide",
+        ]);
+
+        this.removeAutoRenderProxy = () => {
+            // this.style = originalStyle;
+            unwrapMethods();
+        };
     }
 }

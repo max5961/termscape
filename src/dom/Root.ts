@@ -33,8 +33,7 @@ export class Root extends DomElement {
     public endRuntime: ReturnType<Root["startRuntime"]>;
 
     constructor(c: RuntimeConfig = {}) {
-        super(null, "ROOT_ELEMENT", () => {});
-        this.isAttached = true;
+        super("ROOT_ELEMENT");
         this.style = {};
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
         this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
@@ -97,7 +96,7 @@ export class Root extends DomElement {
         this.renderer.writeToStdout(opts);
     };
 
-    protected scheduleRender = (opts: WriteOpts) => {
+    public scheduleRender = (opts: WriteOpts) => {
         this.scheduler.scheduleUpdate(this.render, opts.capturedOutput);
     };
 
@@ -116,16 +115,12 @@ export class Root extends DomElement {
         this.startResizeHandler();
         this.startMouseListening();
 
-        this.updateAttachState(this, true);
-
         return <T extends Error | undefined>(err?: T) => {
             this.handleScreenChange(this.isAltScreen, false, false);
 
             this.cleanupHandlers.forEach((handler) => {
                 handler();
             });
-
-            this.updateAttachState(this, false);
 
             if (err && err instanceof Error) {
                 throw err;
@@ -245,7 +240,7 @@ export class Root extends DomElement {
             process.stdout.write(Ansi.enterAltScreen);
             process.stdout.write(Ansi.cursor.position(1, 1));
             this.isAltScreen = true;
-            this.root.render({ screenChange: true });
+            this.render({ screenChange: true });
         }
 
         // ALT_SCREEN --> DEFAULT_SCREEN
@@ -258,7 +253,7 @@ export class Root extends DomElement {
 
     public createElement(tagName: TTagNames) {
         if (tagName === "BOX_ELEMENT") {
-            return new BoxElement(this, this.scheduleRender);
+            return new BoxElement();
         }
 
         return this.endRuntime(new Error("Invalid element tagName"));
