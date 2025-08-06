@@ -17,37 +17,43 @@ export abstract class BaseElement {
     public node: YogaNode;
     public parentElement: null | BaseElement;
     public style: Style;
+    public focus: boolean;
 
     protected root: BaseElement | Root;
     protected children: BaseElement[];
     protected rect: DOMRect;
     protected attributes: Map<string, unknown>;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
+    protected actions: Set<Action>;
 
     constructor() {
         this.node = Yoga.Node.create();
         this.parentElement = null;
         this.style = {};
+        this.focus = false;
 
         this.root = this;
         this.children = [];
         this.rect = this.initRect();
         this.attributes = new Map();
         this.eventListeners = this.initEventListeners();
+        this.actions = new Set();
 
         this.proxyTreeManipulationMethods();
         this.proxyStyleObject();
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    //  TREE MANIPULATION METHODS                                            //
-    ///////////////////////////////////////////////////////////////////////////
+    // ========================================================================
+    // TREE MANIPULATION METHODS
+    // ========================================================================
 
     public appendChild(child: BaseElement): void {
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
         child.parentElement = this;
         child.root = this;
+
+        child.afterAttach();
     }
 
     public insertBefore(child: BaseElement, beforeChild: BaseElement): void {
@@ -65,9 +71,13 @@ export abstract class BaseElement {
         this.node.insertChild(child.node, idx);
         child.parentElement = this;
         child.root = this.root;
+
+        child.afterAttach();
     }
 
     public removeChild(child: BaseElement) {
+        child.beforeDetach();
+
         const idx = this.children.findIndex((el) => el === child);
         this.children.splice(idx, 1);
         this.node.removeChild(child.node);
@@ -80,9 +90,9 @@ export abstract class BaseElement {
         this.parentElement?.removeChild(this as unknown as BaseElement);
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    //  Reconciler                                                           //
-    ///////////////////////////////////////////////////////////////////////////
+    // ========================================================================
+    // Reconciler                                                           //
+    // ========================================================================
 
     public hide(): void {
         this.node.setDisplay(Yoga.DISPLAY_NONE);
@@ -101,9 +111,9 @@ export abstract class BaseElement {
         return yogaNodes;
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    //  DOMRects                                                             //
-    ///////////////////////////////////////////////////////////////////////////
+    // ========================================================================
+    // DOMRects
+    // ========================================================================
 
     private initRect() {
         return {
@@ -130,9 +140,9 @@ export abstract class BaseElement {
         return true;
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    //  Mouse Events                                                         //
-    ///////////////////////////////////////////////////////////////////////////
+    // ========================================================================
+    // Mouse Events
+    // ========================================================================
 
     private initEventListeners<
         T = BaseElement["eventListeners"][keyof BaseElement["eventListeners"]],
@@ -174,24 +184,60 @@ export abstract class BaseElement {
         this.eventListeners[event].delete(handler);
     }
 
-    // BaseElement should have a protected Set of actions and when added to
-    // a Root tree they should all subscribe.  If removed from the DomTree they
-    // should stay in the Set, but be unsubscribed
-    public addKeyListener(action: Action): void {
-        //
+    // ========================================================================
+    // Keymap Events
+    // ========================================================================
+
+    public addKeyListener(action: Action): () => void {
+        const origCb = action.callback;
+        action.callback = () => {
+            if (this.focus) {
+                origCb?.();
+            }
+        };
+
+        this.actions.add(action);
+        const root = this.getRealRoot();
+        root?.stdin.subscribe(action);
+        return () => {
+            this.removeKeyListener(action);
+            this.getRealRoot()?.stdin.remove(action);
+        };
     }
 
     public removeKeyListener(action: Action): void {
-        //
+        this.actions.delete(action);
+        const root = this.getRealRoot();
+        root?.stdin.remove(action);
     }
 
-    protected isAttached() {
-        return this.root instanceof Root;
+    protected afterAttach(): void {
+        const root = this.getRealRoot();
+
+        if (root) {
+            this.dfs(this, (elem) => {
+                elem.actions.forEach((action) => {
+                    root.stdin.subscribe(action);
+                });
+            });
+        }
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    //  Auto Render Proxy                                                    //
-    ///////////////////////////////////////////////////////////////////////////
+    protected beforeDetach(): void {
+        const root = this.getRealRoot();
+
+        if (root) {
+            this.dfs(this, (elem) => {
+                elem.actions.forEach((action) => {
+                    root.stdin.remove(action);
+                });
+            });
+        }
+    }
+
+    // ========================================================================
+    // Auto Render Proxy
+    // ========================================================================
 
     /** Requests a render on any modification of the style object (if attached to a Root) */
     protected abstract proxyStyleObject(): void;
@@ -218,6 +264,21 @@ export abstract class BaseElement {
             }
         }
     }
+
+    // ========================================================================
+    // Util
+    // ========================================================================
+
+    private getRealRoot(): Root | undefined {
+        return this.root instanceof Root ? this.root : undefined;
+    }
+
+    private dfs(elem: BaseElement, cb: (elem: BaseElement) => void) {
+        cb(elem);
+        elem.children.forEach((child) => {
+            this.dfs(child, cb);
+        });
+    }
 }
 
 export type RuntimeConfig = {
@@ -230,9 +291,9 @@ export class Root extends BaseElement {
     public tagName: TTagNames;
     public hooks: RenderHooksManager;
 
+    public stdin: Stdin;
     private scheduler: Scheduler;
     private renderer: Renderer;
-    private stdin: Stdin;
     private config: RuntimeConfig;
 
     constructor(config: RuntimeConfig) {
