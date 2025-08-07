@@ -1,5 +1,12 @@
 import Yoga from "yoga-wasm-web/auto";
-import { ConfigureStdin, DOMRect, Style, TTagNames, YogaNode } from "../types.js";
+import {
+    ConfigureStdin,
+    DOMRect,
+    RuntimeConfig,
+    Style,
+    TTagNames,
+    YogaNode,
+} from "../types.js";
 import { type MouseEventHandler, type MouseEventType } from "../stdin/types.js";
 import { Scheduler } from "./Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
@@ -7,20 +14,19 @@ import { RenderHooksManager } from "../render/RenderHooks.js";
 import { Stdin } from "../stdin/Stdin.js";
 import { Ansi } from "../util/Ansi.js";
 import { Action } from "term-keymap";
+import { Runtime } from "./Runtime.js";
 
-export type FriendBaseElement = {
-    [P in keyof BaseElement]: BaseElement[P];
-};
+export type FriendDomElement = { [P in keyof DomElement]: DomElement[P] };
 
-export abstract class BaseElement {
+export abstract class DomElement {
     public abstract tagName: TTagNames;
     public node: YogaNode;
-    public parentElement: null | BaseElement;
+    public parentElement: null | DomElement;
     public style: Style;
     public focus: boolean;
 
-    protected root: BaseElement | Root;
-    protected children: BaseElement[];
+    protected root: DomElement | Root;
+    protected children: DomElement[];
     protected rect: DOMRect;
     protected attributes: Map<string, unknown>;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
@@ -47,7 +53,7 @@ export abstract class BaseElement {
     // TREE MANIPULATION METHODS
     // ========================================================================
 
-    public appendChild(child: BaseElement): void {
+    public appendChild(child: DomElement): void {
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
         child.parentElement = this;
@@ -56,8 +62,8 @@ export abstract class BaseElement {
         child.afterAttach();
     }
 
-    public insertBefore(child: BaseElement, beforeChild: BaseElement): void {
-        const nextChildren = [] as BaseElement[];
+    public insertBefore(child: DomElement, beforeChild: DomElement): void {
+        const nextChildren = [] as DomElement[];
         const idx = this.children.findIndex((el) => el === beforeChild);
 
         for (let i = 0; i < this.children.length; ++i) {
@@ -75,7 +81,7 @@ export abstract class BaseElement {
         child.afterAttach();
     }
 
-    public removeChild(child: BaseElement) {
+    public removeChild(child: DomElement) {
         child.beforeDetach();
 
         const idx = this.children.findIndex((el) => el === child);
@@ -87,7 +93,7 @@ export abstract class BaseElement {
     }
 
     public removeParent() {
-        this.parentElement?.removeChild(this as unknown as BaseElement);
+        this.parentElement?.removeChild(this as unknown as DomElement);
     }
 
     // ========================================================================
@@ -145,7 +151,7 @@ export abstract class BaseElement {
     // ========================================================================
 
     private initEventListeners<
-        T = BaseElement["eventListeners"][keyof BaseElement["eventListeners"]],
+        T = DomElement["eventListeners"][keyof DomElement["eventListeners"]],
     >() {
         return {
             // LEFT BTN
@@ -198,41 +204,39 @@ export abstract class BaseElement {
 
         this.actions.add(action);
         const root = this.getRealRoot();
-        root?.stdin.subscribe(action);
+        root?.addKeyListener(action); // Root overrides `addKeyListener`
         return () => {
             this.removeKeyListener(action);
-            this.getRealRoot()?.stdin.remove(action);
+            this.getRealRoot()?.removeKeyListener(action);
         };
     }
 
     public removeKeyListener(action: Action): void {
         this.actions.delete(action);
         const root = this.getRealRoot();
-        root?.stdin.remove(action);
+        root?.removeKeyListener(action);
     }
 
     protected afterAttach(): void {
         const root = this.getRealRoot();
+        if (!root) return;
 
-        if (root) {
-            this.dfs(this, (elem) => {
-                elem.actions.forEach((action) => {
-                    root.stdin.subscribe(action);
-                });
+        this.dfs(this, (elem) => {
+            elem.actions.forEach((action) => {
+                root.addKeyListener(action);
             });
-        }
+        });
     }
 
     protected beforeDetach(): void {
         const root = this.getRealRoot();
+        if (!root) return;
 
-        if (root) {
-            this.dfs(this, (elem) => {
-                elem.actions.forEach((action) => {
-                    root.stdin.remove(action);
-                });
+        this.dfs(this, (elem) => {
+            elem.actions.forEach((action) => {
+                root.removeKeyListener(action);
             });
-        }
+        });
     }
 
     // ========================================================================
@@ -244,7 +248,7 @@ export abstract class BaseElement {
 
     /** Requests a render on any tree manipulation method call (if attached to a Root) */
     private proxyTreeManipulationMethods(): void {
-        const methods: (keyof BaseElement)[] = [
+        const methods: (keyof DomElement)[] = [
             "appendChild",
             "insertBefore",
             "removeParent",
@@ -259,7 +263,7 @@ export abstract class BaseElement {
             if (typeof original === "function") {
                 (this[method] as (...args: any[]) => any) = (...args) => {
                     original(...args);
-                    (this.root as Root)?.scheduleRender({ resize: false });
+                    this.getRealRoot()?.scheduleRender({ resize: false });
                 };
             }
         }
@@ -269,11 +273,11 @@ export abstract class BaseElement {
     // Util
     // ========================================================================
 
-    private getRealRoot(): Root | undefined {
+    protected getRealRoot(): Root | undefined {
         return this.root instanceof Root ? this.root : undefined;
     }
 
-    private dfs(elem: BaseElement, cb: (elem: BaseElement) => void) {
+    private dfs(elem: DomElement, cb: (elem: DomElement) => void) {
         cb(elem);
         elem.children.forEach((child) => {
             this.dfs(child, cb);
@@ -281,62 +285,55 @@ export abstract class BaseElement {
     }
 }
 
-export type RuntimeConfig = {
-    debounceMs?: number;
-    altScreen?: boolean;
-    exitOnCtrlC?: boolean;
-} & ConfigureStdin;
-
-export class Root extends BaseElement {
+export class Root extends DomElement {
     public tagName: TTagNames;
     public hooks: RenderHooksManager;
+    public runtime: Runtime;
 
-    public stdin: Stdin;
+    private stdin: Stdin;
     private scheduler: Scheduler;
     private renderer: Renderer;
-    private config: RuntimeConfig;
 
     constructor(config: RuntimeConfig) {
         super();
         this.tagName = "ROOT_ELEMENT";
-        this.config = this.initConfig();
-        this.configure(config);
+        this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
+        this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
+        this.node.setFlexGrow(0);
+        this.node.setFlexShrink(1);
 
-        // @ts-expect-error because refactor
-        this.renderer = new Renderer();
-        // @ts-expect-error because refactor
+        this.renderer = new Renderer(this);
+        this.stdin = new Stdin(this);
+        this.hooks = new RenderHooksManager(this.renderer.hooks);
         this.scheduler = new Scheduler();
-        // @ts-expect-error because refactor
-        this.stdin = new Stdin();
-        // @ts-expect-error because refactor
-        this.hooks = new RenderHooksManager();
+        this.runtime = new Runtime(this, this.scheduler, this.stdin);
+
+        this.configureRuntime(config);
     }
 
     // Noop implementation in Root
     protected proxyStyleObject(): void {}
 
-    private initConfig(): RuntimeConfig {
-        return {
-            debounceMs: 16,
-            altScreen: false,
-            stdout: process.stdout,
-            enableMouse: true,
-            mouseMode: 3,
-            enableKittyProtocol: true,
-            exitOnCtrlC: true,
+    public configureRuntime(config: RuntimeConfig) {
+        Object.entries(config).forEach(([key, val]) => {
+            if (val !== undefined && key in this.runtime) {
+                (this.runtime as any)[key] = val;
+            }
+        });
+    }
+
+    public override addKeyListener(action: Action): () => void {
+        this.stdin.subscribe(action);
+        return () => {
+            this.stdin.remove(action);
         };
     }
 
-    public configure(config: RuntimeConfig) {
-        const prevScreenState = this.config.altScreen;
-
-        Object.assign(this.config, config);
-
-        this.scheduler.debounceMs = this.config.debounceMs ?? 16;
-        this.handleScreenChange(prevScreenState, this.config.altScreen);
+    public override removeKeyListener(action: Action): void {
+        this.stdin.remove(action);
     }
 
-    private render(opts: { screenChange: boolean }) {
+    public render(opts: { screenChange: boolean }) {
         //
     }
 
@@ -344,22 +341,7 @@ export class Root extends BaseElement {
         //
     }
 
-    private handleScreenChange(
-        prevIsAlt: boolean | undefined,
-        nextIsAlt: boolean | undefined,
-        render = true,
-    ) {
-        // DEFAULT_SCREEN --> ALT_SCREEN
-        if (!prevIsAlt && nextIsAlt) {
-            process.stdout.write(Ansi.enterAltScreen);
-            process.stdout.write(Ansi.cursor.position(1, 1));
-            this.render({ screenChange: true });
-        }
-
-        // ALT_SCREEN --> DEFAULT_SCREEN
-        else if (prevIsAlt && !nextIsAlt) {
-            process.stdout.write(Ansi.exitAltScreen);
-            if (render) this.render({ screenChange: true });
-        }
+    public endRuntime() {
+        //
     }
 }

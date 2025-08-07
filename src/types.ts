@@ -34,4 +34,10 @@ export type EventEmitterMap = {
     CursorPosition: [y: number];
 };
 
-export type ConfigureStdin = Parameters<typeof configureStdin>[0];
+export type ConfigureStdin = Exclude<Parameters<typeof configureStdin>[0], undefined>;
+
+export type RuntimeConfig = {
+    debounceMs?: number;
+    altScreen?: boolean;
+    exitOnCtrlC?: boolean;
+} & ConfigureStdin;

@@ -9,8 +9,8 @@ export class Scheduler {
     private updater: null | Updater;
     private capturedOutput: string[];
 
-    constructor({ debounceMs }: { debounceMs?: number }) {
-        this.debounceMs = debounceMs ?? 8;
+    constructor() {
+        this.debounceMs = 16;
         this.tickScheduled = false;
         this.wait = false;
         this.updater = null;

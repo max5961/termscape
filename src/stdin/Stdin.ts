@@ -2,41 +2,31 @@ import { EventEmitter } from "node:events";
 import { Action, ActionStore, InputState } from "term-keymap";
 import { EventEmitterMap } from "../types.js";
 import { MouseState } from "./MouseState.js";
-import { RuntimeConfig, Root } from "../dom/Root.js";
-import { Ansi } from "../util/Ansi.js";
+import { Root } from "../dom/BaseElement.js";
 
 export const Emitter = new EventEmitter<EventEmitterMap>();
 
 export class Stdin {
-    private config: RuntimeConfig;
     private store: ActionStore;
     private inputState: InputState;
     private mouseState: MouseState;
-    private endRuntime: Action;
+    private _stdin: typeof process.stdin;
 
-    constructor(root: Root, config: RuntimeConfig) {
-        this.config = config;
+    constructor(root: Root) {
         this.store = new ActionStore();
         this.inputState = new InputState();
         this.mouseState = new MouseState(root);
-        this.endRuntime = {
-            name: "quit",
-            keymap: "<C-c>",
-            callback: () => {
-                root.endRuntime();
-            },
-        };
+        this._stdin = process.stdin;
     }
 
     public listen = () => {
-        process.stdin.resume();
-        process.stdin.on("data", this.handleBuffer);
+        this._stdin.resume();
+        this._stdin.on("data", this.handleBuffer);
     };
 
     public pause = () => {
-        process.stdin.pause();
-        process.stdin.off("data", this.handleBuffer);
-        process.stdout.write(Ansi.restoreFromKittyProtocol);
+        this._stdin.pause();
+        this._stdin.off("data", this.handleBuffer);
     };
 
     private handleBuffer = (buf: Buffer) => {
@@ -45,13 +35,16 @@ export class Stdin {
     };
 
     public subscribe(action: Action) {
-        if (this.config.exitOnCtrlC) {
-            this.store.subscribe(this.endRuntime);
-        }
         return this.store.subscribe(action);
     }
 
     public remove(action: Action) {
         this.store.unsubscribe(action);
+    }
+
+    public set stdinStream(stdin: typeof process.stdin) {
+        this.pause();
+        this._stdin = stdin;
+        this.listen();
     }
 }

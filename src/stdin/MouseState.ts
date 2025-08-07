@@ -1,6 +1,6 @@
 import { Data } from "term-keymap";
 import { Emitter } from "./Stdin.js";
-import { Root } from "../dom/Root.js";
+import { Root } from "../dom/BaseElement.js";
 import { MouseEventType } from "./types.js";
 import EventEmitter from "events";
 import { Ansi } from "../util/Ansi.js";
