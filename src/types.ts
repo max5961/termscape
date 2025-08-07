@@ -2,7 +2,7 @@ import { configureStdin } from "term-keymap";
 import { TagNames } from "./constants.js";
 import { BoxStyle } from "./dom/elements/attributes/box/BoxStyle.js";
 import { TextStyle } from "./dom/elements/attributes/text/TextStyle.js";
-import { MouseEventType } from "./stdin/types.js";
+import { MouseEventType } from "./dom/MouseEvent.js";
 
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
 export type { Node as YogaNode } from "yoga-wasm-web/auto";

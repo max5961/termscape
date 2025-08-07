@@ -8,7 +8,7 @@ import { RefreshWriter } from "./write/RefreshWriter.js";
 import { PreciseWriter } from "./write/PreciseWriter.js";
 import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../util/Ansi.js";
-import { Root } from "../dom/BaseElement.js";
+import { Root } from "../dom/Root.js";
 
 export type WriteOpts = {
     resize?: boolean;

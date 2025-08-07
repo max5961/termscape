@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { Action, ActionStore, InputState } from "term-keymap";
 import { EventEmitterMap } from "../types.js";
 import { MouseState } from "./MouseState.js";
-import { Root } from "../dom/BaseElement.js";
+import { Root } from "../dom/Root.js";
 
 export const Emitter = new EventEmitter<EventEmitterMap>();
 

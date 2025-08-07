@@ -1,16 +1,37 @@
 import Yoga from "yoga-wasm-web/auto";
-import { DomElement, FriendDomElement } from "../DomElement.js";
 import { BoxStyle } from "./attributes/box/BoxStyle.js";
 import { Stylers } from "../helpers/Stylers.js";
-import { createStyleProxy } from "../createStyleProxy.js";
-import { Root } from "../Root.js";
+import { createStyleProxy } from "../archive/createStyleProxy.js";
+import { DomElement } from "../DomElement.js";
+import { TTagNames } from "../../types.js";
 
 export class BoxElement extends DomElement {
     public style: BoxStyle;
+    public tagName: TTagNames;
 
     constructor() {
-        super("BOX_ELEMENT");
-        this.style = createStyleProxy(
+        super();
+        this.tagName = "BOX_ELEMENT";
+        this.style = this.proxyStyleObject();
+
+        // Default styles
+        this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
+        this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
+        this.node.setFlexGrow(0);
+        this.node.setFlexShrink(1);
+
+        this.style.flexWrap = "nowrap";
+        this.style.flexDirection = "row";
+        this.style.flexGrow = 0;
+        this.style.flexShrink = 1;
+    }
+
+    public setAttribute(): void {
+        //
+    }
+
+    protected proxyStyleObject() {
+        return createStyleProxy(
             {
                 zIndex: 0,
                 flexWrap: "nowrap",
@@ -30,25 +51,10 @@ export class BoxElement extends DomElement {
                 Stylers.Box[prop]?.(this.node, val);
             },
             () => {
-                if (this.isAttached) {
-                    this.scheduleRender({ resize: false });
-                }
+                // if (this.isAttached) {
+                //     this.scheduleRender({ resize: false });
+                // }
             },
         );
-
-        // Default styles
-        this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
-        this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
-        this.node.setFlexGrow(0);
-        this.node.setFlexShrink(1);
-
-        this.style.flexWrap = "nowrap";
-        this.style.flexDirection = "row";
-        this.style.flexGrow = 0;
-        this.style.flexShrink = 1;
-    }
-
-    public setAttribute(): void {
-        //
     }
 }

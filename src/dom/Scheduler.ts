@@ -1,6 +1,6 @@
 import { Root } from "./Root.js";
 
-type Updater = (typeof Root)["prototype"]["render"];
+type Updater = Root["render"];
 
 export class Scheduler {
     public debounceMs: number;

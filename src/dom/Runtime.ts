@@ -1,5 +1,5 @@
 import { Action } from "term-keymap";
-import { Root } from "./BaseElement.js";
+import { Root } from "./Root.js";
 import { setMouse } from "term-keymap";
 import { Scheduler } from "./Scheduler.js";
 import { Ansi } from "../util/Ansi.js";

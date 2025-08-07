@@ -1,5 +1,5 @@
-import { FriendDomElement } from "../dom/DomElement.js";
 import { Canvas } from "../canvas/Canvas.js";
+import { DomElement, FriendDomElement } from "../dom/DomElement.js";
 
 export type DomRectLayer = {
     x: Record<number, FriendDomElement[]>;
@@ -46,8 +46,8 @@ export class DomRects {
     }
 
     public storeElementPosition(zIndex: number, elem: FriendDomElement) {
-        const x = elem.rect!.x;
-        const y = elem.rect!.y;
+        const x = elem.rect.x;
+        const y = elem.rect.y;
 
         this.layers[zIndex] = this.layers[zIndex] ?? {
             x: {},
@@ -61,7 +61,7 @@ export class DomRects {
         this.layers[zIndex].y[y].push(elem);
     }
 
-    public findTargetElement(x: number, y: number): FriendDomElement | undefined {
+    public findTargetElement(x: number, y: number): DomElement | undefined {
         const sortedLayers = Object.keys(this.layers)
             .sort((a, b) => Number(b) - Number(a))
             .map((s) => Number(s));

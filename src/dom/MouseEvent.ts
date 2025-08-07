@@ -1,23 +1,33 @@
-import { MouseEventType } from "../stdin/types.js";
-import { stringEnum } from "../util/stringEnum.js";
 import { DomElement } from "./DomElement.js";
 
-export const MouseEvent = stringEnum(
-    "Click",
-    "DoubleClick",
-    "RightClick",
-    "RightDoubleClick",
-    "MouseDown",
-    "MouseUp",
-    "RightMouseDown",
-    "RightMouseUp",
-    "ScrollDown",
-    "ScrollUp",
-);
+export type MouseEventType =
+    // LEFT BTN
+    | "click"
+    | "dblclick"
+    | "mousedown"
+    | "mouseup"
 
-export type MouseEvent = keyof typeof MouseEvent;
+    // RIGHT BTN
+    | "rightclick"
+    | "rightdblclick"
+    | "rightmousedown"
+    | "rightmouseup"
 
-export type Event = {
+    // SCROLL WHEEL
+    | "scrollup"
+    | "scrolldown"
+    | "scrollclick"
+    | "scrolldblclick"
+    | "scrollbtndown"
+    | "scrollbtnup"
+
+    // MOVEMENT
+    | "mousemove"
+    | "drag"
+    | "dragstart"
+    | "dragend";
+
+export type MouseEvent = {
     type: MouseEventType;
     clientX: number;
     clientY: number;
@@ -27,4 +37,4 @@ export type Event = {
     stopImmediatePropagation: () => void;
 };
 
-export type EventHandler = (e: Event) => unknown;
+export type MouseEventHandler = (e: MouseEvent) => unknown;
