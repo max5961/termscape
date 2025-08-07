@@ -1,18 +1,10 @@
 import Yoga from "yoga-wasm-web/auto";
-import {
-    ConfigureStdin,
-    DOMRect,
-    RuntimeConfig,
-    Style,
-    TTagNames,
-    YogaNode,
-} from "../types.js";
+import { DOMRect, RuntimeConfig, Style, TTagNames, YogaNode } from "../types.js";
 import { type MouseEventHandler, type MouseEventType } from "../stdin/types.js";
 import { Scheduler } from "./Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { RenderHooksManager } from "../render/RenderHooks.js";
 import { Stdin } from "../stdin/Stdin.js";
-import { Ansi } from "../util/Ansi.js";
 import { Action } from "term-keymap";
 import { Runtime } from "./Runtime.js";
 
@@ -31,6 +23,7 @@ export abstract class DomElement {
     protected attributes: Map<string, unknown>;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
     protected actions: Set<Action>;
+    protected hasReqInputStream: boolean;
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -44,6 +37,7 @@ export abstract class DomElement {
         this.attributes = new Map();
         this.eventListeners = this.initEventListeners();
         this.actions = new Set();
+        this.hasReqInputStream = false;
 
         this.proxyTreeManipulationMethods();
         this.proxyStyleObject();
@@ -184,6 +178,7 @@ export abstract class DomElement {
 
     public addEventListener(event: MouseEventType, handler: MouseEventHandler): void {
         this.eventListeners[event].add(handler);
+        this.hasReqInputStream = true;
     }
 
     public removeEventListener(event: MouseEventType, handler: MouseEventHandler): void {
@@ -195,6 +190,8 @@ export abstract class DomElement {
     // ========================================================================
 
     public addKeyListener(action: Action): () => void {
+        this.hasReqInputStream = true;
+
         const origCb = action.callback;
         action.callback = () => {
             if (this.focus) {
@@ -222,6 +219,10 @@ export abstract class DomElement {
         if (!root) return;
 
         this.dfs(this, (elem) => {
+            if (elem.hasReqInputStream) {
+                root.connectToInput();
+            }
+
             elem.actions.forEach((action) => {
                 root.addKeyListener(action);
             });
@@ -322,14 +323,18 @@ export class Root extends DomElement {
         });
     }
 
-    public override addKeyListener(action: Action): () => void {
+    public addKeyListener(action: Action): () => void {
         this.stdin.subscribe(action);
         return () => {
             this.stdin.remove(action);
         };
     }
 
-    public override removeKeyListener(action: Action): void {
+    public connectToInput() {
+        this.stdin.listen();
+    }
+
+    public removeKeyListener(action: Action): void {
         this.stdin.remove(action);
     }
 
@@ -341,7 +346,7 @@ export class Root extends DomElement {
         //
     }
 
-    public endRuntime() {
+    private beginRuntime() {
         //
     }
 }

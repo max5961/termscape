@@ -11,20 +11,26 @@ export class Stdin {
     private inputState: InputState;
     private mouseState: MouseState;
     private _stdin: typeof process.stdin;
+    private listeningStatus: boolean;
 
     constructor(root: Root) {
         this.store = new ActionStore();
         this.inputState = new InputState();
         this.mouseState = new MouseState(root);
         this._stdin = process.stdin;
+        this.listeningStatus = false;
     }
 
     public listen = () => {
-        this._stdin.resume();
-        this._stdin.on("data", this.handleBuffer);
+        if (!this.listeningStatus) {
+            this._stdin.resume();
+            this._stdin.on("data", this.handleBuffer);
+            this.listeningStatus = true;
+        }
     };
 
     public pause = () => {
+        this.listeningStatus = false;
         this._stdin.pause();
         this._stdin.off("data", this.handleBuffer);
     };
