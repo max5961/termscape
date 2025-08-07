@@ -1,6 +1,6 @@
 import { TextStyle } from "./attributes/text/TextStyle.js";
 import { DomElement } from "../DomElement.js";
-import { TTagNames } from "../../types.js";
+import { Style, TTagNames } from "../../types.js";
 
 export class TextElement extends DomElement {
     public textContent: string;
@@ -18,9 +18,7 @@ export class TextElement extends DomElement {
         //
     }
 
-    protected proxyStyleObject(): void {
-        //
-    }
+    protected applyStyle<T extends Style>(prop: keyof T, newValue: unknown) {}
 
     public setTextContent(text: string): void {
         this.textContent = text;

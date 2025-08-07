@@ -3,6 +3,7 @@ import { DOMRect, Style, TTagNames, YogaNode } from "../types.js";
 import { Action } from "term-keymap";
 import { MouseEvent, MouseEventType, MouseEventHandler } from "./MouseEvent.js";
 import { Root } from "./Root.js";
+import { Render } from "./decorators.js";
 
 export abstract class DomElement {
     public abstract tagName: TTagNames;
@@ -33,14 +34,40 @@ export abstract class DomElement {
         this.actions = new Set();
         this.hasReqInputStream = false;
 
-        this.proxyTreeManipulationMethods();
-        this.proxyStyleObject();
+        this.styleWithRender();
+    }
+
+    // ========================================================================
+    // Auto Render Proxy
+    // ========================================================================
+
+    protected abstract applyStyle<T extends Style>(
+        prop: keyof T,
+        newValue: unknown,
+    ): unknown;
+
+    /** Requests a render on any modification of the style object (if attached to a Root) */
+    protected styleWithRender(): void {
+        this.style = new Proxy<Style>(
+            {},
+            {
+                set: (target, prop: keyof Style, newValue) => {
+                    if (target[prop] !== newValue) {
+                        const sanitizedValue = this.applyStyle(prop, newValue);
+                        target[prop] = sanitizedValue;
+                        this.getRealRoot()?.scheduleRender();
+                    }
+                    return true;
+                },
+            },
+        );
     }
 
     // ========================================================================
     // TREE MANIPULATION METHODS
     // ========================================================================
 
+    @Render()
     public appendChild(child: DomElement): void {
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
@@ -50,6 +77,7 @@ export abstract class DomElement {
         child.afterAttach();
     }
 
+    @Render()
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
         const nextChildren = [] as DomElement[];
         const idx = this.children.findIndex((el) => el === beforeChild);
@@ -69,6 +97,7 @@ export abstract class DomElement {
         child.afterAttach();
     }
 
+    @Render()
     public removeChild(child: DomElement) {
         child.beforeDetach();
 
@@ -80,6 +109,7 @@ export abstract class DomElement {
         child.root = child;
     }
 
+    @Render()
     public removeParent() {
         this.parentElement?.removeChild(this as unknown as DomElement);
     }
@@ -88,10 +118,12 @@ export abstract class DomElement {
     // Reconciler                                                           //
     // ========================================================================
 
+    @Render()
     public hide(): void {
         this.node.setDisplay(Yoga.DISPLAY_NONE);
     }
 
+    @Render()
     public unhide(): void {
         this.node.setDisplay(Yoga.DISPLAY_FLEX);
     }
@@ -278,36 +310,6 @@ export abstract class DomElement {
     }
 
     // ========================================================================
-    // Auto Render Proxy
-    // ========================================================================
-
-    /** Requests a render on any modification of the style object (if attached to a Root) */
-    protected abstract proxyStyleObject(): void;
-
-    /** Requests a render on any tree manipulation method call (if attached to a Root) */
-    private proxyTreeManipulationMethods(): void {
-        const methods: (keyof DomElement)[] = [
-            "appendChild",
-            "insertBefore",
-            "removeParent",
-            "removeChild",
-            "hide",
-            "unhide",
-        ] as const;
-
-        for (const method of methods) {
-            const original = this[method] as (...args: any[]) => any;
-
-            if (typeof original === "function") {
-                (this[method] as (...args: any[]) => any) = (...args) => {
-                    original(...args);
-                    this.getRealRoot()?.scheduleRender({ resize: false });
-                };
-            }
-        }
-    }
-
-    // ========================================================================
     // Util
     // ========================================================================
 
@@ -333,7 +335,9 @@ export class FriendDomElement extends DomElement {
     declare hasReqInputStream: boolean;
     declare tagName: TTagNames;
 
-    protected proxyStyleObject(): void {}
+    protected applyStyle(): ProxyHandler<Style> {
+        return {};
+    }
     constructor() {
         super();
     }

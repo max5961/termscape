@@ -38,7 +38,7 @@ export class Root extends DomElement {
     }
 
     // Noop implementation in Root
-    protected proxyStyleObject(): void {}
+    protected applyStyle(): void {}
 
     public configureRuntime(config: RuntimeConfig) {
         Object.entries(config).forEach(([key, val]) => {
@@ -52,11 +52,11 @@ export class Root extends DomElement {
         return this.renderer.lastCanvas?.grid.length ?? 0;
     }
 
-    public render(opts: WriteOpts) {
+    public render(opts: WriteOpts = {}) {
         this.renderer.writeToStdout(opts);
     }
 
-    public scheduleRender(opts: WriteOpts) {
+    public scheduleRender(opts: WriteOpts = {}) {
         this.scheduler.scheduleUpdate(() => {
             this.render(opts);
         });

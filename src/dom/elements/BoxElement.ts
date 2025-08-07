@@ -3,7 +3,7 @@ import { BoxStyle } from "./attributes/box/BoxStyle.js";
 import { Stylers } from "../helpers/Stylers.js";
 import { createStyleProxy } from "../archive/createStyleProxy.js";
 import { DomElement } from "../DomElement.js";
-import { TTagNames } from "../../types.js";
+import { Style, TTagNames } from "../../types.js";
 
 export class BoxElement extends DomElement {
     public style: BoxStyle;
@@ -26,8 +26,14 @@ export class BoxElement extends DomElement {
         this.style.flexShrink = 1;
     }
 
-    public setAttribute(): void {
-        //
+    public setAttribute(): void {}
+
+    protected applyStyle<T extends BoxStyle>(
+        prop: keyof T,
+        newValue: T[keyof T],
+    ): unknown {
+        const next = Stylers.Box[prop]?.(this.node, newValue);
+        return next || newValue;
     }
 
     protected proxyStyleObject() {
