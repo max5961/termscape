@@ -1,12 +1,13 @@
 import type { Color } from "../../../../types.js";
 type BorderStyle = any;
 
-export type BoxStyle = {
-    position?: "absolute" | "relative";
-    zIndex?: number | "auto";
-    gap?: number;
-    columnGap?: number;
-    rowGap?: number;
+type Inherit<T extends object> = { [P in keyof T]: T[P] | "inherit" };
+
+export type BoxStyle = Inherit<{
+    height?: number | string;
+    width?: number | string;
+    minWidth?: number | string;
+    minHeight?: number | string;
     margin?: number | string;
     marginX?: number | string;
     marginY?: number | string;
@@ -14,6 +15,9 @@ export type BoxStyle = {
     marginBottom?: number | string;
     marginLeft?: number | string;
     marginRight?: number | string;
+    overflow?: "visible" | "hidden";
+    overflowX?: "visible" | "hidden";
+    overflowY?: "visible" | "hidden";
     padding?: number;
     paddingX?: number;
     paddingY?: number;
@@ -21,6 +25,9 @@ export type BoxStyle = {
     paddingBottom?: number;
     paddingLeft?: number;
     paddingRight?: number;
+    zIndex?: number | "auto";
+    position?: "absolute" | "relative";
+    display?: "flex" | "none";
     flexGrow?: number;
     flexShrink?: number;
     flexDirection?: "row" | "column" | "row-reverse" | "column-reverse";
@@ -35,19 +42,17 @@ export type BoxStyle = {
         | "space-around"
         | "space-evenly"
         | "center";
-    width?: number | string;
-    height?: number | string;
-    minWidth?: number | string;
-    minHeight?: number | string;
-    display?: "flex" | "none";
-    backgroundColor?: Color | "inherit";
+    gap?: number;
+    columnGap?: number;
+    rowGap?: number;
+    backgroundColor?: Color;
     wipeBackground?: boolean;
-    borderStyle?: BorderStyle | "inherit";
+    borderStyle?: BorderStyle;
     borderTop?: boolean;
     borderBottom?: boolean;
     borderLeft?: boolean;
     borderRight?: boolean;
-    borderColor?: Color | "inherit";
+    borderColor?: Color;
     borderTopColor?: Color;
     borderBottomColor?: Color;
     borderLeftColor?: Color;
@@ -57,7 +62,4 @@ export type BoxStyle = {
     borderBottomDimColor?: boolean;
     borderLeftDimColor?: boolean;
     borderRightDimColor?: boolean;
-    overflow?: "visible" | "hidden";
-    overflowX?: "visible" | "hidden";
-    overflowY?: "visible" | "hidden";
-};
+}>;
