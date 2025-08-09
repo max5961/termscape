@@ -1,6 +1,6 @@
 import Yoga from "yoga-wasm-web/auto";
 import { YogaNode } from "../types.js";
-import { RStyle, VStyle } from "./Style.js";
+import { MinusInherit, RStyle, VStyle } from "./Style.js";
 
 const neverThese =
     <U extends unknown>(these: readonly U[]) =>
@@ -14,22 +14,54 @@ const neverThese =
 const neverInherit = neverThese(["inherit"] as const);
 const neverUndef = neverThese([undefined] as const);
 
-const AppleSanitizedStyle: {
-    [P in keyof VStyle]: (
+const ifMut = <T>(val: T, cb: (next: T) => T | undefined) => {
+    const result = cb(val);
+    return result === undefined ? val : result;
+};
+
+const parseDimensions = (
+    dim: string | number | undefined,
+    stdout: NodeJS.WriteStream,
+    endsWith: "vw" | "vh",
+) => {
+    return ifMut(dim, (n) => {
+        if (typeof n !== "string") return;
+        if (n.trimEnd().endsWith(endsWith)) {
+            const pct = Number.parseInt(n, 10);
+            return stdout[endsWith === "vh" ? "rows" : "columns"] * pct;
+        }
+    });
+};
+
+const ApplySanitizedStyle: {
+    [P in keyof MinusInherit<VStyle>]: (
         node: YogaNode,
         realStyle: ReturnType<typeof createRealStyleProxy>,
-        newVal: VStyle[P],
+        newVal: MinusInherit<VStyle>[P],
+        stdout: NodeJS.WriteStream,
     ) => void;
 } = {
-    borderColor(node, realStyle, newVal) {
-        // Agnostic as to what the border<Edge>Color is here
-        const sanitizedVal = neverInherit(newVal, undefined);
-        // realStyle.borderColor is a setter
-        realStyle.borderColor = sanitizedVal;
+    borderColor(_node, realStyle, newVal) {
+        realStyle.borderColor = newVal;
+    },
+
+    // =========================================================================
+    // DIMENSIONS
+    // =========================================================================
+    height(_node, realStyle, newVal, stdout) {
+        realStyle.height = parseDimensions(newVal, stdout, "vh");
+    },
+    width(_node, realStyle, newVal, stdout) {
+        realStyle.width = parseDimensions(newVal, stdout, "vw");
+    },
+    minHeight(_node, realStyle, newVal, stdout) {
+        realStyle.height = parseDimensions(newVal, stdout, "vh");
+    },
+    minWidth(_node, realStyle, newVal, stdout) {
+        realStyle.height = parseDimensions(newVal, stdout, "vw");
     },
 };
 
-/** Handles styles that should be grouped together. */
 const ApplyRealStyle: {
     [P in keyof RStyle]: (
         next: RStyle[P],
@@ -37,13 +69,24 @@ const ApplyRealStyle: {
         node: YogaNode,
     ) => void;
 } = {
+    // =========================================================================
+    // GROUPED STYLES
+    // =========================================================================
     borderColor(next, target) {
-        // Now we care about the border<Edge>Color
-        // Since target is a setter, these will be safely applied.
         target.borderTopColor = neverUndef(target.borderTopColor, next);
         target.borderBottomColor = neverUndef(target.borderBottomColor, next);
-        target.borderRightColor = neverUndef(target.borderRightColor, next);
         target.borderLeftColor = neverUndef(target.borderLeftColor, next);
+        target.borderRightColor = neverUndef(target.borderRightColor, next);
+    },
+    borderDimColor(next, target) {
+        target.borderTopDimColor = neverUndef(target.borderTopDimColor, next);
+        target.borderBottomDimColor = neverUndef(target.borderBottomDimColor, next);
+        target.borderLeftDimColor = neverUndef(target.borderLeftDimColor, next);
+        target.borderRightDimColor = neverUndef(target.borderRightDimColor, next);
+    },
+    overflow(next, target) {
+        target.overflowX = neverUndef(target.overflowX, next);
+        target.overflowY = neverUndef(target.overflowY, next);
     },
 
     // =========================================================================
@@ -105,6 +148,87 @@ const ApplyRealStyle: {
     paddingRight(next, _target, node) {
         node.setPadding(Yoga.EDGE_RIGHT, next ?? 0);
     },
+
+    // =========================================================================
+    // DIMENSIONS
+    // =========================================================================
+    height(next, _target, node) {
+        if (typeof next === "number") {
+            node.setHeight(next);
+        } else if (typeof next === "string") {
+            node.setHeightPercent(Number.parseInt(next, 10));
+        } else {
+            node.setHeightAuto();
+        }
+    },
+    width(next, _target, node) {
+        if (typeof next === "number") {
+            node.setWidth(next);
+        } else if (typeof next === "string") {
+            node.setWidthPercent(Number.parseInt(next, 10));
+        } else {
+            node.setWidthAuto();
+        }
+    },
+    minWidth(next, _target, node) {
+        if (typeof next === "string") {
+            node.setMinWidthPercent(Number.parseInt(next, 10));
+        } else {
+            node.setMinWidth(next ?? 0);
+        }
+    },
+    minHeight(next, _target, node) {
+        if (typeof next === "string") {
+            node.setMinHeightPercent(Number.parseInt(next, 10));
+        } else {
+            node.setMinHeight(next ?? 0);
+        }
+    },
+
+    // =========================================================================
+    // DISPLAY
+    // =========================================================================
+    display(next, target, node) {
+        node.setDisplay(next === "flex" ? Yoga.DISPLAY_FLEX : Yoga.DISPLAY_NONE);
+    },
+
+    // =========================================================================
+    // BORDER
+    // =========================================================================
+    borderStyle(next, target, _node) {
+        if (next) {
+            target.borderTop = true;
+            target.borderBottom = true;
+            target.borderLeft = true;
+            target.borderRight = true;
+        }
+    },
+    borderTop(next, _target, node) {
+        node.setBorder(Yoga.EDGE_TOP, next ? 1 : 0);
+    },
+    borderBottom(next, _target, node) {
+        node.setBorder(Yoga.EDGE_BOTTOM, next ? 1 : 0);
+    },
+    borderLeft(next, _target, node) {
+        node.setBorder(Yoga.EDGE_LEFT, next ? 1 : 0);
+    },
+    borderRight(next, _target, node) {
+        node.setBorder(Yoga.EDGE_RIGHT, next ? 1 : 0);
+    },
+
+    // =========================================================================
+    // BORDER
+    // =========================================================================
+    gap(next, target, _node) {
+        target.rowGap = next;
+        target.columnGap = next;
+    },
+    columnGap(next, _target, node) {
+        node.setGap(Yoga.GUTTER_COLUMN, next ?? 0);
+    },
+    rowGap(next, _target, node) {
+        node.setGap(Yoga.GUTTER_ROW, next ?? 0);
+    },
 };
 
 const DEV = process.env.NODE_ENV === "development";
@@ -113,6 +237,7 @@ export function createStyleProxy<T extends VStyle = VStyle, U extends RStyle = R
     target: T,
     node: YogaNode,
     inheritSet: Set<keyof VStyle>,
+    stdout: NodeJS.WriteStream,
     updater: () => void,
 ) {
     inheritSet.clear();
@@ -126,10 +251,11 @@ export function createStyleProxy<T extends VStyle = VStyle, U extends RStyle = R
             if (target[prop] === newValue) return true;
 
             inheritSet[newValue === "inherit" ? "add" : "delete"](prop);
-            target[prop] = newValue;
+            const sanitizedValue = neverInherit(newValue, undefined);
+            target[prop] = sanitizedValue;
 
-            if (AppleSanitizedStyle[prop]) {
-                AppleSanitizedStyle[prop](node, realStyle, newValue);
+            if (ApplySanitizedStyle[prop]) {
+                ApplySanitizedStyle[prop](node, realStyle, sanitizedValue, stdout);
             } else if (DEV) {
                 console.warn("Missing virtual style implementation for " + prop);
             }
@@ -183,6 +309,7 @@ class ExampleDomElement {
             {},
             this.node,
             this.inheritStyles,
+            process.stdout,
             this.update,
         );
         this.virtualStyle = virtualStyle;
