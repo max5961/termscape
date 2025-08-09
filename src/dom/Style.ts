@@ -1,19 +1,28 @@
-type Color = any;
-type BorderStyle = any;
+import { Color } from "../types.js";
 
-export class Style {
-    position?: "absolute" | "relative";
-    zIndex?: number | "auto";
-    gap?: number;
-    columnGap?: number;
-    rowGap?: number;
-    margin?: number | string;
-    marginX?: number | string;
-    marginY?: number | string;
-    marginTop?: number | string;
-    marginBottom?: number | string;
-    marginLeft?: number | string;
-    marginRight?: number | string;
+// TODO
+type BorderStyle = "round";
+
+type Inherit<T extends object> = { [P in keyof T]: T[P] | "inherit" };
+type Real<T extends object> = { [P in keyof T]: Exclude<T[P], "inherit" | "auto"> };
+
+export type VBoxStyle = Inherit<YogaStyle & DomStyle>;
+export type RBoxStyle = Real<VBoxStyle>;
+export type VStyle = Inherit<VBoxStyle & TextStyle>;
+export type RStyle = Real<VStyle>;
+
+export type YogaStyle = {
+    height?: number | string;
+    width?: number | string;
+    minWidth?: number | string;
+    minHeight?: number | string;
+    margin?: number;
+    marginX?: number;
+    marginY?: number;
+    marginTop?: number;
+    marginBottom?: number;
+    marginLeft?: number;
+    marginRight?: number;
     padding?: number;
     paddingX?: number;
     paddingY?: number;
@@ -21,6 +30,8 @@ export class Style {
     paddingBottom?: number;
     paddingLeft?: number;
     paddingRight?: number;
+    position?: "absolute" | "relative";
+    display?: "flex" | "none";
     flexGrow?: number;
     flexShrink?: number;
     flexDirection?: "row" | "column" | "row-reverse" | "column-reverse";
@@ -35,19 +46,24 @@ export class Style {
         | "space-around"
         | "space-evenly"
         | "center";
-    width?: number | string;
-    height?: number | string;
-    minWidth?: number | string;
-    minHeight?: number | string;
-    display?: "flex" | "none";
-    backgroundColor?: Color | "inherit";
+    gap?: number;
+    columnGap?: number;
+    rowGap?: number;
+};
+
+export type DomStyle = {
+    overflow?: "visible" | "hidden";
+    overflowX?: "visible" | "hidden";
+    overflowY?: "visible" | "hidden";
+    zIndex?: number | "auto";
+    backgroundColor?: Color;
     wipeBackground?: boolean;
-    borderStyle?: BorderStyle | "inherit";
+    borderStyle?: BorderStyle;
     borderTop?: boolean;
     borderBottom?: boolean;
     borderLeft?: boolean;
     borderRight?: boolean;
-    borderColor?: Color | "inherit";
+    borderColor?: Color;
     borderTopColor?: Color;
     borderBottomColor?: Color;
     borderLeftColor?: Color;
@@ -57,21 +73,15 @@ export class Style {
     borderBottomDimColor?: boolean;
     borderLeftDimColor?: boolean;
     borderRightDimColor?: boolean;
-    overflow?: "visible" | "hidden";
-    overflowX?: "visible" | "hidden";
-    overflowY?: "visible" | "hidden";
+};
 
-    constructor() {}
-}
-
-export function createStyle<T extends Style>(target: T, scheduleUpdate: () => void) {
-    return new Proxy<Style>(target, {
-        set(target, p, newValue) {
-            if (target[p as keyof Style] !== newValue) {
-                scheduleUpdate();
-            }
-            target[p as keyof Style] = newValue;
-            return true;
-        },
-    });
-}
+export type TextStyle = {
+    color?: Color;
+    backgroundColor?: Color;
+    dimColor?: boolean;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    strikethrough?: boolean;
+    inverse?: boolean;
+};

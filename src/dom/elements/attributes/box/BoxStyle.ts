@@ -2,6 +2,9 @@ import type { Color } from "../../../../types.js";
 type BorderStyle = any;
 
 type Inherit<T extends object> = { [P in keyof T]: T[P] | "inherit" };
+type Normalized<T extends object> = { [P in keyof T]: Exclude<T[P], "inherit" | "auto"> };
+
+export type NormalizedBoxStyle = Normalized<BoxStyle>;
 
 export type BoxStyle = Inherit<{
     height?: number | string;
