@@ -1,6 +1,6 @@
 import Yoga from "yoga-wasm-web/auto";
-import { YogaNode } from "../../types.js";
-import { MinusInherit, RStyle, VStyle } from "../../style/Style.js";
+import { type YogaNode } from "../../types.js";
+import { type MinusInherit, type RStyle, type VStyle } from "../../style/Style.js";
 
 const neverThese =
     <U extends unknown>(these: readonly U[]) =>
@@ -30,6 +30,7 @@ const parseDimensions = (
             const pct = Number.parseInt(n, 10);
             return stdout[endsWith === "vh" ? "rows" : "columns"] * pct;
         }
+        return;
     });
 };
 
@@ -37,7 +38,7 @@ export function createStyleProxy<T extends VStyle = VStyle, U extends RStyle = R
     target: T,
     node: YogaNode,
     inheritSet: Set<keyof VStyle>,
-    stdout: NodeJS.WriteStream,
+    _stdout: NodeJS.WriteStream,
     updater: () => void,
 ) {
     inheritSet.clear();
@@ -67,7 +68,7 @@ export function createStyleProxy<T extends VStyle = VStyle, U extends RStyle = R
     return { realStyle, virtualStyle };
 }
 
-function createRealStyleProxy<T extends RStyle>(updater: () => void, node: YogaNode) {
+function createRealStyleProxy<T extends RStyle>(updater: () => void, _node: YogaNode) {
     return new Proxy<T>({} as T, {
         get(target: T, prop: keyof RStyle) {
             return target[prop];

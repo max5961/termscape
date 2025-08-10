@@ -1,6 +1,6 @@
 import Yoga from "yoga-wasm-web/auto";
-import { YogaNode } from "../types.js";
-import { RStyle, VStyle } from "./Style.js";
+import { type YogaNode } from "../types.js";
+import { type RStyle, type VStyle } from "./Style.js";
 import { decodeShorthand, ifUndef, parseDimensions } from "./util.js";
 
 /**

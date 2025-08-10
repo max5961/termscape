@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollData, Scroll } from "./Scroll.js";
+import { type ScrollData, Scroll } from "./Scroll.js";
 import { deepStrictEqual } from "../util/deepStrictEqual.js";
 
 /*

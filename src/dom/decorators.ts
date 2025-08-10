@@ -1,4 +1,4 @@
-import { WriteOpts } from "../render/Renderer.js";
+import { type WriteOpts } from "../render/Renderer.js";
 import { DomElement } from "./DomElement.js";
 
 export function Render(): MethodDecorator {
@@ -43,12 +43,12 @@ function createDecorator<T extends DomElement, U>(cb: {
 
 // Need to update tsconfig
 export const _Render = createDecorator(function (this, opts: WriteOpts) {
-    // this.getRealRoot()?.scheduleRender(opts);
+    this.getRealRoot()?.scheduleRender(opts);
 });
 
 export const _UpdateInheritStyles = createDecorator(function (
     this,
-    kwarg: { detaching: boolean },
+    _kwarg: { detaching: boolean },
 ) {
     // this.applyInheritedStyles(kwarg.detaching);
 });

@@ -1,4 +1,4 @@
-import { TextStyle } from "./TextStyle.js";
+import { type TextStyle } from "./TextStyle.js";
 
 export type TextProps = {
     style?: TextStyle;

@@ -1,4 +1,4 @@
-import { Color } from "../types.js";
+import { type Color } from "../types.js";
 
 // TODO
 type BorderStyle = "round";

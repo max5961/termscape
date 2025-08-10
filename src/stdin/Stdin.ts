@@ -1,6 +1,7 @@
+import { type EventEmitterMap } from "../types.js";
+import { type Action } from "term-keymap";
 import { EventEmitter } from "node:events";
-import { Action, ActionStore, InputState } from "term-keymap";
-import { EventEmitterMap } from "../types.js";
+import { ActionStore, InputState } from "term-keymap";
 import { MouseState } from "./MouseState.js";
 import { Root } from "../dom/Root.js";
 

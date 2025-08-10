@@ -1,4 +1,4 @@
-import type { AnsiStyle, BgColor, Color, TextEffect } from "../types.js";
+import { type AnsiStyle, type BgColor, type Color, type TextEffect } from "../types.js";
 import { DIM_COLOR } from "../util/dimColor.js";
 import { Pen } from "./Pen.js";
 import { TextEffectSet } from "../constants.js";
@@ -50,17 +50,17 @@ export class Glyph {
     }
 
     /** noop - todo */
-    private hexAnsi(hex: string) {
+    private hexAnsi(_hex: string) {
         return "";
     }
 
     /** noop - todo */
-    private rgbAnsi(rgb: string) {
+    private rgbAnsi(_rgb: string) {
         return "";
     }
 
     /** noop - todo */
-    private hslAnsi(hsl: string) {
+    private hslAnsi(_hsl: string) {
         return "";
     }
 }
@@ -70,20 +70,20 @@ export type GlyphManager = ReturnType<typeof createGlyphManager>;
 export function createGlyphManager(glyph: Glyph, pen: Pen) {
     return new Proxy(
         {
-            color: (val: GlyphConfig["color"]) => pen,
-            bgColor: (val: GlyphConfig["bgColor"]) => pen,
-            bold: (val: boolean) => pen,
-            italic: (val: boolean) => pen,
-            imageNegative: (val: boolean) => pen,
-            imagePositive: (val: boolean) => pen,
-            font1: (val: boolean) => pen,
-            font2: (val: boolean) => pen,
-            font3: (val: boolean) => pen,
-            font4: (val: boolean) => pen,
-            font5: (val: boolean) => pen,
-            font6: (val: boolean) => pen,
-            fontDefault: (val: boolean) => pen,
-            dimColor: (val: boolean) => pen,
+            color: (_val: GlyphConfig["color"]) => pen,
+            bgColor: (_val: GlyphConfig["bgColor"]) => pen,
+            bold: (_val: boolean) => pen,
+            italic: (_val: boolean) => pen,
+            imageNegative: (_val: boolean) => pen,
+            imagePositive: (_val: boolean) => pen,
+            font1: (_val: boolean) => pen,
+            font2: (_val: boolean) => pen,
+            font3: (_val: boolean) => pen,
+            font4: (_val: boolean) => pen,
+            font5: (_val: boolean) => pen,
+            font6: (_val: boolean) => pen,
+            fontDefault: (_val: boolean) => pen,
+            dimColor: (_val: boolean) => pen,
         },
         {
             get(_, p) {

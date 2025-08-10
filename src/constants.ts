@@ -1,5 +1,5 @@
-import { BgColor } from "ansi-escape-sequences";
-import { Color, TextEffect } from "./types.js";
+import { type BgColor } from "ansi-escape-sequences";
+import { type Color, type TextEffect } from "./types.js";
 
 export const TagNames = {
     Box: "BOX_ELEMENT",

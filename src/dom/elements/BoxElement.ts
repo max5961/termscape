@@ -1,11 +1,9 @@
 import Yoga from "yoga-wasm-web/auto";
-import { BoxStyle } from "./attributes/box/BoxStyle.js";
-import { Stylers } from "../helpers/Stylers.js";
 import { DomElement } from "../DomElement.js";
-import { TTagNames } from "../../types.js";
+import { type TTagNames } from "../../types.js";
 
 export class BoxElement extends DomElement {
-    public style: BoxStyle;
+    // public style: BoxStyle;
     public tagName: TTagNames;
 
     constructor() {
@@ -26,12 +24,4 @@ export class BoxElement extends DomElement {
     }
 
     public setAttribute(): void {}
-
-    protected applyStyle<T extends BoxStyle>(
-        prop: keyof T,
-        newValue: T[keyof T],
-    ): unknown {
-        const next = Stylers.Box[prop]?.(this.node, newValue);
-        return next || newValue;
-    }
 }

@@ -47,6 +47,7 @@ export const parseDimensions = (
             const pct = Number.parseInt(n, 10);
             return stdout[endsWith === "vh" ? "rows" : "columns"] * pct;
         }
+        return;
     });
 };
 

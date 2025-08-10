@@ -1,10 +1,14 @@
 import Yoga from "yoga-wasm-web/auto";
-import { DOMRect, Style, TTagNames, YogaNode } from "../types.js";
-import { Action } from "term-keymap";
-import { MouseEvent, MouseEventType, MouseEventHandler } from "./MouseEvent.js";
+import { type DOMRect, type Style, type TTagNames, type YogaNode } from "../types.js";
+import { type Action } from "term-keymap";
+import {
+    type MouseEvent,
+    type MouseEventType,
+    type MouseEventHandler,
+} from "./MouseEvent.js";
 import { Root } from "./Root.js";
 import { Render } from "./decorators.js";
-import { RStyle, VStyle } from "../style/Style.js";
+import { type RStyle, type VStyle } from "../style/Style.js";
 import { createVirtualStyleProxy, type RootRef } from "../style/StyleProxy.js";
 
 export abstract class DomElement {

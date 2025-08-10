@@ -1,5 +1,5 @@
 import { Canvas } from "./Canvas.js";
-import { createGlyphManager, Glyph, GlyphManager } from "./Glyph.js";
+import { createGlyphManager, Glyph, type GlyphManager } from "./Glyph.js";
 
 export type PenConfig = {
     /**

@@ -81,7 +81,7 @@ export class Cursor {
         );
 
         // Synchronously block the operations for DEBUG_MS time.
-        const ms = Number(process.env.DEBUG_MS ?? 1000);
+        const ms = Number(process.env["DEBUG_MS"] ?? 1000);
 
         const start = Date.now();
         let end = Date.now();
@@ -146,7 +146,8 @@ export class Cursor {
 
     /** Clear rows up and execute the operation */
     public clearRowsUp = (n: number) => {
-        if (n <= 0) return "";
+        // if (n <= 0) return "";
+        if (n <= 0) return;
 
         this.moveToCol(0);
 

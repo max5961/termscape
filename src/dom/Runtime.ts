@@ -1,10 +1,10 @@
-import { Action } from "term-keymap";
+import { type Action } from "term-keymap";
 import { Root } from "./Root.js";
 import { setMouse } from "term-keymap";
 import { Scheduler } from "./Scheduler.js";
 import { Ansi } from "../util/Ansi.js";
 import { Stdin } from "../stdin/Stdin.js";
-import { RuntimeConfig } from "../types.js";
+import { type RuntimeConfig } from "../types.js";
 
 type TrimStart<S extends string> = S extends `_${infer Rest}` ? Rest : S;
 type _RuntimeConfig = {

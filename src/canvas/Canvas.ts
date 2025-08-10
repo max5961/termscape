@@ -1,4 +1,4 @@
-import { GridToken, Point } from "../types.js";
+import { type GridToken, type Point } from "../types.js";
 import { Ansi } from "../util/Ansi.js";
 import { Pen } from "./Pen.js";
 

@@ -1,5 +1,5 @@
 import { Canvas } from "../../canvas/Canvas.js";
-import { GridToken } from "../../types.js";
+import { type GridToken } from "../../types.js";
 import { Cursor } from "../Cursor.js";
 import { Writer } from "./Writer.js";
 

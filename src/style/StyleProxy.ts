@@ -1,6 +1,6 @@
-import { YogaNode } from "../types.js";
+import { type YogaNode } from "../types.js";
+import { type VStyle, type RStyle } from "./Style.js";
 import { AggregateHandlers, SanitizerHandlers, YogaHandlers } from "./StyleHandlers.js";
-import { VStyle, RStyle } from "./Style.js";
 import { Root } from "../dom/Root.js";
 
 export type RootRef = {

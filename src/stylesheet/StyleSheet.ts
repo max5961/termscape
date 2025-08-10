@@ -1,5 +1,5 @@
-import { BoxStyle } from "../dom/elements/attributes/box/BoxStyle.js";
-import { TextStyle } from "../dom/elements/attributes/text/TextStyle.js";
+import { type BoxStyle } from "../dom/elements/attributes/box/BoxStyle.js";
+import { type TextStyle } from "../dom/elements/attributes/text/TextStyle.js";
 
 type Box = "Box";
 type Text = "Text";

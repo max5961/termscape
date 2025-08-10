@@ -1,8 +1,8 @@
-import { Data } from "term-keymap";
+import { type MouseEventType } from "../dom/MouseEvent.js";
+import { type Data } from "term-keymap";
 import { Emitter } from "./Stdin.js";
 import EventEmitter from "events";
 import { Ansi } from "../util/Ansi.js";
-import { MouseEventType } from "../dom/MouseEvent.js";
 import { Root } from "../dom/Root.js";
 
 type MouseData = Exclude<Data["mouse"], undefined>;

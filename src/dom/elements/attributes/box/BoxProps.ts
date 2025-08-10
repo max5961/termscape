@@ -1,4 +1,4 @@
-import { BoxStyle } from "./BoxStyle.js";
+import { type BoxStyle } from "./BoxStyle.js";
 
 export type BoxProps = {
     style?: BoxStyle;

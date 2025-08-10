@@ -1,5 +1,5 @@
 import { FriendDomElement } from "../dom/DomElement.js";
-import { BgColor, Color } from "../types.js";
+import { type Color } from "../types.js";
 import { Canvas } from "../canvas/Canvas.js";
 
 export class Draw {
@@ -20,7 +20,8 @@ export class Draw {
 
     public composeBox(elem: FriendDomElement, canvas: Canvas, zIndex: number) {
         if (zIndex > this.lowestLayer || elem.style.backgroundColor) {
-            this.fillBg(canvas, elem.style.backgroundColor);
+            // Needs tsconfig refactor first
+            // this.fillBg(canvas, elem.style.backgroundColor);
         }
 
         if (elem.style.borderStyle) {

@@ -1,4 +1,4 @@
-import type { Color } from "../../../../types.js";
+import { type Color } from "../../../../types.js";
 type BorderStyle = any;
 
 type Inherit<T extends object> = { [P in keyof T]: T[P] | "inherit" };

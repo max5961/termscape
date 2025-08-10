@@ -28,20 +28,21 @@
     "license": "MIT",
     "dependencies": {
         "ansi-escape-sequences": "^6.2.4",
-        "ansi-escapes": "^7.0.0",
-        "chalk": "^4.1.2",
         "log-goblin": "^0.0.4",
         "perf_hooks": "^0.0.1",
         "react": "^18.3.1",
         "react-reconciler": "^0.29.2",
         "term-keymap": "^0.0.2",
-        "vitest": "^3.0.9",
         "yoga-wasm-web": "^0.3.3"
     },
     "devDependencies": {
         "@types/node": "^22.13.10",
         "@types/react": "^18.2.43",
         "@types/react-reconciler": "^0.28.9",
-        "vite-tsconfig-paths": "^5.1.4"
+        "eslint": "^9.33.0",
+        "globals": "^16.3.0",
+        "typescript-eslint": "^8.39.0",
+        "vite-tsconfig-paths": "^5.1.4",
+        "vitest": "^3.2.4"
     }
 }

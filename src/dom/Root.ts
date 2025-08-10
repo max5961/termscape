@@ -1,12 +1,12 @@
 import Yoga from "yoga-wasm-web/auto";
 import { RenderHooksManager } from "../render/RenderHooks.js";
-import { EventEmitterMap, RuntimeConfig, TTagNames } from "../types.js";
+import { type EventEmitterMap, type RuntimeConfig, type TTagNames } from "../types.js";
 import { DomElement } from "./DomElement.js";
 import { Emitter, Stdin } from "../stdin/Stdin.js";
 import { Runtime } from "./Runtime.js";
 import { Scheduler } from "./Scheduler.js";
-import { Renderer, WriteOpts } from "../render/Renderer.js";
-import { Action } from "term-keymap";
+import { Renderer, type WriteOpts } from "../render/Renderer.js";
+import { type Action } from "term-keymap";
 import { Ansi } from "../util/Ansi.js";
 
 export class Root extends DomElement {
@@ -69,14 +69,14 @@ export class Root extends DomElement {
         });
     }
 
-    public addKeyListener(action: Action): () => void {
+    public override addKeyListener(action: Action): () => void {
         this.stdin.subscribe(action);
         return () => {
             this.stdin.remove(action);
         };
     }
 
-    public removeKeyListener(action: Action): void {
+    public override removeKeyListener(action: Action): void {
         this.stdin.remove(action);
     }
 

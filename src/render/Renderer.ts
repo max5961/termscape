@@ -34,7 +34,7 @@ export class Renderer {
         this.rects = new DomRects();
         this.hooks = new RenderHooks();
         this.perf = new Performance(false);
-        this.cursor = new Cursor({ debug: !!process.env.RENDER_DEBUG });
+        this.cursor = new Cursor({ debug: !!process.env["RENDER_DEBUG"] });
         this.preciseWriter = new PreciseWriter(this.cursor);
         this.refreshWriter = new RefreshWriter(this.cursor);
         this.lastWasResize = 0;
@@ -104,7 +104,7 @@ export class Renderer {
         this.rects = compositor.rects;
     };
 
-    private shouldRefreshWrite(opts: WriteOpts, canvas: Canvas) {
+    private shouldRefreshWrite(opts: WriteOpts, _canvas: Canvas) {
         // First write
         if (!this.lastCanvas) {
             return true;
@@ -144,7 +144,7 @@ export class Renderer {
      * use the `PreciseWriter` strategy.
      */
     private termSupportsAnsiCursor(): boolean {
-        const term = process.env.TERM;
+        const term = process.env["TERM"];
         return !!term?.match(/xterm|kitty|alacritty|ghostty/);
     }
 }

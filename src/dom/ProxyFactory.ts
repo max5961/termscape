@@ -1,6 +1,6 @@
 import Yoga from "yoga-wasm-web/auto";
-import { YogaNode } from "../../types.js";
-import { MinusInherit, RStyle, VStyle } from "./Style.js";
+import { type YogaNode } from "../types.js";
+import { type MinusInherit, type RStyle, type VStyle } from "../style/Style.js";
 
 const neverThese =
     <U extends unknown>(these: readonly U[]) =>
@@ -30,6 +30,7 @@ const parseDimensions = (
             const pct = Number.parseInt(n, 10);
             return stdout[endsWith === "vh" ? "rows" : "columns"] * pct;
         }
+        return;
     });
 };
 
@@ -92,12 +93,12 @@ const ApplyRealStyle: {
     // =========================================================================
     // MARGIN
     // =========================================================================
-    margin(next, target) {
-        target.marginTop = neverUndef(target.marginTop, next);
-        target.marginBottom = neverUndef(target.marginBottom, next);
-        target.marginRight = neverUndef(target.marginRight, next);
-        target.marginLeft = neverUndef(target.marginLeft, next);
-    },
+    // margin(next, target) {
+    //     target.marginTop = neverUndef(target.marginTop, next);
+    //     target.marginBottom = neverUndef(target.marginBottom, next);
+    //     target.marginRight = neverUndef(target.marginRight, next);
+    //     target.marginLeft = neverUndef(target.marginLeft, next);
+    // },
     marginX(next, target) {
         target.marginRight = neverUndef(target.marginRight, next);
         target.marginLeft = neverUndef(target.marginLeft, next);
@@ -122,12 +123,12 @@ const ApplyRealStyle: {
     // =========================================================================
     // PADDING
     // =========================================================================
-    padding(next, target) {
-        target.paddingTop = neverUndef(target.paddingTop, next);
-        target.paddingBottom = neverUndef(target.paddingBottom, next);
-        target.paddingRight = neverUndef(target.paddingRight, next);
-        target.paddingLeft = neverUndef(target.paddingLeft, next);
-    },
+    // padding(next, target) {
+    //     target.paddingTop = neverUndef(target.paddingTop, next);
+    //     target.paddingBottom = neverUndef(target.paddingBottom, next);
+    //     target.paddingRight = neverUndef(target.paddingRight, next);
+    //     target.paddingLeft = neverUndef(target.paddingLeft, next);
+    // },
     paddingX(next, target) {
         target.paddingRight = neverUndef(target.paddingRight, next);
         target.paddingLeft = neverUndef(target.paddingLeft, next);
@@ -188,7 +189,7 @@ const ApplyRealStyle: {
     // =========================================================================
     // DISPLAY
     // =========================================================================
-    display(next, target, node) {
+    display(next, _target, node) {
         node.setDisplay(next === "flex" ? Yoga.DISPLAY_FLEX : Yoga.DISPLAY_NONE);
     },
 
@@ -231,7 +232,7 @@ const ApplyRealStyle: {
     },
 };
 
-const DEV = process.env.NODE_ENV === "development";
+const DEV = process.env["NODE_ENV"] === "development";
 
 export function createStyleProxy<T extends VStyle = VStyle, U extends RStyle = RStyle>(
     target: T,
