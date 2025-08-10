@@ -1,9 +1,9 @@
 import { Canvas } from "../canvas/Canvas.js";
-import { DomElement, FriendDomElement } from "../dom/DomElement.js";
+import { DomElement, DOM_ELEMENT_RECT } from "../dom/DomElement.js";
 
 export type DomRectLayer = {
-    x: Record<number, FriendDomElement[]>;
-    y: Record<number, FriendDomElement[]>;
+    x: Record<number, DomElement[]>;
+    y: Record<number, DomElement[]>;
 };
 
 /**
@@ -32,8 +32,8 @@ export class DomRects {
         this.layers = {};
     }
 
-    public setRect(elem: FriendDomElement, canvas: Canvas) {
-        elem.rect = {
+    public setRect(elem: DomElement, canvas: Canvas) {
+        elem[DOM_ELEMENT_RECT] = {
             x: canvas.corner.x,
             y: canvas.corner.y,
             height: canvas.height,
@@ -45,9 +45,9 @@ export class DomRects {
         };
     }
 
-    public storeElementPosition(zIndex: number, elem: FriendDomElement) {
-        const x = elem.rect.x;
-        const y = elem.rect.y;
+    public storeElementPosition(zIndex: number, elem: DomElement) {
+        const x = elem[DOM_ELEMENT_RECT].x;
+        const y = elem[DOM_ELEMENT_RECT].y;
 
         this.layers[zIndex] = this.layers[zIndex] ?? {
             x: {},

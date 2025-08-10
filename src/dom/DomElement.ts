@@ -1,5 +1,5 @@
 import Yoga from "yoga-wasm-web/auto";
-import { type DOMRect, type Style, type TTagNames, type YogaNode } from "../types.js";
+import { type DOMRect, type TTagNames, type YogaNode } from "../types.js";
 import { type Action } from "term-keymap";
 import {
     type MouseEvent,
@@ -11,14 +11,17 @@ import { Render, UpdateInherit } from "./decorators.js";
 import { type RStyle, type VStyle } from "../style/Style.js";
 import { createVirtualStyleProxy, type RootRef } from "../style/StyleProxy.js";
 
+export const DOM_ELEMENT_R_STYLE = Symbol.for("termscape.domelement.real_style");
+export const DOM_ELEMENT_RECT = Symbol.for("termscape.domelement.rect");
+
 export abstract class DomElement {
     public abstract tagName: TTagNames;
     public node: YogaNode;
     public parentElement: null | DomElement;
     public focus: boolean;
+    public children: DomElement[];
 
     protected root: DomElement | Root;
-    protected children: DomElement[];
     protected rect: DOMRect;
     protected attributes: Map<string, unknown>;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
@@ -48,6 +51,18 @@ export abstract class DomElement {
         };
 
         this.style = {};
+    }
+
+    get [DOM_ELEMENT_R_STYLE]() {
+        return this.realStyle;
+    }
+
+    get [DOM_ELEMENT_RECT]() {
+        return this.rect;
+    }
+
+    set [DOM_ELEMENT_RECT](rect: DOMRect) {
+        this.rect = rect;
     }
 
     // ========================================================================
@@ -82,13 +97,47 @@ export abstract class DomElement {
     // TREE MANIPULATION METHODS
     // ========================================================================
 
+    protected closestParentWithStyle(style: RStyle): DomElement | undefined {
+        //
+    }
+
+    protected afterAttach(): void {
+        const root = this.getRealRoot();
+        if (!root) return;
+
+        this.dfs(this, (elem) => {
+            if (elem.hasReqInputStream) {
+                root.connectToInput();
+            }
+
+            elem.actions.forEach((action) => {
+                root.addKeyListener(action);
+            });
+
+            elem.inheritedStyles.forEach((style) => {
+                //
+            });
+        });
+    }
+
+    protected beforeDetach(): void {
+        const root = this.getRealRoot();
+        if (!root) return;
+
+        this.dfs(this, (elem) => {
+            elem.actions.forEach((action) => {
+                root.removeKeyListener(action);
+            });
+        });
+    }
+
     @Render()
     @UpdateInherit({ attaching: true })
     public appendChild(child: DomElement): void {
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
         child.parentElement = this;
-        child.root = this;
+        child.root = this.root;
 
         child.afterAttach();
     }
@@ -301,32 +350,6 @@ export abstract class DomElement {
         root?.removeKeyListener(action);
     }
 
-    protected afterAttach(): void {
-        const root = this.getRealRoot();
-        if (!root) return;
-
-        this.dfs(this, (elem) => {
-            if (elem.hasReqInputStream) {
-                root.connectToInput();
-            }
-
-            elem.actions.forEach((action) => {
-                root.addKeyListener(action);
-            });
-        });
-    }
-
-    protected beforeDetach(): void {
-        const root = this.getRealRoot();
-        if (!root) return;
-
-        this.dfs(this, (elem) => {
-            elem.actions.forEach((action) => {
-                root.removeKeyListener(action);
-            });
-        });
-    }
-
     // ========================================================================
     // Util
     // ========================================================================
@@ -341,22 +364,10 @@ export abstract class DomElement {
             this.dfs(child, cb);
         });
     }
-}
 
-export class FriendDomElement extends DomElement {
-    declare root: FriendDomElement | Root;
-    declare children: FriendDomElement[];
-    declare rect: DOMRect;
-    declare attributes: Map<string, unknown>;
-    declare eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
-    declare actions: Set<Action>;
-    declare hasReqInputStream: boolean;
-    declare tagName: TTagNames;
-
-    protected applyStyle(): ProxyHandler<Style> {
-        return {};
-    }
-    constructor() {
-        super();
+    private reverseDfs(elem: DomElement | null, cb: (elem: DomElement) => void) {
+        if (!elem) return;
+        cb(elem);
+        this.reverseDfs(elem.parentElement, cb);
     }
 }

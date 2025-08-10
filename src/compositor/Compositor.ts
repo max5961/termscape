@@ -1,4 +1,4 @@
-import { FriendDomElement } from "../dom/DomElement.js";
+import { DOM_ELEMENT_R_STYLE, DomElement } from "../dom/DomElement.js";
 import { Canvas } from "../canvas/Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
@@ -17,17 +17,18 @@ export class Compositor {
         this.draw = new Draw();
     }
 
-    public buildLayout(elem: FriendDomElement, canvas: Canvas = this.canvas) {
+    public buildLayout(elem: DomElement, canvas: Canvas = this.canvas) {
         if (elem.style.display === "none") return;
 
-        const zIndex = this.getZIndex(elem);
+        const style = elem[DOM_ELEMENT_R_STYLE];
+        const zIndex = style.zIndex ?? 0;
 
         this.draw.updateLowestLayer(zIndex);
         this.rects.setRect(elem, canvas);
         this.rects.storeElementPosition(zIndex, elem);
 
         if (elem.tagName === "BOX_ELEMENT") {
-            this.ops.defer(zIndex, () => this.draw.composeBox(elem, canvas, zIndex));
+            this.ops.defer(zIndex, () => this.draw.composeBox(elem, style, canvas));
         }
 
         for (const child of elem.children) {
@@ -41,9 +42,9 @@ export class Compositor {
     }
 
     private getChildCanvas(
-        parent: FriendDomElement,
+        parent: DomElement,
         parentCanvas: Canvas,
-        child: FriendDomElement,
+        child: DomElement,
     ): Canvas {
         let width = child.node.getComputedWidth();
         let height = child.node.getComputedHeight();
@@ -67,10 +68,6 @@ export class Compositor {
             height: height,
             corner: { x: xoff, y: yoff },
         });
-    }
-
-    private getZIndex(elem: FriendDomElement): number {
-        return typeof elem.style.zIndex === "number" ? elem.style.zIndex : 0;
     }
 
     public getHeight(): number {

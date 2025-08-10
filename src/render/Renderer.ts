@@ -1,5 +1,4 @@
 import { Compositor } from "../compositor/Compositor.js";
-import { FriendDomElement } from "../dom/DomElement.js";
 import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
 import { Cursor } from "./Cursor.js";
@@ -51,7 +50,7 @@ export class Renderer {
         this.perf.preLayout();
 
         const compositor = new Compositor();
-        compositor.buildLayout(this.root as unknown as FriendDomElement);
+        compositor.buildLayout(this.root);
 
         this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));
 
@@ -121,7 +120,7 @@ export class Renderer {
         }
 
         // Resizes are messy and make tracking the cursor row difficult, so refresh
-        // write again to make sure goes where it should.
+        // write again to make sure the cursor goes where it should.
         if (this.lastWasResize) {
             return true;
         }

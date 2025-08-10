@@ -1,6 +1,7 @@
-import { FriendDomElement } from "../dom/DomElement.js";
+import { DomElement } from "../dom/DomElement.js";
 import { type Color } from "../types.js";
 import { Canvas } from "../canvas/Canvas.js";
+import type { RStyle } from "../style/Style.js";
 
 export class Draw {
     /**
@@ -18,13 +19,12 @@ export class Draw {
         this.lowestLayer = Math.min(this.lowestLayer, zIndex);
     }
 
-    public composeBox(elem: FriendDomElement, canvas: Canvas, zIndex: number) {
-        if (zIndex > this.lowestLayer || elem.style.backgroundColor) {
-            // Needs tsconfig refactor first
-            // this.fillBg(canvas, elem.style.backgroundColor);
+    public composeBox(elem: DomElement, style: RStyle, canvas: Canvas) {
+        if ((style.zIndex ?? 0) > this.lowestLayer || style.backgroundColor) {
+            this.fillBg(canvas, style.backgroundColor);
         }
 
-        if (elem.style.borderStyle) {
+        if (style.borderStyle) {
             this.renderBorder(elem, canvas);
         }
     }
@@ -42,7 +42,7 @@ export class Draw {
     }
 
     /** renders only round borders for now */
-    private renderBorder(elem: FriendDomElement, canvas: Canvas) {
+    private renderBorder(elem: DomElement, canvas: Canvas) {
         const width = elem.node.getComputedWidth();
         const height = elem.node.getComputedHeight();
 
