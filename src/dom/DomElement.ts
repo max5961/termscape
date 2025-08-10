@@ -7,7 +7,7 @@ import {
     type MouseEventHandler,
 } from "./MouseEvent.js";
 import { Root } from "./Root.js";
-import { Render } from "./decorators.js";
+import { Render, UpdateInherit } from "./decorators.js";
 import { type RStyle, type VStyle } from "../style/Style.js";
 import { createVirtualStyleProxy, type RootRef } from "../style/StyleProxy.js";
 
@@ -74,7 +74,7 @@ export abstract class DomElement {
         return this.virtualStyle;
     }
 
-    protected applyInheritedStyles() {
+    protected updateInheritStyles(_attaching: boolean) {
         //
     }
 
@@ -83,6 +83,7 @@ export abstract class DomElement {
     // ========================================================================
 
     @Render()
+    @UpdateInherit({ attaching: true })
     public appendChild(child: DomElement): void {
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
@@ -93,6 +94,7 @@ export abstract class DomElement {
     }
 
     @Render()
+    @UpdateInherit({ attaching: true })
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
         const nextChildren = [] as DomElement[];
         const idx = this.children.findIndex((el) => el === beforeChild);
@@ -113,6 +115,7 @@ export abstract class DomElement {
     }
 
     @Render()
+    @UpdateInherit({ attaching: false })
     public removeChild(child: DomElement) {
         child.beforeDetach();
 
@@ -145,7 +148,7 @@ export abstract class DomElement {
 
     public getYogaChildren(): YogaNode[] {
         const count = this.node.getChildCount();
-        let yogaNodes = [] as YogaNode[];
+        const yogaNodes = [] as YogaNode[];
         for (let i = 0; i < count; ++i) {
             yogaNodes.push(this.node.getChild(i));
         }

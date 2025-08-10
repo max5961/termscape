@@ -1,32 +1,6 @@
 import { type WriteOpts } from "../render/Renderer.js";
 import { DomElement } from "./DomElement.js";
 
-export function Render(): MethodDecorator {
-    return (_target, _propertyKey, descriptor: PropertyDescriptor) => {
-        const original = descriptor.value;
-
-        descriptor.value = function (this: DomElement, ...args: unknown[]) {
-            original.apply(this, ...args);
-            this.getRealRoot()?.render();
-        };
-
-        return descriptor;
-    };
-}
-
-export function UpdateInheritStyles(): MethodDecorator {
-    return (_target, _propertyKey, descriptor: PropertyDescriptor) => {
-        const original = descriptor.value;
-
-        descriptor.value = function (this: DomElement, ...args: unknown[]) {
-            original.apply(this, ...args);
-            this.applyInheritedStyles();
-        };
-
-        return descriptor;
-    };
-}
-
 function createDecorator<T extends DomElement, U>(cb: {
     (this: T, ...injected: U[]): unknown;
 }): (...injected: U[]) => MethodDecorator {
@@ -41,14 +15,13 @@ function createDecorator<T extends DomElement, U>(cb: {
         };
 }
 
-// Need to update tsconfig
-export const _Render = createDecorator(function (this, opts: WriteOpts) {
+export const Render = createDecorator(function (this, opts: WriteOpts) {
     this.getRealRoot()?.scheduleRender(opts);
 });
 
-export const _UpdateInheritStyles = createDecorator(function (
+export const UpdateInherit = createDecorator(function (
     this,
-    _kwarg: { detaching: boolean },
+    kwarg: { attaching: boolean },
 ) {
-    // this.applyInheritedStyles(kwarg.detaching);
+    this.updateInheritStyles(kwarg.attaching);
 });
