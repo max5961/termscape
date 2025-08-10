@@ -1,9 +1,8 @@
 import Yoga from "yoga-wasm-web/auto";
 import { BoxStyle } from "./attributes/box/BoxStyle.js";
 import { Stylers } from "../helpers/Stylers.js";
-import { createStyleProxy } from "../archive/createStyleProxy.js";
 import { DomElement } from "../DomElement.js";
-import { Style, TTagNames } from "../../types.js";
+import { TTagNames } from "../../types.js";
 
 export class BoxElement extends DomElement {
     public style: BoxStyle;
@@ -12,7 +11,6 @@ export class BoxElement extends DomElement {
     constructor() {
         super();
         this.tagName = "BOX_ELEMENT";
-        this.style = this.proxyStyleObject();
 
         // Default styles
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
@@ -20,6 +18,7 @@ export class BoxElement extends DomElement {
         this.node.setFlexGrow(0);
         this.node.setFlexShrink(1);
 
+        this.style = {};
         this.style.flexWrap = "nowrap";
         this.style.flexDirection = "row";
         this.style.flexGrow = 0;
@@ -34,33 +33,5 @@ export class BoxElement extends DomElement {
     ): unknown {
         const next = Stylers.Box[prop]?.(this.node, newValue);
         return next || newValue;
-    }
-
-    protected proxyStyleObject() {
-        return createStyleProxy(
-            {
-                zIndex: 0,
-                flexWrap: "nowrap",
-                flexDirection: "row",
-                flexGrow: 0,
-                flexShrink: 1,
-            } as BoxStyle,
-            (prop, val) => {
-                if (prop === "zIndex") {
-                    if (typeof val === "number") {
-                        this.style.zIndex = val;
-                    } else {
-                        this.style.zIndex = 0;
-                    }
-                }
-
-                Stylers.Box[prop]?.(this.node, val);
-            },
-            () => {
-                // if (this.isAttached) {
-                //     this.scheduleRender({ resize: false });
-                // }
-            },
-        );
     }
 }

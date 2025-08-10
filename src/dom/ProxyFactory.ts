@@ -1,5 +1,5 @@
 import Yoga from "yoga-wasm-web/auto";
-import { YogaNode } from "../types.js";
+import { YogaNode } from "../../types.js";
 import { MinusInherit, RStyle, VStyle } from "./Style.js";
 
 const neverThese =

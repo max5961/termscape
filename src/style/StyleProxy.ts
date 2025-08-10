@@ -1,20 +1,20 @@
 import { YogaNode } from "../types.js";
-import { AggregateHandlers, SanitizerHandlers, YogaHandlers } from "./ApplyRealStyles.js";
+import { AggregateHandlers, SanitizerHandlers, YogaHandlers } from "./StyleHandlers.js";
 import { VStyle, RStyle } from "./Style.js";
+import { Root } from "../dom/Root.js";
+
+export type RootRef = {
+    stdout: Root["runtime"]["stdout"];
+    scheduleRender: Root["scheduleRender"];
+};
 
 export function createVirtualStyleProxy<
     T extends VStyle = VStyle,
     U extends RStyle = RStyle,
->(
-    target: T,
-    node: YogaNode,
-    inheritSet: Set<keyof VStyle>,
-    stdout: NodeJS.WriteStream,
-    updater: () => void,
-) {
+>(target: T, node: YogaNode, inheritSet: Set<keyof VStyle>, root: RootRef) {
     inheritSet.clear();
 
-    const realStyle = createShadowStyleProxy<U>(updater, node);
+    const realStyle = createShadowStyleProxy<U>(root.scheduleRender, node);
     const virtualStyle = new Proxy<T>(target, {
         get(target: T, prop: keyof VStyle) {
             return target[prop];
@@ -37,7 +37,7 @@ export function createVirtualStyleProxy<
             // SANITIZE
             let sanitized = inherit ? undefined : newValue;
             if (SanitizerHandlers[prop]) {
-                sanitized = SanitizerHandlers[prop](sanitized, stdout);
+                sanitized = SanitizerHandlers[prop](sanitized, root.stdout);
             }
 
             // PASS TO SHADOW PROXY
@@ -50,7 +50,10 @@ export function createVirtualStyleProxy<
     return { realStyle, virtualStyle };
 }
 
-function createShadowStyleProxy<T extends RStyle>(updater: () => void, node: YogaNode) {
+function createShadowStyleProxy<T extends RStyle>(
+    scheduleRender: () => void,
+    node: YogaNode,
+) {
     return new Proxy<T>({} as T, {
         get(target: T, prop: keyof RStyle) {
             return target[prop];
@@ -62,7 +65,9 @@ function createShadowStyleProxy<T extends RStyle>(updater: () => void, node: Yog
                 AggregateHandlers[prop]?.(newValue, target);
                 YogaHandlers[prop]?.(newValue, node, target);
 
-                updater();
+                // const shouldCalculateLayout = !!YogaHandlers[prop];
+
+                scheduleRender();
             }
             return true;
         },

@@ -14,19 +14,23 @@ export type RBoxStyle = Real<VBoxStyle>;
 export type VStyle = Inherit<VBoxStyle & TextStyle>;
 export type RStyle = Real<VStyle>;
 
+export type Shorthand<T> = [T] | [T, T] | [T, T, T] | [T, T, T, T];
+
 export type YogaStyle = {
     height?: number | string;
     width?: number | string;
     minWidth?: number | string;
     minHeight?: number | string;
-    margin?: number;
+
+    margin?: number | Shorthand<number>;
     marginX?: number;
     marginY?: number;
     marginTop?: number;
     marginBottom?: number;
     marginLeft?: number;
     marginRight?: number;
-    padding?: number;
+
+    padding?: number | Shorthand<number>;
     paddingX?: number;
     paddingY?: number;
     paddingTop?: number;

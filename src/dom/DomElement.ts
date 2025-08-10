@@ -4,12 +4,13 @@ import { Action } from "term-keymap";
 import { MouseEvent, MouseEventType, MouseEventHandler } from "./MouseEvent.js";
 import { Root } from "./Root.js";
 import { Render } from "./decorators.js";
+import { RStyle, VStyle } from "../style/Style.js";
+import { createVirtualStyleProxy, type RootRef } from "../style/StyleProxy.js";
 
 export abstract class DomElement {
     public abstract tagName: TTagNames;
     public node: YogaNode;
     public parentElement: null | DomElement;
-    public style: Style;
     public focus: boolean;
 
     protected root: DomElement | Root;
@@ -19,11 +20,14 @@ export abstract class DomElement {
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
     protected actions: Set<Action>;
     protected hasReqInputStream: boolean;
+    protected inheritedStyles: Set<keyof VStyle>;
+    protected virtualStyle!: VStyle;
+    protected realStyle!: RStyle;
+    protected rootRef: RootRef;
 
     constructor() {
         this.node = Yoga.Node.create();
         this.parentElement = null;
-        this.style = {};
         this.focus = false;
 
         this.root = this;
@@ -33,34 +37,41 @@ export abstract class DomElement {
         this.eventListeners = this.initEventListeners();
         this.actions = new Set();
         this.hasReqInputStream = false;
+        this.inheritedStyles = new Set();
+        this.rootRef = {
+            stdout: process.stdout,
+            scheduleRender: (_opts) => {},
+        };
 
-        this.styleWithRender();
+        this.style = {};
     }
 
     // ========================================================================
     // Auto Render Proxy
     // ========================================================================
 
-    protected abstract applyStyle<T extends Style>(
-        prop: keyof T,
-        newValue: unknown,
-    ): unknown;
+    set style(stylesheet: VStyle) {
+        this.inheritedStyles = new Set();
 
-    /** Requests a render on any modification of the style object (if attached to a Root) */
-    protected styleWithRender(): void {
-        this.style = new Proxy<Style>(
-            {},
-            {
-                set: (target, prop: keyof Style, newValue) => {
-                    if (target[prop] !== newValue) {
-                        const sanitizedValue = this.applyStyle(prop, newValue);
-                        target[prop] = sanitizedValue;
-                        this.getRealRoot()?.scheduleRender();
-                    }
-                    return true;
-                },
-            },
+        const { virtualStyle, realStyle } = createVirtualStyleProxy(
+            stylesheet,
+            this.node,
+            this.inheritedStyles,
+            this.rootRef,
         );
+
+        this.virtualStyle = virtualStyle;
+        this.realStyle = realStyle;
+
+        this.rootRef.scheduleRender();
+    }
+
+    get style(): VStyle {
+        return this.virtualStyle;
+    }
+
+    protected applyInheritedStyles() {
+        //
     }
 
     // ========================================================================
@@ -211,7 +222,7 @@ export abstract class DomElement {
         this.eventListeners[event].delete(handler);
     }
 
-    public propagateMouseEvent(
+    protected propagateMouseEvent(
         x: number,
         y: number,
         type: MouseEventType,

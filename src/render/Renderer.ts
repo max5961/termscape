@@ -14,6 +14,7 @@ export type WriteOpts = {
     resize?: boolean;
     capturedOutput?: string;
     screenChange?: boolean;
+    skipCalculateLayout?: boolean;
 };
 
 export class Renderer {
@@ -43,6 +44,8 @@ export class Renderer {
         if (this.hooks.renderIsBlocked) return;
 
         this.perf.tracking = !!this.hooks.renderPerf.size;
+
+        // SHOULD HAVE A PRE & POST YOGA LAYOUT CALCULATION HERE AND PERFORM HERE RATHER THAN IN ROOT CLASS
 
         /**** PRE-LAYOUT ****/
         this.perf.preLayout();

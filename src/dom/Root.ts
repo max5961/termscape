@@ -53,6 +53,13 @@ export class Root extends DomElement {
     }
 
     public render(opts: WriteOpts = {}) {
+        if (!opts.skipCalculateLayout) {
+            this.node.calculateLayout(
+                process.stdout.columns,
+                undefined,
+                Yoga.DIRECTION_LTR,
+            );
+        }
         this.renderer.writeToStdout(opts);
     }
 
