@@ -1,7 +1,7 @@
 import Yoga from "yoga-wasm-web/auto";
 import { YogaNode } from "../types.js";
 import { RStyle, VStyle } from "./Style.js";
-import { ifUndef, parseDimensions } from "./util.js";
+import { decodeShorthand, ifUndef, parseDimensions } from "./util.js";
 
 /**
  * The set handler in the Proxy for RStyle passes the `prop` and `newValue` through
@@ -104,10 +104,11 @@ export const AggregateHandlers: {
         target.overflowY = ifUndef(target.overflowY, next);
     },
     margin(next, target) {
-        target.marginTop = ifUndef(target.marginTop, next);
-        target.marginBottom = ifUndef(target.marginBottom, next);
-        target.marginRight = ifUndef(target.marginRight, next);
-        target.marginLeft = ifUndef(target.marginLeft, next);
+        const [top, right, bottom, left] = decodeShorthand(next);
+        target.marginTop = ifUndef(target.marginTop, top);
+        target.marginRight = ifUndef(target.marginRight, right);
+        target.marginBottom = ifUndef(target.marginBottom, bottom);
+        target.marginLeft = ifUndef(target.marginLeft, left);
     },
     marginX(next, target) {
         target.marginRight = ifUndef(target.marginRight, next);
@@ -116,6 +117,13 @@ export const AggregateHandlers: {
     marginY(next, target) {
         target.marginTop = ifUndef(target.marginTop, next);
         target.marginBottom = ifUndef(target.marginBottom, next);
+    },
+    padding(next, target) {
+        const [top, right, bottom, left] = decodeShorthand(next);
+        target.paddingTop = ifUndef(target.paddingTop, top);
+        target.paddingRight = ifUndef(target.paddingRight, right);
+        target.paddingBottom = ifUndef(target.paddingBottom, bottom);
+        target.paddingLeft = ifUndef(target.paddingLeft, left);
     },
     gap(next, target) {
         target.rowGap = ifUndef(target.rowGap, next);

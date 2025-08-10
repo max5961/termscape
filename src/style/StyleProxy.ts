@@ -14,7 +14,7 @@ export function createVirtualStyleProxy<
 ) {
     inheritSet.clear();
 
-    const realStyle = createShadowStyleProxy<U>(updater, node, stdout);
+    const realStyle = createShadowStyleProxy<U>(updater, node);
     const virtualStyle = new Proxy<T>(target, {
         get(target: T, prop: keyof VStyle) {
             return target[prop];
@@ -37,7 +37,7 @@ export function createVirtualStyleProxy<
             // SANITIZE
             let sanitized = inherit ? undefined : newValue;
             if (SanitizerHandlers[prop]) {
-                sanitized = SanitizerHandlers[prop](sanitized, target, stdout);
+                sanitized = SanitizerHandlers[prop](sanitized, stdout);
             }
 
             // PASS TO SHADOW PROXY
@@ -50,11 +50,7 @@ export function createVirtualStyleProxy<
     return { realStyle, virtualStyle };
 }
 
-function createShadowStyleProxy<T extends RStyle>(
-    updater: () => void,
-    node: YogaNode,
-    stdout: NodeJS.WriteStream,
-) {
+function createShadowStyleProxy<T extends RStyle>(updater: () => void, node: YogaNode) {
     return new Proxy<T>({} as T, {
         get(target: T, prop: keyof RStyle) {
             return target[prop];
