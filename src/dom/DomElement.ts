@@ -29,9 +29,10 @@ export abstract class DomElement {
     protected attributes: Map<string, unknown>;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
     protected actions: Set<Action>;
-    protected hasRequestedInputStream: boolean;
+    protected requiresStdin: boolean;
     protected virtualStyle!: VirtualStyle;
     protected shadowStyle!: ShadowStyle;
+    protected removeKeyListeners: (() => void)[];
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -44,7 +45,7 @@ export abstract class DomElement {
         this.attributes = new Map();
         this.eventListeners = this.initEventListeners();
         this.actions = new Set();
-        this.hasRequestedInputStream = false;
+        this.requiresStdin = false;
 
         const { virtualStyle, shadowStyle } = createVirtualStyleProxy(
             this.node,
@@ -53,6 +54,8 @@ export abstract class DomElement {
 
         this.virtualStyle = virtualStyle;
         this.shadowStyle = shadowStyle;
+
+        this.removeKeyListeners = [];
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {
@@ -97,14 +100,14 @@ export abstract class DomElement {
         if (!root) return;
 
         this.dfs(this, (elem) => {
-            elem.rootRef.root = root;
+            elem.setRoot(root);
 
             elem.actions.forEach((action) => {
                 root.addKeyListener(action);
             });
 
-            if (elem.hasRequestedInputStream) {
-                root.connectToInput();
+            if (elem.requiresStdin) {
+                root.listenStdin();
             }
         });
     }
@@ -281,8 +284,13 @@ export abstract class DomElement {
     }
 
     public addEventListener(event: MouseEventType, handler: MouseEventHandler): void {
+        this.requiresStdin = true;
         this.eventListeners[event].add(handler);
-        this.hasRequestedInputStream = true;
+
+        const root = this.getRoot();
+        if (root) {
+            root.listenStdin();
+        }
     }
 
     public removeEventListener(event: MouseEventType, handler: MouseEventHandler): void {
@@ -337,7 +345,7 @@ export abstract class DomElement {
     // ========================================================================
 
     public addKeyListener(action: Action): () => void {
-        this.hasRequestedInputStream = true;
+        this.requiresStdin = true;
 
         const origCb = action.callback;
         action.callback = () => {
@@ -351,6 +359,8 @@ export abstract class DomElement {
         root?.addKeyListener(action); // Root overrides `addKeyListener`
         return () => {
             this.removeKeyListener(action);
+
+            // Just in case this element is detached, and added to a different Root.
             this.getRoot()?.removeKeyListener(action);
         };
     }

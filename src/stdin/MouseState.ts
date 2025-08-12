@@ -1,13 +1,14 @@
 import { type MouseEventType } from "../dom/MouseEvent.js";
 import { type Data } from "term-keymap";
-import { Emitter } from "./Stdin.js";
 import EventEmitter from "events";
 import { Ansi } from "../util/Ansi.js";
 import { Root } from "../dom/Root.js";
+import type { EventEmitterMap } from "../types.js";
 
 type MouseData = Exclude<Data["mouse"], undefined>;
 type Button = Extract<MouseEventType, "click" | "rightclick" | "scrollclick">;
 
+// eslint-disable-next-line no-control-regex
 const CURSOR_POS_REGEX = /\x1b\[(\d+);\d+R/;
 
 const DblClickEmitter = new EventEmitter<Record<Button, [number, number]>>();
@@ -15,10 +16,12 @@ const DblClickEmitter = new EventEmitter<Record<Button, [number, number]>>();
 export class MouseState {
     private prev: MouseData | null;
     private root: Root;
+    private emitter: EventEmitter<EventEmitterMap>;
 
-    constructor(root: Root) {
+    constructor(root: Root, emitter: EventEmitter<EventEmitterMap>) {
         this.root = root;
         this.prev = null;
+        this.emitter = emitter;
     }
 
     /**
@@ -30,7 +33,7 @@ export class MouseState {
 
         if (cursorPosition) {
             const [y] = cursorPosition;
-            Emitter.emit("CursorPosition", y - 1);
+            this.emitter.emit("CursorPosition", y - 1);
         }
     }
 
@@ -53,15 +56,15 @@ export class MouseState {
         return new Promise<number>((res, rej) => {
             const resolvePosition = (y: number) => {
                 res(y);
-                Emitter.off("CursorPosition", resolvePosition);
+                this.emitter.off("CursorPosition", resolvePosition);
             };
 
             setTimeout(() => {
-                Emitter.off("CursorPosition", resolvePosition);
+                this.emitter.off("CursorPosition", resolvePosition);
                 rej("Terminal does not support querying for cursor position");
             }, 10);
 
-            Emitter.on("CursorPosition", resolvePosition);
+            this.emitter.on("CursorPosition", resolvePosition);
 
             process.stdout.write(Ansi.queryCursorPosition);
         })
@@ -175,6 +178,6 @@ export class MouseState {
     }
 
     private dispatchEvent = (x: number, y: number) => (event: MouseEventType) => {
-        Emitter.emit("MouseEvent", x, y, event);
+        this.emitter.emit("MouseEvent", x, y, event);
     };
 }

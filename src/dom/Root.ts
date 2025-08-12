@@ -1,25 +1,27 @@
 import Yoga from "yoga-wasm-web/auto";
+import EventEmitter from "events";
 import { RenderHooksManager } from "../render/RenderHooks.js";
-import { type EventEmitterMap, type RuntimeConfig, type TTagNames } from "../types.js";
 import { DomElement } from "./DomElement.js";
-import { Emitter, Stdin } from "../stdin/Stdin.js";
-import { Runtime } from "./Runtime.js";
 import { Scheduler } from "./Scheduler.js";
 import { Renderer, type WriteOpts } from "../render/Renderer.js";
+import { createRuntime, type Runtime } from "./RuntimeFactory.js";
+import { type EventEmitterMap, type RuntimeConfig, type TTagNames } from "../types.js";
 import { type Action } from "term-keymap";
-import { Ansi } from "../util/Ansi.js";
+
+export const Emitter = new EventEmitter<EventEmitterMap>();
 
 export class Root extends DomElement {
     public tagName: TTagNames;
     public hooks: RenderHooksManager;
-    public runtime: Runtime;
-    public endRuntime: () => void;
+    public runtime: Runtime["api"];
 
     protected override readonly rootRef: { readonly root: Root };
 
-    private stdin: Stdin;
     private scheduler: Scheduler;
     private renderer: Renderer;
+    private handleRuntime: Runtime["logic"];
+    private Emitter: EventEmitter<EventEmitterMap>;
+    private exitPromiseResolvers: (() => void)[];
 
     constructor(config: RuntimeConfig) {
         super();
@@ -32,23 +34,35 @@ export class Root extends DomElement {
         this.node.setFlexShrink(1);
 
         this.renderer = new Renderer(this);
-        this.stdin = new Stdin(this);
         this.hooks = new RenderHooksManager(this.renderer.hooks);
         this.scheduler = new Scheduler();
-        this.runtime = new Runtime(this, this.scheduler, this.stdin);
 
-        this.configureRuntime(config);
-        this.endRuntime = this.beginRuntime();
+        this.Emitter = new EventEmitter();
+        this.Emitter.on("MouseEvent", this.handleMouseEvent);
+
+        const { api, logic } = createRuntime({
+            config: config,
+            root: this,
+            scheduler: this.scheduler,
+            emitter: this.Emitter,
+        });
+
+        this.runtime = api;
+        this.handleRuntime = logic;
+
+        this.exitPromiseResolvers = [];
     }
 
-    // Noop implementation in Root
-    protected applyStyle(): void {}
+    public exit() {
+        this.handleRuntime.endRuntime();
+        this.exitPromiseResolvers.forEach((res) => res());
+        this.exitPromiseResolvers = [];
+    }
 
-    public configureRuntime(config: RuntimeConfig) {
-        Object.entries(config).forEach(([key, val]) => {
-            if (val !== undefined && key in this.runtime) {
-                (this.runtime as any)[key] = val;
-            }
+    // ** Promise resolves when execution  */
+    public run() {
+        return new Promise<void>((res) => {
+            this.exitPromiseResolvers.push(() => res());
         });
     }
 
@@ -73,30 +87,22 @@ export class Root extends DomElement {
         });
     }
 
+    public listenStdin() {
+        this.handleRuntime.resumeStdin();
+    }
+
     public override addKeyListener(action: Action): () => void {
-        this.stdin.subscribe(action);
+        // Anytime a key listener is added it should prompt opening stdin stream.
+        // `listenStdin` does nothing if already listening.
+        this.listenStdin();
+        this.handleRuntime.addKeyListener(action);
         return () => {
-            this.stdin.remove(action);
+            this.handleRuntime.removeKeyListener(action);
         };
     }
 
     public override removeKeyListener(action: Action): void {
-        this.stdin.remove(action);
-    }
-
-    private beginRuntime() {
-        return () => {};
-    }
-
-    public connectToInput() {
-        this.stdin.listen();
-        Emitter.on("MouseEvent", this.handleMouseEvent);
-
-        return () => {
-            this.runtime.stdout.write(Ansi.restoreFromKittyProtocol);
-            this.stdin.pause();
-            Emitter.off("MouseEvent", this.handleMouseEvent);
-        };
+        this.handleRuntime.removeKeyListener(action);
     }
 
     private handleMouseEvent: (...args: EventEmitterMap["MouseEvent"]) => unknown = (
