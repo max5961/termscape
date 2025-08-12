@@ -1,7 +1,7 @@
 import { DomElement } from "../dom/DomElement.js";
 import { type Color } from "../types.js";
 import { Canvas } from "../canvas/Canvas.js";
-import type { RStyle } from "../style/Style.js";
+import type { ShadowStyle } from "../style/Style.js";
 
 export class Draw {
     /**
@@ -19,7 +19,7 @@ export class Draw {
         this.lowestLayer = Math.min(this.lowestLayer, zIndex);
     }
 
-    public composeBox(elem: DomElement, style: RStyle, canvas: Canvas) {
+    public composeBox(elem: DomElement, style: ShadowStyle, canvas: Canvas) {
         if ((style.zIndex ?? 0) > this.lowestLayer || style.backgroundColor) {
             this.fillBg(canvas, style.backgroundColor);
         }

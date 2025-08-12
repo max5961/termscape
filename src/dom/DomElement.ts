@@ -7,11 +7,14 @@ import {
     type MouseEventHandler,
 } from "./MouseEvent.js";
 import { Root } from "./Root.js";
-import { Render, UpdateInherit } from "./decorators.js";
-import { type RStyle, type VStyle } from "../style/Style.js";
-import { createVirtualStyleProxy, type RootRef } from "../style/StyleProxy.js";
+import { Render } from "./decorators.js";
+import { type ShadowStyle, type VirtualStyle } from "../style/Style.js";
+import { createVirtualStyleProxy } from "../style/StyleProxy.js";
+import { objectKeys } from "../util/objectKeys.js";
 
-export const DOM_ELEMENT_R_STYLE = Symbol.for("termscape.domelement.real_style");
+/** Internal access symbol */
+export const DOM_ELEMENT_SHADOW_STYLE = Symbol.for("termscape.domelement.shadow_style");
+/** Internal access symbol */
 export const DOM_ELEMENT_RECT = Symbol.for("termscape.domelement.rect");
 
 export abstract class DomElement {
@@ -21,40 +24,39 @@ export abstract class DomElement {
     public focus: boolean;
     public children: DomElement[];
 
-    protected root: DomElement | Root;
+    protected readonly rootRef: { root: Root | null };
     protected rect: DOMRect;
     protected attributes: Map<string, unknown>;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
     protected actions: Set<Action>;
-    protected hasReqInputStream: boolean;
-    protected inheritedStyles: Set<keyof VStyle>;
-    protected virtualStyle!: VStyle;
-    protected realStyle!: RStyle;
-    protected rootRef: RootRef;
+    protected hasRequestedInputStream: boolean;
+    protected virtualStyle!: VirtualStyle;
+    protected shadowStyle!: ShadowStyle;
 
     constructor() {
         this.node = Yoga.Node.create();
         this.parentElement = null;
         this.focus = false;
-
-        this.root = this;
         this.children = [];
+
+        this.rootRef = { root: null };
         this.rect = this.initRect();
         this.attributes = new Map();
         this.eventListeners = this.initEventListeners();
         this.actions = new Set();
-        this.hasReqInputStream = false;
-        this.inheritedStyles = new Set();
-        this.rootRef = {
-            stdout: process.stdout,
-            scheduleRender: (_opts) => {},
-        };
+        this.hasRequestedInputStream = false;
 
-        this.style = {};
+        const { virtualStyle, shadowStyle } = createVirtualStyleProxy(
+            this.node,
+            this.rootRef,
+        );
+
+        this.virtualStyle = virtualStyle;
+        this.shadowStyle = shadowStyle;
     }
 
-    get [DOM_ELEMENT_R_STYLE]() {
-        return this.realStyle;
+    get [DOM_ELEMENT_SHADOW_STYLE]() {
+        return this.shadowStyle;
     }
 
     get [DOM_ELEMENT_RECT]() {
@@ -69,85 +71,80 @@ export abstract class DomElement {
     // Auto Render Proxy
     // ========================================================================
 
-    set style(stylesheet: VStyle) {
-        this.inheritedStyles = new Set();
+    set style(stylesheet: VirtualStyle) {
+        const keys = [...objectKeys(stylesheet), ...objectKeys(this.style)];
 
-        const { virtualStyle, realStyle } = createVirtualStyleProxy(
-            stylesheet,
-            this.node,
-            this.inheritedStyles,
-            this.rootRef,
-        );
+        for (const key of keys) {
+            (this.style[key] as any) = stylesheet[key];
+        }
 
-        this.virtualStyle = virtualStyle;
-        this.realStyle = realStyle;
-
-        this.rootRef.scheduleRender();
+        const root = this.getRoot();
+        if (root) {
+            root.scheduleRender();
+        }
     }
 
-    get style(): VStyle {
+    get style(): VirtualStyle {
         return this.virtualStyle;
-    }
-
-    protected updateInheritStyles(_attaching: boolean) {
-        //
     }
 
     // ========================================================================
     // TREE MANIPULATION METHODS
     // ========================================================================
 
-    protected closestParentWithStyle(style: RStyle): DomElement | undefined {
-        //
-    }
-
-    protected afterAttach(): void {
-        const root = this.getRealRoot();
+    protected afterAttached(): void {
+        const root = this.getRoot();
         if (!root) return;
 
         this.dfs(this, (elem) => {
-            if (elem.hasReqInputStream) {
-                root.connectToInput();
-            }
+            elem.rootRef.root = root;
 
             elem.actions.forEach((action) => {
                 root.addKeyListener(action);
             });
 
-            elem.inheritedStyles.forEach((style) => {
-                //
-            });
+            if (elem.hasRequestedInputStream) {
+                root.connectToInput();
+            }
         });
     }
 
     protected beforeDetach(): void {
-        const root = this.getRealRoot();
-        if (!root) return;
+        const root = this.getRoot();
 
         this.dfs(this, (elem) => {
-            elem.actions.forEach((action) => {
-                root.removeKeyListener(action);
-            });
+            // Unset any root references
+            elem.setRoot(null);
+
+            if (root) {
+                elem.actions.forEach((action) => {
+                    root.removeKeyListener(action);
+                });
+            }
         });
     }
 
     @Render()
-    @UpdateInherit({ attaching: true })
     public appendChild(child: DomElement): void {
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
         child.parentElement = this;
-        child.root = this.root;
-
-        child.afterAttach();
+        const root = this.getRoot();
+        child.setRoot(root);
+        child.afterAttached();
     }
 
     @Render()
-    @UpdateInherit({ attaching: true })
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
-        const nextChildren = [] as DomElement[];
         const idx = this.children.findIndex((el) => el === beforeChild);
 
+        if (idx === -1) {
+            throw new Error(
+                "Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.",
+            );
+        }
+
+        const nextChildren = [] as DomElement[];
         for (let i = 0; i < this.children.length; ++i) {
             if (i === idx) {
                 nextChildren.push(child);
@@ -158,22 +155,36 @@ export abstract class DomElement {
         this.children = nextChildren;
         this.node.insertChild(child.node, idx);
         child.parentElement = this;
-        child.root = this.root;
+        const root = this.getRoot();
+        child.setRoot(root);
 
-        child.afterAttach();
+        child.afterAttached();
     }
 
     @Render()
-    @UpdateInherit({ attaching: false })
-    public removeChild(child: DomElement) {
+    public removeChild(child: DomElement, freeRecursive?: boolean) {
+        const idx = this.children.findIndex((el) => el === child);
+
+        if (idx === -1) {
+            throw new Error(
+                "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
+            );
+        }
+
         child.beforeDetach();
 
-        const idx = this.children.findIndex((el) => el === child);
         this.children.splice(idx, 1);
         this.node.removeChild(child.node);
-        child.node.freeRecursive();
+
+        // If React removes a child, it should be gc'd.  If removing w/o React,
+        // its possible that the child and its children may be used later, so
+        // freeRecursive should be optional.
+        if (freeRecursive) {
+            child.node.freeRecursive();
+        }
+
         child.parentElement = null;
-        child.root = child;
+        child.setRoot(null);
     }
 
     @Render()
@@ -271,7 +282,7 @@ export abstract class DomElement {
 
     public addEventListener(event: MouseEventType, handler: MouseEventHandler): void {
         this.eventListeners[event].add(handler);
-        this.hasReqInputStream = true;
+        this.hasRequestedInputStream = true;
     }
 
     public removeEventListener(event: MouseEventType, handler: MouseEventHandler): void {
@@ -284,8 +295,8 @@ export abstract class DomElement {
         type: MouseEventType,
         target: DomElement,
     ) {
-        let propagationLegal = true;
-        let immediatePropagationLegal = true;
+        let canPropagate = true;
+        let canImmediatePropagate = true;
 
         const propagate = (curr: DomElement, target: DomElement) => {
             if (curr && curr.eventListeners[type].size) {
@@ -298,22 +309,22 @@ export abstract class DomElement {
                     target: target,
                     currentTarget: curr,
                     stopPropagation: () => {
-                        propagationLegal = false;
+                        canPropagate = false;
                     },
                     stopImmediatePropagation: () => {
-                        immediatePropagationLegal = false;
-                        propagationLegal = false;
+                        canImmediatePropagate = false;
+                        canPropagate = false;
                     },
                 };
 
                 handlers.forEach((h) => {
-                    if (immediatePropagationLegal) {
-                        h?.call(curr, event);
+                    if (canImmediatePropagate) {
+                        h.call(curr, event);
                     }
                 });
             }
 
-            if (propagationLegal && curr.parentElement) {
+            if (canPropagate && curr.parentElement) {
                 propagate(curr.parentElement, target);
             }
         };
@@ -326,7 +337,7 @@ export abstract class DomElement {
     // ========================================================================
 
     public addKeyListener(action: Action): () => void {
-        this.hasReqInputStream = true;
+        this.hasRequestedInputStream = true;
 
         const origCb = action.callback;
         action.callback = () => {
@@ -336,17 +347,17 @@ export abstract class DomElement {
         };
 
         this.actions.add(action);
-        const root = this.getRealRoot();
+        const root = this.getRoot();
         root?.addKeyListener(action); // Root overrides `addKeyListener`
         return () => {
             this.removeKeyListener(action);
-            this.getRealRoot()?.removeKeyListener(action);
+            this.getRoot()?.removeKeyListener(action);
         };
     }
 
     public removeKeyListener(action: Action): void {
         this.actions.delete(action);
-        const root = this.getRealRoot();
+        const root = this.getRoot();
         root?.removeKeyListener(action);
     }
 
@@ -354,8 +365,12 @@ export abstract class DomElement {
     // Util
     // ========================================================================
 
-    protected getRealRoot(): Root | undefined {
-        return this.root instanceof Root ? this.root : undefined;
+    protected getRoot(): Root | null {
+        return this.rootRef.root;
+    }
+
+    protected setRoot(root: Root | null): void {
+        this.rootRef.root = root;
     }
 
     private dfs(elem: DomElement, cb: (elem: DomElement) => void) {
@@ -365,9 +380,20 @@ export abstract class DomElement {
         });
     }
 
-    private reverseDfs(elem: DomElement | null, cb: (elem: DomElement) => void) {
-        if (!elem) return;
-        cb(elem);
-        this.reverseDfs(elem.parentElement, cb);
+    private reverseDfs<T>(
+        elem: DomElement | null,
+        cb: (elem: DomElement, stop: () => void) => T,
+    ): T | undefined {
+        if (!elem) {
+            return;
+        }
+
+        let broken = false;
+        const stop = () => {
+            broken = true;
+        };
+        const result = cb(elem, stop);
+
+        return broken ? result : this.reverseDfs(elem.parentElement, cb);
     }
 }

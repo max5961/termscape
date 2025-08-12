@@ -3,16 +3,21 @@ import { type Color } from "../types.js";
 // TODO
 type BorderStyle = "round";
 
-type Inherit<T extends object> = { [P in keyof T]: T[P] | "inherit" };
-export type MinusInherit<T extends Inherit<object>> = {
-    [P in keyof T]: Exclude<T[P], "inherit">;
-};
-type Real<T extends object> = { [P in keyof T]: Exclude<T[P], "inherit" | "auto"> };
+// TODO - Can make inherit a feature later, but for now its just a hurdle to the
+// design process
+// type Inherit<T extends object> = { [P in keyof T]: T[P] | "inherit" };
+// export type MinusInherit<T extends Inherit<object>> = {
+//     [P in keyof T]: Exclude<T[P], "inherit">;
+// };
 
-export type VBoxStyle = Inherit<YogaStyle & DomStyle>;
-export type RBoxStyle = Real<VBoxStyle>;
-export type VStyle = Inherit<VBoxStyle & TextStyle>;
-export type RStyle = Real<VStyle>;
+type Shadow<T extends object> = {
+    [P in keyof T]: Exclude<T[P], "inherit" | "auto">;
+};
+
+export type VBoxStyle = YogaStyle & DomStyle;
+export type ShadowBoxStyle = Shadow<VBoxStyle>;
+export type VirtualStyle = VBoxStyle & TextStyle;
+export type ShadowStyle = Shadow<VirtualStyle>;
 
 export type Shorthand<T> = [T] | [T, T] | [T, T, T] | [T, T, T, T];
 

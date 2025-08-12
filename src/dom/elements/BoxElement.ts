@@ -1,6 +1,6 @@
 import Yoga from "yoga-wasm-web/auto";
 import { DomElement } from "../DomElement.js";
-import { type TTagNames } from "../../types.js";
+import type { TTagNames } from "../../types.js";
 
 export class BoxElement extends DomElement {
     // public style: BoxStyle;

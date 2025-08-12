@@ -16,12 +16,5 @@ function createDecorator<T extends DomElement, U>(cb: {
 }
 
 export const Render = createDecorator(function (this, opts: WriteOpts) {
-    this.getRealRoot()?.scheduleRender(opts);
-});
-
-export const UpdateInherit = createDecorator(function (
-    this,
-    kwarg: { attaching: boolean },
-) {
-    this.updateInheritStyles(kwarg.attaching);
+    this.getRoot()?.scheduleRender(opts);
 });

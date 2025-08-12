@@ -1,9 +1,9 @@
 import Yoga from "yoga-wasm-web/auto";
 import { type YogaNode } from "../types.js";
-import { type MinusInherit, type RStyle, type VStyle } from "../style/Style.js";
+import { type ShadowStyle, type VirtualStyle } from "../style/Style.js";
 
 const neverThese =
-    <U extends unknown>(these: readonly U[]) =>
+    <U>(these: readonly U[]) =>
     <T>(val: T | U, nextVal: T): Exclude<T, U> | undefined => {
         if (these.includes(val as unknown as U)) {
             return nextVal as Exclude<T, U> | undefined;
@@ -35,10 +35,10 @@ const parseDimensions = (
 };
 
 const ApplySanitizedStyle: {
-    [P in keyof MinusInherit<VStyle>]: (
+    [P in keyof VirtualStyle]: (
         node: YogaNode,
         realStyle: ReturnType<typeof createRealStyleProxy>,
-        newVal: MinusInherit<VStyle>[P],
+        newVal: VirtualStyle[P],
         stdout: NodeJS.WriteStream,
     ) => void;
 } = {
@@ -64,8 +64,8 @@ const ApplySanitizedStyle: {
 };
 
 const ApplyRealStyle: {
-    [P in keyof RStyle]: (
-        next: RStyle[P],
+    [P in keyof ShadowStyle]: (
+        next: ShadowStyle[P],
         target: ReturnType<typeof createRealStyleProxy>,
         node: YogaNode,
     ) => void;
@@ -234,10 +234,10 @@ const ApplyRealStyle: {
 
 const DEV = process.env["NODE_ENV"] === "development";
 
-export function createStyleProxy<T extends VStyle = VStyle, U extends RStyle = RStyle>(
+export function createStyleProxy<T extends VirtualStyle = VirtualStyle, U extends ShadowStyle = ShadowStyle>(
     target: T,
     node: YogaNode,
-    inheritSet: Set<keyof VStyle>,
+    inheritSet: Set<keyof VirtualStyle>,
     stdout: NodeJS.WriteStream,
     updater: () => void,
 ) {
@@ -245,10 +245,10 @@ export function createStyleProxy<T extends VStyle = VStyle, U extends RStyle = R
 
     const realStyle = createRealStyleProxy<U>(updater, node);
     const virtualStyle = new Proxy<T>(target, {
-        get(target: T, prop: keyof VStyle) {
+        get(target: T, prop: keyof VirtualStyle) {
             return target[prop];
         },
-        set(target: T, prop: keyof VStyle, newValue: any) {
+        set(target: T, prop: keyof VirtualStyle, newValue: any) {
             if (target[prop] === newValue) return true;
 
             inheritSet[newValue === "inherit" ? "add" : "delete"](prop);
@@ -268,12 +268,12 @@ export function createStyleProxy<T extends VStyle = VStyle, U extends RStyle = R
     return { realStyle, virtualStyle };
 }
 
-function createRealStyleProxy<T extends RStyle>(updater: () => void, node: YogaNode) {
+function createRealStyleProxy<T extends ShadowStyle>(updater: () => void, node: YogaNode) {
     return new Proxy<T>({} as T, {
-        get(target: T, prop: keyof RStyle) {
+        get(target: T, prop: keyof ShadowStyle) {
             return target[prop];
         },
-        set(target: T, prop: keyof RStyle, newValue: any) {
+        set(target: T, prop: keyof ShadowStyle, newValue: any) {
             if (target[prop] !== newValue) {
                 target[prop] = newValue;
                 ApplyRealStyle[prop]?.(newValue, target, node);
@@ -288,9 +288,9 @@ class ExampleDomElement {
     public parentElement: ExampleDomElement | null;
     public children: ExampleDomElement[];
 
-    protected virtualStyle!: VStyle;
-    protected realStyle!: RStyle;
-    protected inheritStyles: Set<keyof VStyle>;
+    protected virtualStyle!: VirtualStyle;
+    protected realStyle!: ShadowStyle;
+    protected inheritStyles: Set<keyof VirtualStyle>;
     protected node: YogaNode;
 
     constructor() {
@@ -306,7 +306,7 @@ class ExampleDomElement {
     }
 
     protected initStyles() {
-        const { virtualStyle, realStyle } = createStyleProxy<VStyle, RStyle>(
+        const { virtualStyle, realStyle } = createStyleProxy<VirtualStyle, ShadowStyle>(
             {},
             this.node,
             this.inheritStyles,
@@ -317,10 +317,10 @@ class ExampleDomElement {
         this.realStyle = realStyle;
     }
 
-    set style(configuration: VStyle) {
+    set style(configuration: VirtualStyle) {
         this.initStyles();
 
-        const styles = Object.keys(configuration) as (keyof VStyle)[];
+        const styles = Object.keys(configuration) as (keyof VirtualStyle)[];
         styles.forEach((style) => {
             this.virtualStyle[style] = configuration[style] as any;
         });
@@ -335,7 +335,7 @@ class ExampleDomElement {
     }
 
     protected applyInheritedStyles() {
-        const closestSetParent = (style: keyof VStyle) => {
+        const closestSetParent = (style: keyof VirtualStyle) => {
             let parent = this.parentElement;
             while (
                 parent &&

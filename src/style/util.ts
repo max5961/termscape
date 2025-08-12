@@ -6,7 +6,7 @@
  * *not part of* the invalid array.
  * */
 export const neverThese =
-    <U extends unknown>(invalid: readonly U[]) =>
+    <U>(invalid: readonly U[]) =>
     <T>(val: T | U, fallback: T): Exclude<T, U> | undefined => {
         if (invalid.includes(val as unknown as U)) {
             return fallback as Exclude<T, U> | undefined;

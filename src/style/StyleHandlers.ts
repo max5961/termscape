@@ -1,10 +1,10 @@
 import Yoga from "yoga-wasm-web/auto";
 import { type YogaNode } from "../types.js";
-import { type RStyle, type VStyle } from "./Style.js";
+import { type ShadowStyle, type VirtualStyle } from "./Style.js";
 import { decodeShorthand, ifUndef, parseDimensions } from "./util.js";
 
 /**
- * The set handler in the Proxy for RStyle passes the `prop` and `newValue` through
+ * The set handler in the Proxy for ShadowStyle passes the `prop` and `newValue` through
  * a series of hashable objects defined here.  This aims to allow rendering to focus
  * more on using data rather than interpreting it.
  *
@@ -29,10 +29,10 @@ import { decodeShorthand, ifUndef, parseDimensions } from "./util.js";
 // =============================================================================
 
 export const SanitizerHandlers: {
-    [P in keyof VStyle]: (
-        nextVal: Exclude<VStyle[P], "inherit">,
+    [P in keyof VirtualStyle]: (
+        nextVal: Exclude<VirtualStyle[P], "inherit">,
         stdout: NodeJS.WriteStream,
-    ) => RStyle[P];
+    ) => ShadowStyle[P];
 } = {
     zIndex(nextVal) {
         if (typeof nextVal === "string") {
@@ -79,7 +79,7 @@ export const SanitizerHandlers: {
 // =============================================================================
 
 export const AggregateHandlers: {
-    [P in keyof RStyle]: (next: RStyle[P], target: RStyle) => void;
+    [P in keyof ShadowStyle]: (next: ShadowStyle[P], target: ShadowStyle) => void;
 } = {
     borderStyle(next, target) {
         target.borderTop = !!next;
@@ -141,7 +141,7 @@ export const AggregateHandlers: {
  * that the border must be set with the context of the scrollbar in mind.
  */
 export const YogaHandlers: {
-    [P in keyof RStyle]: (next: RStyle[P], node: YogaNode, target: RStyle) => void;
+    [P in keyof ShadowStyle]: (next: ShadowStyle[P], node: YogaNode, target: ShadowStyle) => void;
 } = {
     display(next, node) {
         node.setDisplay(next === "flex" ? Yoga.DISPLAY_FLEX : Yoga.DISPLAY_NONE);

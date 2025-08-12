@@ -1,4 +1,4 @@
-import { DOM_ELEMENT_R_STYLE, DomElement } from "../dom/DomElement.js";
+import { DOM_ELEMENT_SHADOW_STYLE, DomElement } from "../dom/DomElement.js";
 import { Canvas } from "../canvas/Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
@@ -20,7 +20,7 @@ export class Compositor {
     public buildLayout(elem: DomElement, canvas: Canvas = this.canvas) {
         if (elem.style.display === "none") return;
 
-        const style = elem[DOM_ELEMENT_R_STYLE];
+        const style = elem[DOM_ELEMENT_SHADOW_STYLE];
         const zIndex = style.zIndex ?? 0;
 
         this.draw.updateLowestLayer(zIndex);

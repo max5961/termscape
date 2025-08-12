@@ -15,6 +15,8 @@ export class Root extends DomElement {
     public runtime: Runtime;
     public endRuntime: () => void;
 
+    protected override readonly rootRef: { readonly root: Root };
+
     private stdin: Stdin;
     private scheduler: Scheduler;
     private renderer: Renderer;
@@ -22,6 +24,8 @@ export class Root extends DomElement {
     constructor(config: RuntimeConfig) {
         super();
         this.tagName = "ROOT_ELEMENT";
+        this.rootRef = { root: this };
+
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
         this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
         this.node.setFlexGrow(0);

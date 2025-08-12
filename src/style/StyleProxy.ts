@@ -1,64 +1,51 @@
 import { type YogaNode } from "../types.js";
-import { type VStyle, type RStyle } from "./Style.js";
+import { type VirtualStyle, type ShadowStyle } from "./Style.js";
 import { AggregateHandlers, SanitizerHandlers, YogaHandlers } from "./StyleHandlers.js";
-import { Root } from "../dom/Root.js";
-
-export type RootRef = {
-    stdout: Root["runtime"]["stdout"];
-    scheduleRender: Root["scheduleRender"];
-};
+import type { DomElement } from "../dom/DomElement.js";
 
 export function createVirtualStyleProxy<
-    T extends VStyle = VStyle,
-    U extends RStyle = RStyle,
->(target: T, node: YogaNode, inheritSet: Set<keyof VStyle>, root: RootRef) {
-    inheritSet.clear();
-
-    const realStyle = createShadowStyleProxy<U>(root.scheduleRender, node);
-    const virtualStyle = new Proxy<T>(target, {
-        get(target: T, prop: keyof VStyle) {
+    T extends VirtualStyle = VirtualStyle,
+    U extends ShadowStyle = ShadowStyle,
+>(node: YogaNode, rootRef: DomElement["rootRef"]) {
+    const shadowStyle = createShadowStyleProxy<U>(node, rootRef);
+    const virtualStyle = new Proxy<T>({} as T, {
+        get(target: T, prop: keyof VirtualStyle) {
             return target[prop];
         },
-        set(target: T, prop: keyof VStyle, newValue: any) {
+        set(target: T, prop: keyof VirtualStyle, newValue: any) {
             if (target[prop] === newValue) {
                 return true;
             }
 
             target[prop] = newValue;
 
-            // STRIP INHERIT
-            const inherit = newValue === "inherit";
-            if (inherit) {
-                inheritSet.add(prop);
-            } else {
-                inheritSet.delete(prop);
-            }
-
-            // SANITIZE
-            let sanitized = inherit ? undefined : newValue;
+            let sanitized = newValue;
             if (SanitizerHandlers[prop]) {
-                sanitized = SanitizerHandlers[prop](sanitized, root.stdout);
+                sanitized = SanitizerHandlers[prop](
+                    sanitized,
+                    rootRef.root?.runtime.stdout ?? process.stdout,
+                );
             }
 
             // PASS TO SHADOW PROXY
-            realStyle[prop] = sanitized;
+            shadowStyle[prop] = sanitized;
 
             return true;
         },
     });
 
-    return { realStyle, virtualStyle };
+    return { shadowStyle, virtualStyle };
 }
 
-function createShadowStyleProxy<T extends RStyle>(
-    scheduleRender: () => void,
+function createShadowStyleProxy<T extends ShadowStyle>(
     node: YogaNode,
+    rootRef: DomElement["rootRef"],
 ) {
     return new Proxy<T>({} as T, {
-        get(target: T, prop: keyof RStyle) {
+        get(target: T, prop: keyof ShadowStyle) {
             return target[prop];
         },
-        set(target: T, prop: keyof RStyle, newValue: any) {
+        set(target: T, prop: keyof ShadowStyle, newValue: any) {
             if (target[prop] !== newValue) {
                 target[prop] = newValue;
 
@@ -67,7 +54,7 @@ function createShadowStyleProxy<T extends RStyle>(
 
                 // const shouldCalculateLayout = !!YogaHandlers[prop];
 
-                scheduleRender();
+                rootRef.root?.scheduleRender();
             }
             return true;
         },

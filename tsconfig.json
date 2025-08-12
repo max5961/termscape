@@ -14,7 +14,7 @@
         "strict": true,
         "forceConsistentCasingInFileNames": true,
         "noImplicitOverride": true,
-        "noImplicitReturns": true,
+        // "noImplicitReturns": true,
         "noImplicitThis": true,
         "noImplicitAny": true,
         "noUnusedParameters": true,
