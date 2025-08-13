@@ -6,7 +6,7 @@ import {
     type MouseEventType,
     type MouseEventHandler,
 } from "./MouseEvent.js";
-import { Root } from "./Root.js";
+import { Root, ROOT_MARK_HAS_ACTIONS } from "./Root.js";
 import { Render } from "./decorators.js";
 import { type ShadowStyle, type VirtualStyle } from "../style/Style.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
@@ -16,6 +16,8 @@ import { objectKeys } from "../util/objectKeys.js";
 export const DOM_ELEMENT_SHADOW_STYLE = Symbol.for("termscape.domelement.shadow_style");
 /** Internal access symbol */
 export const DOM_ELEMENT_RECT = Symbol.for("termscape.domelement.rect");
+/** Internal access symbol */
+export const DOM_ELEMENT_ACTIONS = Symbol.for("termscape.domelement.actions");
 
 export abstract class DomElement {
     public abstract tagName: TTagNames;
@@ -70,6 +72,10 @@ export abstract class DomElement {
         this.rect = rect;
     }
 
+    get [DOM_ELEMENT_ACTIONS]() {
+        return Array.from(this.actions.values());
+    }
+
     // ========================================================================
     // Auto Render Proxy
     // ========================================================================
@@ -102,12 +108,14 @@ export abstract class DomElement {
         this.dfs(this, (elem) => {
             elem.setRoot(root);
 
-            elem.actions.forEach((action) => {
-                root.addKeyListener(action);
-            });
-
             if (elem.requiresStdin) {
                 root.listenStdin();
+            }
+
+            // When an input event occurs, read just the marked nodes, rather than
+            // the whole tree.
+            if (elem.actions.size) {
+                root[ROOT_MARK_HAS_ACTIONS](elem, false);
             }
         });
     }
@@ -120,9 +128,9 @@ export abstract class DomElement {
             elem.setRoot(null);
 
             if (root) {
-                elem.actions.forEach((action) => {
-                    root.removeKeyListener(action);
-                });
+                // Unmark the node so that when an input event occurs, actions
+                // are not checked. Detached nodes should not respond to input.
+                root[ROOT_MARK_HAS_ACTIONS](elem, false);
             }
         });
     }
@@ -355,13 +363,8 @@ export abstract class DomElement {
         };
 
         this.actions.add(action);
-        const root = this.getRoot();
-        root?.addKeyListener(action); // Root overrides `addKeyListener`
         return () => {
             this.removeKeyListener(action);
-
-            // Just in case this element is detached, and added to a different Root.
-            this.getRoot()?.removeKeyListener(action);
         };
     }
 

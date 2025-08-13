@@ -1,14 +1,15 @@
 import Yoga from "yoga-wasm-web/auto";
 import EventEmitter from "events";
 import { RenderHooksManager } from "../render/RenderHooks.js";
-import { DomElement } from "./DomElement.js";
+import { DOM_ELEMENT_ACTIONS, DomElement } from "./DomElement.js";
 import { Scheduler } from "./Scheduler.js";
 import { Renderer, type WriteOpts } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "./RuntimeFactory.js";
 import { type EventEmitterMap, type RuntimeConfig, type TTagNames } from "../types.js";
 import { type Action } from "term-keymap";
 
-export const Emitter = new EventEmitter<EventEmitterMap>();
+/** Internal access symbol */
+export const ROOT_MARK_HAS_ACTIONS = Symbol.for("termscape.root.mark_has_actions");
 
 export class Root extends DomElement {
     public tagName: TTagNames;
@@ -22,6 +23,7 @@ export class Root extends DomElement {
     private handleRuntime: Runtime["logic"];
     private Emitter: EventEmitter<EventEmitterMap>;
     private exitPromiseResolvers: (() => void)[];
+    private actionElements: Set<DomElement>;
 
     constructor(config: RuntimeConfig) {
         super();
@@ -40,7 +42,7 @@ export class Root extends DomElement {
         this.Emitter = new EventEmitter();
         this.Emitter.on("MouseEvent", this.handleMouseEvent);
 
-        const { api, logic } = createRuntime({
+        const { api, logic, actionElements } = createRuntime({
             config: config,
             root: this,
             scheduler: this.scheduler,
@@ -49,8 +51,18 @@ export class Root extends DomElement {
 
         this.runtime = api;
         this.handleRuntime = logic;
+        this.actionElements = actionElements;
 
         this.exitPromiseResolvers = [];
+    }
+
+    /** This is called post attach and pre detach in DomElement. */
+    public [ROOT_MARK_HAS_ACTIONS](elem: DomElement, hasActions: boolean) {
+        if (hasActions) {
+            this.actionElements.add(elem);
+        } else {
+            this.actionElements.delete(elem);
+        }
     }
 
     public exit() {
@@ -95,14 +107,18 @@ export class Root extends DomElement {
         // Anytime a key listener is added it should prompt opening stdin stream.
         // `listenStdin` does nothing if already listening.
         this.listenStdin();
-        this.handleRuntime.addKeyListener(action);
+        this.actions.add(action);
+        this.actionElements.add(this);
         return () => {
-            this.handleRuntime.removeKeyListener(action);
+            this.removeKeyListener(action);
         };
     }
 
     public override removeKeyListener(action: Action): void {
-        this.handleRuntime.removeKeyListener(action);
+        this.actions.delete(action);
+        if (!this.actions.size) {
+            this.actionElements.delete(this);
+        }
     }
 
     private handleMouseEvent: (...args: EventEmitterMap["MouseEvent"]) => unknown = (

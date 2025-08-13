@@ -13,6 +13,7 @@ import type { Root } from "./Root.js";
 import { MouseState } from "../stdin/MouseState.js";
 import type { Scheduler } from "./Scheduler.js";
 import type { EventEmitter } from "stream";
+import { DOM_ELEMENT_ACTIONS, DomElement } from "./DomElement.js";
 
 type Config = Required<RuntimeConfig>;
 export type RuntimeDependencies = {
@@ -66,10 +67,15 @@ export function createRuntime(deps: RuntimeDependencies) {
     let isListening = false;
     let isStarted = false;
 
+    const capture = new Capture();
     const inputState = new InputState();
     const mouseState = new MouseState(root, deps.emitter);
+
+    /** Actions added through react layer (or the ctrl-c exit action) */
     const actionStore = new ActionStore();
-    const capture = new Capture();
+
+    /** Used for dom layer */
+    const actionElements = new Set<DomElement>();
 
     const exitAction: Readonly<Action> = {
         name: "internal_exit",
@@ -84,6 +90,20 @@ export function createRuntime(deps: RuntimeDependencies) {
             logic.endRuntime();
             Object.setPrototypeOf(config, newConfig);
             logic.startRuntime();
+        },
+
+        handleStdinBuffer: (buf: Buffer) => {
+            const domActions = logic.getDomActions();
+            const actions = actionStore.getCombinedActions(domActions);
+
+            const { data } = inputState.process(buf, actions);
+            mouseState.process(data);
+        },
+
+        getDomActions: () => {
+            return Array.from(actionElements.values()).flatMap((elem) => {
+                return elem[DOM_ELEMENT_ACTIONS].map((actions) => actions);
+            });
         },
 
         startRuntime() {
@@ -114,6 +134,7 @@ export function createRuntime(deps: RuntimeDependencies) {
             api.altScreen = config.altScreen;
             api.debounceMs = config.debounceMs;
         },
+
         endRuntime() {
             if (!isStarted) return;
             isStarted = false;
@@ -124,6 +145,7 @@ export function createRuntime(deps: RuntimeDependencies) {
             cleanupHandlers.forEach((handler) => handler());
             cleanupHandlers = [];
         },
+
         resumeStdin: () => {
             if (isListening) return;
             isListening = true;
@@ -136,6 +158,7 @@ export function createRuntime(deps: RuntimeDependencies) {
                 console.warn("Term is not TTY. Unable to handle stdin.");
             }
         },
+
         pauseStdin: () => {
             if (!isListening) return;
             isListening = false;
@@ -146,18 +169,16 @@ export function createRuntime(deps: RuntimeDependencies) {
             config.stdin.pause();
             config.stdin.off("data", logic.handleStdinBuffer);
         },
-        handleStdinBuffer: (buf: Buffer) => {
-            const actions = actionStore.getActions();
-            const { data } = inputState.process(buf, actions);
-            mouseState.process(data);
-        },
+
         addKeyListener: (action: Action) => {
             actionStore.subscribe(action);
             return () => actionStore.unsubscribe(action);
         },
+
         removeKeyListener: (action: Action) => {
             actionStore.unsubscribe(action);
         },
+
         enterAltScreen() {
             if (!isDefaultScreen) return;
 
@@ -166,12 +187,14 @@ export function createRuntime(deps: RuntimeDependencies) {
             isDefaultScreen = false;
             root.render({ screenChange: true });
         },
+
         enterDefaultScreen() {
             if (isDefaultScreen) return;
             config.stdout.write(Ansi.exitAltScreen);
             isDefaultScreen = true;
             root.render({ screenChange: true });
         },
+
         handleResize: () => {
             root.scheduleRender({ resize: true });
         },
@@ -290,5 +313,5 @@ export function createRuntime(deps: RuntimeDependencies) {
 
     latestEndRuntime.latest = logic.endRuntime;
 
-    return { logic, api };
+    return { logic, api, actionElements };
 }
