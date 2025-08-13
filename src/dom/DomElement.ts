@@ -11,6 +11,7 @@ import { Render } from "./decorators.js";
 import { type ShadowStyle, type VirtualStyle } from "../style/Style.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectKeys } from "../util/objectKeys.js";
+import { throwError } from "../error/throwError.js";
 
 /** Internal access symbol */
 export const DOM_ELEMENT_SHADOW_STYLE = Symbol.for("termscape.domelement.shadow_style");
@@ -150,7 +151,8 @@ export abstract class DomElement {
         const idx = this.children.findIndex((el) => el === beforeChild);
 
         if (idx === -1) {
-            throw new Error(
+            throwError(
+                this.getRoot(),
                 "Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.",
             );
         }
@@ -177,7 +179,8 @@ export abstract class DomElement {
         const idx = this.children.findIndex((el) => el === child);
 
         if (idx === -1) {
-            throw new Error(
+            throwError(
+                this.getRoot(),
                 "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
             );
         }
