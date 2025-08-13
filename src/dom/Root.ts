@@ -1,7 +1,7 @@
 import Yoga from "yoga-wasm-web/auto";
 import EventEmitter from "events";
 import { RenderHooksManager } from "../render/RenderHooks.js";
-import { DOM_ELEMENT_ACTIONS, DomElement } from "./DomElement.js";
+import { DomElement } from "./DomElement.js";
 import { Scheduler } from "./Scheduler.js";
 import { Renderer, type WriteOpts } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "./RuntimeFactory.js";
@@ -54,6 +54,8 @@ export class Root extends DomElement {
         this.actionElements = actionElements;
 
         this.exitPromiseResolvers = [];
+
+        this.handleRuntime.startRuntime();
     }
 
     /** This is called post attach and pre detach in DomElement. */

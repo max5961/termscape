@@ -5,7 +5,7 @@ import { Ansi } from "../util/Ansi.js";
 class TermscapeError extends Error {
     constructor(msg?: string) {
         super(msg);
-        this.name = "TermscapeError";
+        this.name = Ansi.style.cyan + "TermscapeError" + Ansi.style.reset;
     }
 }
 
@@ -31,10 +31,7 @@ export function throwError(root: Root | null, msgOrError: string | Error): never
         setMouse(false, stdout);
     }
 
-    if (error.stack) {
-        stdout.write(`${error.stack}\n`);
-        process.exit();
-    } else {
-        throw error;
-    }
+    // Looks nicer to write just the stacktrace for internal errors, but that
+    // doesn't allow for catching errors, so throw it.
+    throw error;
 }

@@ -139,7 +139,7 @@ export function createRuntime(deps: RuntimeDependencies) {
             if (!isStarted) return;
             isStarted = false;
 
-            logic.enterDefaultScreen();
+            logic.enterDefaultScreen({ render: false });
             logic.pauseStdin();
 
             cleanupHandlers.forEach((handler) => handler());
@@ -188,11 +188,13 @@ export function createRuntime(deps: RuntimeDependencies) {
             root.render({ screenChange: true });
         },
 
-        enterDefaultScreen() {
+        enterDefaultScreen({ render }: { render: boolean } = { render: true }) {
             if (isDefaultScreen) return;
             config.stdout.write(Ansi.exitAltScreen);
             isDefaultScreen = true;
-            root.render({ screenChange: true });
+            if (render) {
+                root.render({ screenChange: true });
+            }
         },
 
         handleResize: () => {

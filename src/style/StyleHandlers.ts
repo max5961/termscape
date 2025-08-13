@@ -141,7 +141,11 @@ export const AggregateHandlers: {
  * that the border must be set with the context of the scrollbar in mind.
  */
 export const YogaHandlers: {
-    [P in keyof ShadowStyle]: (next: ShadowStyle[P], node: YogaNode, target: ShadowStyle) => void;
+    [P in keyof ShadowStyle]: (
+        next: ShadowStyle[P],
+        node: YogaNode,
+        target: ShadowStyle,
+    ) => void;
 } = {
     display(next, node) {
         node.setDisplay(next === "flex" ? Yoga.DISPLAY_FLEX : Yoga.DISPLAY_NONE);

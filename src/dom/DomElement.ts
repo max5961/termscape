@@ -20,7 +20,10 @@ export const DOM_ELEMENT_RECT = Symbol.for("termscape.domelement.rect");
 /** Internal access symbol */
 export const DOM_ELEMENT_ACTIONS = Symbol.for("termscape.domelement.actions");
 
-export abstract class DomElement {
+export abstract class DomElement<
+    VStyle extends VirtualStyle = VirtualStyle,
+    SStyle extends ShadowStyle = ShadowStyle,
+> {
     public abstract tagName: TTagNames;
     public node: YogaNode;
     public parentElement: null | DomElement;
@@ -33,15 +36,17 @@ export abstract class DomElement {
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
     protected actions: Set<Action>;
     protected requiresStdin: boolean;
-    protected virtualStyle!: VirtualStyle;
-    protected shadowStyle!: ShadowStyle;
+    protected virtualStyle!: VStyle;
+    protected shadowStyle!: SStyle;
     protected removeKeyListeners: (() => void)[];
+    protected childrenSet: Set<DomElement>;
 
     constructor() {
         this.node = Yoga.Node.create();
         this.parentElement = null;
-        this.focus = false;
+        this.focus = true;
         this.children = [];
+        this.childrenSet = new Set();
 
         this.rootRef = { root: null };
         this.rect = this.initRect();
@@ -50,7 +55,7 @@ export abstract class DomElement {
         this.actions = new Set();
         this.requiresStdin = false;
 
-        const { virtualStyle, shadowStyle } = createVirtualStyleProxy(
+        const { virtualStyle, shadowStyle } = createVirtualStyleProxy<VStyle, SStyle>(
             this.node,
             this.rootRef,
         );
@@ -81,7 +86,7 @@ export abstract class DomElement {
     // Auto Render Proxy
     // ========================================================================
 
-    set style(stylesheet: VirtualStyle) {
+    set style(stylesheet: VStyle) {
         const keys = [...objectKeys(stylesheet), ...objectKeys(this.style)];
 
         for (const key of keys) {
@@ -94,7 +99,7 @@ export abstract class DomElement {
         }
     }
 
-    get style(): VirtualStyle {
+    get style(): VStyle {
         return this.virtualStyle;
     }
 
@@ -116,7 +121,7 @@ export abstract class DomElement {
             // When an input event occurs, read just the marked nodes, rather than
             // the whole tree.
             if (elem.actions.size) {
-                root[ROOT_MARK_HAS_ACTIONS](elem, false);
+                root[ROOT_MARK_HAS_ACTIONS](elem, true);
             }
         });
     }
@@ -138,6 +143,9 @@ export abstract class DomElement {
 
     @Render()
     public appendChild(child: DomElement): void {
+        if (this.childrenSet.has(child)) return;
+        this.childrenSet.add(child);
+
         this.node.insertChild(child.node, this.node.getChildCount());
         this.children.push(child);
         child.parentElement = this;
@@ -148,9 +156,14 @@ export abstract class DomElement {
 
     @Render()
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
-        const idx = this.children.findIndex((el) => el === beforeChild);
+        if (this.childrenSet.has(child)) {
+            this.removeChild(child);
+        }
 
-        if (idx === -1) {
+        this.childrenSet.add(child);
+
+        const idx = this.children.findIndex((el) => el === beforeChild);
+        if (idx === -1 || !this.childrenSet.has(beforeChild)) {
             throwError(
                 this.getRoot(),
                 "Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.",
@@ -178,12 +191,14 @@ export abstract class DomElement {
     public removeChild(child: DomElement, freeRecursive?: boolean) {
         const idx = this.children.findIndex((el) => el === child);
 
-        if (idx === -1) {
+        if (idx === -1 || !this.childrenSet.has(child)) {
             throwError(
                 this.getRoot(),
                 "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
             );
         }
+
+        this.childrenSet.delete(child);
 
         child.beforeDetach();
 
@@ -203,7 +218,7 @@ export abstract class DomElement {
 
     @Render()
     public removeParent() {
-        this.parentElement?.removeChild(this as unknown as DomElement);
+        this.parentElement?.removeChild(this);
     }
 
     // ========================================================================
@@ -360,12 +375,25 @@ export abstract class DomElement {
 
         const origCb = action.callback;
         action.callback = () => {
-            if (this.focus) {
-                origCb?.();
-            }
+            // When DOM layer focus is figured out
+            // if (this.focus) {
+            //     origCb?.();
+            // }
+
+            origCb?.();
         };
 
         this.actions.add(action);
+
+        // Root is notified of actions when a child is appended to the tree if it
+        // contains any actions at the time of being appended.  However, its possible
+        // (but unlikely in design) that you add an action after appended so this
+        // accounts for that.
+        const root = this.getRoot();
+        if (root) {
+            root[ROOT_MARK_HAS_ACTIONS](this, true);
+        }
+
         return () => {
             this.removeKeyListener(action);
         };
