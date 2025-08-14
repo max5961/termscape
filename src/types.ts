@@ -1,7 +1,5 @@
 import { configureStdin } from "term-keymap";
 import { TagNames } from "./constants.js";
-import { type BoxStyle } from "./dom/elements/attributes/box/BoxStyle.js";
-import { type TextStyle } from "./dom/elements/attributes/text/TextStyle.js";
 import { type MouseEventType } from "./dom/MouseEvent.js";
 
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
@@ -21,7 +19,6 @@ export type DOMRect = {
     left: number;
     right: number;
 };
-export type Style = BoxStyle & TextStyle;
 
 export type GridToken = {
     ansi: string;

@@ -1,6 +1,6 @@
-import { type TextStyle } from "./attributes/text/TextStyle.js";
 import { DomElement } from "../DomElement.js";
 import { type TTagNames } from "../../types.js";
+import { type TextStyle } from "../../style/Style.js";
 
 export class TextElement extends DomElement {
     public textContent: string;
