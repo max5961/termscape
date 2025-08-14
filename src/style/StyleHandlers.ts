@@ -30,7 +30,7 @@ import { decodeShorthand, ifUndef, parseDimensions } from "./util.js";
 
 export const SanitizerHandlers: {
     [P in keyof VirtualStyle]: (
-        nextVal: Exclude<VirtualStyle[P], "inherit">,
+        nextVal: VirtualStyle[P],
         stdout: NodeJS.WriteStream,
     ) => ShadowStyle[P];
 } = {
@@ -72,7 +72,7 @@ export const SanitizerHandlers: {
     overflowY(newVal) {
         return newVal ?? "visible";
     },
-};
+} as const;
 
 // =============================================================================
 // HANDLE AGGREGATES
@@ -129,7 +129,7 @@ export const AggregateHandlers: {
         target.rowGap = ifUndef(target.rowGap, next);
         target.columnGap = ifUndef(target.columnGap, next);
     },
-};
+} as const;
 
 // =============================================================================
 // APPLY YOGA STYLES
@@ -297,4 +297,4 @@ export const YogaHandlers: {
             node.setJustifyContent(Yoga.JUSTIFY_SPACE_EVENLY);
         }
     },
-};
+} as const;

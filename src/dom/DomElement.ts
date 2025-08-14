@@ -6,9 +6,13 @@ import {
     type MouseEventType,
     type MouseEventHandler,
 } from "./MouseEvent.js";
-import { Root, ROOT_MARK_HAS_ACTIONS } from "./Root.js";
+import { Root, ROOT_HOOK_DOM_ELEMENT } from "./Root.js";
 import { Render } from "./decorators.js";
-import { type ShadowStyle, type VirtualStyle } from "../style/Style.js";
+import {
+    type DynamicStyle,
+    type ShadowStyle,
+    type VirtualStyle,
+} from "../style/Style.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectKeys } from "../util/objectKeys.js";
 import { throwError } from "../error/throwError.js";
@@ -34,12 +38,17 @@ export abstract class DomElement<
     protected rect: DOMRect;
     protected attributes: Map<string, unknown>;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
-    protected actions: Set<Action>;
     protected requiresStdin: boolean;
     protected virtualStyle!: VStyle;
     protected shadowStyle!: SStyle;
     protected removeKeyListeners: (() => void)[];
     protected childrenSet: Set<DomElement>;
+    protected readonly metadata: {
+        actions: Set<Action>;
+        dynamicStyles: Set<DynamicStyle>;
+        notifyRoot: () => void;
+        readonly ref: DomElement;
+    };
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -52,12 +61,18 @@ export abstract class DomElement<
         this.rect = this.initRect();
         this.attributes = new Map();
         this.eventListeners = this.initEventListeners();
-        this.actions = new Set();
         this.requiresStdin = false;
+        this.metadata = {
+            actions: new Set(),
+            dynamicStyles: new Set(),
+            notifyRoot: () => {},
+            ref: this,
+        };
 
         const { virtualStyle, shadowStyle } = createVirtualStyleProxy<VStyle, SStyle>(
             this.node,
             this.rootRef,
+            this.metadata,
         );
 
         this.virtualStyle = virtualStyle;
@@ -76,10 +91,6 @@ export abstract class DomElement<
 
     set [DOM_ELEMENT_RECT](rect: DOMRect) {
         this.rect = rect;
-    }
-
-    get [DOM_ELEMENT_ACTIONS]() {
-        return Array.from(this.actions.values());
     }
 
     // ========================================================================
@@ -118,11 +129,7 @@ export abstract class DomElement<
                 root.listenStdin();
             }
 
-            // When an input event occurs, read just the marked nodes, rather than
-            // the whole tree.
-            if (elem.actions.size) {
-                root[ROOT_MARK_HAS_ACTIONS](elem, true);
-            }
+            root[ROOT_HOOK_DOM_ELEMENT](elem.metadata, { attached: true });
         });
     }
 
@@ -134,9 +141,7 @@ export abstract class DomElement<
             elem.setRoot(null);
 
             if (root) {
-                // Unmark the node so that when an input event occurs, actions
-                // are not checked. Detached nodes should not respond to input.
-                root[ROOT_MARK_HAS_ACTIONS](elem, false);
+                root[ROOT_HOOK_DOM_ELEMENT](elem.metadata, { attached: false });
             }
         });
     }
@@ -383,16 +388,8 @@ export abstract class DomElement<
             origCb?.();
         };
 
-        this.actions.add(action);
-
-        // Root is notified of actions when a child is appended to the tree if it
-        // contains any actions at the time of being appended.  However, its possible
-        // (but unlikely in design) that you add an action after appended so this
-        // accounts for that.
-        const root = this.getRoot();
-        if (root) {
-            root[ROOT_MARK_HAS_ACTIONS](this, true);
-        }
+        this.metadata.actions.add(action);
+        this.metadata.notifyRoot();
 
         return () => {
             this.removeKeyListener(action);
@@ -400,9 +397,8 @@ export abstract class DomElement<
     }
 
     public removeKeyListener(action: Action): void {
-        this.actions.delete(action);
-        const root = this.getRoot();
-        root?.removeKeyListener(action);
+        this.metadata.actions.delete(action);
+        this.metadata.notifyRoot();
     }
 
     // ========================================================================

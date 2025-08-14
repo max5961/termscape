@@ -9,7 +9,7 @@ import { type EventEmitterMap, type RuntimeConfig, type TTagNames } from "../typ
 import { type Action } from "term-keymap";
 
 /** Internal access symbol */
-export const ROOT_MARK_HAS_ACTIONS = Symbol.for("termscape.root.mark_has_actions");
+export const ROOT_HOOK_DOM_ELEMENT = Symbol.for("termscape.root.hook_dom_element");
 
 export class Root extends DomElement {
     public tagName: TTagNames;
@@ -23,7 +23,9 @@ export class Root extends DomElement {
     private handleRuntime: Runtime["logic"];
     private Emitter: EventEmitter<EventEmitterMap>;
     private exitPromiseResolvers: (() => void)[];
-    private actionElements: Set<DomElement>;
+    private attachedElements: Set<DomElement>;
+    private actionElements: Map<DomElement, Set<Action>>;
+    private dynamicStyleElements: Set<DomElement>;
 
     constructor(config: RuntimeConfig) {
         super();
@@ -42,16 +44,20 @@ export class Root extends DomElement {
         this.Emitter = new EventEmitter();
         this.Emitter.on("MouseEvent", this.handleMouseEvent);
 
-        const { api, logic, actionElements } = createRuntime({
+        this.attachedElements = new Set();
+        this.actionElements = new Map();
+        this.dynamicStyleElements = new Set();
+
+        const { api, logic } = createRuntime({
             config: config,
             root: this,
             scheduler: this.scheduler,
             emitter: this.Emitter,
+            actions: this.actionElements,
         });
 
         this.runtime = api;
         this.handleRuntime = logic;
-        this.actionElements = actionElements;
 
         this.exitPromiseResolvers = [];
 
@@ -59,12 +65,38 @@ export class Root extends DomElement {
     }
 
     /** This is called post attach and pre detach in DomElement. */
-    public [ROOT_MARK_HAS_ACTIONS](elem: DomElement, hasActions: boolean) {
-        if (hasActions) {
-            this.listenStdin();
-            this.actionElements.add(elem);
+    public [ROOT_HOOK_DOM_ELEMENT](
+        metadata: DomElement["metadata"],
+        { attached }: { attached: boolean },
+    ) {
+        const cb = () => {
+            if (attached) {
+                this.updateElementMetadata(metadata);
+            }
+        };
+        cb();
+
+        metadata.notifyRoot = cb;
+
+        if (attached) {
+            this.attachedElements.add(metadata.ref);
         } else {
-            this.actionElements.delete(elem);
+            this.attachedElements.delete(metadata.ref);
+        }
+    }
+
+    private updateElementMetadata(metadata: DomElement["metadata"]) {
+        if (metadata.actions.size) {
+            this.actionElements.set(metadata.ref, metadata.actions);
+            this.listenStdin();
+        } else {
+            this.actionElements.delete(metadata.ref);
+        }
+
+        if (metadata.dynamicStyles.size) {
+            this.dynamicStyleElements.add(metadata.ref);
+        } else {
+            this.dynamicStyleElements.delete(metadata.ref);
         }
     }
 
@@ -87,6 +119,17 @@ export class Root extends DomElement {
     }
 
     public render(opts: WriteOpts = {}) {
+        if (opts.resize) {
+            this.dynamicStyleElements.forEach((elem) => {
+                /* Force recalculate dimensions via style proxy */
+                /* eslint-disable no-self-assign */
+                elem.style.height = elem.style.height;
+                elem.style.width = elem.style.width;
+                elem.style.minHeight = elem.style.minHeight;
+                elem.style.minWidth = elem.style.minWidth;
+            });
+        }
+
         if (!opts.skipCalculateLayout) {
             this.node.calculateLayout(
                 process.stdout.columns,
@@ -94,9 +137,11 @@ export class Root extends DomElement {
                 Yoga.DIRECTION_LTR,
             );
         }
+
         this.renderer.writeToStdout(opts);
     }
 
+    // FUTURE-BUG: scheduler needs to coalesce WriteOpts as well
     public scheduleRender(opts: WriteOpts = {}) {
         this.scheduler.scheduleUpdate(() => {
             this.render(opts);
@@ -111,16 +156,16 @@ export class Root extends DomElement {
         // Anytime a key listener is added it should prompt opening stdin stream.
         // `listenStdin` does nothing if already listening.
         this.listenStdin();
-        this.actions.add(action);
-        this.actionElements.add(this);
+        this.metadata.actions.add(action);
+        this.actionElements.set(this, this.metadata.actions);
         return () => {
             this.removeKeyListener(action);
         };
     }
 
     public override removeKeyListener(action: Action): void {
-        this.actions.delete(action);
-        if (!this.actions.size) {
+        this.metadata.actions.delete(action);
+        if (!this.metadata.actions.size) {
             this.actionElements.delete(this);
         }
     }

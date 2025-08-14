@@ -18,6 +18,10 @@ export type VBoxStyle = YogaStyle & DomStyle;
 export type ShadowBoxStyle = Shadow<VBoxStyle>;
 export type VirtualStyle = VBoxStyle & TextStyle;
 export type ShadowStyle = Shadow<VirtualStyle>;
+export type DynamicStyle = keyof Pick<
+    VBoxStyle,
+    "height" | "width" | "minHeight" | "minWidth"
+>;
 
 export type Shorthand<T> = [T] | [T, T] | [T, T, T] | [T, T, T, T];
 

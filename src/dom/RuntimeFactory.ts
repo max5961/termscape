@@ -13,7 +13,6 @@ import type { Root } from "./Root.js";
 import { MouseState } from "../stdin/MouseState.js";
 import type { Scheduler } from "./Scheduler.js";
 import type { EventEmitter } from "stream";
-import { DOM_ELEMENT_ACTIONS, DomElement } from "./DomElement.js";
 import { handleError } from "../error/throwError.js";
 
 type Config = Required<RuntimeConfig>;
@@ -22,6 +21,7 @@ export type RuntimeDependencies = {
     root: Root;
     scheduler: Scheduler;
     emitter: EventEmitter<EventEmitterMap>;
+    actions: Root["actionElements"];
 };
 
 export type Runtime = ReturnType<typeof createRuntime>;
@@ -59,6 +59,7 @@ export function createRuntime(deps: RuntimeDependencies) {
     const root = deps.root;
     const scheduler = deps.scheduler;
     const config = deps.config as Config;
+    const actions = deps.actions;
 
     config.debounceMs ??= 16;
     config.altScreen ??= false;
@@ -81,9 +82,6 @@ export function createRuntime(deps: RuntimeDependencies) {
 
     /** Actions added through react layer (or the ctrl-c exit action) */
     const actionStore = new ActionStore();
-
-    /** Used for dom layer */
-    const actionElements = new Set<DomElement>();
 
     const exitAction: Readonly<Action> = {
         name: "internal_exit",
@@ -109,8 +107,8 @@ export function createRuntime(deps: RuntimeDependencies) {
         },
 
         getDomActions: () => {
-            return Array.from(actionElements.values()).flatMap((elem) => {
-                return elem[DOM_ELEMENT_ACTIONS].map((actions) => actions);
+            return Array.from(actions.values()).flatMap((actionSet) => {
+                return Array.from(actionSet.values());
             });
         },
 
@@ -336,5 +334,5 @@ export function createRuntime(deps: RuntimeDependencies) {
 
     latestEndRuntime.latest = logic.endRuntime;
 
-    return { logic, api, actionElements };
+    return { logic, api };
 }
