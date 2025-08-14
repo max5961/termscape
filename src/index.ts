@@ -1,10 +1,9 @@
 import { createElement } from "./dom/elements/createElement.js";
-import { throwError } from "./error/throwError.js";
 import type { Color } from "./types.js";
 
 const root = createElement("root", {
     debounceMs: 16,
-    altScreen: true,
+    // altScreen: true,
     exitOnCtrlC: true,
     exitForcesEndProc: true,
     enableMouse: true,
@@ -16,8 +15,8 @@ root.run().then(() => {
 
 const child1 = createElement("box");
 
-child1.style.height = 10;
-child1.style.width = 10;
+child1.style.height = "100vh";
+child1.style.width = "100vw";
 child1.style.backgroundColor = "green";
 child1.style.borderStyle = "round";
 root.appendChild(child1);
@@ -28,9 +27,8 @@ child1.addKeyListener({
         let height = Number(child1.style.height ?? 0);
         if (height < process.stdout.rows) {
             child1.style.height = ++height;
+            createElement("box").removeChild(createElement("box"));
         }
-        // root.runtime.enableMouse = !root.runtime.enableMouse;
-        // root.runtime.altScreen = !root.runtime.altScreen;
     },
 });
 
@@ -40,11 +38,6 @@ child1.addKeyListener({
         let height = Number(child1.style.height ?? 0);
         if (height > 0) {
             child1.style.height = --height;
-
-            createElement("box").removeChild(createElement("box"));
-
-            // throwError(null, "unattached root error");
-            // root.exit();
         }
     },
 });
@@ -67,13 +60,3 @@ child1.addKeyListener({
         }
     },
 });
-
-let prev = child1.style.backgroundColor as Color;
-setInterval(() => {
-    if (prev === "green") {
-        child1.style.backgroundColor = "red";
-        prev = "red";
-    } else {
-        child1.style.backgroundColor = "green";
-    }
-}, 500);

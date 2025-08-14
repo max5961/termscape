@@ -44,7 +44,7 @@ export const parseDimensions = (
     return ifMut(dim, (n) => {
         if (typeof n !== "string") return;
         if (n.trimEnd().endsWith(endsWith)) {
-            const pct = Number.parseInt(n, 10);
+            const pct = Number.parseInt(n, 10) / 100;
             return stdout[endsWith === "vh" ? "rows" : "columns"] * pct;
         }
         return;
