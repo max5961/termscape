@@ -1,21 +1,26 @@
 import { createElement } from "./dom/elements/createElement.js";
 import { throwError } from "./error/throwError.js";
+import type { Color } from "./types.js";
 
 const root = createElement("root", {
     debounceMs: 16,
-    // altScreen: false,
     altScreen: true,
     exitOnCtrlC: true,
+    exitForcesEndProc: true,
     enableMouse: true,
 });
+
+root.run().then(() => {
+    console.log("We are done");
+});
+
 const child1 = createElement("box");
 
 child1.style.height = 10;
 child1.style.width = 10;
-child1.style.backgroundColor = "cyan";
+child1.style.backgroundColor = "green";
 child1.style.borderStyle = "round";
-
-const child2 = createElement("box");
+root.appendChild(child1);
 
 child1.addKeyListener({
     keymap: "<A-j>",
@@ -24,7 +29,8 @@ child1.addKeyListener({
         if (height < process.stdout.rows) {
             child1.style.height = ++height;
         }
-        root.insertBefore(child2, child1);
+        // root.runtime.enableMouse = !root.runtime.enableMouse;
+        // root.runtime.altScreen = !root.runtime.altScreen;
     },
 });
 
@@ -34,7 +40,11 @@ child1.addKeyListener({
         let height = Number(child1.style.height ?? 0);
         if (height > 0) {
             child1.style.height = --height;
-            throwError(null, "LMFAOOOOO");
+
+            createElement("box").removeChild(createElement("box"));
+
+            // throwError(null, "unattached root error");
+            // root.exit();
         }
     },
 });
@@ -58,38 +68,12 @@ child1.addKeyListener({
     },
 });
 
-root.appendChild(child1);
-root.run().then(() => {
-    console.log("We are done");
-});
-
-// child1.addKeyListener({
-//     keymap: "<A-k>",
-//     callback: () => {
-//         let height = Number(child1.style.height ?? 0);
-//         if (height > 0) {
-//             child1.style.height = --height;
-//         }
-//     },
-// });
-//
-// child1.addKeyListener({
-//     keymap: "<A-l>",
-//     callback: () => {
-//         let width = Number(child1.style.width ?? 0);
-//         if (width < process.stdout.columns) {
-//             child1.style.width = ++width;
-//         }
-//     },
-// });
-// child1.addKeyListener({
-//     keymap: "<A-h>",
-//     callback: () => {
-//         let width = Number(child1.style.width ?? 0);
-//         if (width > 0) {
-//             child1.style.width = --width;
-//         }
-//     },
-// });
-//
-// root.appendChild(child1);
+let prev = child1.style.backgroundColor as Color;
+setInterval(() => {
+    if (prev === "green") {
+        child1.style.backgroundColor = "red";
+        prev = "red";
+    } else {
+        child1.style.backgroundColor = "green";
+    }
+}, 500);

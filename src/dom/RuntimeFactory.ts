@@ -14,6 +14,7 @@ import { MouseState } from "../stdin/MouseState.js";
 import type { Scheduler } from "./Scheduler.js";
 import type { EventEmitter } from "stream";
 import { DOM_ELEMENT_ACTIONS, DomElement } from "./DomElement.js";
+import { handleError } from "../error/throwError.js";
 
 type Config = Required<RuntimeConfig>;
 export type RuntimeDependencies = {
@@ -25,16 +26,23 @@ export type RuntimeDependencies = {
 
 export type Runtime = ReturnType<typeof createRuntime>;
 
-// Exiting the application should always be done through `endRuntime`, but
-// forceful exits still need to be supported.  In case multiple root instances are
-// used, then the only exit handler needed is the final one as the others will
-// have already ended runtime.
-const latestEndRuntime: { latest: () => void } = { latest: () => {} };
+/**
+ * Forceful exits need to be handled.  In case of multiple root instances, only the
+ * last handler is relevant because the others will have already ended their runtimes.
+ *
+ * Why the true in the "exit" handler?  Because if the `exitForcesEndProc` option
+ * is true, then this `endRuntime` will call `process.exit`.  When errors are
+ * thrown, node executes exit handlers, *then* writes the error before exiting, so
+ * we need to tell endRuntime to not force an exit here.
+ */
+const latestEndRuntime: { latest: Runtime["logic"]["endRuntime"] } = { latest: () => {} };
+
 process.on("exit", () => {
-    latestEndRuntime.latest();
+    latestEndRuntime.latest(undefined, true);
 });
 process.on("SIGINT", () => {
     latestEndRuntime.latest();
+    process.exit(); // force exit after cleanup
 });
 
 /**
@@ -43,10 +51,9 @@ process.on("SIGINT", () => {
  * getter/setter API for public usage and logic for private usage in the Root
  * class.  This should support runtime changes to any setting in RuntimeConfig.
  *
- * Escape sequences are all related to input handling.  Therefore, they only take
- * effect when listening for input and are restored to default when listening for
- * input is paused. Starting runtime also automatically applies escape sequences
- * which are set in the config.
+ * Settings related to input handling only take effect when the stdin stream is
+ * being listened to.  Resuming and pausing stdin therefore applies or removes
+ * these settings from the terminal automatically.
  */
 export function createRuntime(deps: RuntimeDependencies) {
     const root = deps.root;
@@ -56,6 +63,7 @@ export function createRuntime(deps: RuntimeDependencies) {
     config.debounceMs ??= 16;
     config.altScreen ??= false;
     config.exitOnCtrlC ??= true;
+    config.exitForcesEndProc ??= false;
     config.stdout ??= process.stdout;
     config.stdin ??= process.stdin;
     config.enableMouse ??= false;
@@ -81,7 +89,7 @@ export function createRuntime(deps: RuntimeDependencies) {
         name: "internal_exit",
         keymap: "<C-c>",
         callback() {
-            logic.endRuntime();
+            root.exit();
         },
     };
 
@@ -135,7 +143,7 @@ export function createRuntime(deps: RuntimeDependencies) {
             api.debounceMs = config.debounceMs;
         },
 
-        endRuntime() {
+        endRuntime(error?: Error, isBeforeExit?: boolean) {
             if (!isStarted) return;
             isStarted = false;
 
@@ -144,6 +152,12 @@ export function createRuntime(deps: RuntimeDependencies) {
 
             cleanupHandlers.forEach((handler) => handler());
             cleanupHandlers = [];
+
+            if (error) {
+                handleError(error);
+            } else if (config.exitForcesEndProc && !isBeforeExit) {
+                process.exit();
+            }
         },
 
         resumeStdin: () => {
@@ -285,6 +299,9 @@ export function createRuntime(deps: RuntimeDependencies) {
                 setKittyProtocol(val, config.stdout, config.stdin);
             }
         },
+        set exitForcesEndProc(val: Config["exitForcesEndProc"]) {
+            config.exitForcesEndProc = val;
+        },
 
         // GETTERS
         get debounceMs() {
@@ -310,6 +327,9 @@ export function createRuntime(deps: RuntimeDependencies) {
         },
         get enableKittyProtocol() {
             return config.enableKittyProtocol;
+        },
+        get exitForcesEndProc() {
+            return config.exitForcesEndProc;
         },
     };
 

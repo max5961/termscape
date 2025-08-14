@@ -40,4 +40,5 @@ export type RuntimeConfig = {
     debounceMs?: number;
     altScreen?: boolean;
     exitOnCtrlC?: boolean;
+    exitForcesEndProc?: boolean;
 } & ConfigureStdin;

@@ -61,16 +61,18 @@ export class Root extends DomElement {
     /** This is called post attach and pre detach in DomElement. */
     public [ROOT_MARK_HAS_ACTIONS](elem: DomElement, hasActions: boolean) {
         if (hasActions) {
+            this.listenStdin();
             this.actionElements.add(elem);
         } else {
             this.actionElements.delete(elem);
         }
     }
 
-    public exit() {
-        this.handleRuntime.endRuntime();
+    public exit<T extends Error | undefined>(error?: T): T extends Error ? never : void {
+        this.handleRuntime.endRuntime(error);
         this.exitPromiseResolvers.forEach((res) => res());
         this.exitPromiseResolvers = [];
+        return undefined as T extends Error ? never : void;
     }
 
     // ** Promise resolves when execution  */

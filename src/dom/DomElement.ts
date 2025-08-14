@@ -409,7 +409,7 @@ export abstract class DomElement<
     // Util
     // ========================================================================
 
-    protected getRoot(): Root | null {
+    public getRoot(): Root | null {
         return this.rootRef.root;
     }
 

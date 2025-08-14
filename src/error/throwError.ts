@@ -19,18 +19,18 @@ export function throwError(root: Root | null, msgOrError: string | Error): never
         TermscapeError.captureStackTrace(error, throwError);
     }
 
-    const stdout = root?.runtime.stdout ?? process.stdout;
-
-    // If root, exit function will handle runtime cleanup.
-    // Otherwise, ensure certain cleanup is handled
     if (root) {
-        root.exit();
+        root.exit(error);
     } else {
-        stdout.write(Ansi.restoreFromKittyProtocol);
-        stdout.write(Ansi.exitAltScreen);
-        setMouse(false, stdout);
+        process.stdout.write(Ansi.restoreFromKittyProtocol);
+        process.stdout.write(Ansi.exitAltScreen);
+        setMouse(false, process.stdout);
     }
 
+    handleError(error);
+}
+
+export function handleError(error: Error): never {
     // Looks nicer to write just the stacktrace for internal errors, but that
     // doesn't allow for catching errors, so throw it.
     throw error;
