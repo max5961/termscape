@@ -28,8 +28,8 @@ export function createVirtualStyleProxy<
             }
 
             if (dynamicProp) {
-                metadata.dynamicStyles.add(prop as DynamicStyle);
-                metadata.notifyRoot();
+                // Lazy add, once a node has added a dynamic dimension its for its lifetime
+                metadata.setDynamicStyles(prop as DynamicStyle, true);
             }
 
             target[prop] = newValue;
@@ -77,9 +77,13 @@ function createShadowStyleProxy<T extends ShadowStyle>(
     });
 }
 
-function checkIfDynamicDimensions(prop: string, value: string) {
+function checkIfDynamicDimensions(prop: string, value: unknown) {
+    if (typeof value !== "string") {
+        return false;
+    }
+
     return (
         DYNAMIC_STYLES.has(prop as DynamicStyle) &&
-        (value?.endsWith("vh") || value?.endsWith("vw"))
+        (value.endsWith("vh") || value.endsWith("vw"))
     );
 }

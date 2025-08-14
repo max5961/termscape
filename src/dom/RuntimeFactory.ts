@@ -21,7 +21,7 @@ export type RuntimeDependencies = {
     root: Root;
     scheduler: Scheduler;
     emitter: EventEmitter<EventEmitterMap>;
-    actions: Root["actionElements"];
+    attached: Root["attached"];
 };
 
 export type Runtime = ReturnType<typeof createRuntime>;
@@ -59,7 +59,7 @@ export function createRuntime(deps: RuntimeDependencies) {
     const root = deps.root;
     const scheduler = deps.scheduler;
     const config = deps.config as Config;
-    const actions = deps.actions;
+    const attached = deps.attached;
 
     config.debounceMs ??= 16;
     config.altScreen ??= false;
@@ -93,9 +93,11 @@ export function createRuntime(deps: RuntimeDependencies) {
 
     const logic = {
         configureRuntime: (newConfig: RuntimeConfig) => {
+            const wasListening = isListening;
+
             logic.endRuntime();
             Object.setPrototypeOf(config, newConfig);
-            logic.startRuntime();
+            logic.startRuntime(wasListening);
         },
 
         handleStdinBuffer: (buf: Buffer) => {
@@ -106,13 +108,13 @@ export function createRuntime(deps: RuntimeDependencies) {
             mouseState.process(data);
         },
 
-        getDomActions: () => {
-            return Array.from(actions.values()).flatMap((actionSet) => {
+        getDomActions: (): Action[] => {
+            return Array.from(attached.actions.values()).flatMap((actionSet) => {
                 return Array.from(actionSet.values());
             });
         },
 
-        startRuntime() {
+        startRuntime(wasListening?: boolean) {
             if (isStarted) return;
             isStarted = true;
 
@@ -139,6 +141,10 @@ export function createRuntime(deps: RuntimeDependencies) {
             api.exitOnCtrlC = config.exitOnCtrlC;
             api.altScreen = config.altScreen;
             api.debounceMs = config.debounceMs;
+
+            if (wasListening) {
+                this.resumeStdin();
+            }
         },
 
         endRuntime(error?: Error, isBeforeExit?: boolean) {
@@ -161,6 +167,7 @@ export function createRuntime(deps: RuntimeDependencies) {
 
         resumeStdin: () => {
             if (isListening) return;
+            if (!isStarted) return;
             isListening = true;
 
             try {

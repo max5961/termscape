@@ -9,12 +9,18 @@ function createDecorator<T extends DomElement, U>(cb: {
             const original = descriptor.value;
 
             descriptor.value = function (this: T, ...args: unknown[]) {
-                original?.apply(this, args);
+                const result = original?.apply(this, args);
                 cb.apply(this, injected);
+                return result;
             };
         };
 }
 
 export const Render = createDecorator(function (this, opts: WriteOpts) {
     this.getRoot()?.scheduleRender(opts);
+});
+
+export const RequestInput = createDecorator(function (this) {
+    this.requiresStdin = true;
+    this.getRoot()?.requestInputStream();
 });

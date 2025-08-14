@@ -9,7 +9,7 @@ import { type EventEmitterMap, type RuntimeConfig, type TTagNames } from "../typ
 import { type Action } from "term-keymap";
 
 /** Internal access symbol */
-export const ROOT_HOOK_DOM_ELEMENT = Symbol.for("termscape.root.hook_dom_element");
+export const ROOT_BRIDGE_DOM_ELEMENT = Symbol.for("termscape.root.bridge_dom_element");
 
 export class Root extends DomElement {
     public tagName: TTagNames;
@@ -20,12 +20,17 @@ export class Root extends DomElement {
 
     private scheduler: Scheduler;
     private renderer: Renderer;
-    private handleRuntime: Runtime["logic"];
+    private runtimeCtl: Runtime["logic"];
     private Emitter: EventEmitter<EventEmitterMap>;
     private exitPromiseResolvers: (() => void)[];
-    private attachedElements: Set<DomElement>;
-    private actionElements: Map<DomElement, Set<Action>>;
-    private dynamicStyleElements: Set<DomElement>;
+    // private attached: Map<
+    //     DomElement,
+    //     { actions: Set<Action>; dynamicStyles: { value: boolean } }
+    // >;
+    private attached: {
+        actions: Map<DomElement, Set<Action>>;
+        dynamicEls: Set<DomElement>;
+    };
 
     constructor(config: RuntimeConfig) {
         super();
@@ -44,64 +49,63 @@ export class Root extends DomElement {
         this.Emitter = new EventEmitter();
         this.Emitter.on("MouseEvent", this.handleMouseEvent);
 
-        this.attachedElements = new Set();
-        this.actionElements = new Map();
-        this.dynamicStyleElements = new Set();
+        this.attached = {
+            actions: new Map(),
+            dynamicEls: new Set(),
+        };
+
+        // Root element is considered attached to itself.
+        this.afterAttached();
 
         const { api, logic } = createRuntime({
             config: config,
             root: this,
             scheduler: this.scheduler,
             emitter: this.Emitter,
-            actions: this.actionElements,
+            attached: this.attached,
         });
 
         this.runtime = api;
-        this.handleRuntime = logic;
+        this.runtimeCtl = logic;
 
         this.exitPromiseResolvers = [];
 
-        this.handleRuntime.startRuntime();
+        this.runtimeCtl.startRuntime();
     }
 
-    /** This is called post attach and pre detach in DomElement. */
-    public [ROOT_HOOK_DOM_ELEMENT](
+    /**
+     * This is called post attach and pre detach in DomElement.
+     * ON ATTACH:
+     * It connects the `actions` Set<Action> in DomElement to this Root.
+     * It passes the `dynamicEls` Set<DomElement> set to the DomElement.  In
+     * DomElement, dynamicStyles are added through a helper function which updates
+     * the Root's dynamicEls set as well as the DomElements dynamicStyles set.
+     * ON DETACH:
+     * These references are removed.
+     * */
+    public [ROOT_BRIDGE_DOM_ELEMENT](
         metadata: DomElement["metadata"],
         { attached }: { attached: boolean },
     ) {
-        const cb = () => {
-            if (attached) {
-                this.updateElementMetadata(metadata);
-            }
-        };
-        cb();
-
-        metadata.notifyRoot = cb;
+        const elem = metadata.ref;
+        const { actions, dynamicStyles } = metadata;
 
         if (attached) {
-            this.attachedElements.add(metadata.ref);
-        } else {
-            this.attachedElements.delete(metadata.ref);
-        }
-    }
+            this.attached.actions.set(elem, actions);
+            metadata.dynamicEls = this.attached.dynamicEls;
 
-    private updateElementMetadata(metadata: DomElement["metadata"]) {
-        if (metadata.actions.size) {
-            this.actionElements.set(metadata.ref, metadata.actions);
-            this.listenStdin();
+            if (dynamicStyles.size) {
+                metadata.dynamicEls.add(elem);
+            }
         } else {
-            this.actionElements.delete(metadata.ref);
-        }
-
-        if (metadata.dynamicStyles.size) {
-            this.dynamicStyleElements.add(metadata.ref);
-        } else {
-            this.dynamicStyleElements.delete(metadata.ref);
+            this.attached.actions.delete(elem);
+            this.attached.dynamicEls.delete(elem);
+            metadata.dynamicEls = null;
         }
     }
 
     public exit<T extends Error | undefined>(error?: T): T extends Error ? never : void {
-        this.handleRuntime.endRuntime(error);
+        this.runtimeCtl.endRuntime(error);
         this.exitPromiseResolvers.forEach((res) => res());
         this.exitPromiseResolvers = [];
         return undefined as T extends Error ? never : void;
@@ -120,7 +124,7 @@ export class Root extends DomElement {
 
     public render(opts: WriteOpts = {}) {
         if (opts.resize) {
-            this.dynamicStyleElements.forEach((elem) => {
+            this.attached.dynamicEls.forEach((elem) => {
                 /* Force recalculate dimensions via style proxy */
                 /* eslint-disable no-self-assign */
                 elem.style.height = elem.style.height;
@@ -148,26 +152,8 @@ export class Root extends DomElement {
         });
     }
 
-    public listenStdin() {
-        this.handleRuntime.resumeStdin();
-    }
-
-    public override addKeyListener(action: Action): () => void {
-        // Anytime a key listener is added it should prompt opening stdin stream.
-        // `listenStdin` does nothing if already listening.
-        this.listenStdin();
-        this.metadata.actions.add(action);
-        this.actionElements.set(this, this.metadata.actions);
-        return () => {
-            this.removeKeyListener(action);
-        };
-    }
-
-    public override removeKeyListener(action: Action): void {
-        this.metadata.actions.delete(action);
-        if (!this.metadata.actions.size) {
-            this.actionElements.delete(this);
-        }
+    public requestInputStream() {
+        this.runtimeCtl.resumeStdin();
     }
 
     private handleMouseEvent: (...args: EventEmitterMap["MouseEvent"]) => unknown = (

@@ -6,8 +6,8 @@ import {
     type MouseEventType,
     type MouseEventHandler,
 } from "./MouseEvent.js";
-import { Root, ROOT_HOOK_DOM_ELEMENT } from "./Root.js";
-import { Render } from "./decorators.js";
+import { Root, ROOT_BRIDGE_DOM_ELEMENT } from "./Root.js";
+import { Render, RequestInput } from "./decorators.js";
 import {
     type DynamicStyle,
     type ShadowStyle,
@@ -16,6 +16,7 @@ import {
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectKeys } from "../util/objectKeys.js";
 import { throwError } from "../error/throwError.js";
+import { ElementMetaData } from "./ElementMetadata.js";
 
 /** Internal access symbol */
 export const DOM_ELEMENT_SHADOW_STYLE = Symbol.for("termscape.domelement.shadow_style");
@@ -43,12 +44,7 @@ export abstract class DomElement<
     protected shadowStyle!: SStyle;
     protected removeKeyListeners: (() => void)[];
     protected childrenSet: Set<DomElement>;
-    protected readonly metadata: {
-        actions: Set<Action>;
-        dynamicStyles: Set<DynamicStyle>;
-        notifyRoot: () => void;
-        readonly ref: DomElement;
-    };
+    protected readonly metadata: ElementMetaData;
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -62,12 +58,7 @@ export abstract class DomElement<
         this.attributes = new Map();
         this.eventListeners = this.initEventListeners();
         this.requiresStdin = false;
-        this.metadata = {
-            actions: new Set(),
-            dynamicStyles: new Set(),
-            notifyRoot: () => {},
-            ref: this,
-        };
+        this.metadata = new ElementMetaData(this);
 
         const { virtualStyle, shadowStyle } = createVirtualStyleProxy<VStyle, SStyle>(
             this.node,
@@ -125,23 +116,22 @@ export abstract class DomElement<
         this.dfs(this, (elem) => {
             elem.setRoot(root);
 
-            if (elem.requiresStdin) {
-                root.listenStdin();
-            }
+            root[ROOT_BRIDGE_DOM_ELEMENT](elem.metadata, { attached: true });
 
-            root[ROOT_HOOK_DOM_ELEMENT](elem.metadata, { attached: true });
+            if (elem.requiresStdin) {
+                root.requestInputStream();
+            }
         });
     }
 
-    protected beforeDetach(): void {
+    protected beforeDetaching(): void {
         const root = this.getRoot();
 
         this.dfs(this, (elem) => {
-            // Unset any root references
             elem.setRoot(null);
 
             if (root) {
-                root[ROOT_HOOK_DOM_ELEMENT](elem.metadata, { attached: false });
+                root[ROOT_BRIDGE_DOM_ELEMENT](elem.metadata, { attached: false });
             }
         });
     }
@@ -205,7 +195,7 @@ export abstract class DomElement<
 
         this.childrenSet.delete(child);
 
-        child.beforeDetach();
+        child.beforeDetaching();
 
         this.children.splice(idx, 1);
         this.node.removeChild(child.node);
@@ -314,14 +304,9 @@ export abstract class DomElement<
         };
     }
 
+    @RequestInput()
     public addEventListener(event: MouseEventType, handler: MouseEventHandler): void {
-        this.requiresStdin = true;
         this.eventListeners[event].add(handler);
-
-        const root = this.getRoot();
-        if (root) {
-            root.listenStdin();
-        }
     }
 
     public removeEventListener(event: MouseEventType, handler: MouseEventHandler): void {
@@ -375,9 +360,8 @@ export abstract class DomElement<
     // Keymap Events
     // ========================================================================
 
+    @RequestInput()
     public addKeyListener(action: Action): () => void {
-        this.requiresStdin = true;
-
         const origCb = action.callback;
         action.callback = () => {
             // When DOM layer focus is figured out
@@ -389,7 +373,6 @@ export abstract class DomElement<
         };
 
         this.metadata.actions.add(action);
-        this.metadata.notifyRoot();
 
         return () => {
             this.removeKeyListener(action);
@@ -398,7 +381,6 @@ export abstract class DomElement<
 
     public removeKeyListener(action: Action): void {
         this.metadata.actions.delete(action);
-        this.metadata.notifyRoot();
     }
 
     // ========================================================================
