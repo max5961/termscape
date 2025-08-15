@@ -3,7 +3,7 @@ import type { Color } from "./types.js";
 
 const root = createElement("root", {
     debounceMs: 16,
-    altScreen: true,
+    altScreen: false,
     exitOnCtrlC: true,
     exitForcesEndProc: true,
     enableMouse: true,
