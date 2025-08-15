@@ -17,8 +17,8 @@ root.run().then(() => {
 const child1 = createElement("box");
 
 child1.style = {
-    height: 25,
-    width: 25,
+    height: 3,
+    width: 10,
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
@@ -39,6 +39,9 @@ child3.style.height = "25";
 child3.style.width = "25";
 child3.style.backgroundColor = "cyan";
 child3.style.borderStyle = "round";
+child3.addEventListener("click", () => {
+    console.log("click child3");
+});
 
 child1.appendChild(child2);
 child1.appendChild(child3);
@@ -49,6 +52,7 @@ child1.addKeyListener({
         let height = Number(child1.style.height ?? 0);
         if (height < process.stdout.rows) {
             child1.style.height = ++height;
+            // console.log(height);
         }
     },
 });
@@ -58,6 +62,7 @@ child1.addKeyListener({
         let height = Number(child1.style.height ?? 0);
         if (height > 0) {
             child1.style.height = --height;
+            // console.log(height);
         }
     },
 });
@@ -67,6 +72,7 @@ child1.addKeyListener({
         let width = Number(child1.style.width ?? 0);
         if (width < process.stdout.columns) {
             child1.style.width = ++width;
+            // console.log(width);
         }
     },
 });
@@ -76,6 +82,7 @@ child1.addKeyListener({
         let width = Number(child1.style.width ?? 0);
         if (width > 0) {
             child1.style.width = --width;
+            // console.log(width);
         }
     },
 });

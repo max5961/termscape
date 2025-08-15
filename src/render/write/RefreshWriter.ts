@@ -15,14 +15,12 @@ export class RefreshWriter extends Writer {
         nextCanvas: Canvas,
         capturedOutput?: string,
     ): void {
-        // Rather than write each row then move cursor down, use \n to make
-        // sure that terminals not supporting ansi sequences will render properly.
-
         let newLines = 0;
         const output = nextCanvas.grid
             .map((_row, y) => {
-                ++newLines;
                 const nl = y === nextCanvas.grid.length - 1 ? "" : "\n";
+                if (nl) ++newLines;
+
                 // prettier-ignore
                 return nextCanvas
                     .stringifyRowSegment(y)
@@ -39,22 +37,11 @@ export class RefreshWriter extends Writer {
 
             // NOT FULLSCREEN => CONSOLE BEFORE OUTPUT
             if (capturedOutput && !fullscreen) {
+                capturedOutput = capturedOutput.trimEnd() + "\n";
                 process.stdout.write(capturedOutput);
             }
 
-            this.cursor.deferOutput(output, newLines - 1);
-
-            // FULLSCREEN => CONSOLE OVERLAYS OUTPUT
-            // This should be until post layout hooks are more better integrated
-            // and can handle this better
-            if (capturedOutput && fullscreen) {
-                let lines = capturedOutput.split("\n").length;
-                if (capturedOutput.endsWith("\n") && capturedOutput.trimEnd()) {
-                    --lines;
-                }
-                this.cursor.rowsUp(lines);
-                this.cursor.deferOutput(capturedOutput, lines);
-            }
+            this.cursor.deferOutput(output, newLines);
         } else {
             this.cursor.clearOps();
         }
@@ -65,6 +52,6 @@ export class RefreshWriter extends Writer {
     }
 
     public isFullscreen(nextCanvas: Canvas) {
-        return nextCanvas.cvHeight === process.stdout.rows;
+        return nextCanvas.grid.length >= process.stdout.rows;
     }
 }

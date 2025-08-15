@@ -8,6 +8,7 @@ import { PreciseWriter } from "./write/PreciseWriter.js";
 import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../util/Ansi.js";
 import { Root } from "../dom/Root.js";
+import { logger } from "../logger/Logger.js";
 
 export type WriteOpts = {
     resize?: boolean;
@@ -42,71 +43,94 @@ export class Renderer {
     public writeToStdout = (opts: WriteOpts) => {
         if (this.hooks.renderIsBlocked) return;
 
-        this.perf.tracking = !!this.hooks.renderPerf.size;
+        this.preLayoutHooks();
+        const compositor = this.getComposedLayout();
+        this.postLayoutHooks(compositor);
 
-        // SHOULD HAVE A PRE & POST YOGA LAYOUT CALCULATION HERE AND PERFORM HERE RATHER THAN IN ROOT CLASS
+        this.deferWrite(compositor, opts);
+        this.preWriteHooks();
+        this.performWrite();
+        this.postWriteHooks();
+    };
 
-        /**** PRE-LAYOUT ****/
-        this.perf.preLayout();
-
+    private getComposedLayout(): Compositor {
         const compositor = new Compositor(this.root);
         compositor.buildLayout(this.root);
+        return compositor;
+    }
 
-        this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));
-
-        process.stdout.write(Ansi.beginSynchronizedUpdate);
-
-        if (
-            !this.root.runtime.preciseWrites ||
-            this.shouldRefreshWrite(opts, compositor.canvas)
-        ) {
-            this.refreshWriter.instructCursor(
-                this.lastCanvas,
-                compositor.canvas,
-                opts.capturedOutput,
-            );
-            if (opts.resize) {
-                this.lastWasResize = 1;
-            }
-            if (this.lastWasResize && ++this.lastWasResize > 3) {
-                this.lastWasResize = 0;
-            }
+    private deferWrite(compositor: Compositor, opts: WriteOpts) {
+        if (this.shouldRefreshWrite(opts)) {
+            this.refreshWrite(compositor, opts);
         } else {
             this.preciseWriter.instructCursor(this.lastCanvas!, compositor.canvas);
             this.refreshWriter.resetLastOutput();
         }
 
         this.cursor.moveToRow(compositor.canvas.grid.length - 1);
-        /**** POST-LAYOUT ****/
-        this.perf.postLayout();
+        this.lastCanvas = compositor.canvas;
+        this.rects = compositor.rects;
+    }
 
-        /**** PRE-WRITE ****/
-        this.perf.preWrite();
+    private refreshWrite(compositor: Compositor, opts: WriteOpts) {
+        this.refreshWriter.instructCursor(
+            this.lastCanvas,
+            compositor.canvas,
+            opts.capturedOutput,
+        );
 
-        this.cursor.execute();
-
-        if (this.termSupportsAnsiCursor() && opts.capturedOutput) {
-            const lines = opts.capturedOutput.split("\n").length;
-            this.cursor.rowsUp(lines);
-            this.cursor.deferOutput(opts.capturedOutput, lines);
-            this.cursor.execute();
+        if (opts.resize) {
+            this.lastWasResize = 1;
         }
 
-        process.stdout.write(Ansi.endSynchronizedUpdate);
+        if (this.lastWasResize && ++this.lastWasResize > 3) {
+            this.lastWasResize = 0;
+        }
+    }
 
-        /**** POST-WRITE ****/
+    private performWrite() {
+        process.stdout.write(Ansi.beginSynchronizedUpdate);
+        this.cursor.execute();
+        process.stdout.write(Ansi.endSynchronizedUpdate);
+    }
+
+    // =========================================================================
+    // Render Hooks
+    // =========================================================================
+
+    private preLayoutHooks() {
+        this.perf.tracking = !!this.hooks.renderPerf.size;
+        this.perf.preLayout();
+    }
+
+    private postLayoutHooks(compositor: Compositor) {
+        this.perf.postLayout();
+        this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));
+    }
+
+    private preWriteHooks() {
+        this.perf.preWrite();
+    }
+
+    private postWriteHooks() {
         this.perf.postWrite();
         if (this.perf.tracking) {
             this.hooks.renderPerf.forEach((cb) => {
                 cb(this.perf.getPerf());
             });
         }
+    }
 
-        this.lastCanvas = compositor.canvas;
-        this.rects = compositor.rects;
-    };
+    // =========================================================================
+    // Util
+    // =========================================================================
 
-    private shouldRefreshWrite(opts: WriteOpts, _canvas: Canvas) {
+    private shouldRefreshWrite(opts: WriteOpts) {
+        // Refresh option set in runtime opts
+        if (!this.root.runtime.preciseWrites) {
+            return true;
+        }
+
         // First write
         if (!this.lastCanvas) {
             return true;

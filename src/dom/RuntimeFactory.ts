@@ -120,8 +120,10 @@ export function createRuntime(deps: RuntimeDependencies) {
             isStarted = true;
 
             // Hide Cursor
-            config.stdout.write(Ansi.cursor.hide);
-            cleanupHandlers.push(() => config.stdout.write(Ansi.cursor.show));
+            if (!process.env["RENDER_DEBUG"]) {
+                config.stdout.write(Ansi.cursor.hide);
+                cleanupHandlers.push(() => config.stdout.write(Ansi.cursor.show));
+            }
 
             // Handle window resize
             config.stdout.on("resize", logic.handleResize);
