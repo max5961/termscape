@@ -78,6 +78,9 @@ export const SanitizerHandlers: {
 // HANDLE AGGREGATES
 // =============================================================================
 
+// TODO - ifUndef is incorrectly targeting the target where it should be targeting
+// the virtual.
+
 export const AggregateHandlers: {
     [P in keyof ShadowStyle]: (next: ShadowStyle[P], target: ShadowStyle) => void;
 } = {

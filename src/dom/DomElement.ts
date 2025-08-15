@@ -70,6 +70,9 @@ export abstract class DomElement<
         this.shadowStyle = shadowStyle;
 
         this.removeKeyListeners = [];
+
+        // DEFAULT STYLES
+        this.style.overflow = "visible";
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {

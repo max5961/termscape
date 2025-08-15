@@ -1,59 +1,83 @@
-import { type GridToken, type Point } from "../types.js";
+import type { Runtime } from "../dom/RuntimeFactory.js";
+import type { GridToken, Point } from "../types.js";
 import { Ansi } from "../util/Ansi.js";
 import { Pen } from "./Pen.js";
 
-type SubCanvasConfig = {
-    /**
-     * If not provided a 0x0 grid will be created, by which subgrids will inherit
-     * from.
-     */
-    grid: (string | GridToken)[][];
-    /** How far down from the corner can we legally draw? */
-    height: number;
-    /** How far right from the corner can we legally draw? */
-    width: number;
-    /** Corner position of the grid.  This helps define boundaries. */
-    corner: Point;
+export type Grid = (string | GridToken)[][];
+
+export type CanvasDeps = {
+    stdout: Runtime["api"]["stdout"];
+    corner?: Point;
+    height?: number;
+    width?: number;
+    nodeHeight?: number;
+    nodeWidth?: number;
+    grid?: Grid;
 };
 
+export type SubCanvasDeps = Required<CanvasDeps>;
+
 export class Canvas {
-    private pos: { x: number; y: number };
-    public grid: (string | GridToken)[][];
-    public corner: Readonly<Point>;
-    public height: number;
-    public width: number;
+    public pos: Point;
+    public readonly grid: Grid;
+    public readonly corner: Point;
+    public readonly height: number;
+    public readonly width: number;
+    public readonly nodeHeight: number;
+    public readonly nodeWidth: number;
 
-    constructor(config?: SubCanvasConfig) {
-        const cols = process.stdout.columns;
-        const rows = process.stdout.rows;
+    private readonly stdout: CanvasDeps["stdout"]; // Only used in root Canvas
 
-        if (config) {
-            this.grid = config.grid;
-            this.height = config.height;
-            this.width = config.width;
-            this.corner = config.corner;
-        } else {
-            // NOTE: rows are added on demand so that mt rows aren't part of output str
-            this.grid = [];
-            this.height = rows;
-            this.width = cols;
-            this.corner = { x: 0, y: 0 };
-        }
-
+    constructor(deps: CanvasDeps) {
+        this.stdout = deps.stdout;
+        this.grid = deps.grid ?? [];
+        this.corner = deps.corner ?? { x: 0, y: 0 };
+        this.height = deps.height ?? deps.stdout.rows;
+        this.width = deps.width ?? deps.stdout.columns;
+        this.nodeHeight = deps.nodeHeight ?? this.height;
+        this.nodeWidth = deps.nodeWidth ?? this.width;
         this.pos = { ...this.corner };
-
-        const xBorder = Math.min(this.corner.x + this.width, cols);
-        const yBorder = Math.min(this.corner.y + this.height, rows);
-        this.width = xBorder - this.corner.x;
-        this.height = yBorder - this.corner.y;
     }
 
-    public getPen(opts: { linked?: boolean } = {}) {
-        const { linked = false } = opts;
+    public createSubCanvas({
+        corner,
+        height,
+        width,
+        canOverflowX,
+        canOverflowY,
+    }: {
+        corner: Point;
+        height: number;
+        width: number;
+        canOverflowX: boolean;
+        canOverflowY: boolean;
+    }) {
+        const pxStop = this.corner.x + this.width;
+        const pyStop = this.corner.y + this.height;
 
+        const cxStop = corner.x + width;
+        const cyStop = corner.y + height;
+
+        const getConstrainedX = canOverflowX ? Math.max : Math.min;
+        const getConstrainedY = canOverflowY ? Math.max : Math.min;
+
+        const nextWidth = getConstrainedX(pxStop, cxStop) - corner.x;
+        const nextHeight = getConstrainedY(pyStop, cyStop) - corner.y;
+
+        return new SubCanvas({
+            stdout: this.stdout,
+            grid: this.grid,
+            corner: corner,
+            width: nextWidth,
+            height: nextHeight,
+            nodeWidth: width,
+            nodeHeight: height,
+        });
+    }
+
+    public getPen(): Pen {
         return new Pen({
-            linked,
-            pos: this.pos,
+            grid: this.grid,
             canvas: this,
         });
     }
@@ -62,8 +86,8 @@ export class Canvas {
         const row = this.grid[y];
         if (!row) return "";
 
-        start = start ?? 0;
-        end = end ?? row.length;
+        start ??= 0;
+        end ??= row.length;
 
         const length = end - start;
         const result = new Array(length + 1);
@@ -104,5 +128,28 @@ export class Canvas {
         } else {
             return token.ansi + token.char + Ansi.style.reset;
         }
+    }
+}
+
+class SubCanvas extends Canvas {
+    constructor(deps: SubCanvasDeps) {
+        super(deps);
+        this.forceGridToAccomodate();
+    }
+
+    private forceGridToAccomodate() {
+        const currDepth = this.grid.length;
+        const requestedDepth = this.corner.y + this.height;
+        const rowsNeeded = requestedDepth - currDepth;
+
+        for (let i = 0; i < rowsNeeded; ++i) {
+            this.appendRowToGrid();
+        }
+    }
+
+    private appendRowToGrid() {
+        this.grid.push(
+            Array.from({ length: process.stdout.columns }).fill(" ") as string[],
+        );
     }
 }

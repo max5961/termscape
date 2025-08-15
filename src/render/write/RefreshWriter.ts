@@ -22,13 +22,13 @@ export class RefreshWriter extends Writer {
         const output = nextCanvas.grid
             .map((_row, y) => {
                 ++newLines;
+                const nl = y === nextCanvas.grid.length - 1 ? "" : "\n";
                 // prettier-ignore
                 return nextCanvas
                     .stringifyRowSegment(y)
-                    .trimEnd() + "\n";
+                    .trimEnd() + nl;
             })
-            .join("")
-            .trimEnd();
+            .join("");
 
         if (output !== this.lastOutput || capturedOutput) {
             if (lastCanvas) {

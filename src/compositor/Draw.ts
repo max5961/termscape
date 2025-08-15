@@ -35,9 +35,9 @@ export class Draw {
             pen.set.bgColor(`bg-${color}`);
         }
 
-        for (let y = canvas.corner.y; y < canvas.height; ++y) {
-            pen.moveTo(canvas.corner.x, y);
-            pen.draw(" ", "R", canvas.width);
+        for (let y = 0; y < canvas.nodeHeight; ++y) {
+            pen.moveTo(0, y);
+            pen.draw(" ", "r", canvas.nodeWidth);
         }
     }
 
@@ -46,15 +46,15 @@ export class Draw {
         const width = elem.node.getComputedWidth();
         const height = elem.node.getComputedHeight();
 
-        const pen = canvas.getPen({ linked: false });
+        const pen = canvas.getPen();
 
-        pen.draw("╭", "R", 1)
-            .draw("─", "R", width - 2)
-            .draw("╮", "D", 1)
-            .draw("│", "D", height - 2)
-            .draw("╯", "L", 1)
-            .draw("─", "L", width - 2)
-            .draw("╰", "U", 1)
-            .draw("│", "U", height - 2);
+        pen.draw("╭", "r", 1)
+            .draw("─", "r", width - 2)
+            .draw("╮", "d", 1)
+            .draw("│", "d", height - 2)
+            .draw("╯", "l", 1)
+            .draw("─", "l", width - 2)
+            .draw("╰", "u", 1)
+            .draw("│", "u", height - 2);
     }
 }

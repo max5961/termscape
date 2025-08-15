@@ -3,7 +3,7 @@ import type { Color } from "./types.js";
 
 const root = createElement("root", {
     debounceMs: 16,
-    altScreen: true,
+    // altScreen: true,
     exitOnCtrlC: true,
     exitForcesEndProc: true,
     enableMouse: true,
@@ -15,13 +15,35 @@ root.run().then(() => {
 
 const child1 = createElement("box");
 
-child1.style.height = "50vh";
-child1.style.width = "50vw";
-// child1.style.height = 10;
-// child1.style.width = 10;
-child1.style.backgroundColor = "green";
-child1.style.borderStyle = "round";
+child1.style.height = "100vh";
+child1.style.width = "100vw";
+
+child1.style = {
+    alignItems: "center",
+    justifyContent: "center",
+    columnGap: 2,
+    height: 25,
+    width: 25,
+    // backgroundColor: "green",
+    // borderStyle: "round",
+};
+
 root.appendChild(child1);
+
+const child2 = createElement("box");
+child2.style.height = "25";
+child2.style.width = "25";
+child2.style.backgroundColor = "red";
+child2.style.borderStyle = "round";
+
+const child3 = createElement("box");
+child3.style.height = "25";
+child3.style.width = "25";
+child3.style.backgroundColor = "cyan";
+child3.style.borderStyle = "round";
+
+child1.appendChild(child2);
+child1.appendChild(child3);
 
 child1.addKeyListener({
     keymap: "<A-j>",
@@ -30,7 +52,6 @@ child1.addKeyListener({
         if (height < process.stdout.rows) {
             child1.style.height = ++height;
         }
-        createElement("box").removeChild(createElement("box"));
     },
 });
 

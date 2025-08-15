@@ -49,7 +49,7 @@ export class Renderer {
         /**** PRE-LAYOUT ****/
         this.perf.preLayout();
 
-        const compositor = new Compositor();
+        const compositor = new Compositor(this.root);
         compositor.buildLayout(this.root);
 
         this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));

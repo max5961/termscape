@@ -3,6 +3,8 @@ import { Canvas } from "../canvas/Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
+import type { Root } from "../dom/Root.js";
+import type { VirtualStyle } from "../style/Style.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -10,8 +12,8 @@ export class Compositor {
     public rects: DomRects;
     public draw: Draw;
 
-    constructor() {
-        this.canvas = new Canvas();
+    constructor(root: Root) {
+        this.canvas = new Canvas({ stdout: root.runtime.stdout });
         this.ops = new Operations();
         this.rects = new DomRects();
         this.draw = new Draw();
@@ -32,8 +34,8 @@ export class Compositor {
         }
 
         for (const child of elem.children) {
-            const childCanvas = this.getChildCanvas(elem, canvas, child);
-            this.buildLayout(child, childCanvas);
+            const subCanvas = this.getSubCanvas(child, canvas);
+            this.buildLayout(child, subCanvas);
         }
 
         if (elem.tagName === "ROOT_ELEMENT") {
@@ -41,32 +43,19 @@ export class Compositor {
         }
     }
 
-    private getChildCanvas(
-        parent: DomElement,
-        parentCanvas: Canvas,
-        child: DomElement,
-    ): Canvas {
-        let width = child.node.getComputedWidth();
-        let height = child.node.getComputedHeight();
-        const xoff = parentCanvas.corner.x + child.node.getComputedTop();
-        const yoff = parentCanvas.corner.y + child.node.getComputedLeft();
+    private getSubCanvas(child: DomElement, pcanvas: Canvas): Canvas {
+        const width = child.node.getComputedWidth();
+        const height = child.node.getComputedHeight();
+        const xoff = child.node.getComputedLeft() + pcanvas.corner.x;
+        const yoff = child.node.getComputedTop() + pcanvas.corner.y;
+        const style = child[DOM_ELEMENT_SHADOW_STYLE];
 
-        const hideOverflow = parent.style.overflow === "hidden";
-        const xHideOverflow = parent.style.overflowX === "hidden";
-        const yHideOverflow = parent.style.overflowY === "hidden";
-
-        if (hideOverflow || xHideOverflow) {
-            width = Math.min(parentCanvas.width, width);
-        }
-        if (hideOverflow || yHideOverflow) {
-            height = Math.min(parentCanvas.height, height);
-        }
-
-        return new Canvas({
-            grid: this.canvas.grid,
-            width: width,
-            height: height,
+        return pcanvas.createSubCanvas({
             corner: { x: xoff, y: yoff },
+            height: height,
+            width: width,
+            canOverflowX: style.overflowX === "visible",
+            canOverflowY: style.overflowY === "visible",
         });
     }
 
