@@ -15,8 +15,8 @@ root.run().then(() => {
 
 const child1 = createElement("box");
 
-child1.style.height = "100vh";
-child1.style.width = "100vw";
+// child1.style.height = "100vh";
+// child1.style.width = "100vw";
 
 child1.style = {
     alignItems: "center",
@@ -24,8 +24,8 @@ child1.style = {
     columnGap: 2,
     height: 25,
     width: 25,
-    // backgroundColor: "green",
-    // borderStyle: "round",
+    backgroundColor: "green",
+    borderStyle: "round",
 };
 
 root.appendChild(child1);

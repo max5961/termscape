@@ -129,6 +129,16 @@ export class Canvas {
             return token.ansi + token.char + Ansi.style.reset;
         }
     }
+
+    // Should be available to Pen class for writing past node dimensions (overflow)
+    // since subgrids only extend grid to their nodeheights
+    public requestNewRow() {
+        if (this.grid.length < this.height) {
+            this.grid.push(
+                Array.from({ length: process.stdout.columns }).fill(" ") as string[],
+            );
+        }
+    }
 }
 
 class SubCanvas extends Canvas {
@@ -139,17 +149,11 @@ class SubCanvas extends Canvas {
 
     private forceGridToAccomodate() {
         const currDepth = this.grid.length;
-        const requestedDepth = this.corner.y + this.height;
+        const requestedDepth = this.corner.y + this.nodeHeight;
         const rowsNeeded = requestedDepth - currDepth;
 
         for (let i = 0; i < rowsNeeded; ++i) {
-            this.appendRowToGrid();
+            this.requestNewRow();
         }
-    }
-
-    private appendRowToGrid() {
-        this.grid.push(
-            Array.from({ length: process.stdout.columns }).fill(" ") as string[],
-        );
     }
 }
