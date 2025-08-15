@@ -65,6 +65,6 @@ export class RefreshWriter extends Writer {
     }
 
     public isFullscreen(nextCanvas: Canvas) {
-        return nextCanvas.height === process.stdout.rows;
+        return nextCanvas.cvHeight === process.stdout.rows;
     }
 }

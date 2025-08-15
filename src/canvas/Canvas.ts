@@ -8,8 +8,8 @@ export type Grid = (string | GridToken)[][];
 export type CanvasDeps = {
     stdout: Runtime["api"]["stdout"];
     corner?: Point;
-    height?: number;
-    width?: number;
+    cvHeight?: number;
+    cvWidth?: number;
     nodeHeight?: number;
     nodeWidth?: number;
     grid?: Grid;
@@ -21,8 +21,8 @@ export class Canvas {
     public pos: Point;
     public readonly grid: Grid;
     public readonly corner: Point;
-    public readonly height: number;
-    public readonly width: number;
+    public readonly cvHeight: number;
+    public readonly cvWidth: number;
     public readonly nodeHeight: number;
     public readonly nodeWidth: number;
 
@@ -32,46 +32,46 @@ export class Canvas {
         this.stdout = deps.stdout;
         this.grid = deps.grid ?? [];
         this.corner = deps.corner ?? { x: 0, y: 0 };
-        this.height = deps.height ?? deps.stdout.rows;
-        this.width = deps.width ?? deps.stdout.columns;
-        this.nodeHeight = deps.nodeHeight ?? this.height;
-        this.nodeWidth = deps.nodeWidth ?? this.width;
+        this.cvHeight = deps.cvHeight ?? deps.stdout.rows;
+        this.cvWidth = deps.cvWidth ?? deps.stdout.columns;
+        this.nodeHeight = deps.nodeHeight ?? this.cvHeight;
+        this.nodeWidth = deps.nodeWidth ?? this.cvWidth;
         this.pos = { ...this.corner };
     }
 
     public createSubCanvas({
         corner,
-        height,
-        width,
+        nodeHeight,
+        nodeWidth,
         canOverflowX,
         canOverflowY,
     }: {
         corner: Point;
-        height: number;
-        width: number;
+        nodeHeight: number;
+        nodeWidth: number;
         canOverflowX: boolean;
         canOverflowY: boolean;
     }) {
-        const pxStop = this.corner.x + this.width;
-        const pyStop = this.corner.y + this.height;
+        const parxStop = this.corner.x + this.cvWidth;
+        const paryStop = this.corner.y + this.cvHeight;
 
-        const cxStop = corner.x + width;
-        const cyStop = corner.y + height;
+        const childxStop = corner.x + nodeWidth;
+        const childyStop = corner.y + nodeHeight;
 
         const getConstrainedX = canOverflowX ? Math.max : Math.min;
         const getConstrainedY = canOverflowY ? Math.max : Math.min;
 
-        const nextWidth = getConstrainedX(pxStop, cxStop) - corner.x;
-        const nextHeight = getConstrainedY(pyStop, cyStop) - corner.y;
+        const nextWidth = getConstrainedX(parxStop, childxStop) - corner.x;
+        const nextHeight = getConstrainedY(paryStop, childyStop) - corner.y;
 
         return new SubCanvas({
             stdout: this.stdout,
             grid: this.grid,
             corner: corner,
-            width: nextWidth,
-            height: nextHeight,
-            nodeWidth: width,
-            nodeHeight: height,
+            cvWidth: nextWidth,
+            cvHeight: nextHeight,
+            nodeWidth: nodeWidth,
+            nodeHeight: nodeHeight,
         });
     }
 
@@ -133,7 +133,7 @@ export class Canvas {
     // Should be available to Pen class for writing past node dimensions (overflow)
     // since subgrids only extend grid to their nodeheights
     public requestNewRow() {
-        if (this.grid.length < this.height) {
+        if (this.grid.length < this.cvHeight) {
             this.grid.push(
                 Array.from({ length: process.stdout.columns }).fill(" ") as string[],
             );

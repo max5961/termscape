@@ -14,7 +14,6 @@ export function createVirtualStyleProxy<
     T extends VirtualStyle = VirtualStyle,
     U extends ShadowStyle = ShadowStyle,
 >(node: YogaNode, rootRef: DomElement["rootRef"], metadata: DomElement["metadata"]) {
-    const shadowStyle = createShadowStyleProxy<U>(node, rootRef);
     const virtualStyle = new Proxy<T>({} as T, {
         get(target: T, prop: keyof VirtualStyle) {
             return target[prop];
@@ -28,7 +27,8 @@ export function createVirtualStyleProxy<
             }
 
             if (dynamicProp) {
-                // Lazy add, once a node has added a dynamic dimension its for its lifetime
+                // Lazy - once a node has a dynamic dimension it stays in the
+                // Set for its lifecycle
                 metadata.setDynamicStyles(prop as DynamicStyle, true);
             }
 
@@ -48,6 +48,7 @@ export function createVirtualStyleProxy<
             return true;
         },
     });
+    const shadowStyle = createShadowStyleProxy<U>(node, rootRef, virtualStyle);
 
     return { shadowStyle, virtualStyle };
 }
@@ -55,8 +56,9 @@ export function createVirtualStyleProxy<
 function createShadowStyleProxy<T extends ShadowStyle>(
     node: YogaNode,
     rootRef: DomElement["rootRef"],
+    virtualStyle: VirtualStyle,
 ) {
-    return new Proxy<T>({} as T, {
+    const shadowStyle = new Proxy<T>({} as T, {
         get(target: T, prop: keyof ShadowStyle) {
             return target[prop];
         },
@@ -64,10 +66,9 @@ function createShadowStyleProxy<T extends ShadowStyle>(
             if (target[prop] !== newValue) {
                 target[prop] = newValue;
 
-                AggregateHandlers[prop]?.(newValue, target);
-                YogaHandlers[prop]?.(newValue, node, target);
+                AggregateHandlers[prop]?.(newValue, shadowStyle, virtualStyle);
+                YogaHandlers[prop]?.(newValue, node, shadowStyle, virtualStyle);
 
-                // CONSIDERATIONS - this should also include any dimension prop
                 // const shouldCalculateLayout = !!YogaHandlers[prop];
 
                 rootRef.root?.scheduleRender();
@@ -75,6 +76,8 @@ function createShadowStyleProxy<T extends ShadowStyle>(
             return true;
         },
     });
+
+    return shadowStyle;
 }
 
 function checkIfDynamicDimensions(prop: string, value: unknown) {

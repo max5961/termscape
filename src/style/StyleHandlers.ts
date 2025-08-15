@@ -78,59 +78,60 @@ export const SanitizerHandlers: {
 // HANDLE AGGREGATES
 // =============================================================================
 
-// TODO - ifUndef is incorrectly targeting the target where it should be targeting
-// the virtual.
-
 export const AggregateHandlers: {
-    [P in keyof ShadowStyle]: (next: ShadowStyle[P], target: ShadowStyle) => void;
+    [P in keyof ShadowStyle]: (
+        next: ShadowStyle[P],
+        target: ShadowStyle,
+        virtual: VirtualStyle,
+    ) => void;
 } = {
-    borderStyle(next, target) {
+    borderStyle(next, target, _virtual) {
         target.borderTop = !!next;
         target.borderBottom = !!next;
         target.borderLeft = !!next;
         target.borderRight = !!next;
     },
-    borderColor(next, target) {
-        target.borderTopColor = ifUndef(target.borderTopColor, next);
-        target.borderBottomColor = ifUndef(target.borderBottomColor, next);
-        target.borderLeftColor = ifUndef(target.borderLeftColor, next);
-        target.borderRightColor = ifUndef(target.borderRightColor, next);
+    borderColor(next, target, virtual) {
+        target.borderTopColor = ifUndef(virtual.borderTopColor, next);
+        target.borderBottomColor = ifUndef(virtual.borderBottomColor, next);
+        target.borderLeftColor = ifUndef(virtual.borderLeftColor, next);
+        target.borderRightColor = ifUndef(virtual.borderRightColor, next);
     },
-    borderDimColor(next, target) {
-        target.borderTopDimColor = ifUndef(target.borderTopDimColor, next);
-        target.borderBottomDimColor = ifUndef(target.borderBottomDimColor, next);
-        target.borderLeftDimColor = ifUndef(target.borderLeftDimColor, next);
-        target.borderRightDimColor = ifUndef(target.borderRightDimColor, next);
+    borderDimColor(next, target, virtual) {
+        target.borderTopDimColor = ifUndef(virtual.borderTopDimColor, next);
+        target.borderBottomDimColor = ifUndef(virtual.borderBottomDimColor, next);
+        target.borderLeftDimColor = ifUndef(virtual.borderLeftDimColor, next);
+        target.borderRightDimColor = ifUndef(virtual.borderRightDimColor, next);
     },
-    overflow(next, target) {
-        target.overflowX = ifUndef(target.overflowX, next);
-        target.overflowY = ifUndef(target.overflowY, next);
+    overflow(next, target, virtual) {
+        target.overflowX = ifUndef(virtual.overflowX, next);
+        target.overflowY = ifUndef(virtual.overflowY, next);
     },
-    margin(next, target) {
+    margin(next, target, virtual) {
         const [top, right, bottom, left] = decodeShorthand(next);
-        target.marginTop = ifUndef(target.marginTop, top);
-        target.marginRight = ifUndef(target.marginRight, right);
-        target.marginBottom = ifUndef(target.marginBottom, bottom);
-        target.marginLeft = ifUndef(target.marginLeft, left);
+        target.marginTop = ifUndef(virtual.marginTop, top);
+        target.marginRight = ifUndef(virtual.marginRight, right);
+        target.marginBottom = ifUndef(virtual.marginBottom, bottom);
+        target.marginLeft = ifUndef(virtual.marginLeft, left);
     },
-    marginX(next, target) {
-        target.marginRight = ifUndef(target.marginRight, next);
-        target.marginLeft = ifUndef(target.marginLeft, next);
+    marginX(next, target, virtual) {
+        target.marginRight = ifUndef(virtual.marginRight, next);
+        target.marginLeft = ifUndef(virtual.marginLeft, next);
     },
-    marginY(next, target) {
-        target.marginTop = ifUndef(target.marginTop, next);
-        target.marginBottom = ifUndef(target.marginBottom, next);
+    marginY(next, target, virtual) {
+        target.marginTop = ifUndef(virtual.marginTop, next);
+        target.marginBottom = ifUndef(virtual.marginBottom, next);
     },
-    padding(next, target) {
+    padding(next, target, virtual) {
         const [top, right, bottom, left] = decodeShorthand(next);
-        target.paddingTop = ifUndef(target.paddingTop, top);
-        target.paddingRight = ifUndef(target.paddingRight, right);
-        target.paddingBottom = ifUndef(target.paddingBottom, bottom);
-        target.paddingLeft = ifUndef(target.paddingLeft, left);
+        target.paddingTop = ifUndef(virtual.paddingTop, top);
+        target.paddingRight = ifUndef(virtual.paddingRight, right);
+        target.paddingBottom = ifUndef(virtual.paddingBottom, bottom);
+        target.paddingLeft = ifUndef(virtual.paddingLeft, left);
     },
-    gap(next, target) {
-        target.rowGap = ifUndef(target.rowGap, next);
-        target.columnGap = ifUndef(target.columnGap, next);
+    gap(next, target, virtual) {
+        target.rowGap = ifUndef(virtual.rowGap, next);
+        target.columnGap = ifUndef(virtual.columnGap, next);
     },
 } as const;
 
@@ -148,6 +149,7 @@ export const YogaHandlers: {
         next: ShadowStyle[P],
         node: YogaNode,
         target: ShadowStyle,
+        virtual: VirtualStyle,
     ) => void;
 } = {
     display(next, node) {

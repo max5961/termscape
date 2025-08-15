@@ -36,12 +36,12 @@ export class DomRects {
         elem[DOM_ELEMENT_RECT] = {
             x: canvas.corner.x,
             y: canvas.corner.y,
-            height: canvas.height,
-            width: canvas.width,
+            height: canvas.nodeHeight,
+            width: canvas.nodeWidth,
             top: canvas.corner.y,
             left: canvas.corner.x,
-            right: canvas.corner.x + canvas.width,
-            bottom: canvas.corner.y + canvas.height,
+            right: canvas.corner.x + canvas.nodeWidth,
+            bottom: canvas.corner.y + canvas.nodeHeight,
         };
     }
 

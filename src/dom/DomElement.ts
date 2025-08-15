@@ -73,6 +73,7 @@ export abstract class DomElement<
 
         // DEFAULT STYLES
         this.style.overflow = "visible";
+        this.style.zIndex = "auto";
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {

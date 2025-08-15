@@ -35,9 +35,13 @@ export class Draw {
             pen.set.bgColor(`bg-${color}`);
         }
 
-        for (let y = 0; y < canvas.nodeHeight; ++y) {
+        // Truncate dimensions to not exceed oveflow
+        const height = Math.min(canvas.nodeHeight, canvas.cvHeight);
+        const width = Math.min(canvas.nodeWidth, canvas.cvWidth);
+
+        for (let y = 0; y < height; ++y) {
             pen.moveTo(0, y);
-            pen.draw(" ", "r", canvas.nodeWidth);
+            pen.draw(" ", "r", width);
         }
     }
 

@@ -23,10 +23,6 @@ export class Root extends DomElement {
     private runtimeCtl: Runtime["logic"];
     private Emitter: EventEmitter<EventEmitterMap>;
     private exitPromiseResolvers: (() => void)[];
-    // private attached: Map<
-    //     DomElement,
-    //     { actions: Set<Action>; dynamicStyles: { value: boolean } }
-    // >;
     private attached: {
         actions: Map<DomElement, Set<Action>>;
         dynamicEls: Set<DomElement>;

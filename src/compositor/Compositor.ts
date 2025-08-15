@@ -4,7 +4,6 @@ import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
 import type { Root } from "../dom/Root.js";
-import type { VirtualStyle } from "../style/Style.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -52,8 +51,8 @@ export class Compositor {
 
         return pcanvas.createSubCanvas({
             corner: { x: xoff, y: yoff },
-            height: height,
-            width: width,
+            nodeHeight: height,
+            nodeWidth: width,
             canOverflowX: style.overflowX === "visible",
             canOverflowY: style.overflowY === "visible",
         });

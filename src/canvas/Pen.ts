@@ -30,8 +30,8 @@ export class Pen {
         this.limits = {
             minX: deps.canvas.corner.x,
             minY: deps.canvas.corner.y,
-            maxX: deps.canvas.corner.x + deps.canvas.width,
-            maxY: deps.canvas.corner.y + deps.canvas.height,
+            maxX: deps.canvas.corner.x + deps.canvas.cvWidth,
+            maxY: deps.canvas.corner.y + deps.canvas.cvHeight,
         };
 
         this.glyph = new Glyph();

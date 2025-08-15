@@ -3,7 +3,7 @@ import type { Color } from "./types.js";
 
 const root = createElement("root", {
     debounceMs: 16,
-    // altScreen: true,
+    altScreen: true,
     exitOnCtrlC: true,
     exitForcesEndProc: true,
     enableMouse: true,
@@ -15,15 +15,12 @@ root.run().then(() => {
 
 const child1 = createElement("box");
 
-// child1.style.height = "100vh";
-// child1.style.width = "100vw";
-
 child1.style = {
-    alignItems: "center",
-    justifyContent: "center",
-    columnGap: 2,
     height: 25,
     width: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
     backgroundColor: "green",
     borderStyle: "round",
 };
@@ -54,7 +51,6 @@ child1.addKeyListener({
         }
     },
 });
-
 child1.addKeyListener({
     keymap: "<A-k>",
     callback: () => {
@@ -64,7 +60,6 @@ child1.addKeyListener({
         }
     },
 });
-
 child1.addKeyListener({
     keymap: "<A-l>",
     callback: () => {
