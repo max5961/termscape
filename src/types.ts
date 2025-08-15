@@ -38,4 +38,5 @@ export type RuntimeConfig = {
     altScreen?: boolean;
     exitOnCtrlC?: boolean;
     exitForcesEndProc?: boolean;
+    preciseWrites?: boolean;
 } & ConfigureStdin;

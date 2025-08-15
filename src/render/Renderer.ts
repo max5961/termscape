@@ -56,7 +56,10 @@ export class Renderer {
 
         process.stdout.write(Ansi.beginSynchronizedUpdate);
 
-        if (this.shouldRefreshWrite(opts, compositor.canvas)) {
+        if (
+            !this.root.runtime.preciseWrites ||
+            this.shouldRefreshWrite(opts, compositor.canvas)
+        ) {
             this.refreshWriter.instructCursor(
                 this.lastCanvas,
                 compositor.canvas,

@@ -70,6 +70,7 @@ export function createRuntime(deps: RuntimeDependencies) {
     config.enableMouse ??= false;
     config.mouseMode ??= 3;
     config.enableKittyProtocol ??= true;
+    config.preciseWrites ??= true;
 
     let cleanupHandlers = [] as (() => void)[];
     let isDefaultScreen = true;
@@ -308,6 +309,9 @@ export function createRuntime(deps: RuntimeDependencies) {
         set exitForcesEndProc(val: Config["exitForcesEndProc"]) {
             config.exitForcesEndProc = val;
         },
+        set preciseWrites(val: Config["preciseWrites"]) {
+            config.preciseWrites = val;
+        },
 
         // GETTERS
         get debounceMs() {
@@ -336,6 +340,9 @@ export function createRuntime(deps: RuntimeDependencies) {
         },
         get exitForcesEndProc() {
             return config.exitForcesEndProc;
+        },
+        get preciseWrites() {
+            return config.preciseWrites;
         },
     };
 

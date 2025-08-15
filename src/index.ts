@@ -7,6 +7,7 @@ const root = createElement("root", {
     exitOnCtrlC: true,
     exitForcesEndProc: true,
     enableMouse: true,
+    preciseWrites: true,
 });
 
 root.run().then(() => {

@@ -20,7 +20,7 @@ export type SubCanvasDeps = Required<CanvasDeps>;
 export class Canvas {
     public pos: Point;
     public readonly grid: Grid;
-    public readonly corner: Point;
+    public readonly corner: Readonly<Point>;
     public readonly cvHeight: number;
     public readonly cvWidth: number;
     public readonly nodeHeight: number;
@@ -52,26 +52,33 @@ export class Canvas {
         canOverflowX: boolean;
         canOverflowY: boolean;
     }) {
-        const parxStop = this.corner.x + this.cvWidth;
-        const paryStop = this.corner.y + this.cvHeight;
+        // Parent (this) stops
+        const pxstop = this.corner.x + this.cvWidth;
+        const pystop = this.corner.y + this.cvHeight;
 
-        const childxStop = corner.x + nodeWidth;
-        const childyStop = corner.y + nodeHeight;
+        // Child (subcanvas) stops
+        let cxstop = corner.x + nodeWidth;
+        let cystop = corner.y + nodeHeight;
 
+        // Subcanvas node dimensions may exceed parent canvas dimensions.
+        cxstop = Math.min(cxstop, pxstop);
+        cystop = Math.min(cystop, pystop);
+
+        // The subcanvas dimensions should fill the parent's dimensions or constrain
+        // to the subcanvas node dimensions based on the `overflow` setting.
         const getConstrainedX = canOverflowX ? Math.max : Math.min;
         const getConstrainedY = canOverflowY ? Math.max : Math.min;
-
-        const nextWidth = getConstrainedX(parxStop, childxStop) - corner.x;
-        const nextHeight = getConstrainedY(paryStop, childyStop) - corner.y;
+        const nextWidth = getConstrainedX(pxstop, cxstop);
+        const nextHeight = getConstrainedY(pystop, cystop);
 
         return new SubCanvas({
             stdout: this.stdout,
             grid: this.grid,
             corner: corner,
-            cvWidth: nextWidth,
-            cvHeight: nextHeight,
             nodeWidth: nodeWidth,
             nodeHeight: nodeHeight,
+            cvWidth: nextWidth,
+            cvHeight: nextHeight,
         });
     }
 
@@ -129,16 +136,6 @@ export class Canvas {
             return token.ansi + token.char + Ansi.style.reset;
         }
     }
-
-    // Should be available to Pen class for writing past node dimensions (overflow)
-    // since subgrids only extend grid to their nodeheights
-    public requestNewRow() {
-        if (this.grid.length < this.cvHeight) {
-            this.grid.push(
-                Array.from({ length: process.stdout.columns }).fill(" ") as string[],
-            );
-        }
-    }
 }
 
 class SubCanvas extends Canvas {
@@ -154,6 +151,14 @@ class SubCanvas extends Canvas {
 
         for (let i = 0; i < rowsNeeded; ++i) {
             this.requestNewRow();
+        }
+    }
+
+    private requestNewRow() {
+        if (this.grid.length < this.cvHeight) {
+            this.grid.push(
+                Array.from({ length: process.stdout.columns }).fill(" ") as string[],
+            );
         }
     }
 }
