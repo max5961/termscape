@@ -22,7 +22,6 @@ export class Root extends DomElement {
     private renderer: Renderer;
     private runtimeCtl: Runtime["logic"];
     private Emitter: EventEmitter<EventEmitterMap>;
-    private exitPromiseResolvers: (() => void)[];
     private attached: {
         actions: Map<DomElement, Set<Action>>;
         dynamicEls: Set<DomElement>;
@@ -63,9 +62,6 @@ export class Root extends DomElement {
 
         this.runtime = api;
         this.runtimeCtl = logic;
-
-        this.exitPromiseResolvers = [];
-
         this.runtimeCtl.startRuntime();
     }
 
@@ -102,16 +98,11 @@ export class Root extends DomElement {
 
     public exit<T extends Error | undefined>(error?: T): T extends Error ? never : void {
         this.runtimeCtl.endRuntime(error);
-        this.exitPromiseResolvers.forEach((res) => res());
-        this.exitPromiseResolvers = [];
         return undefined as T extends Error ? never : void;
     }
 
-    // ** Promise resolves when execution  */
-    public run() {
-        return new Promise<void>((res) => {
-            this.exitPromiseResolvers.push(() => res());
-        });
+    public waitUntilExit() {
+        return this.runtimeCtl.createExitHandler();
     }
 
     public getLayoutHeight() {

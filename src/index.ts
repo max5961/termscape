@@ -5,20 +5,22 @@ const root = createElement("root", {
     debounceMs: 16,
     altScreen: false,
     exitOnCtrlC: true,
-    exitForcesEndProc: true,
+    exitForcesEndProc: false,
     enableMouse: true,
     preciseWrites: true,
 });
 
-root.run().then(() => {
-    console.log("We are done");
-});
+async function runApp() {
+    await root.waitUntilExit();
+    console.log("The app is done");
+}
+runApp();
 
 const child1 = createElement("box");
 
 child1.style = {
-    height: 3,
-    width: 10,
+    height: 10,
+    width: 25,
     alignItems: "center",
     justifyContent: "center",
     gap: 2,

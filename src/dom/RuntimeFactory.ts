@@ -77,6 +77,7 @@ export function createRuntime(deps: RuntimeDependencies) {
     let isListening = false;
     let isStarted = false;
 
+    let exitResolvers = [] as (() => void)[];
     const capture = new Capture();
     const inputState = new InputState();
     const mouseState = new MouseState(root, deps.emitter);
@@ -162,8 +163,13 @@ export function createRuntime(deps: RuntimeDependencies) {
             cleanupHandlers = [];
 
             if (error) {
-                handleError(error);
-            } else if (config.exitForcesEndProc && !isBeforeExit) {
+                return handleError(error);
+            }
+
+            exitResolvers.forEach((res) => res());
+            exitResolvers = [];
+
+            if (config.exitForcesEndProc && !isBeforeExit) {
                 process.exit();
             }
         },
@@ -222,6 +228,13 @@ export function createRuntime(deps: RuntimeDependencies) {
 
         handleResize: () => {
             root.scheduleRender({ resize: true });
+        },
+
+        /** Promise resolves during endRuntime */
+        createExitHandler: () => {
+            return new Promise<void>((res) => {
+                exitResolvers.push(() => res());
+            });
         },
     };
 
