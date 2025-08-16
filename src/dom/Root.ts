@@ -62,7 +62,9 @@ export class Root extends DomElement {
 
         this.runtime = api;
         this.runtimeCtl = logic;
-        this.runtimeCtl.startRuntime();
+        if (config.startOnCreate ?? true) {
+            this.runtimeCtl.startRuntime();
+        }
     }
 
     /**
@@ -101,6 +103,11 @@ export class Root extends DomElement {
         return undefined as T extends Error ? never : void;
     }
 
+    public startRuntime() {
+        this.runtimeCtl.startRuntime();
+        this.scheduleRender();
+    }
+
     public waitUntilExit() {
         return this.runtimeCtl.createExitHandler();
     }
@@ -133,7 +140,9 @@ export class Root extends DomElement {
     };
 
     public scheduleRender(opts: WriteOpts = {}) {
-        this.scheduler.scheduleUpdate(this.render, opts);
+        if (this.runtimeCtl.isStarted) {
+            this.scheduler.scheduleUpdate(this.render, opts);
+        }
     }
 
     public requestInputStream() {

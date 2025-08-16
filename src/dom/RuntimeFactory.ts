@@ -70,12 +70,14 @@ export function createRuntime(deps: RuntimeDependencies) {
     config.enableMouse ??= false;
     config.mouseMode ??= 3;
     config.enableKittyProtocol ??= true;
-    config.preciseWrites ??= true;
+    config.preciseWrite ??= true;
+    config.startOnCreate ??= true; // This has no effect on runtime so its not part of the returned api.
 
     let cleanupHandlers = [] as (() => void)[];
-    let isDefaultScreen = true;
-    let isListening = false;
     let isStarted = false;
+    let isListening = false;
+    let isDefaultScreen = true;
+    let requestedListening = false;
 
     let exitResolvers = [] as (() => void)[];
     const capture = new Capture();
@@ -120,6 +122,11 @@ export function createRuntime(deps: RuntimeDependencies) {
             if (isStarted) return;
             isStarted = true;
 
+            // Listening was requested while runtime not started
+            if (requestedListening) {
+                logic.resumeStdin();
+            }
+
             // Hide Cursor
             if (!process.env["RENDER_DEBUG"]) {
                 config.stdout.write(Ansi.cursor.hide);
@@ -154,6 +161,7 @@ export function createRuntime(deps: RuntimeDependencies) {
         endRuntime(error?: Error, isBeforeExit?: boolean) {
             if (!isStarted) return;
             isStarted = false;
+            requestedListening = false;
 
             process.stdout.write("\n"); // cursor stays on final row
             logic.enterDefaultScreen({ render: false });
@@ -175,8 +183,12 @@ export function createRuntime(deps: RuntimeDependencies) {
         },
 
         resumeStdin: () => {
+            if (!isStarted && !requestedListening) {
+                requestedListening = true;
+                return;
+            }
             if (isListening) return;
-            if (!isStarted) return;
+
             isListening = true;
 
             try {
@@ -235,6 +247,18 @@ export function createRuntime(deps: RuntimeDependencies) {
             return new Promise<void>((res) => {
                 exitResolvers.push(() => res());
             });
+        },
+
+        get isStarted() {
+            return isStarted;
+        },
+
+        get isListening() {
+            return isListening;
+        },
+
+        get isDefaultScreen() {
+            return isDefaultScreen;
         },
     };
 
@@ -324,8 +348,8 @@ export function createRuntime(deps: RuntimeDependencies) {
         set exitForcesEndProc(val: Config["exitForcesEndProc"]) {
             config.exitForcesEndProc = val;
         },
-        set preciseWrites(val: Config["preciseWrites"]) {
-            config.preciseWrites = val;
+        set preciseWrite(val: Config["preciseWrite"]) {
+            config.preciseWrite = val;
         },
 
         // GETTERS
@@ -356,8 +380,8 @@ export function createRuntime(deps: RuntimeDependencies) {
         get exitForcesEndProc() {
             return config.exitForcesEndProc;
         },
-        get preciseWrites() {
-            return config.preciseWrites;
+        get preciseWrite() {
+            return config.preciseWrite;
         },
     };
 

@@ -7,7 +7,8 @@ const root = createElement("root", {
     exitOnCtrlC: true,
     exitForcesEndProc: false,
     enableMouse: true,
-    preciseWrites: true,
+    preciseWrite: true,
+    startOnCreate: false,
 });
 
 async function runApp() {
@@ -15,6 +16,11 @@ async function runApp() {
     console.log("The app is done");
 }
 runApp();
+
+console.log("LMFAOOOO");
+setTimeout(() => {
+    root.startRuntime();
+}, 1000);
 
 const child1 = createElement("box");
 

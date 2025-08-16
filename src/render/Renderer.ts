@@ -128,7 +128,7 @@ export class Renderer {
 
     private shouldRefreshWrite(opts: WriteOpts) {
         // Refresh option set in runtime opts
-        if (!this.root.runtime.preciseWrites) {
+        if (!this.root.runtime.preciseWrite) {
             return true;
         }
 

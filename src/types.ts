@@ -34,9 +34,16 @@ export type EventEmitterMap = {
 export type ConfigureStdin = Exclude<Parameters<typeof configureStdin>[0], undefined>;
 
 export type RuntimeConfig = {
+    /** Renders occur at an interval no faster than `debounceMs` ms. */
     debounceMs?: number;
+    /** Use terminal's alt screen buffer. Preserve main screen. */
     altScreen?: boolean;
+    /** `Ctrl + c` ends the runtime for this Root. */
     exitOnCtrlC?: boolean;
+    /** Forces process exit after this Root's runtime ends. Skips `waitUntilExit` promises. */
     exitForcesEndProc?: boolean;
-    preciseWrites?: boolean;
+    /** Experimental - rewrites only cells that are diffed from prev rendered output. */
+    preciseWrite?: boolean;
+    /** If this is `false`, runtime can be explictly started at any given time with `Root.startRuntime`. */
+    startOnCreate?: boolean;
 } & ConfigureStdin;
