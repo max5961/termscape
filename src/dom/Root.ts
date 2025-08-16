@@ -118,7 +118,7 @@ export class Root extends DomElement {
         return this.renderer.lastCanvas?.grid.length ?? 0;
     }
 
-    public render(opts: WriteOpts = {}) {
+    public render = (opts: WriteOpts = {}) => {
         if (opts.resize) {
             this.attached.dynamicEls.forEach((elem) => {
                 /* Force recalculate dimensions via style proxy */
@@ -139,13 +139,10 @@ export class Root extends DomElement {
         }
 
         this.renderer.writeToStdout(opts);
-    }
+    };
 
-    // FUTURE-BUG: scheduler needs to coalesce WriteOpts as well
     public scheduleRender(opts: WriteOpts = {}) {
-        this.scheduler.scheduleUpdate(() => {
-            this.render(opts);
-        });
+        this.scheduler.scheduleUpdate(this.render, opts);
     }
 
     public requestInputStream() {

@@ -1,3 +1,4 @@
+import type { WriteOpts } from "../render/Renderer.js";
 import { Root } from "./Root.js";
 
 type Updater = Root["render"];
@@ -8,6 +9,7 @@ export class Scheduler {
     private wait: boolean;
     private updater: null | Updater;
     private capturedOutput: string[];
+    private writeOpts: WriteOpts;
 
     constructor() {
         this.debounceMs = 16;
@@ -15,6 +17,7 @@ export class Scheduler {
         this.wait = false;
         this.updater = null;
         this.capturedOutput = [];
+        this.writeOpts = {};
     }
 
     /**
@@ -22,9 +25,13 @@ export class Scheduler {
      * same event loop will be coalesced.  Calls to the updater may run only once
      * every `debounceMs` ms.
      */
-    public scheduleUpdate = (updater: Updater, capturedOutput?: string) => {
+    public scheduleUpdate = (updater: Updater, opts: WriteOpts) => {
         this.updater = updater;
-        if (capturedOutput) this.capturedOutput.push(capturedOutput);
+        Object.assign(this.writeOpts, opts);
+
+        if (opts.capturedOutput) {
+            this.capturedOutput.push(opts.capturedOutput);
+        }
 
         if (this.tickScheduled || this.wait) return;
 
@@ -41,11 +48,13 @@ export class Scheduler {
             // By resetting before the updater runs, this allows Renderer methods
             // to accrue console output and render hooks to utilize logging
             const console = this.capturedOutput.join("");
+            this.writeOpts.capturedOutput = console;
             this.capturedOutput = [];
 
-            this.updater({ resize: false, capturedOutput: console });
+            this.updater(this.writeOpts);
         }
 
+        this.writeOpts = {};
         this.updater = null;
         this.wait = true;
 
