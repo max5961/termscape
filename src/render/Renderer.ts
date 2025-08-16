@@ -1,14 +1,13 @@
 import { Compositor } from "../compositor/Compositor.js";
 import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
-import { Cursor } from "./Cursor.js";
+import { Cursor, DebugCursor } from "./Cursor.js";
 import { Canvas } from "../canvas/Canvas.js";
 import { RefreshWriter } from "./write/RefreshWriter.js";
 import { PreciseWriter } from "./write/PreciseWriter.js";
 import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../util/Ansi.js";
 import { Root } from "../dom/Root.js";
-import { logger } from "../logger/Logger.js";
 
 export type WriteOpts = {
     resize?: boolean;
@@ -34,7 +33,9 @@ export class Renderer {
         this.rects = new DomRects();
         this.hooks = new RenderHooks();
         this.perf = new Performance(false);
-        this.cursor = new Cursor({ debug: !!process.env["RENDER_DEBUG"] });
+        this.cursor = process.env["RENDER_DEBUG"]
+            ? new DebugCursor(root)
+            : new Cursor(root);
         this.preciseWriter = new PreciseWriter(this.cursor);
         this.refreshWriter = new RefreshWriter(this.cursor);
         this.lastWasResize = 0;

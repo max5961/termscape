@@ -52,7 +52,7 @@ child1.addKeyListener({
         let height = Number(child1.style.height ?? 0);
         if (height < process.stdout.rows) {
             child1.style.height = ++height;
-            // console.log(height);
+            console.log(height);
         }
     },
 });

@@ -38,7 +38,11 @@ export class RefreshWriter extends Writer {
             // NOT FULLSCREEN => CONSOLE BEFORE OUTPUT
             if (capturedOutput && !fullscreen) {
                 capturedOutput = capturedOutput.trimEnd() + "\n";
-                process.stdout.write(capturedOutput);
+                if (!process.env["RENDER_DEBUG"]) {
+                    process.stdout.write(capturedOutput);
+                } else {
+                    this.cursor.deferOutput(capturedOutput, 0);
+                }
             }
 
             this.cursor.deferOutput(output, newLines);

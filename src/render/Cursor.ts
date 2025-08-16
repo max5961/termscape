@@ -1,55 +1,25 @@
-import { Ansi } from "../util/Ansi.js";
+import type { Root } from "../dom/Root.js";
 import { logger } from "../logger/Logger.js";
+import { Ansi } from "../util/Ansi.js";
 
 export class Cursor {
-    private debug: boolean;
-    private sequence: string[];
-    private debugseq: { row: number; stdout: string; operation: string }[];
+    protected root: Root;
+    protected sequence: string[];
     public currentRow: number;
 
-    constructor({ debug }: { debug?: boolean }) {
-        this.debug = debug ?? false;
+    constructor(root: Root) {
+        this.root = root;
         this.sequence = [];
-        this.debugseq = [];
         this.currentRow = 0;
-
-        if (this.debug) {
-            process.stdin.setRawMode(true);
-            const nextOperation = (buf: Buffer) => {
-                if (buf[0] === 3) process.exit();
-                if (buf.toString("utf-8") === "n") {
-                    const chunk = this.debugseq.shift();
-                    if (chunk !== undefined) {
-                        if (chunk.stdout) process.stdout.write(chunk.stdout);
-                        logger.write({ row: chunk.row, operation: chunk.operation });
-                    }
-                }
-            };
-            process.stdin.on("data", nextOperation);
-        }
     }
 
     /** Write the string sequence to stdout */
     public execute(): void {
-        if (!this.debug) {
-            const stdout = this.sequence.join("");
-            if (stdout) {
-                process.stdout.write(stdout);
-            }
-            this.clearOps();
+        const stdout = this.sequence.join("");
+        if (stdout) {
+            this.root.runtime.stdout.write(stdout);
         }
-    }
-
-    private defer(stdout: string) {
-        this.sequence.push(stdout);
-    }
-
-    private deferDebug(stdout: string, operation: string) {
-        this.debugseq.push({
-            row: this.currentRow,
-            operation,
-            stdout,
-        });
+        this.clearOps();
     }
 
     /**
@@ -66,9 +36,8 @@ export class Cursor {
      * at once.  If debugging, it will be written immediately and `sleepSync` will
      * run to allow for observation.
      * */
-    private deferAnsi(stdout: string): void {
-        this.defer(stdout);
-        this.deferDebug(stdout, "deferAnsi");
+    protected deferAnsi(ansi: string): void {
+        this.sequence.push(ansi);
     }
 
     /**
@@ -79,8 +48,7 @@ export class Cursor {
      */
     public deferOutput(stdout: string, newlines: number): void {
         this.currentRow = Math.min(process.stdout.rows - 1, this.currentRow + newlines);
-        this.defer(stdout);
-        this.deferDebug(stdout, "deferOutput");
+        this.sequence.push(stdout);
     }
 
     /** Move to col 0 of row */
@@ -88,23 +56,21 @@ export class Cursor {
         const diff = this.currentRow - row;
         if (diff === 0) {
             this.moveToCol(0);
-            this.deferDebug("", `moveToRow(${row}) -> moveToCol(0)`);
+
             return;
         }
 
         if (diff > 0) {
             this.rowsUp(diff);
-            this.deferDebug("", `rowsUp(${diff})`);
         } else {
             this.rowsDown(Math.abs(diff));
-            this.deferDebug("", `rowsDown(${Math.abs(diff)})`);
         }
     }
 
     /** Move to col 0 of the next row up - `\x1b[<rows>F` */
     public rowsUp(rows: number): void {
         if (rows <= 0) return;
-        this.deferDebug("", `preRowsUp(${rows})`);
+
         this.updateCurrentRow(-rows);
         this.deferAnsi(Ansi.cursor.previousLine(rows));
     }
@@ -112,7 +78,7 @@ export class Cursor {
     /** Move to col 0 of the next row down - `\x1b[<rows>E` */
     public rowsDown(rows: number): void {
         if (rows <= 0) return;
-        this.deferDebug("", `preRowsDown(${rows})`);
+
         this.updateCurrentRow(rows);
         this.deferAnsi(Ansi.cursor.nextLine(rows));
     }
@@ -132,10 +98,8 @@ export class Cursor {
     }
 
     /** Provide a negative number when the current row has moved **UP**. */
-    private updateCurrentRow(displacement: number) {
-        this.deferDebug("", `pre-updateCurrentRow(${displacement})`);
+    protected updateCurrentRow(displacement: number) {
         this.currentRow = Math.max(0, this.currentRow + displacement);
-        this.deferDebug("", `post-updateCurrentRow(${displacement})`);
     }
 
     /** Show or hide the cursor */
@@ -148,8 +112,6 @@ export class Cursor {
     public clearRowsUp = (n: number) => {
         if (n <= 0) return;
 
-        this.deferDebug("", `pre-clearRowsUp(${n})`);
-
         this.moveToCol(0);
 
         let i = n;
@@ -161,8 +123,29 @@ export class Cursor {
             }
         }
 
-        this.deferDebug("", `post-clearRowsUp(${n})`);
-
         this.execute();
     };
+}
+
+export class DebugCursor extends Cursor {
+    constructor(root: Root) {
+        super(root);
+
+        const nextOperation = (buf: Buffer) => {
+            if (buf[0] === 3) process.exit();
+            if (buf.toString("utf-8") !== "n") return;
+
+            const chunk = this.sequence.shift();
+            if (chunk !== undefined) {
+                process.stdout.write(chunk);
+                logger.write({ chunk });
+            }
+        };
+
+        process.stdin.setRawMode(true);
+        process.stdin.on("data", nextOperation);
+    }
+
+    public override execute() {}
+    public override clearOps() {}
 }
