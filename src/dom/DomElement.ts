@@ -46,6 +46,7 @@ export abstract class DomElement<
     protected childrenSet: Set<DomElement>;
     protected readonly metadata: ElementMetaData;
     protected abstract defaultStyles: VStyle;
+    protected readonly abstractDefaultStyles: VirtualStyle;
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -73,8 +74,11 @@ export abstract class DomElement<
         this.removeKeyListeners = [];
 
         // DEFAULT STYLES
-        this.style.overflow = "visible";
-        this.style.zIndex = "auto";
+        this.abstractDefaultStyles = {
+            display: "flex",
+            zIndex: "auto",
+            overflow: "visible",
+        };
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {
@@ -94,7 +98,11 @@ export abstract class DomElement<
     // ========================================================================
 
     set style(stylesheet: VStyle) {
-        const withDefault = { ...this.defaultStyles, ...stylesheet };
+        const withDefault = {
+            ...this.abstractDefaultStyles,
+            ...this.defaultStyles,
+            ...stylesheet,
+        } as VStyle;
 
         const keys = [...objectKeys(withDefault), ...objectKeys(this.style)];
 

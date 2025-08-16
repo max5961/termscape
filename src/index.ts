@@ -32,11 +32,13 @@ child1.style = {
 root.appendChild(child1);
 
 const child2 = createElement("box");
-child2.style.height = 15;
-child2.style.width = 15;
-child2.style.backgroundColor = "red";
-child2.style.borderStyle = "round";
-child2.style.flexShrink = 0;
+child2.style = {
+    height: 15,
+    width: 15,
+    backgroundColor: "red",
+    borderStyle: "round",
+    flexShrink: 0,
+};
 
 child1.appendChild(child2);
 
