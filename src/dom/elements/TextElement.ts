@@ -1,6 +1,6 @@
 import { DomElement } from "../DomElement.js";
 import { type TTagNames } from "../../types.js";
-import { type TextStyle } from "../../style/Style.js";
+import { type TextStyle, type VirtualStyle } from "../../style/Style.js";
 
 export class TextElement extends DomElement {
     public textContent: string;
@@ -11,12 +11,10 @@ export class TextElement extends DomElement {
         super();
         this.tagName = "TEXT_ELEMENT";
         this.textContent = textContent;
-        this.style = {} as TextStyle;
+        this.style = this.defaultStyles;
     }
 
-    public setAttribute(): void {
-        //
-    }
+    protected override defaultStyles: VirtualStyle = {};
 
     public setTextContent(text: string): void {
         this.textContent = text;

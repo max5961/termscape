@@ -45,6 +45,7 @@ export abstract class DomElement<
     protected removeKeyListeners: (() => void)[];
     protected childrenSet: Set<DomElement>;
     protected readonly metadata: ElementMetaData;
+    protected abstract defaultStyles: VStyle;
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -93,10 +94,12 @@ export abstract class DomElement<
     // ========================================================================
 
     set style(stylesheet: VStyle) {
-        const keys = [...objectKeys(stylesheet), ...objectKeys(this.style)];
+        const withDefault = { ...this.defaultStyles, ...stylesheet };
+
+        const keys = [...objectKeys(withDefault), ...objectKeys(this.style)];
 
         for (const key of keys) {
-            (this.style[key] as any) = stylesheet[key];
+            this.style[key] = withDefault[key];
         }
 
         const root = this.getRoot();

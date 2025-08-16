@@ -4,6 +4,7 @@ import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
 import type { Root } from "../dom/Root.js";
+import type { ShadowStyle } from "../style/Style.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -33,7 +34,7 @@ export class Compositor {
         }
 
         for (const child of elem.children) {
-            const subCanvas = this.getSubCanvas(child, canvas);
+            const subCanvas = this.getSubCanvas(child, canvas, style);
             this.buildLayout(child, subCanvas);
         }
 
@@ -42,7 +43,11 @@ export class Compositor {
         }
     }
 
-    private getSubCanvas(child: DomElement, pcanvas: Canvas): Canvas {
+    private getSubCanvas(
+        child: DomElement,
+        pcanvas: Canvas,
+        parentStyle: ShadowStyle,
+    ): Canvas {
         const width = child.node.getComputedWidth();
         const height = child.node.getComputedHeight();
         const xoff = child.node.getComputedLeft() + pcanvas.corner.x;
@@ -55,6 +60,7 @@ export class Compositor {
             nodeWidth: width,
             canOverflowX: style.overflowX === "visible",
             canOverflowY: style.overflowY === "visible",
+            parentStyle: parentStyle,
         });
     }
 

@@ -1,26 +1,20 @@
 import { createElement } from "./dom/elements/createElement.js";
+import { logger } from "./logger/Logger.js";
 import type { Color } from "./types.js";
 
 const root = createElement("root", {
     debounceMs: 16,
-    altScreen: false,
+    altScreen: true,
     exitOnCtrlC: true,
     exitForcesEndProc: false,
-    enableMouse: true,
+    enableMouse: false,
     preciseWrite: true,
-    startOnCreate: false,
+    startOnCreate: true,
 });
 
-async function runApp() {
-    await root.waitUntilExit();
+root.waitUntilExit().then(() => {
     console.log("The app is done");
-}
-runApp();
-
-console.log("LMFAOOOO");
-setTimeout(() => {
-    root.startRuntime();
-}, 1000);
+});
 
 const child1 = createElement("box");
 
@@ -32,27 +26,19 @@ child1.style = {
     gap: 2,
     backgroundColor: "green",
     borderStyle: "round",
+    overflow: "hidden",
 };
 
 root.appendChild(child1);
 
 const child2 = createElement("box");
-child2.style.height = "25";
-child2.style.width = "25";
+child2.style.height = 15;
+child2.style.width = 15;
 child2.style.backgroundColor = "red";
 child2.style.borderStyle = "round";
-
-const child3 = createElement("box");
-child3.style.height = "25";
-child3.style.width = "25";
-child3.style.backgroundColor = "cyan";
-child3.style.borderStyle = "round";
-child3.addEventListener("click", () => {
-    console.log("click child3");
-});
+child2.style.flexShrink = 0;
 
 child1.appendChild(child2);
-child1.appendChild(child3);
 
 child1.addKeyListener({
     keymap: "<A-j>",
@@ -60,7 +46,7 @@ child1.addKeyListener({
         let height = Number(child1.style.height ?? 0);
         if (height < process.stdout.rows) {
             child1.style.height = ++height;
-            console.log(height);
+            // console.log(height);
         }
     },
 });

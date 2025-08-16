@@ -1,4 +1,5 @@
 import type { Runtime } from "../dom/RuntimeFactory.js";
+import type { ShadowStyle } from "../style/Style.js";
 import type { GridToken, Point } from "../types.js";
 import { Ansi } from "../util/Ansi.js";
 import { Pen } from "./Pen.js";
@@ -45,22 +46,32 @@ export class Canvas {
         nodeWidth,
         canOverflowX,
         canOverflowY,
+        parentStyle,
     }: {
         corner: Point;
         nodeHeight: number;
         nodeWidth: number;
         canOverflowX: boolean;
         canOverflowY: boolean;
+        parentStyle: ShadowStyle;
     }) {
         // Parent (this) stops
-        const pxstop = this.corner.x + this.cvWidth;
-        const pystop = this.corner.y + this.cvHeight;
+        let pxstop = this.corner.x + this.cvWidth;
+        let pystop = this.corner.y + this.cvHeight;
+
+        // If parent node has a bottom|right edge set, the parent stops need to be adjusted
+        if (parentStyle.overflowX === "hidden" && parentStyle.borderRight) {
+            --pxstop;
+        }
+        if (parentStyle.overflowY === "hidden" && parentStyle.borderBottom) {
+            --pystop;
+        }
 
         // Child (subcanvas) stops
         let cxstop = corner.x + nodeWidth;
         let cystop = corner.y + nodeHeight;
 
-        // Subcanvas node dimensions may exceed parent canvas dimensions.
+        // Prevent subcanvas's from exceeding parent canvas dimensions
         cxstop = Math.min(cxstop, pxstop);
         cystop = Math.min(cystop, pystop);
 
@@ -68,8 +79,8 @@ export class Canvas {
         // to the subcanvas node dimensions based on the `overflow` setting.
         const getConstrainedX = canOverflowX ? Math.max : Math.min;
         const getConstrainedY = canOverflowY ? Math.max : Math.min;
-        const nextWidth = getConstrainedX(pxstop, cxstop);
-        const nextHeight = getConstrainedY(pystop, cystop);
+        const nextWidth = getConstrainedX(pxstop, cxstop) - corner.x;
+        const nextHeight = getConstrainedY(pystop, cystop) - corner.y;
 
         return new SubCanvas({
             stdout: this.stdout,

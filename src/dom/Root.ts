@@ -7,6 +7,7 @@ import { Renderer, type WriteOpts } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "./RuntimeFactory.js";
 import { type EventEmitterMap, type RuntimeConfig, type TTagNames } from "../types.js";
 import { type Action } from "term-keymap";
+import type { VirtualStyle } from "../style/Style.js";
 
 /** Internal access symbol */
 export const ROOT_BRIDGE_DOM_ELEMENT = Symbol.for("termscape.root.bridge_dom_element");
@@ -66,6 +67,8 @@ export class Root extends DomElement {
             this.runtimeCtl.startRuntime();
         }
     }
+
+    protected override defaultStyles: VirtualStyle = {};
 
     /**
      * This is called post attach and pre detach in DomElement.
