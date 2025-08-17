@@ -5,7 +5,6 @@ import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
 import type { Root } from "../dom/Root.js";
 import type { ShadowStyle } from "../style/Style.js";
-import { logger } from "../logger/Logger.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -49,28 +48,9 @@ export class Compositor {
         pcanvas: Canvas,
         parentStyle: ShadowStyle,
     ): Canvas {
-        const width = child.node.getComputedWidth();
-        const height = child.node.getComputedHeight();
-        const xoff = child.node.getComputedLeft() + pcanvas.corner.x;
-        const yoff = child.node.getComputedTop() + pcanvas.corner.y;
-        const style = child[DOM_ELEMENT_SHADOW_STYLE];
-
-        logger.write({
-            width,
-            height,
-            xoff,
-            yoff,
-            computedLeft: child.node.getComputedLeft(),
-            computedTop: child.node.getComputedTop(),
-        });
-
-        return pcanvas.createSubCanvas({
-            corner: { x: xoff, y: yoff },
-            nodeHeight: height,
-            nodeWidth: width,
-            canOverflowX: style.overflowX === "visible",
-            canOverflowY: style.overflowY === "visible",
-            parentStyle: parentStyle,
+        return pcanvas.createChildCanvas({
+            child,
+            parentStyle,
         });
     }
 

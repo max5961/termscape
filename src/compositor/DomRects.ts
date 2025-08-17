@@ -33,16 +33,7 @@ export class DomRects {
     }
 
     public setRect(elem: DomElement, canvas: Canvas) {
-        elem[DOM_ELEMENT_RECT] = {
-            x: canvas.corner.x,
-            y: canvas.corner.y,
-            height: canvas.nodeHeight,
-            width: canvas.nodeWidth,
-            top: canvas.corner.y,
-            left: canvas.corner.x,
-            right: canvas.corner.x + canvas.nodeWidth,
-            bottom: canvas.corner.y + canvas.nodeHeight,
-        };
+        elem[DOM_ELEMENT_RECT] = canvas.getDomRect();
     }
 
     public storeElementPosition(zIndex: number, elem: DomElement) {

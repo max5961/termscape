@@ -1,19 +1,40 @@
+import { DOM_ELEMENT_SHADOW_STYLE, type DomElement } from "../dom/DomElement.js";
 import type { Runtime } from "../dom/RuntimeFactory.js";
 import type { ShadowStyle } from "../style/Style.js";
-import type { GridToken, Point } from "../types.js";
+import type { DOMRect, GridToken, Point } from "../types.js";
 import { Ansi } from "../util/Ansi.js";
 import { Pen } from "./Pen.js";
+
+/**
+ * The Canvas contains a reference to the 2d Grid that is drawn to as well as
+ * metadata used by DomElement's in order to draw to the Grid. The metadata
+ * includes the the corner of the DomElement as calculated by Yoga and the min/max
+ * `x` and `y` values which are derived from the overflow style values.  Canvases
+ * can create SubCanvases which decide their extrema based on the parent.
+ *
+ * Each Canvas/SubCanvas can create a Pen object which draws to the Grid during
+ * the Draw class.  The created Pen short circuits when attempting to draw outside
+ * of the Canvas's limits.  This allows the Draw class to control the Pen while
+ * being fully agnostic of where it can and can't draw.  The only context the Draw
+ * class needs is the top-left corner position of the Node its drawing.
+ *
+ * The Pen class draws either raw characters or Tokens to the Grid.  Tokens
+ * contain metadata about the ANSI styling. The Canvas class contains logic to
+ * 'stringify' a row or segment of a row so it can be written to stdout.
+ */
 
 export type Grid = (string | GridToken)[][];
 
 export type CanvasDeps = {
     stdout: Runtime["api"]["stdout"];
+    grid?: Grid;
     corner?: Point;
-    cvHeight?: number;
-    cvWidth?: number;
     nodeHeight?: number;
     nodeWidth?: number;
-    grid?: Grid;
+    minX?: number;
+    minY?: number;
+    maxX?: number;
+    maxY?: number;
 };
 
 export type SubCanvasDeps = Required<CanvasDeps>;
@@ -22,8 +43,10 @@ export class Canvas {
     public pos: Point;
     public readonly grid: Grid;
     public readonly corner: Readonly<Point>;
-    public readonly cvHeight: number;
-    public readonly cvWidth: number;
+    public readonly minX: number;
+    public readonly minY: number;
+    public readonly maxX: number;
+    public readonly maxY: number;
     public readonly nodeHeight: number;
     public readonly nodeWidth: number;
 
@@ -33,64 +56,130 @@ export class Canvas {
         this.stdout = deps.stdout;
         this.grid = deps.grid ?? [];
         this.corner = deps.corner ?? { x: 0, y: 0 };
-        this.cvHeight = deps.cvHeight ?? deps.stdout.rows;
-        this.cvWidth = deps.cvWidth ?? deps.stdout.columns;
-        this.nodeHeight = deps.nodeHeight ?? this.cvHeight;
-        this.nodeWidth = deps.nodeWidth ?? this.cvWidth;
+
+        this.minX = Math.max(0, deps.minX ?? 0);
+        this.minY = Math.max(0, deps.minY ?? 0);
+        this.maxX = deps.maxX ?? deps.stdout.columns;
+        this.maxY = deps.maxY ?? deps.stdout.rows;
+        this.nodeHeight = deps.nodeHeight ?? this.maxY - this.minY;
+        this.nodeWidth = deps.nodeWidth ?? this.maxX - this.minX;
+
         this.pos = { ...this.corner };
     }
 
-    public createSubCanvas({
-        corner,
-        nodeHeight,
-        nodeWidth,
-        canOverflowX,
-        canOverflowY,
+    public createChildCanvas({
+        child,
         parentStyle,
     }: {
-        corner: Point;
-        nodeHeight: number;
-        nodeWidth: number;
-        canOverflowX: boolean;
-        canOverflowY: boolean;
+        child: DomElement;
         parentStyle: ShadowStyle;
     }) {
-        // Parent (this) stops
-        let pxstop = this.corner.x + this.cvWidth;
-        let pystop = this.corner.y + this.cvHeight;
+        const chStyle = child[DOM_ELEMENT_SHADOW_STYLE];
+        const chNodeWidth = child.node.getComputedWidth();
+        const chNodeHeight = child.node.getComputedHeight();
 
-        // If parent node has a bottom|right edge set, the parent stops need to be adjusted
-        if (parentStyle.overflowX === "hidden" && parentStyle.borderRight) {
-            --pxstop;
+        /**
+         * `Child Corner`
+         * It is possible for child corner values to be outside of their limits
+         * and this is okay.  `Pen` objects won't draw outside of the canvas limits.
+         */
+        const corner: Canvas["corner"] = {
+            x: this.corner.x + child.node.getComputedLeft(),
+            y: this.corner.y + child.node.getComputedTop(),
+        };
+
+        // Subcanvas limits depend on parent canvas limits.
+        let { minX, minY, maxX, maxY } = this;
+
+        // If child has overflow as hidden, then min/max values are clamped
+        if (chStyle.overflowX === "hidden") {
+            // if (corner.x < minX) minX = minX;
+            if (corner.x > minX) minX = corner.x;
+            if (minX > maxX) minX = maxX;
+
+            if (corner.x + chNodeWidth < maxX) maxX = corner.x + chNodeWidth;
         }
-        if (parentStyle.overflowY === "hidden" && parentStyle.borderBottom) {
-            --pystop;
+        if (chStyle.overflowY === "hidden") {
+            // if (corner.x < minY) minY = minY;
+            if (corner.y > minY) minY = corner.y;
+            if (minY > maxY) minY = maxY;
+
+            if (corner.y + chNodeHeight < maxY) maxY = corner.y + chNodeHeight;
         }
 
-        // Child (subcanvas) stops
-        let cxstop = corner.x + nodeWidth;
-        let cystop = corner.y + nodeHeight;
-
-        // Prevent subcanvas's from exceeding parent canvas dimensions
-        cxstop = Math.min(cxstop, pxstop);
-        cystop = Math.min(cystop, pystop);
-
-        // The subcanvas dimensions should fill the parent's dimensions or constrain
-        // to the subcanvas node dimensions based on the `overflow` setting.
-        const getConstrainedX = canOverflowX ? Math.max : Math.min;
-        const getConstrainedY = canOverflowY ? Math.max : Math.min;
-        const nextWidth = getConstrainedX(pxstop, cxstop) - corner.x;
-        const nextHeight = getConstrainedY(pystop, cystop) - corner.y;
+        // If the parent has overflow set, we need to adjust the child's limits
+        // for any borders the parent may have
+        const visBorders = this.getVisibleBorders();
+        if (parentStyle.overflowX === "hidden") {
+            if (parentStyle.borderLeft && visBorders.left) ++minX;
+            if (parentStyle.borderRight && visBorders.right) --maxX;
+        }
+        if (parentStyle.overflowY === "hidden") {
+            if (parentStyle.borderTop && visBorders.top) ++minY;
+            if (parentStyle.borderBottom && visBorders.bottom) --maxY;
+        }
 
         return new SubCanvas({
+            minX,
+            minY,
+            maxX,
+            maxY,
+            corner,
+            nodeHeight: chNodeHeight,
+            nodeWidth: chNodeWidth,
             stdout: this.stdout,
             grid: this.grid,
-            corner: corner,
-            nodeWidth: nodeWidth,
-            nodeHeight: nodeHeight,
-            cvWidth: nextWidth,
-            cvHeight: nextHeight,
         });
+    }
+
+    public getDomRect(): DOMRect {
+        let { x, y } = this.corner;
+        x = Math.max(x, this.minX);
+        x = Math.min(x, this.maxX);
+        y = Math.max(y, this.minY);
+        y = Math.min(y, this.maxY);
+
+        const top = y;
+        const left = x;
+
+        let height = this.nodeHeight;
+        let width = this.nodeWidth;
+
+        if (x + width > this.maxX) {
+            width = this.maxX - x;
+        }
+        if (y + height > this.maxY) {
+            height = this.maxY - y;
+        }
+
+        const right = x + width;
+        const bottom = y + height;
+
+        return {
+            x,
+            y,
+            top,
+            left,
+            right,
+            bottom,
+            height,
+            width,
+        };
+    }
+
+    protected getVisibleBorders() {
+        // prettier-ignore
+        let left = false;
+        let right = false;
+        let bottom = false;
+        let top = false;
+
+        if (this.corner.x >= this.minX) left = true;
+        if (this.corner.y >= this.minY) top = true;
+        if (this.corner.x + this.nodeWidth <= this.maxX) right = true;
+        if (this.corner.y + this.nodeHeight <= this.maxY) bottom = true;
+
+        return { left, right, top, bottom };
     }
 
     public getPen(): Pen {
@@ -157,7 +246,7 @@ class SubCanvas extends Canvas {
 
     private forceGridToAccomodate() {
         const currDepth = this.grid.length;
-        const requestedDepth = this.corner.y + this.nodeHeight;
+        const requestedDepth = Math.min(this.corner.y + this.nodeHeight, this.maxY);
         const rowsNeeded = requestedDepth - currDepth;
 
         for (let i = 0; i < rowsNeeded; ++i) {
@@ -166,7 +255,7 @@ class SubCanvas extends Canvas {
     }
 
     private requestNewRow() {
-        if (this.grid.length < this.cvHeight) {
+        if (this.grid.length < this.maxY) {
             this.grid.push(
                 Array.from({ length: process.stdout.columns }).fill(" ") as string[],
             );

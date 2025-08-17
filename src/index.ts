@@ -1,5 +1,4 @@
 import { createElement } from "./dom/elements/createElement.js";
-import { logger } from "./logger/Logger.js";
 import type { Color } from "./types.js";
 
 const root = createElement("root", {
@@ -7,7 +6,7 @@ const root = createElement("root", {
     altScreen: true,
     exitOnCtrlC: true,
     exitForcesEndProc: false,
-    enableMouse: false,
+    enableMouse: true,
     preciseWrite: true,
     startOnCreate: true,
 });
@@ -39,6 +38,10 @@ child2.style = {
     borderStyle: "round",
     flexShrink: 0,
 };
+
+child2.addEventListener("click", () => {
+    console.log("red clicked!");
+});
 
 child1.appendChild(child2);
 
