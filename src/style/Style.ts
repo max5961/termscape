@@ -100,4 +100,5 @@ export type TextStyle = {
     underline?: boolean;
     strikethrough?: boolean;
     inverse?: boolean;
+    wrap?: "overflow" | "wrap" | "truncate-start" | "truncate-middle" | "truncate-end";
 };

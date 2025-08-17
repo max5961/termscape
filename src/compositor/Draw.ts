@@ -1,7 +1,8 @@
 import { DomElement } from "../dom/DomElement.js";
 import { type Color } from "../types.js";
 import { Canvas } from "../canvas/Canvas.js";
-import type { ShadowStyle } from "../style/Style.js";
+import type { ShadowStyle, TextStyle } from "../style/Style.js";
+// import { type TextElement } from "../dom/elements/TextElement.js";
 
 export class Draw {
     /**
@@ -18,6 +19,10 @@ export class Draw {
     public updateLowestLayer(zIndex: number): void {
         this.lowestLayer = Math.min(this.lowestLayer, zIndex);
     }
+
+    // =========================================================================
+    // Box
+    // =========================================================================
 
     public composeBox(elem: DomElement, style: ShadowStyle, canvas: Canvas) {
         if ((style.zIndex ?? 0) > this.lowestLayer || style.backgroundColor) {
@@ -56,5 +61,30 @@ export class Draw {
             .draw("─", "l", width - 2)
             .draw("╰", "u", 1)
             .draw("│", "u", height - 2);
+    }
+
+    // =========================================================================
+    // Text
+    // =========================================================================
+
+    public composeText(elem: DomElement, style: TextStyle, canvas: Canvas) {
+        if (style.wrap === "overflow") {
+            return this.composeTextOverflow(elem, canvas);
+        }
+        return this.composeTextWrap(elem, canvas);
+    }
+
+    private composeTextOverflow(elem: DomElement, canvas: Canvas) {
+        const textContent = (elem as any).textContent;
+        const pen = canvas.getPen();
+
+        for (let i = 0; i < textContent.length; ++i) {
+            pen.draw(textContent[i], "r", 1);
+        }
+    }
+
+    private composeTextWrap(_elem: DomElement, _canvas: Canvas) {
+        // const pen = canvas.getPen();
+        // const words = getWords(elem.textContent);
     }
 }

@@ -1,4 +1,5 @@
-import { DOM_ELEMENT_SHADOW_STYLE, type DomElement } from "../dom/DomElement.js";
+import { type DomElement } from "../dom/DomElement.js";
+import { DOM_ELEMENT_SHADOW_STYLE } from "../symbols.js";
 import type { Runtime } from "../dom/RuntimeFactory.js";
 import type { ShadowStyle } from "../style/Style.js";
 import type { DOMRect, GridToken, Point } from "../types.js";

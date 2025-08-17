@@ -1,9 +1,10 @@
 import { createElement } from "./dom/elements/createElement.js";
-import type { Color } from "./types.js";
 
-const root = createElement("root", {
+const termscape = { createElement };
+
+const root = termscape.createElement("root", {
     debounceMs: 16,
-    altScreen: true,
+    altScreen: false,
     exitOnCtrlC: true,
     exitForcesEndProc: false,
     enableMouse: true,
@@ -15,73 +16,48 @@ root.waitUntilExit().then(() => {
     console.log("The app is done");
 });
 
-const child1 = createElement("box");
-
-child1.style = {
-    height: 10,
-    width: 25,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-    backgroundColor: "green",
+const box = termscape.createElement("box");
+box.style = {
+    width: 5,
     borderStyle: "round",
-    overflow: "hidden",
 };
 
-root.appendChild(child1);
+const text = termscape.createElement("text");
+text.textContent =
+    "The moment hit like thunder, too loud to ignore and too sharp to forget.";
 
-const child2 = createElement("box");
-child2.style = {
-    height: 15,
-    width: 15,
-    backgroundColor: "red",
-    borderStyle: "round",
-    flexShrink: 0,
-};
+box.appendChild(text);
+root.appendChild(box);
 
-child2.addEventListener("click", () => {
-    console.log("red clicked!");
-});
-
-child1.appendChild(child2);
-
-child1.addKeyListener({
-    keymap: "<A-j>",
-    callback: () => {
-        let height = Number(child1.style.height ?? 0);
-        if (height < process.stdout.rows) {
-            child1.style.height = ++height;
-            // console.log(height);
-        }
-    },
-});
-child1.addKeyListener({
-    keymap: "<A-k>",
-    callback: () => {
-        let height = Number(child1.style.height ?? 0);
-        if (height > 0) {
-            child1.style.height = --height;
-            // console.log(height);
-        }
-    },
-});
-child1.addKeyListener({
-    keymap: "<A-l>",
-    callback: () => {
-        let width = Number(child1.style.width ?? 0);
-        if (width < process.stdout.columns) {
-            child1.style.width = ++width;
-            // console.log(width);
-        }
-    },
-});
-child1.addKeyListener({
+box.addKeyListener({
     keymap: "<A-h>",
-    callback: () => {
-        let width = Number(child1.style.width ?? 0);
-        if (width > 0) {
-            child1.style.width = --width;
-            // console.log(width);
+    callback() {
+        if (typeof box.style.width === "number") {
+            --box.style.width;
+        }
+    },
+});
+box.addKeyListener({
+    keymap: "<A-l>",
+    callback() {
+        if (typeof box.style.width === "number") {
+            ++box.style.width;
+        }
+    },
+});
+box.addKeyListener({
+    keymap: "<A-j>",
+    callback() {
+        if (typeof box.style.height === "number") {
+            --box.style.height;
+        }
+    },
+});
+box.addKeyListener({
+    keymap: "<A-k>",
+    callback() {
+        if (typeof box.style.height === "number") {
+            ++box.style.height;
         }
     },
 });

@@ -6,24 +6,18 @@ import {
     type MouseEventType,
     type MouseEventHandler,
 } from "./MouseEvent.js";
-import { Root, ROOT_BRIDGE_DOM_ELEMENT } from "./Root.js";
-import { Render, RequestInput } from "./decorators.js";
+import type { Root } from "./Root.js";
 import {
-    type DynamicStyle,
-    type ShadowStyle,
-    type VirtualStyle,
-} from "../style/Style.js";
+    DOM_ELEMENT_RECT,
+    DOM_ELEMENT_SHADOW_STYLE,
+    ROOT_BRIDGE_DOM_ELEMENT,
+} from "../symbols.js";
+import { Render, RequestInput } from "./decorators.js";
+import { type ShadowStyle, type VirtualStyle } from "../style/Style.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectKeys } from "../util/objectKeys.js";
 import { throwError } from "../error/throwError.js";
 import { ElementMetaData } from "./ElementMetadata.js";
-
-/** Internal access symbol */
-export const DOM_ELEMENT_SHADOW_STYLE = Symbol.for("termscape.domelement.shadow_style");
-/** Internal access symbol */
-export const DOM_ELEMENT_RECT = Symbol.for("termscape.domelement.rect");
-/** Internal access symbol */
-export const DOM_ELEMENT_ACTIONS = Symbol.for("termscape.domelement.actions");
 
 export abstract class DomElement<
     VStyle extends VirtualStyle = VirtualStyle,
@@ -45,8 +39,8 @@ export abstract class DomElement<
     protected removeKeyListeners: (() => void)[];
     protected childrenSet: Set<DomElement>;
     protected readonly metadata: ElementMetaData;
+    protected readonly baseDefaultStyles: VirtualStyle;
     protected abstract defaultStyles: VStyle;
-    protected readonly abstractDefaultStyles: VirtualStyle;
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -74,10 +68,13 @@ export abstract class DomElement<
         this.removeKeyListeners = [];
 
         // DEFAULT STYLES
-        this.abstractDefaultStyles = {
+        this.baseDefaultStyles = {
             display: "flex",
             zIndex: "auto",
             overflow: "visible",
+            flexDirection: "row",
+            flexGrow: 0,
+            flexShrink: 1,
         };
     }
 
@@ -99,7 +96,7 @@ export abstract class DomElement<
 
     set style(stylesheet: VStyle) {
         const withDefault = {
-            ...this.abstractDefaultStyles,
+            ...this.baseDefaultStyles,
             ...this.defaultStyles,
             ...stylesheet,
         } as VStyle;

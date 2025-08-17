@@ -1,10 +1,11 @@
-import { DOM_ELEMENT_SHADOW_STYLE, DomElement } from "../dom/DomElement.js";
+import { DomElement } from "../dom/DomElement.js";
 import { Canvas } from "../canvas/Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
 import type { Root } from "../dom/Root.js";
 import type { ShadowStyle } from "../style/Style.js";
+import { DOM_ELEMENT_SHADOW_STYLE } from "../symbols.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -31,6 +32,10 @@ export class Compositor {
 
         if (elem.tagName === "BOX_ELEMENT") {
             this.ops.defer(zIndex, () => this.draw.composeBox(elem, style, canvas));
+        }
+
+        if (elem.tagName === "TEXT_ELEMENT") {
+            this.ops.defer(zIndex, () => this.draw.composeText(elem, style, canvas));
         }
 
         for (const child of elem.children) {

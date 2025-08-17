@@ -8,9 +8,9 @@ import { createRuntime, type Runtime } from "./RuntimeFactory.js";
 import { type EventEmitterMap, type RuntimeConfig, type TTagNames } from "../types.js";
 import { type Action } from "term-keymap";
 import type { VirtualStyle } from "../style/Style.js";
+import { ROOT_BRIDGE_DOM_ELEMENT } from "../symbols.js";
 
 /** Internal access symbol */
-export const ROOT_BRIDGE_DOM_ELEMENT = Symbol.for("termscape.root.bridge_dom_element");
 
 export class Root extends DomElement {
     public tagName: TTagNames;

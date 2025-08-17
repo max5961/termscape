@@ -1,5 +1,6 @@
 import { Canvas } from "../canvas/Canvas.js";
-import { DomElement, DOM_ELEMENT_RECT } from "../dom/DomElement.js";
+import { DomElement } from "../dom/DomElement.js";
+import { DOM_ELEMENT_RECT } from "../symbols.js";
 
 export type DomRectLayer = {
     x: Record<number, DomElement[]>;
