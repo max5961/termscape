@@ -1,4 +1,4 @@
-import { createElement } from "./dom/elements/createElement.js";
+import { createElement } from "./shared/CreateElement.js";
 
 const termscape = { createElement };
 

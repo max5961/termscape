@@ -1,11 +1,13 @@
 import { DomElement } from "../dom/DomElement.js";
-import { Canvas } from "../canvas/Canvas.js";
+import { Canvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
+import { DOM_ELEMENT_SHADOW_STYLE } from "../Symbols.js";
+import { BoxElement } from "../dom/BoxElement.js";
+import { TextElement } from "../dom/TextElement.js";
 import type { Root } from "../dom/Root.js";
-import type { ShadowStyle } from "../style/Style.js";
-import { DOM_ELEMENT_SHADOW_STYLE } from "../symbols.js";
+import type { ShadowStyle } from "../Types.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -30,11 +32,11 @@ export class Compositor {
         this.rects.setRect(elem, canvas);
         this.rects.storeElementPosition(zIndex, elem);
 
-        if (elem.tagName === "BOX_ELEMENT") {
+        if (elem instanceof BoxElement) {
             this.ops.defer(zIndex, () => this.draw.composeBox(elem, style, canvas));
         }
 
-        if (elem.tagName === "TEXT_ELEMENT") {
+        if (elem instanceof TextElement) {
             this.ops.defer(zIndex, () => this.draw.composeText(elem, style, canvas));
         }
 
@@ -53,8 +55,12 @@ export class Compositor {
         pcanvas: Canvas,
         parentStyle: ShadowStyle,
     ): Canvas {
+        const childNode = child.node;
+        const childStyle = child[DOM_ELEMENT_SHADOW_STYLE];
+
         return pcanvas.createChildCanvas({
-            child,
+            childNode,
+            childStyle,
             parentStyle,
         });
     }

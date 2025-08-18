@@ -1,7 +1,8 @@
 import Yoga from "yoga-wasm-web/auto";
-import { type YogaNode } from "../types.js";
-import { type ShadowStyle, type VirtualStyle } from "./Style.js";
-import { decodeShorthand, ifUndef, parseDimensions } from "./util.js";
+import type { YogaNode, ShadowStyle, VirtualStyle } from "../Types.js";
+import { decodeShorthand } from "./util/decodeShorthand.js";
+import { ifUndef } from "../Util.js";
+import { parseDimensions } from "./util/parseDimensions.js";
 
 /**
  * The set handler in the Proxy for ShadowStyle passes the `prop` and `newValue` through

@@ -1,23 +1,26 @@
 import Yoga from "yoga-wasm-web/auto";
-import { type DOMRect, type TTagNames, type YogaNode } from "../types.js";
 import { type Action } from "term-keymap";
-import {
-    type MouseEvent,
-    type MouseEventType,
-    type MouseEventHandler,
-} from "./MouseEvent.js";
+import type {
+    MouseEvent,
+    MouseEventType,
+    MouseEventHandler,
+    ShadowStyle,
+    VirtualStyle,
+    DOMRect,
+    TTagNames,
+    YogaNode,
+} from "../Types.js";
 import type { Root } from "./Root.js";
 import {
     DOM_ELEMENT_RECT,
     DOM_ELEMENT_SHADOW_STYLE,
     ROOT_BRIDGE_DOM_ELEMENT,
-} from "../symbols.js";
-import { Render, RequestInput } from "./decorators.js";
-import { type ShadowStyle, type VirtualStyle } from "../style/Style.js";
+} from "../Symbols.js";
+import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
-import { objectKeys } from "../util/objectKeys.js";
-import { throwError } from "../error/throwError.js";
+import { objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
+import { throwError } from "../shared/ThrowError.js";
 
 export abstract class DomElement<
     VStyle extends VirtualStyle = VirtualStyle,

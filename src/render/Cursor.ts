@@ -1,6 +1,6 @@
 import type { Root } from "../dom/Root.js";
-import { logger } from "../logger/Logger.js";
-import { Ansi } from "../util/Ansi.js";
+import { logger } from "../shared/Logger.js";
+import { Ansi } from "../shared/Ansi.js";
 
 export class Cursor {
     protected root: Root;

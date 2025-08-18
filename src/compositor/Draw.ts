@@ -1,8 +1,8 @@
+import type { BoxElement } from "../dom/BoxElement.js";
+import type { TextElement } from "../dom/TextElement.js";
 import { DomElement } from "../dom/DomElement.js";
-import { type Color } from "../types.js";
-import { Canvas } from "../canvas/Canvas.js";
-import type { ShadowStyle, TextStyle } from "../style/Style.js";
-// import { type TextElement } from "../dom/elements/TextElement.js";
+import type { Color, ShadowStyle, TextStyle } from "../Types.js";
+import { Canvas } from "./Canvas.js";
 
 export class Draw {
     /**
@@ -24,7 +24,7 @@ export class Draw {
     // Box
     // =========================================================================
 
-    public composeBox(elem: DomElement, style: ShadowStyle, canvas: Canvas) {
+    public composeBox(elem: BoxElement, style: ShadowStyle, canvas: Canvas) {
         if ((style.zIndex ?? 0) > this.lowestLayer || style.backgroundColor) {
             this.fillBg(canvas, style.backgroundColor);
         }
@@ -47,7 +47,7 @@ export class Draw {
     }
 
     /** renders only round borders for now */
-    private renderBorder(elem: DomElement, canvas: Canvas) {
+    private renderBorder(elem: BoxElement, canvas: Canvas) {
         const width = elem.node.getComputedWidth();
         const height = elem.node.getComputedHeight();
 
@@ -67,14 +67,14 @@ export class Draw {
     // Text
     // =========================================================================
 
-    public composeText(elem: DomElement, style: TextStyle, canvas: Canvas) {
+    public composeText(elem: TextElement, style: TextStyle, canvas: Canvas) {
         if (style.wrap === "overflow") {
             return this.composeTextOverflow(elem, canvas);
         }
         return this.composeTextWrap(elem, canvas);
     }
 
-    private composeTextOverflow(elem: DomElement, canvas: Canvas) {
+    private composeTextOverflow(elem: TextElement, canvas: Canvas) {
         const textContent = (elem as any).textContent;
         const pen = canvas.getPen();
 
@@ -83,7 +83,7 @@ export class Draw {
         }
     }
 
-    private composeTextWrap(_elem: DomElement, _canvas: Canvas) {
+    private composeTextWrap(_elem: TextElement, _canvas: Canvas) {
         // const pen = canvas.getPen();
         // const words = getWords(elem.textContent);
     }

@@ -2,27 +2,21 @@ import { Compositor } from "../compositor/Compositor.js";
 import { RenderHooks } from "./RenderHooks.js";
 import { Performance } from "./Performance.js";
 import { Cursor, DebugCursor } from "./Cursor.js";
-import { Canvas } from "../canvas/Canvas.js";
-import { RefreshWriter } from "./write/RefreshWriter.js";
-import { PreciseWriter } from "./write/PreciseWriter.js";
+import { Canvas } from "../compositor/Canvas.js";
+import { WriterRefresh } from "./WriterRefresh.js";
+import { WriterPrecise } from "./WriterPrecise.js";
 import { DomRects } from "../compositor/DomRects.js";
-import { Ansi } from "../util/Ansi.js";
+import { Ansi } from "../shared/Ansi.js";
 import { Root } from "../dom/Root.js";
-
-export type WriteOpts = {
-    resize?: boolean;
-    capturedOutput?: string;
-    screenChange?: boolean;
-    skipCalculateLayout?: boolean;
-};
+import type { WriteOpts } from "../Types.js";
 
 export class Renderer {
     public lastCanvas: Canvas | null;
     public rects: DomRects;
     private perf: Performance;
     private cursor: Cursor;
-    private preciseWriter: PreciseWriter;
-    private refreshWriter: RefreshWriter;
+    private preciseWriter: WriterPrecise;
+    private refreshWriter: WriterRefresh;
     public hooks: RenderHooks;
     private lastWasResize: number;
     private root: Root;
@@ -36,8 +30,8 @@ export class Renderer {
         this.cursor = process.env["RENDER_DEBUG"]
             ? new DebugCursor(root)
             : new Cursor(root);
-        this.preciseWriter = new PreciseWriter(this.cursor);
-        this.refreshWriter = new RefreshWriter(this.cursor);
+        this.preciseWriter = new WriterPrecise(this.cursor);
+        this.refreshWriter = new WriterRefresh(this.cursor);
         this.lastWasResize = 0;
     }
 
@@ -168,7 +162,7 @@ export class Renderer {
 
     /**
      * Greenlight only terminals that *definitely* support ansi cursor control to
-     * use the `PreciseWriter` strategy.
+     * use the `WriterPrecise` strategy.
      */
     private termSupportsAnsiCursor(): boolean {
         const term = process.env["TERM"];

@@ -1,4 +1,4 @@
-import { Canvas } from "../canvas/Canvas.js";
+import { Canvas } from "../compositor/Canvas.js";
 import { type PerformanceData } from "./Performance.js";
 
 type UnsubscribeCb = () => boolean;

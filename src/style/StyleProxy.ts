@@ -1,14 +1,7 @@
-import { type YogaNode } from "../types.js";
-import { type VirtualStyle, type ShadowStyle, type DynamicStyle } from "./Style.js";
+import type { YogaNode, VirtualStyle, DynamicStyle, ShadowStyle } from "../Types.js";
 import { AggregateHandlers, SanitizerHandlers, YogaHandlers } from "./StyleHandlers.js";
 import type { DomElement } from "../dom/DomElement.js";
-
-const DYNAMIC_STYLES = new Set<DynamicStyle>([
-    "height",
-    "width",
-    "minWidth",
-    "minHeight",
-]);
+import { checkIfDynamicDimensions } from "./util/checkIfDynamicDimensions.js";
 
 export function createVirtualStyleProxy<
     T extends VirtualStyle = VirtualStyle,
@@ -78,15 +71,4 @@ function createShadowStyleProxy<T extends ShadowStyle>(
     });
 
     return shadowStyle;
-}
-
-function checkIfDynamicDimensions(prop: string, value: unknown) {
-    if (typeof value !== "string") {
-        return false;
-    }
-
-    return (
-        DYNAMIC_STYLES.has(prop as DynamicStyle) &&
-        (value.endsWith("vh") || value.endsWith("vw"))
-    );
 }

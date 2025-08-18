@@ -1,5 +1,5 @@
 import type { Action } from "term-keymap";
-import type { DynamicStyle } from "../style/Style.js";
+import type { DynamicStyle } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 
 export class ElementMetaData {

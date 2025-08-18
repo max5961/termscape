@@ -1,16 +1,19 @@
 import Yoga from "yoga-wasm-web/auto";
 import EventEmitter from "events";
+import { type Action } from "term-keymap";
 import { RenderHooksManager } from "../render/RenderHooks.js";
 import { DomElement } from "./DomElement.js";
-import { Scheduler } from "./Scheduler.js";
-import { Renderer, type WriteOpts } from "../render/Renderer.js";
-import { createRuntime, type Runtime } from "./RuntimeFactory.js";
-import { type EventEmitterMap, type RuntimeConfig, type TTagNames } from "../types.js";
-import { type Action } from "term-keymap";
-import type { VirtualStyle } from "../style/Style.js";
-import { ROOT_BRIDGE_DOM_ELEMENT } from "../symbols.js";
-
-/** Internal access symbol */
+import { Scheduler } from "../shared/Scheduler.js";
+import { Renderer } from "../render/Renderer.js";
+import { createRuntime, type Runtime } from "../shared/RuntimeFactory.js";
+import { ROOT_BRIDGE_DOM_ELEMENT } from "../Symbols.js";
+import type {
+    EventEmitterMap,
+    RuntimeConfig,
+    TTagNames,
+    VirtualStyle,
+    WriteOpts,
+} from "../Types.js";
 
 export class Root extends DomElement {
     public tagName: TTagNames;
