@@ -155,6 +155,7 @@ export type TextStyle = {
     strikethrough?: boolean;
     inverse?: boolean;
     wrap?: "overflow" | "wrap" | "truncate-start" | "truncate-middle" | "truncate-end";
+    align?: "left" | "center" | "right";
 };
 
 export type MouseEventType =

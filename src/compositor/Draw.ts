@@ -3,6 +3,7 @@ import type { TextElement } from "../dom/TextElement.js";
 import { DomElement } from "../dom/DomElement.js";
 import type { Color, ShadowStyle, TextStyle } from "../Types.js";
 import { Canvas } from "./Canvas.js";
+import { alignRows, getRows } from "../shared/TextWrap.js";
 
 export class Draw {
     /**
@@ -75,7 +76,7 @@ export class Draw {
     }
 
     private composeTextOverflow(elem: TextElement, canvas: Canvas) {
-        const textContent = (elem as any).textContent;
+        const textContent = elem.textContent;
         const pen = canvas.getPen();
 
         for (let i = 0; i < textContent.length; ++i) {
@@ -83,8 +84,18 @@ export class Draw {
         }
     }
 
-    private composeTextWrap(_elem: TextElement, _canvas: Canvas) {
-        // const pen = canvas.getPen();
-        // const words = getWords(elem.textContent);
+    private composeTextWrap(elem: TextElement, canvas: Canvas) {
+        const pen = canvas.getPen();
+        let rows = getRows(elem.textContent, canvas.nodeWidth);
+        rows = alignRows(rows, canvas.nodeWidth, elem.style.align);
+
+        pen.set.color(elem.style.color);
+
+        for (let i = 0; i < rows.length; ++i) {
+            pen.moveTo(0, i);
+            for (let j = 0; j < rows[i].length; ++j) {
+                pen.draw(rows[i][j], "r", 1);
+            }
+        }
     }
 }

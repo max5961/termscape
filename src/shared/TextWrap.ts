@@ -1,3 +1,5 @@
+import type { TextStyle } from "../Types.js";
+
 export function getRows(text: string, width: number): string[] {
     const rows: string[] = [];
 
@@ -53,16 +55,8 @@ export function getRows(text: string, width: number): string[] {
     });
 }
 
-export function alignRows(
-    rows: string[],
-    width: number,
-    align: "start" | "center" | "end",
-) {
-    if (align === "start") {
-        return rows;
-    }
-
-    if (align === "end") {
+export function alignRows(rows: string[], width: number, align: TextStyle["align"]) {
+    if (align === "right") {
         return rows.map((row) => {
             row = row.trimEnd().trimStart();
             const diff = width - row.length;
@@ -74,16 +68,21 @@ export function alignRows(
         });
     }
 
-    return rows.map((row) => {
-        row = row.trimEnd().trimStart();
+    if (align === "center") {
+        return rows.map((row) => {
+            row = row.trimEnd().trimStart();
 
-        const diff = width - row.length;
-        const left = Math.floor(diff / 2);
-        const right = diff - left;
+            const diff = width - row.length;
+            const left = Math.floor(diff / 2);
+            const right = diff - left;
 
-        if (diff < 0) {
-            return row;
-        }
-        return `${" ".repeat(left)}${row}${" ".repeat(right)}`;
-    });
+            if (diff < 0) {
+                return row;
+            }
+            return `${" ".repeat(left)}${row}${" ".repeat(right)}`;
+        });
+    }
+
+    // Default - 'left'
+    return rows;
 }

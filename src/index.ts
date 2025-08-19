@@ -4,11 +4,11 @@ const termscape = { createElement };
 
 const root = termscape.createElement("root", {
     debounceMs: 16,
-    altScreen: false,
     exitOnCtrlC: true,
     exitForcesEndProc: false,
     enableMouse: true,
-    preciseWrite: true,
+    altScreen: false,
+    preciseWrite: false,
     startOnCreate: true,
 });
 
@@ -19,12 +19,20 @@ root.waitUntilExit().then(() => {
 const box = termscape.createElement("box");
 box.style = {
     width: 5,
+    height: 5,
     borderStyle: "round",
+    overflow: "hidden",
 };
 
 const text = termscape.createElement("text");
+
 text.textContent =
     "The moment hit like thunder, too loud to ignore and too sharp to forget.";
+
+text.style = {
+    color: "red",
+    align: "center",
+};
 
 box.appendChild(text);
 root.appendChild(box);

@@ -81,7 +81,7 @@ describe("Text wrapping", () => {
 describe("Aligning text", () => {
     test("Align start is the same as `getRows`", () => {
         const rows = getRows("foobar bazban", 5);
-        const aligned = alignRows(rows, 5, "start");
+        const aligned = alignRows(rows, 5, "left");
         expect(rows).toEqual(aligned);
     });
 
@@ -102,13 +102,13 @@ describe("Aligning text", () => {
     describe("Align End", () => {
         test("All words shorter than width", () => {
             const rows = getRows("foo bar baz", 5);
-            const aligned = alignRows(rows, 5, "end");
+            const aligned = alignRows(rows, 5, "right");
             expect(aligned).toEqual(["  foo", "  bar", "  baz"]);
         });
 
         test("Words longer than width", () => {
             const rows = getRows("foobar bazban", 5);
-            const aligned = alignRows(rows, 5, "end");
+            const aligned = alignRows(rows, 5, "right");
             expect(aligned).toEqual(["fooba", "    r", "bazba", "    n"]);
         });
     });

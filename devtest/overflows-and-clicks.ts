@@ -1,4 +1,4 @@
-import { createElement } from "../dom/elements/createElement.js";
+import { createElement } from "../dist/shared/CreateElement.js";
 
 const root = createElement("root", {
     debounceMs: 16,

@@ -1,6 +1,7 @@
 import { DomElement } from "./DomElement.js";
 import type { TTagNames, TextStyle } from "../Types.js";
 import { type MeasureFunction } from "yoga-wasm-web/auto";
+import { getRows } from "../shared/TextWrap.js";
 
 export class TextElement extends DomElement<TextStyle, TextStyle> {
     private _textContent: string;
@@ -33,7 +34,7 @@ export class TextElement extends DomElement<TextStyle, TextStyle> {
                 };
             }
 
-            if (width === 0) {
+            if (width <= 0) {
                 return {
                     width: width,
                     height: this.textContent.length,
@@ -42,7 +43,7 @@ export class TextElement extends DomElement<TextStyle, TextStyle> {
 
             return {
                 width: width,
-                height: 5,
+                height: getRows(this.textContent, width).length,
             };
         };
     }
