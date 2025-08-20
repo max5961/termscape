@@ -1,4 +1,6 @@
-export type IBorder = {
+import { Ansi } from "./Ansi.js";
+
+type Border = {
     top: string;
     topLeft: string;
     topRight: string;
@@ -9,13 +11,26 @@ export type IBorder = {
     bottomRight: string;
 };
 
-export type IBorderMap = [
+export type BorderMap = [
     [string, string, string],
     [string, string, string],
     [string, string, string],
 ];
 
-export default {
+export function createBox(chars: BorderMap): Border {
+    return {
+        top: chars[0][1],
+        topLeft: chars[0][0],
+        topRight: chars[0][2],
+        left: chars[1][0],
+        right: chars[1][2],
+        bottom: chars[2][1],
+        bottomLeft: chars[2][0],
+        bottomRight: chars[2][2],
+    };
+}
+
+export const Borders = {
     round: createBox([
         ["╭", "─", "╮"],
         ["│", " ", "│"],
@@ -39,17 +54,29 @@ export default {
         ["║", " ", "║"],
         ["╚", "═", "╝"],
     ]),
+    doubleY: createBox([
+        ["╒", "═", "╕"],
+        ["│", " ", "│"],
+        ["╘", "═", "╛"],
+    ]),
+    doubleX: createBox([
+        ["╓", "─", "╖"],
+        ["║", " ", "║"],
+        ["╙", "─", "╜"],
+    ]),
+    classic1: createBox([
+        ["+", "-", "+"],
+        ["|", " ", "|"],
+        ["+", "-", "+"],
+    ]),
+    classic2: createBox([
+        ["/", "-", "\\"],
+        ["|", " ", "|"],
+        ["\\", "-", "/"],
+    ]),
+    block: createBox([
+        ["█", "▀", "█"],
+        ["█", " ", "█"],
+        ["█", "▄", "█"],
+    ]),
 } as const;
-
-export function createBox(chars: IBorderMap): IBorder {
-    return {
-        top: chars[0][1],
-        topLeft: chars[0][0],
-        topRight: chars[0][2],
-        left: chars[1][0],
-        right: chars[1][2],
-        bottom: chars[2][1],
-        bottomLeft: chars[2][0],
-        bottomRight: chars[2][2],
-    };
-}

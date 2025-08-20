@@ -4,6 +4,7 @@ import type { Color, ShadowStyle, TextStyle } from "../Types.js";
 import { Canvas } from "./Canvas.js";
 import { alignRows, getRows } from "../shared/TextWrap.js";
 import { TEXT_PADDING } from "../Symbols.js";
+import { Borders, createBox } from "../shared/Borders.js";
 
 export class Draw {
     /**
@@ -52,33 +53,37 @@ export class Draw {
 
         const pen = canvas.getPen();
 
+        const map = Array.isArray(elem.style.borderStyle)
+            ? createBox(elem.style.borderStyle)
+            : Borders[elem.style.borderStyle!];
+
         // prettier-ignore
         pen
             .set("color", style.borderTopColor)
             .set("dimColor", style.borderTopDimColor)
-            .draw("╭", "r", 1)
-            .draw("─", "r", width - 2)
-            .draw("╮", "d", 1);
+            .draw(map.topLeft, "r", 1)
+            .draw(map.top, "r", width - 2)
+            .draw(map.topRight, "d", 1);
 
         // prettier-ignore
         pen
             .set("color", style.borderRightColor)
             .set("dimColor", style.borderRightDimColor)
-            .draw("│", "d", height - 2);
+            .draw(map.right, "d", height - 2)
 
         // prettier-ignore
         pen
             .set("color", style.borderBottomColor)
             .set("dimColor", style.borderBottomDimColor)
-            .draw("╯", "l", 1)
-            .draw("─", "l", width - 2)
-            .draw("╰", "u", 1);
+            .draw(map.bottomRight, "l", 1)
+            .draw(map.bottom, "l", width - 2)
+            .draw(map.bottomLeft, "u", 1);
 
         // prettier-ignore
         pen
             .set("color", style.borderLeftColor)
             .set("dimColor", style.borderLeftDimColor)
-            .draw("│", "u", height - 2);
+            .draw(map.left, "u", height - 2)
     }
 
     // =========================================================================

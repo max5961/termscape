@@ -20,10 +20,13 @@ const box = termscape.createElement("box");
 box.style = {
     width: 5,
     // height: 5,
-    borderStyle: "round",
+    borderStyle: [
+        ["╳", "╳", "╳"],
+        ["╳", "╳", "╳"],
+        ["╳", "╳", "╳"],
+    ],
     overflow: "hidden",
     borderColor: "blue",
-    borderTopColor: "green",
 };
 
 const text = termscape.createElement("text");
@@ -37,7 +40,6 @@ text.style = {
     bold: true,
     underline: true,
     align: "center",
-    // backgroundColor: "",
     imageNegative: true,
 };
 

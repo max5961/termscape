@@ -2,6 +2,7 @@ import { configureStdin } from "term-keymap";
 import { TagNames } from "./Constants.js";
 import type { Color } from "ansi-escape-sequences";
 import type { DomElement } from "./dom/DomElement.js";
+import type { BorderMap, Borders } from "./shared/Borders.js";
 export type { DomElement } from "./dom/DomElement.js";
 
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
@@ -55,7 +56,7 @@ export type RuntimeConfig = {
 } & ConfigureStdin;
 
 // TODO
-type BorderStyle = "round";
+type BorderStyle = keyof typeof Borders;
 
 // TODO - Can make inherit a feature later, but for now its just a hurdle to the
 // design process
@@ -128,7 +129,7 @@ export type DomStyle = {
     zIndex?: number | "auto";
     backgroundColor?: Color;
     wipeBackground?: boolean;
-    borderStyle?: BorderStyle;
+    borderStyle?: BorderStyle | BorderMap;
     borderTop?: boolean;
     borderBottom?: boolean;
     borderLeft?: boolean;
