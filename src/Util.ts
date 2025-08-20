@@ -14,6 +14,10 @@ export function objectKeys<T extends object>(obj: T) {
     return Object.keys(obj) as (keyof T)[];
 }
 
+export function objectEntries<T extends object>(obj: T) {
+    return Object.entries(obj) as [keyof T, T[keyof T]][];
+}
+
 /**
  * The cb function returns the `fallback` if the `val` contains any of the defined
  * `invalid` values.

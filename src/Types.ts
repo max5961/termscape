@@ -156,6 +156,15 @@ export type TextStyle = {
     inverse?: boolean;
     wrap?: "overflow" | "wrap" | "truncate-start" | "truncate-middle" | "truncate-end";
     align?: "left" | "center" | "right";
+    imagePositive?: boolean;
+    imageNegative?: boolean;
+    fontDefault?: boolean;
+    font1?: boolean;
+    font2?: boolean;
+    font3?: boolean;
+    font4?: boolean;
+    font5?: boolean;
+    font6?: boolean;
 };
 
 export type MouseEventType =

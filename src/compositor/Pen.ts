@@ -1,6 +1,6 @@
-import type { Point } from "../Types.js";
+import type { Point, TextStyle } from "../Types.js";
 import type { Canvas, Grid } from "./Canvas.js";
-import { createGlyphManager, Glyph, type GlyphManager } from "./Glyph.js";
+import { Glyph } from "./Glyph.js";
 
 type Direction = "u" | "d" | "l" | "r";
 
@@ -8,6 +8,24 @@ type PenDeps = {
     grid: Grid;
     canvas: Canvas;
 };
+
+const styleSet = new Set<keyof TextStyle>([
+    "color",
+    "backgroundColor",
+    "italic",
+    "bold",
+    "dimColor",
+    "underline",
+    "imagePositive",
+    "imageNegative",
+    "fontDefault",
+    "font1",
+    "font2",
+    "font3",
+    "font4",
+    "font5",
+    "font6",
+]);
 
 export class Pen {
     private readonly grid: Grid;
@@ -20,7 +38,6 @@ export class Pen {
         maxY: number;
     };
     private readonly glyph: Glyph;
-    public readonly set: GlyphManager;
 
     constructor(deps: PenDeps) {
         this.grid = deps.grid;
@@ -35,7 +52,18 @@ export class Pen {
         };
 
         this.glyph = new Glyph();
-        this.set = createGlyphManager(this.glyph, this);
+    }
+
+    public set<T extends keyof TextStyle>(prop: T, value?: TextStyle[T]) {
+        this.glyph.style[prop] = value;
+        return this;
+    }
+
+    public setStyle(config: TextStyle) {
+        for (const style of styleSet) {
+            // @ts-expect-error typescript can't infer that an two objs with the same shape using the same key have the same value types
+            this.glyph.style[style] = config[style];
+        }
     }
 
     /**

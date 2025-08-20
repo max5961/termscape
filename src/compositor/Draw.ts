@@ -1,6 +1,5 @@
 import type { BoxElement } from "../dom/BoxElement.js";
 import type { TextElement } from "../dom/TextElement.js";
-import { DomElement } from "../dom/DomElement.js";
 import type { Color, ShadowStyle, TextStyle } from "../Types.js";
 import { Canvas } from "./Canvas.js";
 import { alignRows, getRows } from "../shared/TextWrap.js";
@@ -31,15 +30,13 @@ export class Draw {
         }
 
         if (style.borderStyle) {
-            this.renderBorder(elem, canvas);
+            this.renderBorder(elem, style, canvas);
         }
     }
 
     private fillBg(canvas: Canvas, color?: Color) {
         const pen = canvas.getPen();
-        if (color) {
-            pen.set.bgColor(`bg-${color}`);
-        }
+        pen.set("backgroundColor", color);
 
         for (let y = 0; y < canvas.nodeHeight; ++y) {
             pen.moveTo(0, y);
@@ -48,19 +45,38 @@ export class Draw {
     }
 
     /** renders only round borders for now */
-    private renderBorder(elem: BoxElement, canvas: Canvas) {
+    private renderBorder(elem: BoxElement, style: ShadowStyle, canvas: Canvas) {
         const width = elem.node.getComputedWidth();
         const height = elem.node.getComputedHeight();
 
         const pen = canvas.getPen();
 
-        pen.draw("╭", "r", 1)
+        // prettier-ignore
+        pen
+            .set("color", style.borderTopColor)
+            .set("dimColor", style.borderTopDimColor)
+            .draw("╭", "r", 1)
             .draw("─", "r", width - 2)
-            .draw("╮", "d", 1)
-            .draw("│", "d", height - 2)
+            .draw("╮", "d", 1);
+
+        // prettier-ignore
+        pen
+            .set("color", style.borderRightColor)
+            .set("dimColor", style.borderRightDimColor)
+            .draw("│", "d", height - 2);
+
+        // prettier-ignore
+        pen
+            .set("color", style.borderBottomColor)
+            .set("dimColor", style.borderBottomDimColor)
             .draw("╯", "l", 1)
             .draw("─", "l", width - 2)
-            .draw("╰", "u", 1)
+            .draw("╰", "u", 1);
+
+        // prettier-ignore
+        pen
+            .set("color", style.borderLeftColor)
+            .set("dimColor", style.borderLeftDimColor)
             .draw("│", "u", height - 2);
     }
 
@@ -86,10 +102,14 @@ export class Draw {
 
     private composeTextWrap(elem: TextElement, canvas: Canvas) {
         const pen = canvas.getPen();
-        let rows = getRows(elem.textContent, canvas.nodeWidth);
-        rows = alignRows(rows, canvas.nodeWidth, elem.style.align);
 
-        pen.set.color(elem.style.color);
+        const rows = alignRows(
+            getRows(elem.textContent, canvas.nodeWidth),
+            canvas.nodeWidth,
+            elem.style.align,
+        );
+
+        pen.setStyle(elem.style);
 
         for (let i = 0; i < rows.length; ++i) {
             pen.moveTo(0, i);

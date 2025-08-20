@@ -22,6 +22,8 @@ box.style = {
     height: 5,
     borderStyle: "round",
     overflow: "hidden",
+    borderColor: "blue",
+    borderTopColor: "green",
 };
 
 const text = termscape.createElement("text");
@@ -31,7 +33,11 @@ text.textContent =
 
 text.style = {
     color: "red",
+    italic: true,
+    bold: true,
+    underline: true,
     align: "center",
+    backgroundColor: "green",
 };
 
 box.appendChild(text);
