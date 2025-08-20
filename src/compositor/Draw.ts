@@ -3,6 +3,7 @@ import type { TextElement } from "../dom/TextElement.js";
 import type { Color, ShadowStyle, TextStyle } from "../Types.js";
 import { Canvas } from "./Canvas.js";
 import { alignRows, getRows } from "../shared/TextWrap.js";
+import { TEXT_PADDING } from "../Symbols.js";
 
 export class Draw {
     /**
@@ -114,7 +115,16 @@ export class Draw {
         for (let i = 0; i < rows.length; ++i) {
             pen.moveTo(0, i);
             for (let j = 0; j < rows[i].length; ++j) {
-                pen.draw(rows[i][j], "r", 1);
+                let char = rows[i][j];
+
+                if (char === TEXT_PADDING) {
+                    char = " ";
+                    pen.set("underline", false);
+                } else {
+                    pen.set("underline", elem.style.underline);
+                }
+
+                pen.draw(char as string, "r", 1);
             }
         }
     }

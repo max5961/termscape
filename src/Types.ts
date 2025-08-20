@@ -153,7 +153,6 @@ export type TextStyle = {
     italic?: boolean;
     underline?: boolean;
     strikethrough?: boolean;
-    inverse?: boolean;
     wrap?: "overflow" | "wrap" | "truncate-start" | "truncate-middle" | "truncate-end";
     align?: "left" | "center" | "right";
     imagePositive?: boolean;

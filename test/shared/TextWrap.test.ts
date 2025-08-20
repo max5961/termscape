@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { getRows, alignRows } from "@src/shared/TextWrap.js";
+import { TEXT_PADDING } from "@src/Symbols.js";
 
 describe("Text wrapping", () => {
     test("Empty string", () => {
@@ -82,20 +83,29 @@ describe("Aligning text", () => {
     test("Align start is the same as `getRows`", () => {
         const rows = getRows("foobar bazban", 5);
         const aligned = alignRows(rows, 5, "left");
-        expect(rows).toEqual(aligned);
+        expect(aligned).toEqual(rows.map((row) => row.split("")));
     });
 
     describe("Align Center", () => {
         test("All words shorter than width", () => {
             const rows = getRows("foo bar baz", 5);
             const aligned = alignRows(rows, 5, "center");
-            expect(aligned).toEqual([" foo ", " bar ", " baz "]);
+            expect(aligned).toEqual([
+                [TEXT_PADDING, "f", "o", "o", TEXT_PADDING],
+                [TEXT_PADDING, "b", "a", "r", TEXT_PADDING],
+                [TEXT_PADDING, "b", "a", "z", TEXT_PADDING],
+            ]);
         });
 
         test("Words longer than width", () => {
             const rows = getRows("foobar bazban", 5);
             const aligned = alignRows(rows, 5, "center");
-            expect(aligned).toEqual(["fooba", "  r  ", "bazba", "  n  "]);
+            expect(aligned).toEqual([
+                ["f", "o", "o", "b", "a"],
+                [TEXT_PADDING, TEXT_PADDING, "r", TEXT_PADDING, TEXT_PADDING],
+                ["b", "a", "z", "b", "a"],
+                [TEXT_PADDING, TEXT_PADDING, "n", TEXT_PADDING, TEXT_PADDING],
+            ]);
         });
     });
 
@@ -103,13 +113,22 @@ describe("Aligning text", () => {
         test("All words shorter than width", () => {
             const rows = getRows("foo bar baz", 5);
             const aligned = alignRows(rows, 5, "right");
-            expect(aligned).toEqual(["  foo", "  bar", "  baz"]);
+            expect(aligned).toEqual([
+                [TEXT_PADDING, TEXT_PADDING, "f", "o", "o"],
+                [TEXT_PADDING, TEXT_PADDING, "b", "a", "r"],
+                [TEXT_PADDING, TEXT_PADDING, "b", "a", "z"],
+            ]);
         });
 
         test("Words longer than width", () => {
             const rows = getRows("foobar bazban", 5);
             const aligned = alignRows(rows, 5, "right");
-            expect(aligned).toEqual(["fooba", "    r", "bazba", "    n"]);
+            expect(aligned).toEqual([
+                ["f", "o", "o", "b", "a"],
+                [TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, "r"],
+                ["b", "a", "z", "b", "a"],
+                [TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, "n"],
+            ]);
         });
     });
 });

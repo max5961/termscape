@@ -1,3 +1,4 @@
+import { TEXT_PADDING } from "../Symbols.js";
 import type { TextStyle } from "../Types.js";
 
 export function getRows(text: string, width: number): string[] {
@@ -55,34 +56,53 @@ export function getRows(text: string, width: number): string[] {
     });
 }
 
-export function alignRows(rows: string[], width: number, align: TextStyle["align"]) {
+export function alignRows(
+    rows: string[],
+    width: number,
+    align: TextStyle["align"],
+): (string | symbol)[][] {
     if (align === "right") {
         return rows.map((row) => {
-            row = row.trimEnd().trimStart();
+            row = row.trim();
             const diff = width - row.length;
+            const arrRow = row.split("");
 
             if (diff < 0) {
-                return row;
+                return arrRow;
             }
-            return `${" ".repeat(diff)}${row}`;
+
+            const leftWs = new Array(diff).fill(TEXT_PADDING);
+
+            return [...leftWs, ...arrRow];
         });
     }
 
     if (align === "center") {
         return rows.map((row) => {
-            row = row.trimEnd().trimStart();
+            row = row.trim();
 
             const diff = width - row.length;
             const left = Math.floor(diff / 2);
             const right = diff - left;
 
+            const arrRow = row.split("");
+
             if (diff < 0) {
-                return row;
+                return arrRow;
             }
-            return `${" ".repeat(left)}${row}${" ".repeat(right)}`;
+
+            const leftWs = new Array(left).fill(TEXT_PADDING);
+            const rightWs = new Array(right).fill(TEXT_PADDING);
+
+            return [...leftWs, ...arrRow, ...rightWs];
         });
     }
 
     // Default - 'left'
-    return rows;
+    return rows.map((row) => row.split(""));
+}
+
+export function getAlignedRows(text: string, width: number, align: TextStyle["align"]) {
+    const rows = getRows(text, width);
+    return alignRows(rows, width, align);
 }

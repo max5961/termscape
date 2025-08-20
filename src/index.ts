@@ -19,7 +19,7 @@ root.waitUntilExit().then(() => {
 const box = termscape.createElement("box");
 box.style = {
     width: 5,
-    height: 5,
+    // height: 5,
     borderStyle: "round",
     overflow: "hidden",
     borderColor: "blue",
@@ -37,7 +37,8 @@ text.style = {
     bold: true,
     underline: true,
     align: "center",
-    backgroundColor: "green",
+    // backgroundColor: "",
+    imageNegative: true,
 };
 
 box.appendChild(text);
