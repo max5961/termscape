@@ -3,11 +3,10 @@ import { Canvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
-import { DOM_ELEMENT_SHADOW_STYLE } from "../Symbols.js";
+import { DOM_ELEMENT_SHADOW_STYLE, DOM_ELEMENT_CANVAS } from "../Symbols.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
-import type { Root } from "../dom/Root.js";
-import type { ShadowStyle } from "../Types.js";
+import { Root } from "../dom/Root.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -17,6 +16,7 @@ export class Compositor {
 
     constructor(root: Root) {
         this.canvas = new Canvas({ stdout: root.runtime.stdout });
+        root[DOM_ELEMENT_CANVAS] = this.canvas;
         this.ops = new Operations();
         this.rects = new DomRects();
         this.draw = new Draw();
@@ -41,27 +41,20 @@ export class Compositor {
         }
 
         for (const child of elem.children) {
-            const subCanvas = this.getSubCanvas(child, canvas, style);
+            const subCanvas = this.getSubCanvas(child, elem, canvas);
+            child[DOM_ELEMENT_CANVAS] = subCanvas;
             this.buildLayout(child, subCanvas);
         }
 
-        if (elem.tagName === "ROOT_ELEMENT") {
+        if (elem instanceof Root) {
             this.ops.performAll();
         }
     }
 
-    private getSubCanvas(
-        child: DomElement,
-        pcanvas: Canvas,
-        parentStyle: ShadowStyle,
-    ): Canvas {
-        const childNode = child.node;
-        const childStyle = child[DOM_ELEMENT_SHADOW_STYLE];
-
-        return pcanvas.createChildCanvas({
-            childNode,
-            childStyle,
-            parentStyle,
+    private getSubCanvas(child: DomElement, elem: DomElement, canvas: Canvas): Canvas {
+        return canvas.createChildCanvas({
+            child,
+            elem,
         });
     }
 

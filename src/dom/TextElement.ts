@@ -6,6 +6,7 @@ import { getRows } from "../shared/TextWrap.js";
 export class TextElement extends DomElement<TextStyle, TextStyle> {
     private _textContent: string;
     public tagName: TTagNames;
+    public textHeight: number;
 
     constructor() {
         super();
@@ -13,6 +14,7 @@ export class TextElement extends DomElement<TextStyle, TextStyle> {
         this._textContent = "";
         this.node.setMeasureFunc(this.getMeasureFunc());
         this.style = this.defaultStyles;
+        this.textHeight = 0;
     }
 
     protected override defaultStyles: TextStyle = { wrap: "wrap" };
@@ -28,22 +30,16 @@ export class TextElement extends DomElement<TextStyle, TextStyle> {
     private getMeasureFunc(): MeasureFunction {
         return (width: number) => {
             if (this.style.wrap !== "wrap" || this.textContent.length <= width) {
-                return {
-                    width: width,
-                    height: 1,
-                };
-            }
-
-            if (width <= 0) {
-                return {
-                    width: width,
-                    height: this.textContent.length,
-                };
+                this.textHeight = 1;
+            } else if (width <= 0) {
+                this.textHeight = this.textContent.length;
+            } else {
+                this.textHeight = getRows(this.textContent, width).length;
             }
 
             return {
                 width: width,
-                height: getRows(this.textContent, width).length,
+                height: this.textHeight,
             };
         };
     }

@@ -40,9 +40,9 @@ export class Draw {
         const pen = canvas.getPen();
         pen.set("backgroundColor", color);
 
-        for (let y = 0; y < canvas.nodeHeight; ++y) {
+        for (let y = 0; y < canvas.realHeight; ++y) {
             pen.moveTo(0, y);
-            pen.draw(" ", "r", canvas.nodeWidth);
+            pen.draw(" ", "r", canvas.realWidth);
         }
     }
 
@@ -110,8 +110,8 @@ export class Draw {
         const pen = canvas.getPen();
 
         const rows = alignRows(
-            getRows(elem.textContent, canvas.nodeWidth),
-            canvas.nodeWidth,
+            getRows(elem.textContent, canvas.realWidth),
+            canvas.realWidth,
             elem.style.align,
         );
 

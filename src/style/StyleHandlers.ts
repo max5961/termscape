@@ -1,5 +1,5 @@
 import Yoga from "yoga-wasm-web/auto";
-import type { YogaNode, ShadowStyle, VirtualStyle } from "../Types.js";
+import type { YogaNode, ShadowStyle, VirtualStyle, DomElement } from "../Types.js";
 import { decodeShorthand } from "./util/decodeShorthand.js";
 import { ifUndef } from "../Util.js";
 import { parseDimensions } from "./util/parseDimensions.js";
@@ -33,6 +33,7 @@ export const SanitizerHandlers: {
     [P in keyof VirtualStyle]: (
         nextVal: VirtualStyle[P],
         stdout: NodeJS.WriteStream,
+        elem: DomElement,
     ) => ShadowStyle[P];
 } = {
     zIndex(nextVal) {

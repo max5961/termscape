@@ -123,9 +123,9 @@ export type YogaStyle = {
 };
 
 export type DomStyle = {
-    overflow?: "visible" | "hidden";
-    overflowX?: "visible" | "hidden";
-    overflowY?: "visible" | "hidden";
+    overflow?: "visible" | "hidden" | "scroll";
+    overflowX?: "visible" | "hidden" | "scroll";
+    overflowY?: "visible" | "hidden" | "scroll";
     zIndex?: number | "auto";
     backgroundColor?: Color;
     wipeBackground?: boolean;

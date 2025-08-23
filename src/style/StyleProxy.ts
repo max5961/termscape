@@ -6,7 +6,7 @@ import { checkIfDynamicDimensions } from "./util/checkIfDynamicDimensions.js";
 export function createVirtualStyleProxy<
     T extends VirtualStyle = VirtualStyle,
     U extends ShadowStyle = ShadowStyle,
->(node: YogaNode, rootRef: DomElement["rootRef"], metadata: DomElement["metadata"]) {
+>(elem: DomElement, rootRef: DomElement["rootRef"], metadata: DomElement["metadata"]) {
     const virtualStyle = new Proxy<T>({} as T, {
         get(target: T, prop: keyof VirtualStyle) {
             return target[prop];
@@ -32,6 +32,7 @@ export function createVirtualStyleProxy<
                 sanitized = SanitizerHandlers[prop](
                     sanitized,
                     rootRef.root?.runtime.stdout ?? process.stdout,
+                    elem,
                 );
             }
 
@@ -41,7 +42,7 @@ export function createVirtualStyleProxy<
             return true;
         },
     });
-    const shadowStyle = createShadowStyleProxy<U>(node, rootRef, virtualStyle);
+    const shadowStyle = createShadowStyleProxy<U>(elem.node, rootRef, virtualStyle);
 
     return { shadowStyle, virtualStyle };
 }

@@ -1,13 +1,17 @@
+import Yoga, { type Edge } from "yoga-wasm-web/auto";
 import type {
     DOMRect,
     GridToken,
     Point,
-    YogaNode,
-    ShadowStyle,
     Stdout,
+    DomElement,
+    ShadowStyle,
+    YogaNode,
 } from "../Types.js";
 import { Pen } from "./Pen.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
+import { DOM_ELEMENT_SCROLL_OFFSET, DOM_ELEMENT_SHADOW_STYLE } from "../Symbols.js";
+import { TextElement } from "../dom/TextElement.js";
 
 /**
  * The Canvas contains a reference to the 2d Grid that is drawn to as well as
@@ -27,18 +31,33 @@ import { stringifyRowSegment } from "../shared/StringifyGrid.js";
  * 'stringify' a row or segment of a row so it can be written to stdout.
  */
 
+export type Rect = {
+    corner: Point;
+    height: number;
+    width: number;
+};
+
+export type Limits = {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+};
+
 export type Grid = (string | GridToken)[][];
 
 export type CanvasDeps = {
     stdout: Stdout;
     grid?: Grid;
     corner?: Point;
-    nodeHeight?: number;
-    nodeWidth?: number;
+    realHeight?: number;
+    realWidth?: number;
     minX?: number;
     minY?: number;
     maxX?: number;
     maxY?: number;
+    unclippedRect?: Rect;
+    unclippedContentRect?: Rect;
 };
 
 export type SubCanvasDeps = Required<CanvasDeps>;
@@ -51,8 +70,10 @@ export class Canvas {
     public readonly minY: number;
     public readonly maxX: number;
     public readonly maxY: number;
-    public readonly nodeHeight: number;
-    public readonly nodeWidth: number;
+    public readonly realHeight: number;
+    public readonly realWidth: number;
+    public readonly unclippedRect: Rect;
+    public readonly unclippedContentRect: Rect;
 
     private readonly stdout: CanvasDeps["stdout"]; // Only used in root Canvas
 
@@ -65,63 +86,78 @@ export class Canvas {
         this.minY = Math.max(0, deps.minY ?? 0);
         this.maxX = deps.maxX ?? deps.stdout.columns;
         this.maxY = deps.maxY ?? deps.stdout.rows;
-        this.nodeHeight = deps.nodeHeight ?? this.maxY - this.minY;
-        this.nodeWidth = deps.nodeWidth ?? this.maxX - this.minX;
+        this.realHeight = deps.realHeight ?? this.maxY - this.minY;
+        this.realWidth = deps.realWidth ?? this.maxX - this.minX;
+
+        this.unclippedRect = deps.unclippedRect ?? {
+            corner: this.corner,
+            height: this.realHeight,
+            width: this.realWidth,
+        };
+
+        this.unclippedContentRect = deps.unclippedContentRect ?? {
+            corner: this.corner,
+            height: this.realHeight,
+            width: this.realWidth,
+        };
 
         this.pos = { ...this.corner };
     }
 
-    public createChildCanvas({
-        childNode,
-        childStyle,
-        parentStyle,
-    }: {
-        childNode: YogaNode;
-        childStyle: ShadowStyle;
-        parentStyle: ShadowStyle;
-    }) {
-        const chNodeWidth = childNode.getComputedWidth();
-        const chNodeHeight = childNode.getComputedHeight();
+    public createChildCanvas({ child, elem }: { child: DomElement; elem: DomElement }) {
+        const chNode = child.node;
 
-        /**
-         * `Child Corner`
-         * It is possible for child corner values to be outside of their limits
-         * and this is okay.  `Pen` objects won't draw outside of the canvas limits.
-         */
-        const corner: Canvas["corner"] = {
-            x: this.corner.x + childNode.getComputedLeft(),
-            y: this.corner.y + childNode.getComputedTop(),
+        const chStyle = child[DOM_ELEMENT_SHADOW_STYLE];
+        const elemStyle = elem[DOM_ELEMENT_SHADOW_STYLE];
+        const scrollOffset = elem[DOM_ELEMENT_SCROLL_OFFSET];
+
+        const realWidth = chNode.getComputedWidth();
+        let realHeight = chNode.getComputedHeight();
+
+        if (child instanceof TextElement) {
+            realHeight = child.textHeight;
+        }
+
+        // Child corner depends on parent corner.
+        const chCorner: Canvas["corner"] = {
+            x: this.corner.x + chNode.getComputedLeft() + scrollOffset.x,
+            y: this.corner.y + chNode.getComputedTop() + scrollOffset.y,
         };
 
-        // Subcanvas limits depend on parent canvas limits.
+        // Subcanvas limits are inherited its parent and are only clamped when
+        // in the context of overflows set to hidden.
         let { minX, minY, maxX, maxY } = this;
 
-        // If child has overflow as hidden, then min/max values are clamped
-        if (childStyle.overflowX === "hidden") {
-            // if (corner.x < minX) minX = minX;
-            if (corner.x > minX) minX = corner.x;
-            if (minX > maxX) minX = maxX;
+        const clampLimits = (visRect: Rect, style: ShadowStyle) => {
+            if (this.hasHiddenXOverflow(style)) {
+                minX = visRect.corner.x;
+                maxX = visRect.corner.x + visRect.width;
+            }
+            if (this.hasHiddenYOverflow(style)) {
+                minY = visRect.corner.y;
+                maxY = visRect.corner.y + visRect.height;
+            }
+        };
 
-            if (corner.x + chNodeWidth < maxX) maxX = corner.x + chNodeWidth;
-        }
-        if (childStyle.overflowY === "hidden") {
-            // if (corner.x < minY) minY = minY;
-            if (corner.y > minY) minY = corner.y;
-            if (minY > maxY) minY = maxY;
+        const unclipped = this.getUnclippedRect(chCorner, chNode, realHeight);
+        const unclippedContent = this.getUnclippedContentRect(
+            chCorner,
+            chNode,
+            realHeight,
+        );
 
-            if (corner.y + chNodeHeight < maxY) maxY = corner.y + chNodeHeight;
+        // PRE-CLAMP child to its vis rect
+        // (unnecessary so long as the Draw class does its job properly)
+        if (this.hasHiddenOverflow(chStyle)) {
+            const visRect = this.getVisRect(unclipped, { minX, minY, maxX, maxY });
+            clampLimits(visRect, chStyle);
         }
 
-        // If the parent has overflow set, we need to adjust the child's limits
-        // for any borders the parent may have
-        const visBorders = this.getVisibleBorders();
-        if (parentStyle.overflowX === "hidden") {
-            if (parentStyle.borderLeft && visBorders.left) ++minX;
-            if (parentStyle.borderRight && visBorders.right) --maxX;
-        }
-        if (parentStyle.overflowY === "hidden") {
-            if (parentStyle.borderTop && visBorders.top) ++minY;
-            if (parentStyle.borderBottom && visBorders.bottom) --maxY;
+        // Clamp child to the parent's content rect
+        if (this.hasHiddenOverflow(elemStyle)) {
+            const rect = this.unclippedContentRect;
+            const visRect = this.getVisRect(rect, { minX, minY, maxX, maxY });
+            clampLimits(visRect, elemStyle);
         }
 
         return new SubCanvas({
@@ -129,62 +165,125 @@ export class Canvas {
             minY,
             maxX,
             maxY,
-            corner,
-            nodeHeight: chNodeHeight,
-            nodeWidth: chNodeWidth,
+            realHeight,
+            realWidth,
+            unclippedRect: unclipped,
+            unclippedContentRect: unclippedContent,
+            corner: chCorner,
             stdout: this.stdout,
             grid: this.grid,
         });
     }
 
-    public getDomRect(): DOMRect {
-        let { x, y } = this.corner;
-        x = Math.max(x, this.minX);
-        x = Math.min(x, this.maxX);
-        y = Math.max(y, this.minY);
-        y = Math.min(y, this.maxY);
+    /**
+     * This is the box agnostic of any overflow settings from ancestor nodes.
+     */
+    public getUnclippedRect(corner: Point, node: YogaNode, realHeight?: number): Rect {
+        return {
+            corner: corner,
+            height: realHeight ?? node.getComputedHeight(),
+            width: node.getComputedWidth(),
+        };
+    }
 
-        const top = y;
-        const left = x;
+    /**
+     * This is the content box of a node.  In other words, this is the unclipped
+     * rect but with the borders, padding, and anything else such as scrollbars
+     * clipped away.
+     * */
+    public getUnclippedContentRect(
+        corner: Point,
+        node: YogaNode,
+        realHeight?: number,
+    ): Rect {
+        let leftOff, rightOff, bottomOff, topOff;
+        leftOff = rightOff = bottomOff = topOff = 0;
 
-        let height = this.nodeHeight;
-        let width = this.nodeWidth;
+        const getOffset = (edge: Edge) => {
+            return Math.floor(
+                node.getComputedBorder(edge) + node.getComputedPadding(edge),
+            );
+        };
 
-        if (x + width > this.maxX) {
-            width = this.maxX - x;
-        }
-        if (y + height > this.maxY) {
-            height = this.maxY - y;
-        }
+        leftOff += getOffset(Yoga.EDGE_LEFT);
+        rightOff += getOffset(Yoga.EDGE_RIGHT);
+        bottomOff += getOffset(Yoga.EDGE_BOTTOM);
+        topOff += getOffset(Yoga.EDGE_TOP);
 
-        const right = x + width;
-        const bottom = y + height;
+        const offsetCorner: Point = {
+            x: corner.x + leftOff,
+            y: corner.y + topOff,
+        };
 
         return {
-            x,
-            y,
-            top,
-            left,
-            right,
-            bottom,
+            corner: offsetCorner,
+            height: (realHeight ?? node.getComputedHeight()) - bottomOff - topOff,
+            width: node.getComputedWidth() - leftOff - rightOff,
+        };
+    }
+
+    public getVisRect(rect: Rect, limits: Limits): Rect {
+        let { x, y } = rect.corner;
+        x = Math.max(x, limits.minX);
+        x = Math.min(x, limits.maxX);
+        y = Math.max(y, limits.minY);
+        y = Math.min(y, limits.maxY);
+
+        let { height, width } = rect;
+
+        if (x + width > limits.maxX) {
+            width = Math.max(0, limits.maxX - x);
+        }
+        if (y + height > limits.maxY) {
+            height = Math.max(0, limits.maxY - y);
+        }
+
+        return {
+            corner: { x, y },
             height,
             width,
         };
     }
 
-    protected getVisibleBorders() {
-        // prettier-ignore
-        let left = false;
-        let right = false;
-        let bottom = false;
-        let top = false;
+    public getVisContentRect(): Rect {
+        return this.getVisRect(this.unclippedContentRect, {
+            maxX: this.maxX,
+            maxY: this.maxY,
+            minX: this.minX,
+            minY: this.minY,
+        });
+    }
 
-        if (this.corner.x >= this.minX) left = true;
-        if (this.corner.y >= this.minY) top = true;
-        if (this.corner.x + this.nodeWidth <= this.maxX) right = true;
-        if (this.corner.y + this.nodeHeight <= this.maxY) bottom = true;
+    public getDomRect(): DOMRect {
+        const vis = this.getVisRect(this.unclippedRect, {
+            maxX: this.maxX,
+            maxY: this.maxY,
+            minX: this.minX,
+            minY: this.minY,
+        });
 
-        return { left, right, top, bottom };
+        return {
+            x: vis.corner.x,
+            y: vis.corner.y,
+            top: vis.corner.y,
+            left: vis.corner.x,
+            right: vis.corner.x + vis.width,
+            bottom: vis.corner.y + vis.height,
+            height: vis.height,
+            width: vis.width,
+        };
+    }
+
+    protected hasHiddenOverflow(style: ShadowStyle) {
+        return this.hasHiddenXOverflow(style) || this.hasHiddenYOverflow(style);
+    }
+
+    protected hasHiddenXOverflow(style: ShadowStyle) {
+        return style.overflowX === "hidden" || style.overflowX === "scroll";
+    }
+
+    protected hasHiddenYOverflow(style: ShadowStyle) {
+        return style.overflowY === "hidden" || style.overflowY === "scroll";
     }
 
     public getPen(): Pen {
@@ -207,7 +306,7 @@ class SubCanvas extends Canvas {
 
     private forceGridToAccomodate() {
         const currDepth = this.grid.length;
-        const requestedDepth = Math.min(this.corner.y + this.nodeHeight, this.maxY);
+        const requestedDepth = Math.min(this.corner.y + this.realHeight, this.maxY);
         const rowsNeeded = requestedDepth - currDepth;
 
         for (let i = 0; i < rowsNeeded; ++i) {
