@@ -2,11 +2,13 @@ import { throwError } from "./ThrowError.js";
 import { Root } from "../dom/Root.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
+import { ListElement } from "../dom/ListElement.js";
 import type { RuntimeConfig } from "../Types.js";
 
 type TagMap = {
     box: BoxElement;
     text: TextElement;
+    list: ListElement;
     root: Root;
 };
 
@@ -21,6 +23,9 @@ export function createElement<T extends Tag>(
     }
     if (tag === "text") {
         return new TextElement() as TagMap[T];
+    }
+    if (tag === "list") {
+        return new ListElement() as TagMap[T];
     }
     if (tag === "root") {
         return new Root(rootConfig ?? {}) as TagMap[T];

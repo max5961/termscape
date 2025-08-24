@@ -19,7 +19,7 @@ import {
     ROOT_BRIDGE_DOM_ELEMENT,
     DOM_ELEMENT_CANVAS,
 } from "../Symbols.js";
-import { Render, RequestInput } from "./util/decorators.js";
+import { OnChildrenUpdate, Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
@@ -34,7 +34,7 @@ export abstract class DomElement<
     public node: YogaNode;
     public parentElement: null | DomElement;
     public focus: boolean;
-    public children: DomElement[];
+    public collection: DomElement[];
 
     protected readonly rootRef: { root: Root | null };
     protected rect: DOMRect;
@@ -50,12 +50,13 @@ export abstract class DomElement<
     protected readonly metadata: ElementMetaData;
     protected readonly baseDefaultStyles: VirtualStyle;
     protected abstract defaultStyles: VStyle;
+    protected onChildrenUpdate: () => unknown;
 
     constructor() {
         this.node = Yoga.Node.create();
         this.parentElement = null;
         this.focus = true;
-        this.children = [];
+        this.collection = [];
         this.childrenSet = new Set();
 
         this.rootRef = { root: null };
@@ -87,6 +88,8 @@ export abstract class DomElement<
             flexGrow: 0,
             flexShrink: 1,
         };
+
+        this.onChildrenUpdate = () => {};
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {
@@ -111,6 +114,10 @@ export abstract class DomElement<
 
     set [DOM_ELEMENT_CANVAS](canvas: Canvas | null) {
         this.canvas = canvas;
+    }
+
+    get children(): Readonly<DomElement[]> {
+        return this.collection;
     }
 
     // ========================================================================
@@ -172,12 +179,13 @@ export abstract class DomElement<
     }
 
     @Render()
+    @OnChildrenUpdate()
     public appendChild(child: DomElement): void {
         if (this.childrenSet.has(child)) return;
         this.childrenSet.add(child);
 
         this.node.insertChild(child.node, this.node.getChildCount());
-        this.children.push(child);
+        this.collection.push(child);
         child.parentElement = this;
         const root = this.getRoot();
         child.setRoot(root);
@@ -185,6 +193,7 @@ export abstract class DomElement<
     }
 
     @Render()
+    @OnChildrenUpdate()
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
         if (this.childrenSet.has(child)) {
             this.removeChild(child);
@@ -208,7 +217,7 @@ export abstract class DomElement<
             nextChildren.push(this.children[i]);
         }
 
-        this.children = nextChildren;
+        this.collection = nextChildren;
         this.node.insertChild(child.node, idx);
         child.parentElement = this;
         const root = this.getRoot();
@@ -218,6 +227,7 @@ export abstract class DomElement<
     }
 
     @Render()
+    @OnChildrenUpdate()
     public removeChild(child: DomElement, freeRecursive?: boolean) {
         const idx = this.children.findIndex((el) => el === child);
 
@@ -232,7 +242,7 @@ export abstract class DomElement<
 
         child.beforeDetaching();
 
-        this.children.splice(idx, 1);
+        this.collection.splice(idx, 1);
         this.node.removeChild(child.node);
 
         // If React removes a child, it should be gc'd.  If removing w/o React,
@@ -293,6 +303,10 @@ export abstract class DomElement<
 
     public getBoundingClientRect(): DOMRect {
         return this.rect;
+    }
+
+    public getUnclippedRect() {
+        return this.canvas?.unclippedRect;
     }
 
     public containsPoint(x: number, y: number): boolean {

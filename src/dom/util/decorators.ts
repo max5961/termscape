@@ -20,6 +20,10 @@ export const Render = createDecorator(function (this, opts: WriteOpts) {
     this.getRoot()?.scheduleRender(opts);
 });
 
+export const OnChildrenUpdate = createDecorator(function (this) {
+    this.onChildrenUpdate();
+});
+
 export const RequestInput = createDecorator(function (this) {
     this.requiresStdin = true;
     this.getRoot()?.requestInputStream();

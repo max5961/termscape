@@ -71,7 +71,7 @@ type Shadow<T extends object> = {
 
 export type VBoxStyle = YogaStyle & DomStyle;
 export type ShadowBoxStyle = Shadow<VBoxStyle>;
-export type VirtualStyle = VBoxStyle & TextStyle;
+export type VirtualStyle = VBoxStyle & TextStyle & ListStyle;
 export type ShadowStyle = Shadow<VirtualStyle>;
 export type DynamicStyle = keyof Pick<
     VBoxStyle,
@@ -165,6 +165,20 @@ export type TextStyle = {
     font4?: boolean;
     font5?: boolean;
     font6?: boolean;
+};
+
+export type ListStyle = {
+    // This is not cool that these are copypasted from VirtualStyle
+    height?: number | string;
+    width?: number | string;
+    minWidth?: number | string;
+    minHeight?: number | string;
+
+    // flexDirection?: "column" | "row";
+    fallthrough?: boolean;
+    centerScroll?: boolean;
+    scrollOff?: number;
+    keepFocusedVisible?: boolean;
 };
 
 export type MouseEventType =

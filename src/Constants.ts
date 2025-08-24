@@ -5,6 +5,7 @@ export const TagNames = {
     Box: "BOX_ELEMENT",
     Text: "TEXT_ELEMENT",
     Root: "ROOT_ELEMENT",
+    List: "LIST_ELEMENT",
 } as const;
 
 export const TextEffectSet = new Set<TextEffect>([
