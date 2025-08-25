@@ -70,7 +70,7 @@ export class ListElement extends DomElement<ListStyle, ListStyle> {
             ? Math.floor(this.node.getComputedHeight() / 2)
             : Math.min(this.style.scrollOff ?? 0, wBot);
 
-        // If focus is larger than window, pin to top
+        // If focus item is as large or larger than window, pin to top.
         if (fRect.height >= wRect.height) {
             const toScroll = fTop - wTop;
             if (toScroll > 0) {
@@ -81,15 +81,30 @@ export class ListElement extends DomElement<ListStyle, ListStyle> {
             return;
         }
 
-        if (isScrollDown) {
-            if (fBot > wBot - scrollOff) {
-                return this.scrollDown(fBot - wBot + scrollOff);
-            }
-        } else {
-            if (fTop <= wTop + scrollOff) {
-                return this.scrollUp(wTop + scrollOff - fTop);
-            }
+        const itemBelowWin = fBot > wBot - scrollOff;
+        const itemAboveWin = fTop <= wTop + scrollOff;
+
+        const scroll = () => {
+            return isScrollDown
+                ? this.scrollDown(fBot - wBot + scrollOff)
+                : this.scrollUp(wTop + scrollOff - fTop);
+        };
+
+        if (itemBelowWin) {
+            return scroll();
         }
+        if (itemAboveWin) {
+            return scroll();
+        }
+
+        // `scroll` fn explanation
+        // If `scrollOff` is greater than half the dimension of the window, then
+        // the direction by which we are scrolling becomes important because the
+        // scrollOff will cause the above/below variables to oscillate.  Checking
+        // the direction forces the same behavior regardless.  In most other
+        // cases the above/below variables align with `isScrollDown`.  If they
+        // don't, such as when non-focus scroll is involved, either fn still
+        // brings the focused item into the window.
     }
 
     public focusNext(num?: number, cb?: () => unknown) {
