@@ -109,14 +109,31 @@ export class ListElement extends DomElement<ListStyle, ListStyle> {
 
     public focusNext(num?: number, cb?: () => unknown) {
         num = Math.abs(num ?? 1);
-        const target = Math.min(this.children.length - 1, this.idx + num);
+
+        let target = this.idx + num;
+        const diff = this.children.length - 1 - target;
+        if (this.style.fallthrough && diff < 0) {
+            // target = Math.abs(diff + 1);
+            target = 0;
+        } else {
+            target = Math.min(this.children.length - 1, target);
+        }
+
         this.handleIdxChange(target);
         cb?.();
     }
 
     public focusPrev(num?: number, cb?: () => unknown) {
         num = Math.abs(num ?? 1);
-        const target = Math.max(0, this.idx - num);
+
+        let target = this.idx - num;
+        if (this.style.fallthrough && target < 0) {
+            // target = this.children.length - Math.abs(target);
+            target = this.children.length - 1;
+        } else {
+            target = Math.max(0, target);
+        }
+
         this.handleIdxChange(target);
         cb?.();
     }
