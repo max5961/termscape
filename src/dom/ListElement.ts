@@ -108,24 +108,16 @@ export class ListElement extends DomElement<ListStyle, ListStyle> {
     }
 
     public focusNext(num?: number, cb?: () => unknown) {
-        num ??= 1;
-
-        // Jumps greater than 1 should squash to their allowed max when at the end
-        if (this.idx + num >= this.children.length) {
-            num = this.children.length - 1;
-        }
-
-        this.handleIdxChange(this.idx + num);
+        num = Math.abs(num ?? 1);
+        const target = Math.min(this.children.length - 1, this.idx + num);
+        this.handleIdxChange(target);
         cb?.();
     }
 
     public focusPrev(num?: number, cb?: () => unknown) {
-        num ??= 1;
-        if (this.idx - num < 0) {
-            num = 0;
-        }
-
-        this.handleIdxChange(this.idx - num);
+        num = Math.abs(num ?? 1);
+        const target = Math.max(0, this.idx - num);
+        this.handleIdxChange(target);
         cb?.();
     }
 
