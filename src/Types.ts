@@ -176,9 +176,9 @@ export type ListStyle = {
 
     // flexDirection?: "column" | "row";
     fallthrough?: boolean;
-    centerScroll?: boolean;
     scrollOff?: number;
     keepFocusedVisible?: boolean;
+    keepFocusedCenter?: boolean;
 };
 
 export type MouseEventType =
