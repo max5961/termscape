@@ -504,7 +504,7 @@ export abstract class DomElement<
     public addKeyListener(action: Action): () => void {
         const origCb = action.callback;
         action.callback = () => {
-            if (this.getFocus()) {
+            if (this._focus) {
                 origCb?.();
             }
         };
