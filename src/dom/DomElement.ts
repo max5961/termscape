@@ -10,6 +10,7 @@ import type {
     TTagNames,
     YogaNode,
     Point,
+    StyleHandler,
 } from "../Types.js";
 import type { Root } from "./Root.js";
 import {
@@ -52,6 +53,7 @@ export abstract class DomElement<
     protected abstract defaultStyles: VStyle;
     protected _focus: boolean;
     protected _shallowFocus: boolean;
+    protected styleHandler: StyleHandler<VStyle> | null;
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -91,6 +93,7 @@ export abstract class DomElement<
 
         this._focus = true;
         this._shallowFocus = false;
+        this.styleHandler = null;
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {
@@ -118,7 +121,14 @@ export abstract class DomElement<
     }
 
     set [DOM_ELEMENT_FOCUS](bool: boolean) {
-        this._focus = bool;
+        if (!bool) {
+            this._focus = false;
+            this._shallowFocus = false;
+        } else {
+            this._focus = true;
+            this._shallowFocus = false;
+        }
+
         this.dfs(this, (elem) => {
             elem.updateFocus();
         });
@@ -132,11 +142,23 @@ export abstract class DomElement<
     // Auto Render Proxy
     // ========================================================================
 
-    set style(stylesheet: VStyle) {
+    set style(stylesheet: VStyle | StyleHandler<VStyle>) {
+        if (typeof stylesheet === "function") {
+            this.styleHandler = stylesheet;
+        } else {
+            this.styleHandler = null;
+        }
+
+        const styles =
+            this.styleHandler?.({
+                focus: this._focus,
+                shallowFocus: this._shallowFocus,
+            }) ?? stylesheet;
+
         const withDefault = {
             ...this.baseDefaultStyles,
             ...this.defaultStyles,
-            ...stylesheet,
+            ...styles,
         } as VStyle;
 
         const keys = [...objectKeys(withDefault), ...objectKeys(this.style)];
@@ -302,19 +324,31 @@ export abstract class DomElement<
             return;
         }
 
-        if (!this.getFocus() && !this.getShallowFocus()) {
-            return;
+        const parFocus = this.parentElement._focus;
+        const parShallowFocus = this.parentElement._shallowFocus;
+
+        const inheritFromParent = !(this.parentElement instanceof FocusController);
+        if (inheritFromParent) {
+            this._focus = parFocus;
+            this._shallowFocus = parShallowFocus;
         }
 
-        if (!this.parentElement.getShallowFocus() && !this.parentElement.getFocus()) {
-            this._shallowFocus = false;
-            this._focus = false;
-        } else if (this.parentElement.getFocus()) {
-            this._shallowFocus = false;
-            this._focus = true;
-        } else if (this.parentElement.getShallowFocus()) {
-            this._shallowFocus = true;
-            this._focus = false;
+        // Don't touch explicitly set unfocused elements. Resolve focused against parent state.
+        else if (this._focus || this._shallowFocus) {
+            if (!parFocus && !parShallowFocus) {
+                this._shallowFocus = this._shallowFocus || this._focus;
+                this._focus = false;
+            } else if (parFocus) {
+                this._shallowFocus = false;
+                this._focus = true;
+            } else if (parShallowFocus) {
+                this._shallowFocus = true;
+                this._focus = false;
+            }
+        }
+
+        if (this.styleHandler) {
+            this.style = this.styleHandler;
         }
     }
 
@@ -470,12 +504,9 @@ export abstract class DomElement<
     public addKeyListener(action: Action): () => void {
         const origCb = action.callback;
         action.callback = () => {
-            // When DOM layer focus is figured out
-            // if (this.focus) {
-            //     origCb?.();
-            // }
-
-            origCb?.();
+            if (this.getFocus()) {
+                origCb?.();
+            }
         };
 
         this.metadata.actions.add(action);

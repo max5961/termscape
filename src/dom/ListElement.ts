@@ -5,17 +5,12 @@ import { FocusController } from "./DomElement.js";
 
 export class ListElement extends FocusController<ListStyle, ListStyle> {
     public override tagName: "LIST_ELEMENT";
-    private _focused: DomElement | undefined;
     private idx: number;
 
     constructor() {
         super();
         this.tagName = "LIST_ELEMENT";
         this.idx = 0;
-    }
-
-    public get focused(): DomElement | undefined {
-        return this.children[this.idx];
     }
 
     protected override defaultStyles: VirtualStyle = {
@@ -28,6 +23,10 @@ export class ListElement extends FocusController<ListStyle, ListStyle> {
         keepFocusedCenter: false,
         keepFocusedVisible: true,
     };
+
+    public get focused(): DomElement | undefined {
+        return this.children[this.idx];
+    }
 
     public override focusChild(child: DomElement): void {
         const idx = this.children.indexOf(child);
@@ -124,7 +123,7 @@ export class ListElement extends FocusController<ListStyle, ListStyle> {
         // brings the focused item into the window.
     }
 
-    public focusNext(num?: number, cb?: () => unknown) {
+    public focusNext(num?: number) {
         num = Math.abs(num ?? 1);
 
         let target = this.idx + num;
@@ -136,10 +135,9 @@ export class ListElement extends FocusController<ListStyle, ListStyle> {
         }
 
         this.handleIdxChange(target);
-        cb?.();
     }
 
-    public focusPrev(num?: number, cb?: () => unknown) {
+    public focusPrev(num?: number) {
         num = Math.abs(num ?? 1);
 
         let target = this.idx - num;
@@ -150,21 +148,17 @@ export class ListElement extends FocusController<ListStyle, ListStyle> {
         }
 
         this.handleIdxChange(target);
-        cb?.();
     }
 
-    public focusFirst(cb?: () => unknown) {
+    public focusFirst() {
         this.handleIdxChange(0);
-        cb?.();
     }
 
-    public focusLast(cb?: () => unknown) {
+    public focusLast() {
         this.handleIdxChange(this.children.length - 1);
-        cb?.();
     }
 
-    public goToIndex(idx: number, cb?: () => unknown) {
+    public goToIndex(idx: number) {
         this.handleIdxChange(idx);
-        cb?.();
     }
 }

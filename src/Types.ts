@@ -229,3 +229,11 @@ export type WriteOpts = {
     screenChange?: boolean;
     skipCalculateLayout?: boolean;
 };
+
+export type StyleHandler<T extends VirtualStyle> = ({
+    focus,
+    shallowFocus,
+}: {
+    focus: boolean;
+    shallowFocus: boolean;
+}) => T;
