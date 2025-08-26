@@ -18,8 +18,9 @@ import {
     DOM_ELEMENT_SHADOW_STYLE,
     ROOT_BRIDGE_DOM_ELEMENT,
     DOM_ELEMENT_CANVAS,
+    DOM_ELEMENT_FOCUS,
 } from "../Symbols.js";
-import { OnChildrenUpdate, Render, RequestInput } from "./util/decorators.js";
+import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
@@ -33,7 +34,6 @@ export abstract class DomElement<
     public abstract tagName: TTagNames;
     public node: YogaNode;
     public parentElement: null | DomElement;
-    public focus: boolean;
     public collection: DomElement[];
 
     protected readonly rootRef: { root: Root | null };
@@ -50,12 +50,12 @@ export abstract class DomElement<
     protected readonly metadata: ElementMetaData;
     protected readonly baseDefaultStyles: VirtualStyle;
     protected abstract defaultStyles: VStyle;
-    protected onChildrenUpdate: () => unknown;
+    protected _focus: boolean;
+    protected _shallowFocus: boolean;
 
     constructor() {
         this.node = Yoga.Node.create();
         this.parentElement = null;
-        this.focus = true;
         this.collection = [];
         this.childrenSet = new Set();
 
@@ -89,7 +89,8 @@ export abstract class DomElement<
             flexShrink: 1,
         };
 
-        this.onChildrenUpdate = () => {};
+        this._focus = true;
+        this._shallowFocus = false;
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {
@@ -114,6 +115,13 @@ export abstract class DomElement<
 
     set [DOM_ELEMENT_CANVAS](canvas: Canvas | null) {
         this.canvas = canvas;
+    }
+
+    set [DOM_ELEMENT_FOCUS](bool: boolean) {
+        this._focus = bool;
+        this.dfs(this, (elem) => {
+            elem.updateFocus();
+        });
     }
 
     get children(): Readonly<DomElement[]> {
@@ -163,6 +171,8 @@ export abstract class DomElement<
             if (elem.requiresStdin) {
                 root.requestInputStream();
             }
+
+            elem.updateFocus();
         });
     }
 
@@ -179,7 +189,6 @@ export abstract class DomElement<
     }
 
     @Render()
-    @OnChildrenUpdate()
     public appendChild(child: DomElement): void {
         if (this.childrenSet.has(child)) return;
         this.childrenSet.add(child);
@@ -193,7 +202,6 @@ export abstract class DomElement<
     }
 
     @Render()
-    @OnChildrenUpdate()
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
         if (this.childrenSet.has(child)) {
             this.removeChild(child);
@@ -227,7 +235,6 @@ export abstract class DomElement<
     }
 
     @Render()
-    @OnChildrenUpdate()
     public removeChild(child: DomElement, freeRecursive?: boolean) {
         const idx = this.children.findIndex((el) => el === child);
 
@@ -262,7 +269,7 @@ export abstract class DomElement<
     }
 
     // ========================================================================
-    // Reconciler                                                           //
+    // Reconciler
     // ========================================================================
 
     @Render()
@@ -282,6 +289,56 @@ export abstract class DomElement<
             yogaNodes.push(this.node.getChild(i));
         }
         return yogaNodes;
+    }
+
+    // =========================================================================
+    // Focus
+    // =========================================================================
+
+    protected updateFocus() {
+        if (!this.parentElement) {
+            this._focus = true;
+            this._shallowFocus = false;
+            return;
+        }
+
+        if (!this.getFocus() && !this.getShallowFocus()) {
+            return;
+        }
+
+        if (!this.parentElement.getShallowFocus() && !this.parentElement.getFocus()) {
+            this._shallowFocus = false;
+            this._focus = false;
+        } else if (this.parentElement.getFocus()) {
+            this._shallowFocus = false;
+            this._focus = true;
+        } else if (this.parentElement.getShallowFocus()) {
+            this._shallowFocus = true;
+            this._focus = false;
+        }
+    }
+
+    public getFocus() {
+        return this._focus;
+    }
+
+    public getShallowFocus() {
+        return this._shallowFocus;
+    }
+
+    public focus() {
+        let parent: DomElement | null = this.parentElement;
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        let child: DomElement | null = this;
+
+        while (parent) {
+            if (parent instanceof FocusController) {
+                parent.focusChild(child);
+                break;
+            }
+            child = parent;
+            parent = parent.parentElement;
+        }
     }
 
     // ========================================================================
@@ -558,5 +615,34 @@ export abstract class DomElement<
         const result = cb(elem, stop);
 
         return broken ? result : this.reverseDfs(elem.parentElement, cb);
+    }
+}
+
+export abstract class FocusController<
+    VStyle extends VirtualStyle,
+    SStyle extends ShadowStyle,
+> extends DomElement<VStyle, SStyle> {
+    constructor() {
+        super();
+    }
+
+    public abstract focusChild(child: DomElement): void;
+    protected abstract handleAppend(child: DomElement): void;
+    protected abstract handleRemove(child: DomElement): void;
+
+    public override appendChild(child: DomElement): void {
+        super.appendChild(child);
+        this.handleAppend(child);
+    }
+
+    public override insertBefore(child: DomElement, beforeChild: DomElement): void {
+        super.insertBefore(child, beforeChild);
+        this.handleAppend(child);
+    }
+
+    public override removeChild(child: DomElement, freeRecursive?: boolean): void {
+        super.removeChild(child, freeRecursive);
+        child[DOM_ELEMENT_FOCUS] = true;
+        this.handleRemove(child);
     }
 }

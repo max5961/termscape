@@ -1,17 +1,21 @@
+import { DOM_ELEMENT_FOCUS } from "../Symbols.js";
 import type { ListStyle, VirtualStyle } from "../Types.js";
-import { DomElement } from "./DomElement.js";
+import type { DomElement } from "./DomElement.js";
+import { FocusController } from "./DomElement.js";
 
-export class ListElement extends DomElement<ListStyle, ListStyle> {
+export class ListElement extends FocusController<ListStyle, ListStyle> {
     public override tagName: "LIST_ELEMENT";
+    private _focused: DomElement | undefined;
     private idx: number;
-    private focused: DomElement | undefined;
 
     constructor() {
         super();
         this.tagName = "LIST_ELEMENT";
         this.idx = 0;
-        this.focused = undefined;
-        this.onChildrenUpdate = this.handleChildrenUpdate;
+    }
+
+    public get focused(): DomElement | undefined {
+        return this.children[this.idx];
     }
 
     protected override defaultStyles: VirtualStyle = {
@@ -25,27 +29,40 @@ export class ListElement extends DomElement<ListStyle, ListStyle> {
         keepFocusedVisible: true,
     };
 
-    public get focusedElement(): DomElement | undefined {
-        return this.focused;
+    public override focusChild(child: DomElement): void {
+        const idx = this.children.indexOf(child);
+        if (idx >= 0) {
+            this.handleIdxChange(idx);
+        }
     }
 
-    protected handleChildrenUpdate() {
-        this.idx = Math.min(this.idx, this.children.length - 1);
-        this.handleIdxChange(this.idx);
+    protected override handleAppend(child: DomElement): void {
+        if (this.children.length === 1) {
+            child[DOM_ELEMENT_FOCUS] = true;
+        } else {
+            child[DOM_ELEMENT_FOCUS] = false;
+        }
+    }
+
+    protected override handleRemove(_child: DomElement): void {
+        if (this.idx > this.children.length - 1) {
+            this.handleIdxChange(this.children.length - 1);
+        }
     }
 
     protected handleIdxChange(nextIdx: number): void {
         if (!this.children[nextIdx] || this.idx === nextIdx) return;
 
         if (this.focused) {
-            this.focused.focus = false;
+            this.focused[DOM_ELEMENT_FOCUS] = false;
         }
 
         const isScrollDown = nextIdx - this.idx > 0;
 
         this.idx = nextIdx;
-        this.focused = this.children[this.idx];
-        this.focused.focus = true;
+        if (this.focused) {
+            this.focused[DOM_ELEMENT_FOCUS] = true;
+        }
 
         this.adjustScrollOffset(isScrollDown);
     }
@@ -113,7 +130,6 @@ export class ListElement extends DomElement<ListStyle, ListStyle> {
         let target = this.idx + num;
         const diff = this.children.length - 1 - target;
         if (this.style.fallthrough && diff < 0) {
-            // target = Math.abs(diff + 1);
             target = 0;
         } else {
             target = Math.min(this.children.length - 1, target);
@@ -128,7 +144,6 @@ export class ListElement extends DomElement<ListStyle, ListStyle> {
 
         let target = this.idx - num;
         if (this.style.fallthrough && target < 0) {
-            // target = this.children.length - Math.abs(target);
             target = this.children.length - 1;
         } else {
             target = Math.max(0, target);
