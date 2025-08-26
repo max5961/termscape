@@ -75,7 +75,7 @@ export type VirtualStyle = VBoxStyle & TextStyle & ListStyle;
 export type ShadowStyle = Shadow<VirtualStyle>;
 export type DynamicStyle = keyof Pick<
     VBoxStyle,
-    "height" | "width" | "minHeight" | "minWidth"
+    "height" | "width" | "minHeight" | "minWidth" | "flexShrink"
 >;
 
 export type Shorthand<T> = [T] | [T, T] | [T, T, T] | [T, T, T, T];
@@ -179,6 +179,19 @@ export type ListStyle = {
     scrollOff?: number;
     keepFocusedVisible?: boolean;
     keepFocusedCenter?: boolean;
+
+    /**
+     * If `true`, children will have a locked `flexShrink` of `0`.  If `false`,
+     * children will be able to set flexShrink to any valid value.
+     *
+     * Why?  Because a list that overflows will shrink/disappear any shrinkable
+     * children in order to fit everything, instead of allowing overflow and letting
+     * the list scroll as intended. If overflow is not expected, then this
+     * behavior can be toggled off.
+     *
+     * @default `true`
+     */
+    blockChildrenShrink?: boolean;
 };
 
 export type MouseEventType =

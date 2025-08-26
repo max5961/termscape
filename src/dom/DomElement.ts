@@ -23,7 +23,7 @@ import {
 } from "../Symbols.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
-import { objectKeys } from "../Util.js";
+import { objectKeys, recalculateStyle } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
 import { throwError } from "../shared/ThrowError.js";
 import { Canvas } from "../compositor/Canvas.js";
@@ -167,6 +167,7 @@ export abstract class DomElement<
             this.style[key] = withDefault[key];
         }
 
+        // Is this necessary?
         const root = this.getRoot();
         if (root) {
             root.scheduleRender();
@@ -178,7 +179,7 @@ export abstract class DomElement<
     }
 
     // ========================================================================
-    // TREE MANIPULATION METHODS
+    // Tree Manipulation
     // ========================================================================
 
     protected afterAttached(): void {
@@ -664,16 +665,19 @@ export abstract class FocusController<
     public override appendChild(child: DomElement): void {
         super.appendChild(child);
         this.handleAppend(child);
+        recalculateStyle(child, "flexShrink");
     }
 
     public override insertBefore(child: DomElement, beforeChild: DomElement): void {
         super.insertBefore(child, beforeChild);
         this.handleAppend(child);
+        recalculateStyle(child, "flexShrink");
     }
 
     public override removeChild(child: DomElement, freeRecursive?: boolean): void {
         super.removeChild(child, freeRecursive);
         child[DOM_ELEMENT_FOCUS] = true;
         this.handleRemove(child);
+        recalculateStyle(child, "flexShrink");
     }
 }

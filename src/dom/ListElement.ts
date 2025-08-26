@@ -22,6 +22,7 @@ export class ListElement extends FocusController<ListStyle, ListStyle> {
         fallthrough: false,
         keepFocusedCenter: false,
         keepFocusedVisible: true,
+        blockChildrenShrink: true,
     };
 
     public get focused(): DomElement | undefined {

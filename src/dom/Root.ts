@@ -14,6 +14,7 @@ import type {
     VirtualStyle,
     WriteOpts,
 } from "../Types.js";
+import { recalculateStyle } from "../Util.js";
 
 export class Root extends DomElement {
     public tagName: TTagNames;
@@ -125,12 +126,7 @@ export class Root extends DomElement {
     public render = (opts: WriteOpts = {}) => {
         if (opts.resize) {
             this.attached.dynamicEls.forEach((elem) => {
-                /* Force recalculate dimensions via style proxy */
-                /* eslint-disable no-self-assign */
-                elem.style.height = elem.style.height;
-                elem.style.width = elem.style.width;
-                elem.style.minHeight = elem.style.minHeight;
-                elem.style.minWidth = elem.style.minWidth;
+                recalculateStyle(elem, "height", "width", "minHeight", "minWidth");
             });
         }
 

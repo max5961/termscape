@@ -3,6 +3,7 @@ import type { YogaNode, ShadowStyle, VirtualStyle, DomElement } from "../Types.j
 import { decodeShorthand } from "./util/decodeShorthand.js";
 import { ifUndef } from "../Util.js";
 import { parseDimensions } from "./util/parseDimensions.js";
+import { FocusController } from "../dom/DomElement.js";
 
 /**
  * The set handler in the Proxy for ShadowStyle passes the `prop` and `newValue` through
@@ -73,6 +74,13 @@ export const SanitizerHandlers: {
     },
     overflowY(newVal) {
         return newVal ?? "visible";
+    },
+    flexShrink(nextVal, _stdout, elem) {
+        if (elem.parentElement?.style.blockChildrenShrink) {
+            return 0;
+        } else {
+            return nextVal;
+        }
     },
 } as const;
 

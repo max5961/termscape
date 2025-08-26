@@ -14,8 +14,10 @@ export function createVirtualStyleProxy<
         set(target: T, prop: keyof VirtualStyle, newValue: any) {
             const dynamicProp = checkIfDynamicDimensions(prop, newValue);
 
-            // If the prop is dynamic, we don't want to skip setting it even if unchanged
-            if (target[prop] === newValue && !dynamicProp) {
+            // - If the prop is dynamic, we don't want to skip setting it even if unchanged
+            // - If the prop is flexShrink, then it may be controlled through a parent element,
+            //   in which case the sanitizer will correctly apply the value.
+            if (target[prop] === newValue && !dynamicProp && prop !== "flexShrink") {
                 return true;
             }
 
