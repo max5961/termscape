@@ -11,6 +11,7 @@ import type {
     YogaNode,
     Point,
     StyleHandler,
+    VisualNodeMap,
 } from "../Types.js";
 import type { Root } from "./Root.js";
 import {
@@ -655,8 +656,11 @@ export abstract class FocusController<
     VStyle extends VirtualStyle,
     SStyle extends ShadowStyle,
 > extends DomElement<VStyle, SStyle> {
+    private vmap: VisualNodeMap;
+
     constructor() {
         super();
+        this.vmap = new Map();
     }
 
     public abstract focusChild(child: DomElement): void;
@@ -680,5 +684,56 @@ export abstract class FocusController<
         child[DOM_ELEMENT_FOCUS] = true;
         this.handleRemove(child);
         recalculateStyle(child, "flexShrink");
+    }
+
+    public get visualMap(): Readonly<VisualNodeMap> {
+        return this.vmap;
+    }
+
+    public mapChildrenToVMap(dir: "ltr" | "ttb" | "all" = "all") {
+        if (dir === "ltr" || dir === "all") {
+            const sortedX = this.children.slice().sort((prev, curr) => {
+                const prevStart = prev.getUnclippedRect()?.corner.x ?? 0;
+                const currStart = curr.getUnclippedRect()?.corner.x ?? 0;
+                return prevStart - currStart;
+            });
+            for (let i = 0; i < sortedX.length; ++i) {
+                const curr = sortedX[i];
+                const prev = sortedX[i - 1] as DomElement | undefined;
+                const next = sortedX[i + 1] as DomElement | undefined;
+
+                if (this.vmap.has(curr)) {
+                    this.vmap.get(curr)!.left = prev;
+                    this.vmap.get(curr)!.right = next;
+                } else {
+                    this.vmap.set(curr, {
+                        left: prev,
+                        right: next,
+                    });
+                }
+            }
+        }
+        if (dir === "ttb" || dir === "all") {
+            const sortedY = this.children.slice().sort((prev, curr) => {
+                const prevStart = prev.getUnclippedRect()?.corner.y ?? 0;
+                const currStart = curr.getUnclippedRect()?.corner.y ?? 0;
+                return prevStart - currStart;
+            });
+            for (let i = 0; i < sortedY.length; ++i) {
+                const curr = sortedY[i];
+                const prev = sortedY[i - 1] as DomElement | undefined;
+                const next = sortedY[i + 1] as DomElement | undefined;
+
+                if (this.vmap.has(curr)) {
+                    this.vmap.get(curr)!.up = prev;
+                    this.vmap.get(curr)!.down = next;
+                } else {
+                    this.vmap.set(curr, {
+                        up: prev,
+                        down: next,
+                    });
+                }
+            }
+        }
     }
 }

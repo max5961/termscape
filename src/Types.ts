@@ -177,6 +177,7 @@ export type ListStyle = {
     // flexDirection?: "column" | "row";
     fallthrough?: boolean;
     scrollOff?: number;
+    // TODO
     keepFocusedVisible?: boolean;
     keepFocusedCenter?: boolean;
 
@@ -250,3 +251,13 @@ export type StyleHandler<T extends VirtualStyle> = ({
     focus: boolean;
     shallowFocus: boolean;
 }) => T;
+
+export type VisualNodeMap = Map<
+    DomElement,
+    {
+        up?: DomElement;
+        down?: DomElement;
+        left?: DomElement;
+        right?: DomElement;
+    }
+>;

@@ -1,4 +1,4 @@
-import { DomElement } from "../dom/DomElement.js";
+import { DomElement, FocusController } from "../dom/DomElement.js";
 import { Canvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
@@ -13,6 +13,7 @@ export class Compositor {
     public ops: Operations;
     public rects: DomRects;
     public draw: Draw;
+    private postLayout: (() => unknown)[];
 
     constructor(root: Root) {
         this.canvas = new Canvas({ stdout: root.runtime.stdout });
@@ -40,6 +41,12 @@ export class Compositor {
             this.ops.defer(zIndex, () => this.draw.composeText(elem, style, canvas));
         }
 
+        if (elem instanceof FocusController) {
+            this.postLayoutDefer(() => {
+                elem.mapChildrenToVMap();
+            });
+        }
+
         for (const child of elem.children) {
             const subCanvas = this.getSubCanvas(child, elem, canvas);
             child[DOM_ELEMENT_CANVAS] = subCanvas;
@@ -48,6 +55,7 @@ export class Compositor {
 
         if (elem instanceof Root) {
             this.ops.performAll();
+            this.postLayout.forEach((cb) => cb());
         }
     }
 
@@ -56,6 +64,10 @@ export class Compositor {
             child,
             elem,
         });
+    }
+
+    private postLayoutDefer(cb: () => unknown): void {
+        this.postLayout.push(cb);
     }
 
     public getHeight(): number {
