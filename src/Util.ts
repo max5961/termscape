@@ -57,14 +57,3 @@ export const ifMut = <T>(val: T, cb: (next: T) => T | undefined) => {
     const result = cb(val);
     return result === undefined ? val : result;
 };
-
-export function recalculateStyle(
-    elem: DomElement,
-    ...styles: (keyof VirtualStyle)[]
-): void {
-    for (const style of styles) {
-        // @ts-ignore
-        // eslint-disable-next-line no-self-assign
-        elem.style[style] = elem.style[style];
-    }
-}

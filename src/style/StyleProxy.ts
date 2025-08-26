@@ -1,7 +1,8 @@
-import type { YogaNode, VirtualStyle, DynamicStyle, ShadowStyle } from "../Types.js";
+import type { YogaNode, VirtualStyle, ViewportStyle, ShadowStyle } from "../Types.js";
 import { AggregateHandlers, SanitizerHandlers, YogaHandlers } from "./StyleHandlers.js";
 import type { DomElement } from "../dom/DomElement.js";
-import { checkIfDynamicDimensions } from "./util/checkIfDynamicDimensions.js";
+import { checkIfViewportDimensions } from "./util/checkIfViewportDimensions.js";
+import { shouldAlwaysRecalc } from "./util/recalculateStyle.js";
 
 export function createVirtualStyleProxy<
     T extends VirtualStyle = VirtualStyle,
@@ -12,19 +13,16 @@ export function createVirtualStyleProxy<
             return target[prop];
         },
         set(target: T, prop: keyof VirtualStyle, newValue: any) {
-            const dynamicProp = checkIfDynamicDimensions(prop, newValue);
+            const viewportProp = checkIfViewportDimensions(prop, newValue);
+            const alwaysRecalc = shouldAlwaysRecalc(prop);
 
-            // - If the prop is dynamic, we don't want to skip setting it even if unchanged
-            // - If the prop is flexShrink, then it may be controlled through a parent element,
-            //   in which case the sanitizer will correctly apply the value.
-            if (target[prop] === newValue && !dynamicProp && prop !== "flexShrink") {
+            if (target[prop] === newValue && !alwaysRecalc) {
                 return true;
             }
 
-            if (dynamicProp) {
-                // Lazy - once a node has a dynamic dimension it stays in the
-                // Set for its lifecycle
-                metadata.setDynamicStyles(prop as DynamicStyle, true);
+            if (viewportProp) {
+                // Lazy - once a node has a dynamic dimension it stays in the Set for its lifecycle
+                metadata.setViewportStyles(prop as ViewportStyle, true);
             }
 
             target[prop] = newValue;

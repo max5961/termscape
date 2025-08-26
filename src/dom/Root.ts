@@ -14,7 +14,7 @@ import type {
     VirtualStyle,
     WriteOpts,
 } from "../Types.js";
-import { recalculateStyle } from "../Util.js";
+import { recalculateStyle } from "../style/util/recalculateStyle.js";
 
 export class Root extends DomElement {
     public tagName: TTagNames;
@@ -29,7 +29,7 @@ export class Root extends DomElement {
     private Emitter: EventEmitter<EventEmitterMap>;
     private attached: {
         actions: Map<DomElement, Set<Action>>;
-        dynamicEls: Set<DomElement>;
+        viewportEls: Set<DomElement>;
     };
 
     constructor(config: RuntimeConfig) {
@@ -51,7 +51,7 @@ export class Root extends DomElement {
 
         this.attached = {
             actions: new Map(),
-            dynamicEls: new Set(),
+            viewportEls: new Set(),
         };
 
         // Root element is considered attached to itself.
@@ -78,9 +78,9 @@ export class Root extends DomElement {
      * This is called post attach and pre detach in DomElement.
      * ON ATTACH:
      * It connects the `actions` Set<Action> in DomElement to this Root.
-     * It passes the `dynamicEls` Set<DomElement> set to the DomElement.  In
-     * DomElement, dynamicStyles are added through a helper function which updates
-     * the Root's dynamicEls set as well as the DomElements dynamicStyles set.
+     * It passes the `viewportEls` Set<DomElement> set to the DomElement.  In
+     * DomElement, viewportStyles are added through a helper function which updates
+     * the Root's viewportEls set as well as the DomElements viewportStyles set.
      * ON DETACH:
      * These references are removed.
      * */
@@ -89,19 +89,19 @@ export class Root extends DomElement {
         { attached }: { attached: boolean },
     ) {
         const elem = metadata.ref;
-        const { actions, dynamicStyles } = metadata;
+        const { actions, viewportStyles } = metadata;
 
         if (attached) {
             this.attached.actions.set(elem, actions);
-            metadata.dynamicEls = this.attached.dynamicEls;
+            metadata.viewportEls = this.attached.viewportEls;
 
-            if (dynamicStyles.size) {
-                metadata.dynamicEls.add(elem);
+            if (viewportStyles.size) {
+                metadata.viewportEls.add(elem);
             }
         } else {
             this.attached.actions.delete(elem);
-            this.attached.dynamicEls.delete(elem);
-            metadata.dynamicEls = null;
+            this.attached.viewportEls.delete(elem);
+            metadata.viewportEls = null;
         }
     }
 
@@ -125,7 +125,7 @@ export class Root extends DomElement {
 
     public render = (opts: WriteOpts = {}) => {
         if (opts.resize) {
-            this.attached.dynamicEls.forEach((elem) => {
+            this.attached.viewportEls.forEach((elem) => {
                 recalculateStyle(elem, "height", "width", "minHeight", "minWidth");
             });
         }

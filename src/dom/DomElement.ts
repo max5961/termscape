@@ -23,7 +23,8 @@ import {
 } from "../Symbols.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
-import { objectKeys, recalculateStyle } from "../Util.js";
+import { objectKeys } from "../Util.js";
+import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import { ElementMetaData } from "./ElementMetadata.js";
 import { throwError } from "../shared/ThrowError.js";
 import { Canvas } from "../compositor/Canvas.js";
