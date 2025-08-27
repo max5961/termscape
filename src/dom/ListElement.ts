@@ -1,16 +1,13 @@
-import { DOM_ELEMENT_FOCUS } from "../Symbols.js";
 import type { ListStyle, VirtualStyle } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusController } from "./DomElement.js";
 
 export class ListElement extends FocusController<ListStyle, ListStyle> {
     public override tagName: "LIST_ELEMENT";
-    private idx: number;
 
     constructor() {
         super();
         this.tagName = "LIST_ELEMENT";
-        this.idx = 0;
     }
 
     protected override defaultStyles: VirtualStyle = {
@@ -25,53 +22,11 @@ export class ListElement extends FocusController<ListStyle, ListStyle> {
         blockChildrenShrink: true,
     };
 
-    public get focused(): DomElement | undefined {
-        return this.children[this.idx];
-    }
-
-    public override focusChild(child: DomElement): void {
-        const idx = this.children.indexOf(child);
-        if (idx >= 0) {
-            this.handleIdxChange(idx);
-        }
-    }
-
-    protected override handleAppend(child: DomElement): void {
-        if (this.children.length === 1) {
-            child[DOM_ELEMENT_FOCUS] = true;
-        } else {
-            child[DOM_ELEMENT_FOCUS] = false;
-        }
-    }
-
-    protected override handleRemove(_child: DomElement): void {
-        if (this.idx > this.children.length - 1) {
-            this.handleIdxChange(this.children.length - 1);
-        }
-    }
-
-    protected handleIdxChange(nextIdx: number): void {
-        if (!this.children[nextIdx] || this.idx === nextIdx) return;
-
-        if (this.focused) {
-            this.focused[DOM_ELEMENT_FOCUS] = false;
-        }
-
-        const isScrollDown = nextIdx - this.idx > 0;
-
-        this.idx = nextIdx;
-        if (this.focused) {
-            this.focused[DOM_ELEMENT_FOCUS] = true;
-        }
-
-        this.adjustScrollOffset(isScrollDown);
-    }
-
     /**
      * Adjust the `scrollOffset` in order to keep the focused element in view
      */
-    protected adjustScrollOffset(isScrollDown: boolean) {
-        if (!this.focused) return;
+    protected adjustScrollOffset(nextFocus: DomElement, isScrollDown: boolean) {
+        this.focused = nextFocus;
 
         // Scroll Window Rect & Focus Item Rect
         const fRect = this.focused.getUnclippedRect();
@@ -125,41 +80,30 @@ export class ListElement extends FocusController<ListStyle, ListStyle> {
     }
 
     public focusNext(num?: number) {
-        num = Math.abs(num ?? 1);
-
-        let target = this.idx + num;
-        const diff = this.children.length - 1 - target;
-        if (this.style.fallthrough && diff < 0) {
-            target = 0;
-        } else {
-            target = Math.min(this.children.length - 1, target);
+        num ??= 1;
+        const next = this.focusDisplacement(0, num);
+        if (next) {
+            this.adjustScrollOffset(next, true);
         }
-
-        this.handleIdxChange(target);
     }
 
     public focusPrev(num?: number) {
-        num = Math.abs(num ?? 1);
-
-        let target = this.idx - num;
-        if (this.style.fallthrough && target < 0) {
-            target = this.children.length - 1;
-        } else {
-            target = Math.max(0, target);
+        num ??= 1;
+        const next = this.focusDisplacement(0, -Math.abs(num));
+        if (next) {
+            this.adjustScrollOffset(next, false);
         }
-
-        this.handleIdxChange(target);
     }
 
-    public focusFirst() {
-        this.handleIdxChange(0);
-    }
-
-    public focusLast() {
-        this.handleIdxChange(this.children.length - 1);
-    }
-
-    public goToIndex(idx: number) {
-        this.handleIdxChange(idx);
-    }
+    // public focusFirst() {
+    //     // this.handleIdxChange(0);
+    // }
+    //
+    // public focusLast() {
+    //     // this.handleIdxChange(this.children.length - 1);
+    // }
+    //
+    // public goToIndex(idx: number) {
+    //     // this.handleIdxChange(idx);
+    // }
 }

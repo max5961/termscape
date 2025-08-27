@@ -21,6 +21,7 @@ export class Compositor {
         this.ops = new Operations();
         this.rects = new DomRects();
         this.draw = new Draw();
+        this.postLayout = [];
     }
 
     public buildLayout(elem: DomElement, canvas: Canvas = this.canvas) {

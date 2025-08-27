@@ -30,6 +30,8 @@ import { ElementMetaData } from "./ElementMetadata.js";
 import { throwError } from "../shared/ThrowError.js";
 import { Canvas } from "../compositor/Canvas.js";
 
+/* eslint-disable @typescript-eslint/no-unused-expressions */
+
 export abstract class DomElement<
     VStyle extends VirtualStyle = VirtualStyle,
     SStyle extends ShadowStyle = ShadowStyle,
@@ -657,15 +659,13 @@ export abstract class FocusController<
     SStyle extends ShadowStyle,
 > extends DomElement<VStyle, SStyle> {
     private vmap: VisualNodeMap;
+    private _focused: DomElement | undefined;
 
     constructor() {
         super();
         this.vmap = new Map();
+        this._focused = undefined;
     }
-
-    public abstract focusChild(child: DomElement): void;
-    protected abstract handleAppend(child: DomElement): void;
-    protected abstract handleRemove(child: DomElement): void;
 
     public override appendChild(child: DomElement): void {
         super.appendChild(child);
@@ -682,15 +682,59 @@ export abstract class FocusController<
     public override removeChild(child: DomElement, freeRecursive?: boolean): void {
         super.removeChild(child, freeRecursive);
         child[DOM_ELEMENT_FOCUS] = true;
-        this.handleRemove(child);
+        this.handleRemove();
         recalculateStyle(child, "flexShrink");
+    }
+
+    public get focused() {
+        return this._focused;
+    }
+
+    protected set focused(val: DomElement | undefined) {
+        this._focused = val;
     }
 
     public get visualMap(): Readonly<VisualNodeMap> {
         return this.vmap;
     }
 
+    private handleAppend(child: DomElement) {
+        if (this.children.length === 1) {
+            child[DOM_ELEMENT_FOCUS] = true;
+            this.focused = child;
+        } else {
+            child[DOM_ELEMENT_FOCUS] = false;
+        }
+    }
+
+    private handleRemove() {
+        if (!this.focused) return;
+        const data = this.vmap.get(this.focused);
+        if (!data) return;
+
+        const fd = this.style.flexDirection;
+        if (fd === "row" || fd === "row-reverse") {
+            this.focused = data.left || data.right || data.up || data.down;
+        } else {
+            this.focused = data.up || data.down || data.left || data.right;
+        }
+    }
+
+    public focusChild(child: DomElement | undefined) {
+        if (this.focused === child || !child) return;
+
+        if (this.vmap.has(child)) {
+            if (this.focused) {
+                this.focused[DOM_ELEMENT_FOCUS] = false;
+            }
+            this.focused = child;
+            this.focused[DOM_ELEMENT_FOCUS] = true;
+        }
+    }
+
     public mapChildrenToVMap(dir: "ltr" | "ttb" | "all" = "all") {
+        this.vmap = new Map();
+
         if (dir === "ltr" || dir === "all") {
             const sortedX = this.children.slice().sort((prev, curr) => {
                 const prevStart = prev.getUnclippedRect()?.corner.x ?? 0;
@@ -702,15 +746,14 @@ export abstract class FocusController<
                 const prev = sortedX[i - 1] as DomElement | undefined;
                 const next = sortedX[i + 1] as DomElement | undefined;
 
-                if (this.vmap.has(curr)) {
-                    this.vmap.get(curr)!.left = prev;
-                    this.vmap.get(curr)!.right = next;
-                } else {
-                    this.vmap.set(curr, {
-                        left: prev,
-                        right: next,
-                    });
+                if (!this.vmap.has(curr)) {
+                    this.vmap.set(curr, {});
                 }
+                const data = this.vmap.get(curr)!;
+                data.left = prev;
+                data.right = next;
+                data.xIdx = i;
+                data.xArr = sortedX;
             }
         }
         if (dir === "ttb" || dir === "all") {
@@ -724,16 +767,153 @@ export abstract class FocusController<
                 const prev = sortedY[i - 1] as DomElement | undefined;
                 const next = sortedY[i + 1] as DomElement | undefined;
 
-                if (this.vmap.has(curr)) {
-                    this.vmap.get(curr)!.up = prev;
-                    this.vmap.get(curr)!.down = next;
-                } else {
-                    this.vmap.set(curr, {
-                        up: prev,
-                        down: next,
-                    });
+                if (!this.vmap.has(curr)) {
+                    this.vmap.set(curr, {});
                 }
+                const data = this.vmap.get(curr)!;
+                data.up = prev;
+                data.down = next;
+                data.yIdx = i;
+                data.yArr = sortedY;
             }
+        }
+    }
+
+    private getData() {
+        if (!this.focused) return;
+        return this.vmap.get(this.focused);
+    }
+
+    private getYArr() {
+        return this.getData()?.yArr;
+    }
+
+    private getXArr() {
+        return this.getData()?.xArr;
+    }
+
+    protected focusDown(): DomElement | undefined {
+        const data = this.getData();
+        if (!data) return;
+        if (data.down) {
+            this.focusChild(data.down);
+            return data.down;
+        }
+    }
+
+    protected focusUp(): DomElement | undefined {
+        const data = this.getData();
+        if (!data) return;
+        if (data.up) {
+            this.focusChild(data.up);
+            return data.up;
+        }
+    }
+
+    protected focusLeft(): DomElement | undefined {
+        const data = this.getData();
+        if (!data) return;
+        if (data.left) {
+            this.focusChild(data.left);
+            return data.left;
+        }
+    }
+
+    protected focusRight(): DomElement | undefined {
+        const data = this.getData();
+        if (!data) return;
+        if (data.right) {
+            this.focusChild(data.right);
+            return data.right;
+        }
+    }
+
+    protected focusXIdx(idx: number): DomElement | undefined {
+        const xArr = this.getXArr();
+        if (!xArr) return;
+        if (xArr[idx]) {
+            this.focusChild(xArr[idx]);
+            return xArr[idx];
+        }
+    }
+
+    protected focusYIdx(idx: number): DomElement | undefined {
+        const yArr = this.getYArr();
+        if (!yArr) return;
+        if (yArr[idx]) {
+            this.focusChild(yArr[idx]);
+            return yArr[idx];
+        }
+    }
+
+    protected focusFirstX(): DomElement | undefined {
+        const xArr = this.getXArr();
+        if (!xArr) return;
+        if (xArr[0]) {
+            this.focusChild(xArr[0]);
+            return xArr[0];
+        }
+    }
+
+    protected focusFirstY(): DomElement | undefined {
+        const yArr = this.getYArr();
+        if (!yArr) return;
+        if (yArr[0]) {
+            this.focusChild(yArr[0]);
+            return yArr[0];
+        }
+    }
+
+    protected focusLastX(): DomElement | undefined {
+        const xArr = this.getXArr();
+        if (!xArr) return;
+        if (xArr.length) {
+            this.focusChild(xArr[xArr.length - 1]);
+            return xArr[xArr.length - 1];
+        }
+    }
+
+    protected focusLastY(): DomElement | undefined {
+        const yArr = this.getYArr();
+        if (!yArr) return;
+        if (yArr.length) {
+            this.focusChild(yArr[yArr.length - 1]);
+            return yArr[yArr.length - 1];
+        }
+    }
+
+    protected focusDisplacement(dx: number, dy: number): DomElement | undefined {
+        const data = this.getData();
+        if (!data) return;
+
+        if (dx) {
+            const xArr = data.xArr;
+            const xIdx = data.xIdx;
+            if (!xArr || xIdx === undefined) return;
+
+            let nextIdx: number;
+            if (dx < 0) {
+                nextIdx = Math.max(0, xIdx + dx);
+            } else {
+                nextIdx = Math.min(xArr.length - 1, xIdx + dx);
+            }
+
+            this.focusChild(xArr[nextIdx]);
+            return xArr[nextIdx];
+        } else if (dy) {
+            const yArr = data.yArr;
+            const yIdx = data.yIdx;
+            if (!yArr || yIdx === undefined) return;
+
+            let nextIdx: number;
+            if (dx < 0) {
+                nextIdx = Math.max(0, yIdx + dy);
+            } else {
+                nextIdx = Math.min(yArr.length - 1, yIdx + dy);
+            }
+
+            this.focusChild(yArr[nextIdx]);
+            return yArr[nextIdx];
         }
     }
 }

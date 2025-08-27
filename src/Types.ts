@@ -259,5 +259,9 @@ export type VisualNodeMap = Map<
         down?: DomElement;
         left?: DomElement;
         right?: DomElement;
+        xArr?: DomElement[];
+        yArr?: DomElement[];
+        xIdx?: number;
+        yIdx?: number;
     }
 >;
