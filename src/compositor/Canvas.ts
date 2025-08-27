@@ -296,6 +296,10 @@ export class Canvas {
     public stringifyRowSegment(y: number, start?: number, end?: number): string {
         return stringifyRowSegment(this.grid, y, start, end);
     }
+
+    public canDraw(): boolean {
+        return this.maxY - this.minY > 0 && this.maxX - this.minX > 0;
+    }
 }
 
 class SubCanvas extends Canvas {

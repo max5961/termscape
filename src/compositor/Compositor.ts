@@ -34,20 +34,21 @@ export class Compositor {
         this.rects.setRect(elem, canvas);
         this.rects.storeElementPosition(zIndex, elem);
 
-        if (elem instanceof BoxElement) {
-            this.ops.defer(zIndex, () => this.draw.composeBox(elem, style, canvas));
-        }
+        if (canvas.canDraw()) {
+            if (elem instanceof BoxElement) {
+                this.ops.defer(zIndex, () => this.draw.composeBox(elem, style, canvas));
+            }
 
-        if (elem instanceof TextElement) {
-            this.ops.defer(zIndex, () => this.draw.composeText(elem, style, canvas));
-        }
+            if (elem instanceof TextElement) {
+                this.ops.defer(zIndex, () => this.draw.composeText(elem, style, canvas));
+            }
 
-        if (elem instanceof FocusController) {
-            this.postLayoutDefer(() => {
-                elem.mapChildrenToVMap();
-            });
+            if (elem instanceof FocusController) {
+                this.postLayoutDefer(() => {
+                    elem.mapChildrenToVMap();
+                });
+            }
         }
-
         for (const child of elem.children) {
             const subCanvas = this.getSubCanvas(child, elem, canvas);
             child[DOM_ELEMENT_CANVAS] = subCanvas;
