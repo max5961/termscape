@@ -215,7 +215,7 @@ export abstract class DomElement<
         });
     }
 
-    @Render()
+    @Render({ layoutChange: true })
     public appendChild(child: DomElement): void {
         if (this.childrenSet.has(child)) return;
         this.childrenSet.add(child);
@@ -228,7 +228,7 @@ export abstract class DomElement<
         child.afterAttached();
     }
 
-    @Render()
+    @Render({ layoutChange: true })
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
         if (this.childrenSet.has(child)) {
             this.removeChild(child);
@@ -261,7 +261,7 @@ export abstract class DomElement<
         child.afterAttached();
     }
 
-    @Render()
+    @Render({ layoutChange: true })
     public removeChild(child: DomElement, freeRecursive?: boolean) {
         const idx = this.children.findIndex((el) => el === child);
 
@@ -290,7 +290,7 @@ export abstract class DomElement<
         child.setRoot(null);
     }
 
-    @Render()
+    @Render({ layoutChange: true })
     public removeParent() {
         this.parentElement?.removeChild(this);
     }
@@ -299,12 +299,12 @@ export abstract class DomElement<
     // Reconciler
     // ========================================================================
 
-    @Render()
+    @Render({ layoutChange: true })
     public hide(): void {
         this.node.setDisplay(Yoga.DISPLAY_NONE);
     }
 
-    @Render()
+    @Render({ layoutChange: true })
     public unhide(): void {
         this.node.setDisplay(Yoga.DISPLAY_FLEX);
     }
@@ -611,7 +611,7 @@ export abstract class DomElement<
         return deepest;
     }
 
-    @Render()
+    @Render({ layoutChange: true })
     protected applyCornerOffset(dx: number, dy: number) {
         this.scrollOffset.x += dx;
         this.scrollOffset.y += dy;

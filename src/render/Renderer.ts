@@ -9,6 +9,7 @@ import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../shared/Ansi.js";
 import { Root } from "../dom/Root.js";
 import type { WriteOpts } from "../Types.js";
+import { logger } from "../shared/Logger.js";
 
 export class Renderer {
     public lastCanvas: Canvas | null;
@@ -39,7 +40,7 @@ export class Renderer {
         if (this.hooks.renderIsBlocked) return;
 
         this.preLayoutHooks();
-        const compositor = this.getComposedLayout();
+        const compositor = this.getComposedLayout(opts);
         this.postLayoutHooks(compositor);
 
         this.deferWrite(compositor, opts);
@@ -48,9 +49,9 @@ export class Renderer {
         this.postWriteHooks();
     };
 
-    private getComposedLayout(): Compositor {
+    private getComposedLayout(opts: WriteOpts): Compositor {
         const compositor = new Compositor(this.root);
-        compositor.buildLayout(this.root);
+        compositor.buildLayout(this.root, !!opts.layoutChange);
         return compositor;
     }
 
@@ -67,6 +68,13 @@ export class Renderer {
         this.rects = compositor.rects;
     }
 
+    private performWrite() {
+        process.stdout.write(Ansi.beginSynchronizedUpdate);
+        this.cursor.execute();
+        //
+        process.stdout.write(Ansi.endSynchronizedUpdate);
+    }
+
     private refreshWrite(compositor: Compositor, opts: WriteOpts) {
         this.refreshWriter.instructCursor(
             this.lastCanvas,
@@ -81,12 +89,6 @@ export class Renderer {
         if (this.lastWasResize && ++this.lastWasResize > 3) {
             this.lastWasResize = 0;
         }
-    }
-
-    private performWrite() {
-        process.stdout.write(Ansi.beginSynchronizedUpdate);
-        this.cursor.execute();
-        process.stdout.write(Ansi.endSynchronizedUpdate);
     }
 
     // =========================================================================

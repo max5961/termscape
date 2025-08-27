@@ -1,5 +1,5 @@
 import { DomElement, FocusController } from "../dom/DomElement.js";
-import { Canvas } from "./Canvas.js";
+import { Canvas, type SubCanvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
@@ -24,15 +24,22 @@ export class Compositor {
         this.postLayout = [];
     }
 
-    public buildLayout(elem: DomElement, canvas: Canvas = this.canvas) {
+    public buildLayout(
+        elem: DomElement,
+        layoutChange: boolean,
+        canvas: Canvas = this.canvas,
+    ) {
         if (elem.style.display === "none") return;
 
         const style = elem[DOM_ELEMENT_SHADOW_STYLE];
         const zIndex = style.zIndex ?? 0;
 
         this.draw.updateLowestLayer(zIndex);
-        this.rects.setRect(elem, canvas);
-        this.rects.storeElementPosition(zIndex, elem);
+
+        if (layoutChange) {
+            this.rects.setRect(elem, canvas);
+            this.rects.storeElementPosition(zIndex, elem);
+        }
 
         if (canvas.canDraw()) {
             if (elem instanceof BoxElement) {
@@ -49,10 +56,17 @@ export class Compositor {
                 });
             }
         }
+
         for (const child of elem.children) {
-            const subCanvas = this.getSubCanvas(child, elem, canvas);
+            let subCanvas = child[DOM_ELEMENT_CANVAS] as SubCanvas | null;
+
+            if (layoutChange || !subCanvas) {
+                subCanvas = this.getSubCanvas(child, elem, canvas);
+            }
+
+            subCanvas.setGrid(this.canvas.grid);
             child[DOM_ELEMENT_CANVAS] = subCanvas;
-            this.buildLayout(child, subCanvas);
+            this.buildLayout(child, layoutChange, subCanvas);
         }
 
         if (elem instanceof Root) {
@@ -61,7 +75,7 @@ export class Compositor {
         }
     }
 
-    private getSubCanvas(child: DomElement, elem: DomElement, canvas: Canvas): Canvas {
+    private getSubCanvas(child: DomElement, elem: DomElement, canvas: Canvas): SubCanvas {
         return canvas.createChildCanvas({
             child,
             elem,

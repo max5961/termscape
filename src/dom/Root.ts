@@ -23,6 +23,7 @@ export class Root extends DomElement {
 
     protected override readonly rootRef: { readonly root: Root };
 
+    private hasRendered: boolean;
     private scheduler: Scheduler;
     private renderer: Renderer;
     private runtimeCtl: Runtime["logic"];
@@ -36,6 +37,7 @@ export class Root extends DomElement {
         super();
         this.tagName = "ROOT_ELEMENT";
         this.rootRef = { root: this };
+        this.hasRendered = false;
 
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
         this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
@@ -130,7 +132,7 @@ export class Root extends DomElement {
             });
         }
 
-        if (!opts.skipCalculateLayout) {
+        if (opts.layoutChange || !this.hasRendered) {
             this.node.calculateLayout(
                 process.stdout.columns,
                 undefined,
@@ -138,7 +140,13 @@ export class Root extends DomElement {
             );
         }
 
-        this.renderer.writeToStdout(opts);
+        if (this.hasRendered) {
+            this.renderer.writeToStdout(opts);
+        } else {
+            this.renderer.writeToStdout({ ...opts, layoutChange: true });
+        }
+
+        this.hasRendered = true;
     };
 
     public scheduleRender(opts: WriteOpts = {}) {

@@ -241,7 +241,7 @@ export type WriteOpts = {
     resize?: boolean;
     capturedOutput?: string;
     screenChange?: boolean;
-    skipCalculateLayout?: boolean;
+    layoutChange?: boolean;
 };
 
 export type StyleHandler<T extends VirtualStyle> = ({

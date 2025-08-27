@@ -64,7 +64,7 @@ export type SubCanvasDeps = Required<CanvasDeps>;
 
 export class Canvas {
     public pos: Point;
-    public readonly grid: Grid;
+    public grid: Grid;
     public readonly corner: Readonly<Point>;
     public readonly minX: number;
     public readonly minY: number;
@@ -104,7 +104,13 @@ export class Canvas {
         this.pos = { ...this.corner };
     }
 
-    public createChildCanvas({ child, elem }: { child: DomElement; elem: DomElement }) {
+    public createChildCanvas({
+        child,
+        elem,
+    }: {
+        child: DomElement;
+        elem: DomElement;
+    }): SubCanvas {
         const chNode = child.node;
 
         const chStyle = child[DOM_ELEMENT_SHADOW_STYLE];
@@ -302,7 +308,7 @@ export class Canvas {
     }
 }
 
-class SubCanvas extends Canvas {
+export class SubCanvas extends Canvas {
     constructor(deps: SubCanvasDeps) {
         super(deps);
         this.forceGridToAccomodate();
@@ -324,5 +330,10 @@ class SubCanvas extends Canvas {
                 Array.from({ length: process.stdout.columns }).fill(" ") as string[],
             );
         }
+    }
+
+    public setGrid(grid: Grid) {
+        this.grid = grid;
+        this.forceGridToAccomodate();
     }
 }

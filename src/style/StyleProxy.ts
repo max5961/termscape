@@ -63,9 +63,14 @@ function createShadowStyleProxy<T extends ShadowStyle>(
                 AggregateHandlers[prop]?.(newValue, shadowStyle, virtualStyle);
                 YogaHandlers[prop]?.(newValue, node, shadowStyle, virtualStyle);
 
-                // const shouldCalculateLayout = !!YogaHandlers[prop];
+                const layoutChange =
+                    !!YogaHandlers[prop] ||
+                    prop === "overflow" ||
+                    prop === "overflowX" ||
+                    prop === "overflowY";
 
-                rootRef.root?.scheduleRender();
+                const writeOpts = layoutChange ? { layoutChange } : undefined;
+                rootRef.root?.scheduleRender(writeOpts);
             }
             return true;
         },
