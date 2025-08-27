@@ -1,5 +1,6 @@
 import { Root } from "../dom/Root.js";
 import type { WriteOpts } from "../Types.js";
+import { objectKeys } from "../Util.js";
 
 type Updater = Root["render"];
 
@@ -27,7 +28,7 @@ export class Scheduler {
      */
     public scheduleUpdate = (updater: Updater, opts: WriteOpts) => {
         this.updater = updater;
-        Object.assign(this.writeOpts, opts);
+        this.mergeOpts(opts);
 
         if (opts.capturedOutput) {
             this.capturedOutput.push(opts.capturedOutput);
@@ -64,5 +65,18 @@ export class Scheduler {
             }
             this.wait = false;
         }, this.debounceMs);
+    }
+
+    /**
+     * Overwrites anything not true, which allows captured console output to
+     * overwrite previous.
+     */
+    private mergeOpts(opts: WriteOpts) {
+        for (const key of objectKeys(opts)) {
+            if (this.writeOpts[key] !== true) {
+                // @ts-ignore
+                this.writeOpts[key] = opts[key];
+            }
+        }
     }
 }
