@@ -51,9 +51,11 @@ export class Compositor {
             }
 
             if (elem instanceof FocusController) {
-                this.postLayoutDefer(() => {
-                    elem.mapChildrenToVMap();
-                });
+                if (layoutChange) {
+                    this.postLayoutDefer(() => {
+                        elem.mapChildrenToVMap();
+                    });
+                }
             }
         }
 
