@@ -71,7 +71,7 @@ type Shadow<T extends object> = {
 
 export type VBoxStyle = YogaStyle & DomStyle;
 export type ShadowBoxStyle = Shadow<VBoxStyle>;
-export type VirtualStyle = VBoxStyle & TextStyle & ListStyle;
+export type VirtualStyle = VBoxStyle & TextStyle & ListStyle & LayoutStyle;
 export type ShadowStyle = Shadow<VirtualStyle>;
 export type ViewportStyle = keyof Pick<
     VBoxStyle,
@@ -194,6 +194,8 @@ export type ListStyle = {
      */
     blockChildrenShrink?: boolean;
 };
+
+export type LayoutStyle = ListStyle;
 
 export type MouseEventType =
     // LEFT BTN

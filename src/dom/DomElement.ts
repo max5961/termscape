@@ -291,7 +291,7 @@ export abstract class DomElement<
     }
 
     @Render({ layoutChange: true })
-    public removeParent() {
+    protected removeParent() {
         this.parentElement?.removeChild(this);
     }
 
@@ -629,7 +629,7 @@ export abstract class DomElement<
         this.rootRef.root = root;
     }
 
-    private dfs(elem: DomElement, cb: (elem: DomElement) => void) {
+    protected dfs(elem: DomElement, cb: (elem: DomElement) => void) {
         cb(elem);
         elem.children.forEach((child) => {
             this.dfs(child, cb);
@@ -698,7 +698,7 @@ export abstract class FocusController<
         return this.vmap;
     }
 
-    private handleAppend(child: DomElement) {
+    protected handleAppend(child: DomElement) {
         if (this.children.length === 1) {
             child[DOM_ELEMENT_FOCUS] = true;
             this.focused = child;
@@ -733,10 +733,11 @@ export abstract class FocusController<
     }
 
     public mapChildrenToVMap(dir: "ltr" | "ttb" | "all" = "all") {
+        const children = this.getNavigableChildren();
         this.vmap = new Map();
 
         if (dir === "ltr" || dir === "all") {
-            const sortedX = this.children.slice().sort((prev, curr) => {
+            const sortedX = children.slice().sort((prev, curr) => {
                 const prevStart = prev.getUnclippedRect()?.corner.x ?? 0;
                 const currStart = curr.getUnclippedRect()?.corner.x ?? 0;
                 return prevStart - currStart;
@@ -757,7 +758,7 @@ export abstract class FocusController<
             }
         }
         if (dir === "ttb" || dir === "all") {
-            const sortedY = this.children.slice().sort((prev, curr) => {
+            const sortedY = children.slice().sort((prev, curr) => {
                 const prevStart = prev.getUnclippedRect()?.corner.y ?? 0;
                 const currStart = curr.getUnclippedRect()?.corner.y ?? 0;
                 return prevStart - currStart;
@@ -778,6 +779,8 @@ export abstract class FocusController<
             }
         }
     }
+
+    protected abstract getNavigableChildren(): DomElement[];
 
     private getData() {
         if (!this.focused) return;

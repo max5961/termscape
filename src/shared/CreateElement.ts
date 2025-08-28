@@ -3,6 +3,7 @@ import { Root } from "../dom/Root.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { ListElement } from "../dom/ListElement.js";
+import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import type { RuntimeConfig } from "../Types.js";
 
 type TagMap = {
@@ -10,6 +11,8 @@ type TagMap = {
     text: TextElement;
     list: ListElement;
     root: Root;
+    layout: LayoutElement;
+    layoutnode: LayoutNode;
 };
 
 type Tag = keyof TagMap;
@@ -26,6 +29,12 @@ export function createElement<T extends Tag>(
     }
     if (tag === "list") {
         return new ListElement() as TagMap[T];
+    }
+    if (tag === "layout") {
+        return new LayoutElement() as TagMap[T];
+    }
+    if (tag === "layoutnode") {
+        return new LayoutNode() as TagMap[T];
     }
     if (tag === "root") {
         return new Root(rootConfig ?? {}) as TagMap[T];

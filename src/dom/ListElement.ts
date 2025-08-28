@@ -22,6 +22,10 @@ export class ListElement extends FocusController<ListStyle, ListStyle> {
         blockChildrenShrink: true,
     };
 
+    protected override getNavigableChildren(): DomElement[] {
+        return this.children.slice();
+    }
+
     /**
      * Adjust the `scrollOffset` in order to keep the focused element in view
      */
