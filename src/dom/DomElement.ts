@@ -30,8 +30,6 @@ import { ElementMetaData } from "./ElementMetadata.js";
 import { throwError } from "../shared/ThrowError.js";
 import { Canvas } from "../compositor/Canvas.js";
 
-/* eslint-disable @typescript-eslint/no-unused-expressions */
-
 export abstract class DomElement<
     VStyle extends VirtualStyle = VirtualStyle,
     SStyle extends ShadowStyle = ShadowStyle,
@@ -357,12 +355,12 @@ export abstract class DomElement<
         }
     }
 
-    public getFocus() {
-        return this._focus;
+    public getFocus(): boolean {
+        return this.focusContext.getFocus();
     }
 
-    public getShallowFocus() {
-        return this._shallowFocus;
+    public getShallowFocus(): boolean {
+        return this.focusContext.getShallowFocus();
     }
 
     public focus() {
