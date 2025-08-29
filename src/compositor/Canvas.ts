@@ -5,9 +5,9 @@ import type {
     Point,
     Stdout,
     DomElement,
-    ShadowStyle,
     YogaNode,
 } from "../Types.js";
+import type { ShadowStyle } from "../style/Style.js";
 import { Pen } from "./Pen.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
 import { DOM_ELEMENT_SCROLL_OFFSET, DOM_ELEMENT_SHADOW_STYLE } from "../Symbols.js";

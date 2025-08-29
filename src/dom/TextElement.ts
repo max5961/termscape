@@ -1,9 +1,10 @@
 import { DomElement } from "./DomElement.js";
-import type { TTagNames, TextStyle } from "../Types.js";
+import type { TTagNames } from "../Types.js";
 import { type MeasureFunction } from "yoga-wasm-web/auto";
 import { getRows } from "../shared/TextWrap.js";
+import type { ShadowTextStyle, VirtualTextStyle } from "../style/Style.js";
 
-export class TextElement extends DomElement<TextStyle, TextStyle> {
+export class TextElement extends DomElement<VirtualTextStyle, ShadowTextStyle> {
     private _textContent: string;
     public tagName: TTagNames;
     public textHeight: number;
@@ -17,7 +18,7 @@ export class TextElement extends DomElement<TextStyle, TextStyle> {
         this.textHeight = 0;
     }
 
-    protected override defaultStyles: TextStyle = { wrap: "wrap" };
+    protected override defaultStyles: VirtualTextStyle = { wrap: "wrap" };
 
     public set textContent(val: string) {
         this._textContent = val;

@@ -4,8 +4,6 @@ import type {
     MouseEvent,
     MouseEventType,
     MouseEventHandler,
-    ShadowStyle,
-    VirtualStyle,
     DOMRect,
     TTagNames,
     YogaNode,
@@ -13,6 +11,7 @@ import type {
     StyleHandler,
     VisualNodeMap,
 } from "../Types.js";
+import type { VirtualStyle, ShadowStyle } from "../style/Style.js";
 import type { Root } from "./Root.js";
 import {
     DOM_ELEMENT_SCROLL_OFFSET,
@@ -25,7 +24,6 @@ import {
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectKeys } from "../Util.js";
-import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import { ElementMetaData } from "./ElementMetadata.js";
 import { throwError } from "../shared/ThrowError.js";
 import { Canvas } from "../compositor/Canvas.js";
@@ -623,26 +621,12 @@ export abstract class FocusController<
         this._focused = undefined;
     }
 
-    protected abstract handleAppend(child: DomElement): void;
-    protected abstract removeCheckpoint(child: DomElement): void;
-
-    public override appendChild(child: DomElement): void {
-        super.appendChild(child);
-        this.handleAppend(child);
-        recalculateStyle(child, "flexShrink");
-    }
-
-    public override insertBefore(child: DomElement, beforeChild: DomElement): void {
-        super.insertBefore(child, beforeChild);
-        this.handleAppend(child);
-        recalculateStyle(child, "flexShrink");
-    }
-
-    public override removeChild(child: DomElement, freeRecursive?: boolean): void {
-        super.removeChild(child, freeRecursive);
-        this.handleRemove();
-        recalculateStyle(child, "flexShrink");
-    }
+    protected abstract getNavigableChildren(): DomElement[];
+    protected abstract handleAppendChild(child: DomElement): void;
+    protected abstract handleRemoveChild(
+        child: DomElement,
+        freeRecursive?: boolean,
+    ): void;
 
     public get focused() {
         return this._focused;
@@ -652,20 +636,23 @@ export abstract class FocusController<
         this._focused = val;
     }
 
-    public get visualMap(): Readonly<VisualNodeMap> {
+    protected get visualMap(): Readonly<VisualNodeMap> {
         return this.vmap;
     }
 
-    private handleRemove() {
-        const data = this.getCurrFocusedData();
-        if (!data) return;
+    public override appendChild(child: DomElement): void {
+        super.appendChild(child);
+        this.handleAppendChild(child);
+    }
 
-        const fd = this.style.flexDirection;
-        if (fd === "row" || fd === "row-reverse") {
-            this.focusChild(data.left || data.right || data.up || data.down);
-        } else {
-            this.focusChild(data.up || data.down || data.left || data.right);
-        }
+    public override insertBefore(child: DomElement, beforeChild: DomElement): void {
+        super.insertBefore(child, beforeChild);
+        this.handleAppendChild(child);
+    }
+
+    public override removeChild(child: DomElement, freeRecursive?: boolean): void {
+        super.removeChild(child, freeRecursive);
+        this.handleRemoveChild(child, freeRecursive);
     }
 
     public focusChild(child: DomElement | undefined) {
@@ -727,8 +714,6 @@ export abstract class FocusController<
             }
         }
     }
-
-    protected abstract getNavigableChildren(): DomElement[];
 
     private getCurrFocusedData() {
         if (!this.focused) return;

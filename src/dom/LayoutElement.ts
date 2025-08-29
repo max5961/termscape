@@ -1,9 +1,17 @@
 import { FocusController } from "./DomElement.js";
-import type { DomElement, LayoutStyle, TTagNames, VirtualStyle } from "../Types.js";
+import type { DomElement, TTagNames } from "../Types.js";
 import { BoxElement } from "./BoxElement.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
+import type {
+    VirtualStyle,
+    VirtualLayoutStyle,
+    ShadowLayoutStyle,
+} from "../style/Style.js";
 
-export class LayoutElement extends FocusController<LayoutStyle, LayoutStyle> {
+export class LayoutElement extends FocusController<
+    VirtualLayoutStyle,
+    ShadowLayoutStyle
+> {
     public override tagName: TTagNames;
 
     constructor() {

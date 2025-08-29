@@ -1,4 +1,5 @@
-import type { Point, TextStyle } from "../Types.js";
+import type { Point } from "../Types.js";
+import type { VirtualTextStyle } from "../style/Style.js";
 import type { Canvas, Grid } from "./Canvas.js";
 import { Glyph } from "./Glyph.js";
 
@@ -9,7 +10,7 @@ type PenDeps = {
     canvas: Canvas;
 };
 
-const styleSet = new Set<keyof TextStyle>([
+const styleSet = new Set<keyof VirtualTextStyle>([
     "color",
     "backgroundColor",
     "italic",
@@ -54,12 +55,12 @@ export class Pen {
         this.glyph = new Glyph();
     }
 
-    public set<T extends keyof TextStyle>(prop: T, value?: TextStyle[T]) {
+    public set<T extends keyof VirtualTextStyle>(prop: T, value?: VirtualTextStyle[T]) {
         this.glyph.style[prop] = value;
         return this;
     }
 
-    public setStyle(config: TextStyle) {
+    public setStyle(config: VirtualTextStyle) {
         for (const style of styleSet) {
             // @ts-expect-error typescript can't infer that an two objs with the same shape using the same key have the same value types
             this.glyph.style[style] = config[style];

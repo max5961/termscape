@@ -1,4 +1,5 @@
-import type { DomElement, VirtualStyle } from "../../Types.js";
+import type { DomElement } from "../../Types.js";
+import type { VirtualStyle } from "../Style.js";
 
 const AlwaysRecalc = new Set<keyof VirtualStyle>([
     "flexShrink",

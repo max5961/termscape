@@ -1,8 +1,9 @@
-import type { YogaNode, VirtualStyle, ViewportStyle, ShadowStyle } from "../Types.js";
+import type { YogaNode, ViewportStyle } from "../Types.js";
 import { AggregateHandlers, SanitizerHandlers, YogaHandlers } from "./StyleHandlers.js";
 import type { DomElement } from "../dom/DomElement.js";
 import { checkIfViewportDimensions } from "./util/checkIfViewportDimensions.js";
 import { shouldAlwaysRecalc } from "./util/recalculateStyle.js";
+import type { ShadowStyle, VirtualStyle } from "./Style.js";
 
 export function createVirtualStyleProxy<
     T extends VirtualStyle = VirtualStyle,

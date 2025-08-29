@@ -41,12 +41,14 @@ export class Focus {
         this.rewireChildren(checkpoint);
     }
 
-    public becomeNormal() {
+    public becomeNormal(freeRecursive?: boolean) {
         if (!this.checkpoint) return;
 
         this.checkpoint = null;
         this.nearestCheckpoint = this.parent?.nearestCheckpoint ?? null;
-        this.rewireChildren(this.nearestCheckpoint);
+        if (!freeRecursive) {
+            this.rewireChildren(this.nearestCheckpoint);
+        }
     }
 
     public updateCheckpoint(focused: boolean) {

@@ -1,5 +1,3 @@
-import type { DomElement, VirtualStyle } from "./Types.js";
-
 type Enum<T extends string> = { [P in T]: T };
 
 export function stringEnum<T extends string>(...p: T[]): Readonly<Enum<T>> {

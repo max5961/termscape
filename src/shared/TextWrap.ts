@@ -1,5 +1,5 @@
 import { TEXT_PADDING } from "../Symbols.js";
-import type { TextStyle } from "../Types.js";
+import type { VirtualTextStyle } from "../style/Style.js";
 
 export function getRows(text: string, width: number): string[] {
     const rows: string[] = [];
@@ -59,7 +59,7 @@ export function getRows(text: string, width: number): string[] {
 export function alignRows(
     rows: string[],
     width: number,
-    align: TextStyle["align"],
+    align: VirtualTextStyle["align"],
 ): (string | symbol)[][] {
     if (align === "right") {
         return rows.map((row) => {
@@ -102,7 +102,11 @@ export function alignRows(
     return rows.map((row) => row.split(""));
 }
 
-export function getAlignedRows(text: string, width: number, align: TextStyle["align"]) {
+export function getAlignedRows(
+    text: string,
+    width: number,
+    align: VirtualTextStyle["align"],
+) {
     const rows = getRows(text, width);
     return alignRows(rows, width, align);
 }

@@ -1,9 +1,9 @@
+import type { ShadowListStyle, VirtualListStyle, VirtualStyle } from "../style/Style.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
-import type { ListStyle, VirtualStyle } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusController } from "./DomElement.js";
 
-export class ListElement extends FocusController<ListStyle, ListStyle> {
+export class ListElement extends FocusController<VirtualListStyle, ShadowListStyle> {
     public override tagName: "LIST_ELEMENT";
 
     constructor() {
@@ -27,11 +27,15 @@ export class ListElement extends FocusController<ListStyle, ListStyle> {
         return this.children.slice();
     }
 
-    protected override handleAppend(child: DomElement): void {
+    protected override handleAppendChild(child: DomElement): void {
         child[DOM_ELEMENT_FOCUS_NODE].becomeCheckpoint(false);
         if (!this.children.length) {
             child[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
         }
+    }
+
+    public override handleRemoveChild(child: DomElement, freeRecursive?: boolean): void {
+        child[DOM_ELEMENT_FOCUS_NODE].becomeNormal(freeRecursive);
     }
 
     /**

@@ -1,6 +1,7 @@
 import type { BoxElement } from "../dom/BoxElement.js";
 import type { TextElement } from "../dom/TextElement.js";
-import type { Color, ShadowStyle, TextStyle } from "../Types.js";
+import type { Color } from "../Types.js";
+import type { ShadowStyle, VirtualTextStyle } from "../style/Style.js";
 import { Canvas } from "./Canvas.js";
 import { alignRows, getRows } from "../shared/TextWrap.js";
 import { TEXT_PADDING } from "../Symbols.js";
@@ -90,7 +91,7 @@ export class Draw {
     // Text
     // =========================================================================
 
-    public composeText(elem: TextElement, style: TextStyle, canvas: Canvas) {
+    public composeText(elem: TextElement, style: VirtualTextStyle, canvas: Canvas) {
         if (style.wrap === "overflow") {
             return this.composeTextOverflow(elem, canvas);
         }

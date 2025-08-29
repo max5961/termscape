@@ -1,5 +1,8 @@
 import { type BgColor } from "ansi-escape-sequences";
 import { type Color, type TextEffect } from "./Types.js";
+import Yoga from "yoga-wasm-web/auto";
+
+export const Yg = Yoga;
 
 export const TagNames = {
     Box: "BOX_ELEMENT",
