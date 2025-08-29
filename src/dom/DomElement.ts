@@ -20,7 +20,7 @@ import {
     DOM_ELEMENT_SHADOW_STYLE,
     ROOT_BRIDGE_DOM_ELEMENT,
     DOM_ELEMENT_CANVAS,
-    DOM_ELEMENT_FOCUS,
+    DOM_ELEMENT_FOCUS_NODE,
 } from "../Symbols.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
@@ -29,6 +29,7 @@ import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import { ElementMetaData } from "./ElementMetadata.js";
 import { throwError } from "../shared/ThrowError.js";
 import { Canvas } from "../compositor/Canvas.js";
+import { Focus } from "./Context.js";
 
 export abstract class DomElement<
     VStyle extends VirtualStyle = VirtualStyle,
@@ -53,9 +54,8 @@ export abstract class DomElement<
     protected readonly metadata: ElementMetaData;
     protected readonly baseDefaultStyles: VirtualStyle;
     protected abstract defaultStyles: VStyle;
-    protected _focus: boolean;
-    protected _shallowFocus: boolean;
     protected styleHandler: StyleHandler<VStyle> | null;
+    protected focusNode: Focus;
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -93,9 +93,8 @@ export abstract class DomElement<
             flexShrink: 1,
         };
 
-        this._focus = true;
-        this._shallowFocus = false;
         this.styleHandler = null;
+        this.focusNode = new Focus();
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {
@@ -122,18 +121,8 @@ export abstract class DomElement<
         this.canvas = canvas;
     }
 
-    set [DOM_ELEMENT_FOCUS](bool: boolean) {
-        if (!bool) {
-            this._focus = false;
-            this._shallowFocus = false;
-        } else {
-            this._focus = true;
-            this._shallowFocus = false;
-        }
-
-        this.dfs(this, (elem) => {
-            elem.updateFocus();
-        });
+    get [DOM_ELEMENT_FOCUS_NODE]() {
+        return this.focusNode;
     }
 
     get children(): Readonly<DomElement[]> {
@@ -151,11 +140,11 @@ export abstract class DomElement<
             this.styleHandler = null;
         }
 
-        const styles =
-            this.styleHandler?.({
-                focus: this._focus,
-                shallowFocus: this._shallowFocus,
-            }) ?? stylesheet;
+        let styles = stylesheet;
+        if (this.styleHandler) {
+            const { focus, shallowFocus } = this.focusNode.getStatus();
+            styles = this.styleHandler({ focus, shallowFocus });
+        }
 
         const withDefault = {
             ...this.baseDefaultStyles,
@@ -196,8 +185,6 @@ export abstract class DomElement<
             if (elem.requiresStdin) {
                 root.requestInputStream();
             }
-
-            elem.updateFocus();
         });
     }
 
@@ -217,6 +204,7 @@ export abstract class DomElement<
     public appendChild(child: DomElement): void {
         if (this.childrenSet.has(child)) return;
         this.childrenSet.add(child);
+        this.focusNode.children.add(child.focusNode);
 
         this.node.insertChild(child.node, this.node.getChildCount());
         this.collection.push(child);
@@ -233,6 +221,7 @@ export abstract class DomElement<
         }
 
         this.childrenSet.add(child);
+        this.focusNode.children.add(child.focusNode);
 
         const idx = this.children.findIndex((el) => el === beforeChild);
         if (idx === -1 || !this.childrenSet.has(beforeChild)) {
@@ -271,6 +260,7 @@ export abstract class DomElement<
         }
 
         this.childrenSet.delete(child);
+        this.focusNode.removeChild(child.focusNode);
 
         child.beforeDetaching();
 
@@ -320,62 +310,30 @@ export abstract class DomElement<
     // Focus
     // =========================================================================
 
-    protected updateFocus() {
-        if (!this.parentElement) {
-            this._focus = true;
-            this._shallowFocus = false;
-            return;
-        }
-
-        const parFocus = this.parentElement._focus;
-        const parShallowFocus = this.parentElement._shallowFocus;
-
-        const inheritFromParent = !(this.parentElement instanceof FocusController);
-        if (inheritFromParent) {
-            this._focus = parFocus;
-            this._shallowFocus = parShallowFocus;
-        }
-
-        // Don't touch explicitly set unfocused elements. Resolve focused against parent state.
-        else if (this._focus || this._shallowFocus) {
-            if (!parFocus && !parShallowFocus) {
-                this._shallowFocus = this._shallowFocus || this._focus;
-                this._focus = false;
-            } else if (parFocus) {
-                this._shallowFocus = false;
-                this._focus = true;
-            } else if (parShallowFocus) {
-                this._shallowFocus = true;
-                this._focus = false;
-            }
-        }
-
-        if (this.styleHandler) {
-            this.style = this.styleHandler;
-        }
-    }
-
     public getFocus(): boolean {
-        return this.focusContext.getFocus();
+        return this.focusNode.getStatus().focus;
     }
 
     public getShallowFocus(): boolean {
-        return this.focusContext.getShallowFocus();
+        return this.focusNode.getStatus().shallowFocus;
     }
 
     public focus() {
-        let parent: DomElement | null = this.parentElement;
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        let child: DomElement | null = this;
-
-        while (parent) {
-            if (parent instanceof FocusController) {
-                parent.focusChild(child);
-                break;
-            }
-            child = parent;
-            parent = parent.parentElement;
+        if (this.focusNode.nearestCheckpoint) {
+            this.focusNode.nearestCheckpoint.focused = true;
         }
+    }
+
+    protected becomeCheckpoint(focused: boolean) {
+        this.focusNode.becomeCheckpoint(focused);
+    }
+
+    protected becomeNormal() {
+        this.focusNode.becomeNormal();
+    }
+
+    protected toggleFocus(focused: boolean) {
+        this.focusNode.updateCheckpoint(focused);
     }
 
     // ========================================================================
@@ -507,7 +465,7 @@ export abstract class DomElement<
     public addKeyListener(action: Action): () => void {
         const origCb = action.callback;
         action.callback = () => {
-            if (this._focus) {
+            if (this.getFocus()) {
                 origCb?.();
             }
         };
@@ -665,6 +623,9 @@ export abstract class FocusController<
         this._focused = undefined;
     }
 
+    protected abstract handleAppend(child: DomElement): void;
+    protected abstract removeCheckpoint(child: DomElement): void;
+
     public override appendChild(child: DomElement): void {
         super.appendChild(child);
         this.handleAppend(child);
@@ -679,7 +640,6 @@ export abstract class FocusController<
 
     public override removeChild(child: DomElement, freeRecursive?: boolean): void {
         super.removeChild(child, freeRecursive);
-        child[DOM_ELEMENT_FOCUS] = true;
         this.handleRemove();
         recalculateStyle(child, "flexShrink");
     }
@@ -696,25 +656,15 @@ export abstract class FocusController<
         return this.vmap;
     }
 
-    protected handleAppend(child: DomElement) {
-        if (this.children.length === 1) {
-            child[DOM_ELEMENT_FOCUS] = true;
-            this.focused = child;
-        } else {
-            child[DOM_ELEMENT_FOCUS] = false;
-        }
-    }
-
     private handleRemove() {
-        if (!this.focused) return;
-        const data = this.vmap.get(this.focused);
+        const data = this.getCurrFocusedData();
         if (!data) return;
 
         const fd = this.style.flexDirection;
         if (fd === "row" || fd === "row-reverse") {
-            this.focused = data.left || data.right || data.up || data.down;
+            this.focusChild(data.left || data.right || data.up || data.down);
         } else {
-            this.focused = data.up || data.down || data.left || data.right;
+            this.focusChild(data.up || data.down || data.left || data.right);
         }
     }
 
@@ -723,10 +673,10 @@ export abstract class FocusController<
 
         if (this.vmap.has(child)) {
             if (this.focused) {
-                this.focused[DOM_ELEMENT_FOCUS] = false;
+                this.focused[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(false);
             }
             this.focused = child;
-            this.focused[DOM_ELEMENT_FOCUS] = true;
+            this.focused[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
         }
     }
 
@@ -780,21 +730,21 @@ export abstract class FocusController<
 
     protected abstract getNavigableChildren(): DomElement[];
 
-    private getData() {
+    private getCurrFocusedData() {
         if (!this.focused) return;
         return this.vmap.get(this.focused);
     }
 
     private getYArr() {
-        return this.getData()?.yArr;
+        return this.getCurrFocusedData()?.yArr;
     }
 
     private getXArr() {
-        return this.getData()?.xArr;
+        return this.getCurrFocusedData()?.xArr;
     }
 
     protected focusDown(): DomElement | undefined {
-        const data = this.getData();
+        const data = this.getCurrFocusedData();
         if (!data) return;
         if (data.down) {
             this.focusChild(data.down);
@@ -803,7 +753,7 @@ export abstract class FocusController<
     }
 
     protected focusUp(): DomElement | undefined {
-        const data = this.getData();
+        const data = this.getCurrFocusedData();
         if (!data) return;
         if (data.up) {
             this.focusChild(data.up);
@@ -812,7 +762,7 @@ export abstract class FocusController<
     }
 
     protected focusLeft(): DomElement | undefined {
-        const data = this.getData();
+        const data = this.getCurrFocusedData();
         if (!data) return;
         if (data.left) {
             this.focusChild(data.left);
@@ -821,7 +771,7 @@ export abstract class FocusController<
     }
 
     protected focusRight(): DomElement | undefined {
-        const data = this.getData();
+        const data = this.getCurrFocusedData();
         if (!data) return;
         if (data.right) {
             this.focusChild(data.right);
@@ -884,7 +834,7 @@ export abstract class FocusController<
     }
 
     protected focusDisplacement(dx: number, dy: number): DomElement | undefined {
-        const data = this.getData();
+        const data = this.getCurrFocusedData();
         if (!data) return;
 
         if (dx) {

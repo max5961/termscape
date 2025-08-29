@@ -1,3 +1,4 @@
+import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 import type { ListStyle, VirtualStyle } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusController } from "./DomElement.js";
@@ -24,6 +25,13 @@ export class ListElement extends FocusController<ListStyle, ListStyle> {
 
     protected override getNavigableChildren(): DomElement[] {
         return this.children.slice();
+    }
+
+    protected override handleAppend(child: DomElement): void {
+        child[DOM_ELEMENT_FOCUS_NODE].becomeCheckpoint(false);
+        if (!this.children.length) {
+            child[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
+        }
     }
 
     /**

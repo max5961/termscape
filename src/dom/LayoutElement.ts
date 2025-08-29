@@ -1,7 +1,7 @@
 import { FocusController } from "./DomElement.js";
 import type { DomElement, LayoutStyle, TTagNames, VirtualStyle } from "../Types.js";
 import { BoxElement } from "./BoxElement.js";
-import { DOM_ELEMENT_FOCUS } from "../Symbols.js";
+import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 
 export class LayoutElement extends FocusController<LayoutStyle, LayoutStyle> {
     public override tagName: TTagNames;
@@ -25,27 +25,23 @@ export class LayoutElement extends FocusController<LayoutStyle, LayoutStyle> {
 
     protected override getNavigableChildren(): DomElement[] {
         const nodes: LayoutNode[] = [];
-        this.checkNode(this, nodes);
+
+        this.dfs(this, (elem) => {
+            if (elem instanceof LayoutNode) {
+                nodes.push(elem);
+            }
+        });
+
         return nodes;
     }
 
-    private checkNode(node: DomElement, nodes: LayoutNode[]) {
-        if (node instanceof LayoutNode) {
-            nodes.push(node);
-        }
-        node.children.forEach((node) => {
-            this.checkNode(node, nodes);
-        });
-    }
-
     protected override handleAppend(child: DomElement): void {
-        child[DOM_ELEMENT_FOCUS] = false;
-
         if (!this.focused) {
             this.dfs(child, (elem) => {
-                if (elem instanceof LayoutNode && !this.focused) {
-                    child[DOM_ELEMENT_FOCUS] = true;
+                if (elem instanceof LayoutNode) {
+                    child[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
                     this.focused = child;
+                    return;
                 }
             });
         }
@@ -68,5 +64,6 @@ export class LayoutElement extends FocusController<LayoutStyle, LayoutStyle> {
 export class LayoutNode extends BoxElement {
     constructor() {
         super();
+        this.focusNode.becomeCheckpoint(false);
     }
 }

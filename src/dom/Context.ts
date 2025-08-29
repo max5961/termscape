@@ -1,51 +1,57 @@
 type Status = { focus: boolean; shallowFocus: boolean };
 
-/* eslint-disable @typescript-eslint/no-this-alias */
-
 export class Focus {
     public children: Set<Focus>;
     public nearestCheckpoint: CheckPoint | null;
-    private dispatched: CheckPoint | null;
+    private checkpoint: CheckPoint | null;
+    protected parent: Focus | null;
 
     constructor() {
         this.children = new Set();
         this.nearestCheckpoint = null;
-        this.dispatched = null;
+        this.checkpoint = null;
+        this.parent = null;
     }
 
     public appendChild(focus: Focus) {
+        focus.parent = this;
         focus.nearestCheckpoint = this.nearestCheckpoint;
         this.children.add(focus);
     }
 
     public removeChild(focus: Focus) {
         this.children.delete(focus);
+        focus.parent = null;
+        this.nearestCheckpoint = null;
+        this.rewireChildren(this.checkpoint);
     }
 
-    public dispatchCheckpoint(focused: boolean) {
-        if (this.dispatched) return;
+    public becomeCheckpoint(focused: boolean) {
+        if (this.checkpoint) return;
 
         const checkpoint = new CheckPoint(focused);
 
         const nearest = this.nearestCheckpoint;
         if (nearest) {
-            nearest.children.add(checkpoint);
             checkpoint.parent = nearest;
         }
 
-        this.dispatched = checkpoint;
-        this.updateDescendentNearest(checkpoint);
+        this.checkpoint = checkpoint;
+        this.nearestCheckpoint = checkpoint;
+        this.rewireChildren(checkpoint);
     }
 
-    public removeDispatchedCheckpoint() {
-        if (!this.dispatched) return;
+    public becomeNormal() {
+        if (!this.checkpoint) return;
 
-        if (this.dispatched.parent) {
-            this.dispatched.parent.children = this.dispatched.children;
-        }
+        this.checkpoint = null;
+        this.nearestCheckpoint = this.parent?.nearestCheckpoint ?? null;
+        this.rewireChildren(this.nearestCheckpoint);
+    }
 
-        this.dispatched = null;
-        this.updateDescendentNearest(this.nearestCheckpoint);
+    public updateCheckpoint(focused: boolean) {
+        if (!this.checkpoint) return;
+        this.checkpoint.focused = focused;
     }
 
     public getStatus(): Status {
@@ -54,27 +60,24 @@ export class Focus {
         );
     }
 
-    private updateDescendentNearest(nearest: CheckPoint | null) {
-        const update = (focus: Focus, nearest: CheckPoint | null) => {
-            if (focus.dispatched) return;
-            focus.children.forEach((child) => {
-                update(child, nearest);
-            });
-        };
-
-        this.children.forEach((child) => update(child, nearest));
+    private rewireChildren(nearest: CheckPoint | null) {
+        this.children.forEach((child) => this.rewireHelper(child, nearest));
     }
+
+    private rewireHelper = (focus: Focus, nearest: CheckPoint | null) => {
+        if (focus.checkpoint) return;
+        focus.nearestCheckpoint = nearest;
+        focus.children.forEach((child) => this.rewireHelper(child, nearest));
+    };
 }
 
 export class CheckPoint {
     public parent: CheckPoint | null;
-    public children: Set<CheckPoint>;
     public focused: boolean;
 
     constructor(focused: boolean) {
         this.focused = focused;
         this.parent = null;
-        this.children = new Set();
     }
 
     public getStatus(): Status {

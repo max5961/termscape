@@ -4,5 +4,5 @@ export const DOM_ELEMENT_RECT = Symbol.for("termscape.domelement.rect");
 export const DOM_ELEMENT_ACTIONS = Symbol.for("termscape.domelement.actions");
 export const DOM_ELEMENT_SCROLL_OFFSET = Symbol.for("termscape.domelement.corner_offset");
 export const DOM_ELEMENT_CANVAS = Symbol.for("termscape.domelement.canvas");
-export const DOM_ELEMENT_FOCUS = Symbol.for("termscape.domelement.focus");
+export const DOM_ELEMENT_FOCUS_NODE = Symbol.for("termscape.domelement.focus_node");
 export const TEXT_PADDING = Symbol.for("termscape.padding_text");
