@@ -1,4 +1,4 @@
-import { FocusController } from "./DomElement.js";
+import { FocusManager } from "./DomElement.js";
 import type { DomElement, TTagNames } from "../Types.js";
 import { BoxElement } from "./BoxElement.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
@@ -8,10 +8,7 @@ import type {
     ShadowLayoutStyle,
 } from "../style/Style.js";
 
-export class LayoutElement extends FocusController<
-    VirtualLayoutStyle,
-    ShadowLayoutStyle
-> {
+export class LayoutElement extends FocusManager<VirtualLayoutStyle, ShadowLayoutStyle> {
     public override tagName: TTagNames;
 
     constructor() {
@@ -43,29 +40,36 @@ export class LayoutElement extends FocusController<
         return nodes;
     }
 
-    protected override handleAppend(child: DomElement): void {
-        if (!this.focused) {
-            this.dfs(child, (elem) => {
-                if (elem instanceof LayoutNode) {
-                    child[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
-                    this.focused = child;
-                    return;
-                }
-            });
-        }
+    protected override handleAppendChild(child: DomElement): void {
+        if (!this.focused) return;
+
+        this.dfs(child, (elem) => {
+            if (elem instanceof LayoutNode) {
+                child[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
+                this.focused = child;
+                return;
+            }
+        });
     }
 
-    public override focusUp() {
-        return super.focusUp();
+    protected override handleRemoveChild(
+        _child: DomElement,
+        _freeRecursive?: boolean,
+    ): void {
+        // noop
     }
-    public override focusDown() {
-        return super.focusDown();
+
+    public override focusUp(units = 1) {
+        return super.focusUp(units);
     }
-    public override focusLeft() {
-        return super.focusLeft();
+    public override focusDown(units = 1) {
+        return super.focusDown(units);
     }
-    public override focusRight() {
-        return super.focusRight();
+    public override focusLeft(units = 1) {
+        return super.focusLeft(units);
+    }
+    public override focusRight(units = 1) {
+        return super.focusRight(units);
     }
 }
 

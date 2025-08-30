@@ -1,9 +1,9 @@
 import type { ShadowListStyle, VirtualListStyle, VirtualStyle } from "../style/Style.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 import type { DomElement } from "./DomElement.js";
-import { FocusController } from "./DomElement.js";
+import { FocusManager } from "./DomElement.js";
 
-export class ListElement extends FocusController<VirtualListStyle, ShadowListStyle> {
+export class ListElement extends FocusManager<VirtualListStyle, ShadowListStyle> {
     public override tagName: "LIST_ELEMENT";
 
     constructor() {
@@ -29,97 +29,50 @@ export class ListElement extends FocusController<VirtualListStyle, ShadowListSty
 
     protected override handleAppendChild(child: DomElement): void {
         child[DOM_ELEMENT_FOCUS_NODE].becomeCheckpoint(false);
-        if (!this.children.length) {
+        if (this.children.length === 1) {
             child[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
+            this.focused = child;
+        }
+
+        // TODO - this needs to be dynamic so change to this value should
+        // modify all existing children
+        if (this.style.blockChildrenShrink) {
+            child.style.flexShrink = 0;
         }
     }
 
-    public override handleRemoveChild(child: DomElement, freeRecursive?: boolean): void {
+    protected override handleRemoveChild(
+        child: DomElement,
+        freeRecursive?: boolean,
+    ): void {
         child[DOM_ELEMENT_FOCUS_NODE].becomeNormal(freeRecursive);
     }
 
-    /**
-     * Adjust the `scrollOffset` in order to keep the focused element in view
-     */
-    protected adjustScrollOffset(nextFocus: DomElement, isScrollDown: boolean) {
-        this.focused = nextFocus;
-
-        // Scroll Window Rect & Focus Item Rect
-        const fRect = this.focused.getUnclippedRect();
-        const wRect = this.canvas?.unclippedContentRect;
-        if (!fRect || !wRect) return;
-
-        const fTop = fRect.corner.y;
-        const wTop = wRect.corner.y;
-        const fBot = fRect.corner.y + fRect.height;
-        const wBot = wRect.corner.y + wRect.height;
-
-        const scrollOff = this.style.keepFocusedCenter
-            ? Math.floor(this.node.getComputedHeight() / 2)
-            : Math.min(this.style.scrollOff ?? 0, wBot);
-
-        // If focus item is as large or larger than window, pin to top.
-        if (fRect.height >= wRect.height) {
-            const toScroll = fTop - wTop;
-            if (toScroll > 0) {
-                this.scrollDown(toScroll);
-            } else {
-                this.scrollUp(Math.abs(toScroll));
-            }
-            return;
-        }
-
-        const itemBelowWin = fBot > wBot - scrollOff;
-        const itemAboveWin = fTop <= wTop + scrollOff;
-
-        const scroll = () => {
-            return isScrollDown
-                ? this.scrollDown(fBot - wBot + scrollOff)
-                : this.scrollUp(wTop + scrollOff - fTop);
-        };
-
-        if (itemBelowWin) {
-            return scroll();
-        }
-        if (itemAboveWin) {
-            return scroll();
-        }
-
-        // `scroll` fn explanation
-        // If `scrollOff` is greater than half the dimension of the window, then
-        // the direction by which we are scrolling becomes important because the
-        // scrollOff will cause the above/below variables to oscillate.  Checking
-        // the direction forces the same behavior regardless.  In most other
-        // cases the above/below variables align with `isScrollDown`.  If they
-        // don't, such as when non-focus scroll is involved, either fn still
-        // brings the focused item into the window.
+    private isLTR(): boolean | undefined {
+        return this.style.flexDirection?.includes("row");
     }
 
-    public focusNext(num?: number) {
-        num ??= 1;
-        const next = this.focusDisplacement(0, num);
-        if (next) {
-            this.adjustScrollOffset(next, true);
-        }
+    public focusNext(units = 1) {
+        return this.isLTR() ? super.focusRight(units) : super.focusDown(units);
     }
 
-    public focusPrev(num?: number) {
-        num ??= 1;
-        const next = this.focusDisplacement(0, -Math.abs(num));
-        if (next) {
-            this.adjustScrollOffset(next, false);
-        }
+    public focusPrev(units = 1) {
+        return this.isLTR() ? super.focusLeft(units) : super.focusUp(units);
     }
 
-    // public focusFirst() {
-    //     // this.handleIdxChange(0);
-    // }
-    //
-    // public focusLast() {
-    //     // this.handleIdxChange(this.children.length - 1);
-    // }
-    //
-    // public goToIndex(idx: number) {
-    //     // this.handleIdxChange(idx);
-    // }
+    public focusFirst() {
+        return this.isLTR() ? super.focusFirstX() : super.focusFirstY();
+    }
+
+    public focusLast() {
+        return this.isLTR() ? super.focusLastX() : super.focusLastY();
+    }
+
+    public focusElement(element: DomElement) {
+        return super.focusChild(element);
+    }
+
+    public focusIndex(idx: number) {
+        return this.isLTR() ? super.focusXIdx(idx) : super.focusYIdx(idx);
+    }
 }

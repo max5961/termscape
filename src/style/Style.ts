@@ -131,7 +131,7 @@ export namespace TextElementStyle {
     };
 }
 
-export namespace FocusControllerStyle {
+export namespace FocusManagerStyle {
     // prettier-ignore
     export type Style = 
         YogaStyle.Style & 
@@ -164,7 +164,7 @@ export type VirtualStyle =
     YogaStyle.Style &
     DomElementStyle.Style &
     TextElementStyle.Style &
-    FocusControllerStyle.Style;
+    FocusManagerStyle.Style;
 export type ShadowStyle = Shadow<VirtualStyle>;
 
 export type VirtualBoxStyle = YogaStyle.Style & DomElementStyle.Style;
@@ -173,8 +173,8 @@ export type ShadowBoxStyle = Shadow<VirtualBoxStyle>;
 export type VirtualTextStyle = TextElementStyle.Style;
 export type ShadowTextStyle = Shadow<VirtualTextStyle>;
 
-export type VirtualListStyle = FocusControllerStyle.Style;
+export type VirtualListStyle = FocusManagerStyle.Style;
 export type ShadowListStyle = Shadow<VirtualListStyle>;
 
-export type VirtualLayoutStyle = FocusControllerStyle.Style;
+export type VirtualLayoutStyle = FocusManagerStyle.Style;
 export type ShadowLayoutStyle = Shadow<VirtualLayoutStyle>;

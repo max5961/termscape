@@ -27,7 +27,7 @@ import { objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
 import { throwError } from "../shared/ThrowError.js";
 import { Canvas } from "../compositor/Canvas.js";
-import { Focus } from "./Context.js";
+import { Focus } from "./FocusContext.js";
 
 export abstract class DomElement<
     VStyle extends VirtualStyle = VirtualStyle,
@@ -154,12 +154,6 @@ export abstract class DomElement<
 
         for (const key of keys) {
             this.style[key] = withDefault[key];
-        }
-
-        // Is this necessary?
-        const root = this.getRoot();
-        if (root) {
-            root.scheduleRender();
         }
     }
 
@@ -499,7 +493,7 @@ export abstract class DomElement<
         this.applyScroll(-units, 0);
     }
 
-    protected applyScroll(dx: number, dy: number) {
+    private applyScroll(dx: number, dy: number) {
         const allowedUnits = this.requestScroll(dx, dy);
         if (allowedUnits) {
             // scroll up/down
@@ -509,7 +503,7 @@ export abstract class DomElement<
         }
     }
 
-    protected requestScroll(dx: number, dy: number): number {
+    private requestScroll(dx: number, dy: number): number {
         if (!this.canvas) return 0;
 
         const contentRect = this.canvas.unclippedContentRect;
@@ -545,7 +539,7 @@ export abstract class DomElement<
         return 0;
     }
 
-    protected getDeepestContent(elem: DomElement, axis: "x" | "y", level = 0) {
+    private getDeepestContent(elem: DomElement, axis: "x" | "y", level = 0) {
         const rect = elem.canvas?.unclippedRect;
         if (!rect) return 0;
 
@@ -566,7 +560,7 @@ export abstract class DomElement<
     }
 
     @Render({ layoutChange: true })
-    protected applyCornerOffset(dx: number, dy: number) {
+    private applyCornerOffset(dx: number, dy: number) {
         this.scrollOffset.x += dx;
         this.scrollOffset.y += dy;
     }
@@ -608,7 +602,7 @@ export abstract class DomElement<
     }
 }
 
-export abstract class FocusController<
+export abstract class FocusManager<
     VStyle extends VirtualStyle,
     SStyle extends ShadowStyle,
 > extends DomElement<VStyle, SStyle> {
@@ -623,22 +617,8 @@ export abstract class FocusController<
 
     protected abstract getNavigableChildren(): DomElement[];
     protected abstract handleAppendChild(child: DomElement): void;
-    protected abstract handleRemoveChild(
-        child: DomElement,
-        freeRecursive?: boolean,
-    ): void;
-
-    public get focused() {
-        return this._focused;
-    }
-
-    protected set focused(val: DomElement | undefined) {
-        this._focused = val;
-    }
-
-    protected get visualMap(): Readonly<VisualNodeMap> {
-        return this.vmap;
-    }
+    // prettier-ignore
+    protected abstract handleRemoveChild(child: DomElement, freeRecursive?: boolean): void;
 
     public override appendChild(child: DomElement): void {
         super.appendChild(child);
@@ -652,18 +632,127 @@ export abstract class FocusController<
 
     public override removeChild(child: DomElement, freeRecursive?: boolean): void {
         super.removeChild(child, freeRecursive);
+
+        if (this.focused === child) {
+            const data = this.getFocusedData();
+            const next = data?.up || data?.down || data?.left || data?.right;
+            this.focusChild(next);
+        }
+
         this.handleRemoveChild(child, freeRecursive);
     }
 
-    public focusChild(child: DomElement | undefined) {
-        if (this.focused === child || !child) return;
+    public get focused() {
+        return this._focused;
+    }
 
-        if (this.vmap.has(child)) {
-            if (this.focused) {
-                this.focused[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(false);
+    protected set focused(val: DomElement | undefined) {
+        this._focused = val;
+    }
+
+    protected get visualMap(): Readonly<VisualNodeMap> {
+        return this.vmap;
+    }
+
+    public focusChild(child: DomElement | undefined) {
+        if (!child || this.focused === child) return;
+        if (!this.vmap.has(child)) return;
+
+        if (this.focused) {
+            this.focused[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(false);
+        }
+        this.focused = child;
+        this.focused[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
+    }
+
+    /**
+     * Adjust the `scrollOffset` in order to keep the focused element in view
+     */
+    private normalizeScrollToFocus(direction: "up" | "down" | "left" | "right") {
+        if (!this.focused) return;
+        if (!this.style.keepFocusedVisible) return;
+
+        const isScrollNegative = direction === "down" || direction === "left";
+        const isLTR = direction === "left" || direction === "right";
+
+        // Scroll Window Rect & Focus Item Rect
+        const fRect = this.focused.getUnclippedRect();
+        const wRect = this.canvas?.unclippedContentRect;
+        if (!fRect || !wRect) return;
+
+        if (!isLTR) {
+            const fTop = fRect.corner.y;
+            const wTop = wRect.corner.y;
+            const fBot = fRect.corner.y + fRect.height;
+            const wBot = wRect.corner.y + wRect.height;
+
+            const scrollOff = this.style.keepFocusedCenter
+                ? Math.floor(this.node.getComputedWidth() / 2)
+                : Math.min(this.style.scrollOff ?? 0, wBot);
+
+            // If focus item is as large or larger than window, pin to top.
+            if (fRect.height >= wRect.height) {
+                const toScroll = fTop - wTop;
+                if (toScroll > 0) {
+                    this.scrollDown(toScroll);
+                } else {
+                    this.scrollUp(Math.abs(toScroll));
+                }
+                return;
             }
-            this.focused = child;
-            this.focused[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
+
+            const itemBelowWin = fBot > wBot - scrollOff;
+            const itemAboveWin = fTop <= wTop + scrollOff;
+
+            const scroll = () => {
+                return isScrollNegative
+                    ? this.scrollDown(fBot - wBot + scrollOff)
+                    : this.scrollUp(wTop + scrollOff - fTop);
+            };
+
+            if (itemBelowWin || itemAboveWin) {
+                return scroll();
+            }
+
+            // `scroll` fn explanation
+            // If `scrollOff` is greater than half the dimension of the window, then
+            // the direction by which we are scrolling becomes important because the
+            // scrollOff will cause the above/below variables to oscillate.  Checking
+            // the direction forces the same behavior regardless.  In most other
+            // cases the above/below variables align with `isScrollDown`.  If they
+            // don't, such as when non-focus scroll is involved, either fn still
+            // brings the focused item into the window.
+        } else {
+            const fLeft = fRect.corner.x;
+            const wLeft = wRect.corner.x;
+            const fRight = fRect.corner.x + fRect.width;
+            const wRight = wRect.corner.x + wRect.width;
+
+            if (fRect.width >= wRect.width) {
+                const toScroll = fRight - wRight;
+                if (toScroll > 0) {
+                    this.scrollRight(toScroll);
+                } else {
+                    this.scrollLeft(Math.abs(toScroll));
+                }
+            }
+
+            const scrollOff = this.style.keepFocusedCenter
+                ? Math.floor(this.node.getComputedHeight() / 2)
+                : Math.min(this.style.scrollOff ?? 0, wRight);
+
+            const itemRightWin = fRight > wRight - scrollOff;
+            const itemLeftWin = fLeft <= wLeft + scrollOff;
+
+            const scroll = () => {
+                return isScrollNegative
+                    ? this.scrollRight(fRight - wRight + scrollOff)
+                    : this.scrollLeft(wLeft + scrollOff - fLeft);
+            };
+
+            if (itemRightWin || itemLeftWin) {
+                return scroll();
+            }
         }
     }
 
@@ -715,141 +804,139 @@ export abstract class FocusController<
         }
     }
 
-    private getCurrFocusedData() {
+    private getFocusedData() {
         if (!this.focused) return;
         return this.vmap.get(this.focused);
     }
 
     private getYArr() {
-        return this.getCurrFocusedData()?.yArr;
+        return this.getFocusedData()?.yArr;
     }
 
     private getXArr() {
-        return this.getCurrFocusedData()?.xArr;
+        return this.getFocusedData()?.xArr;
     }
 
-    protected focusDown(): DomElement | undefined {
-        const data = this.getCurrFocusedData();
+    private displaceFocus(dx: number, dy: number): DomElement | undefined {
+        const data = this.getFocusedData();
         if (!data) return;
-        if (data.down) {
-            this.focusChild(data.down);
-            return data.down;
-        }
+        if (!dx && !dy) return;
+
+        const applyDisplacement = (d: number, idx?: number, arr?: DomElement[]) => {
+            if (!arr || idx === undefined) return;
+
+            let next = idx + d;
+
+            if (this.style.fallthrough) {
+                if (next < 0) {
+                    next = arr.length - 1;
+                } else if (next > arr.length - 1) {
+                    next = 0;
+                }
+            }
+
+            if (d < 0) {
+                next = Math.max(0, next);
+            } else {
+                next = Math.min(arr.length - 1, next);
+            }
+
+            this.focusChild(arr[next]);
+            return arr[next];
+        };
+
+        const result = dx
+            ? applyDisplacement(dx, data.xIdx, data.xArr)
+            : applyDisplacement(dy, data.yIdx, data.yArr);
+
+        this.normalizeScrollToFocus(
+            dx < 0 ? "left" : dx > 0 ? "right" : dy < 0 ? "up" : "down",
+        );
+
+        return result;
     }
 
-    protected focusUp(): DomElement | undefined {
-        const data = this.getCurrFocusedData();
-        if (!data) return;
-        if (data.up) {
-            this.focusChild(data.up);
-            return data.up;
-        }
+    protected focusDown(n = 1): DomElement | undefined {
+        const data = this.getFocusedData();
+        if (!data || !data.down) return;
+
+        return this.displaceFocus(0, Math.abs(n));
     }
 
-    protected focusLeft(): DomElement | undefined {
-        const data = this.getCurrFocusedData();
-        if (!data) return;
-        if (data.left) {
-            this.focusChild(data.left);
-            return data.left;
-        }
+    protected focusUp(n = 1): DomElement | undefined {
+        const data = this.getFocusedData();
+        if (!data || !data.up) return;
+
+        return this.displaceFocus(0, -Math.abs(n));
     }
 
-    protected focusRight(): DomElement | undefined {
-        const data = this.getCurrFocusedData();
-        if (!data) return;
-        if (data.right) {
-            this.focusChild(data.right);
-            return data.right;
-        }
+    protected focusLeft(n = 1): DomElement | undefined {
+        const data = this.getFocusedData();
+        if (!data || !data.left) return;
+
+        return this.displaceFocus(-Math.abs(n), 0);
     }
 
-    protected focusXIdx(idx: number): DomElement | undefined {
+    protected focusRight(n = 1): DomElement | undefined {
+        const data = this.getFocusedData();
+        if (!data || !data.right) return;
+
+        return this.displaceFocus(Math.abs(n), 0);
+    }
+
+    protected focusXIdx(nextIdx: number): DomElement | undefined {
         const xArr = this.getXArr();
-        if (!xArr) return;
-        if (xArr[idx]) {
-            this.focusChild(xArr[idx]);
-            return xArr[idx];
-        }
+        if (!xArr || !xArr[nextIdx]) return;
+
+        const prevIdx = this.getFocusedData()?.xIdx ?? 0;
+        const displacement = nextIdx - prevIdx;
+
+        return this.displaceFocus(displacement, 0);
     }
 
-    protected focusYIdx(idx: number): DomElement | undefined {
+    protected focusYIdx(nextIdx: number): DomElement | undefined {
         const yArr = this.getYArr();
-        if (!yArr) return;
-        if (yArr[idx]) {
-            this.focusChild(yArr[idx]);
-            return yArr[idx];
-        }
+        if (!yArr || !yArr[nextIdx]) return;
+
+        const prevIdx = this.getFocusedData()?.yIdx ?? 0;
+        const displacement = nextIdx - prevIdx;
+
+        return this.displaceFocus(0, displacement);
     }
 
     protected focusFirstX(): DomElement | undefined {
         const xArr = this.getXArr();
-        if (!xArr) return;
-        if (xArr[0]) {
-            this.focusChild(xArr[0]);
-            return xArr[0];
-        }
+        if (!xArr || !xArr[0]) return;
+
+        this.focusChild(xArr[0]);
+        this.normalizeScrollToFocus("left");
+        return xArr[0];
     }
 
     protected focusFirstY(): DomElement | undefined {
         const yArr = this.getYArr();
-        if (!yArr) return;
-        if (yArr[0]) {
-            this.focusChild(yArr[0]);
-            return yArr[0];
-        }
+        if (!yArr || !yArr[0]) return;
+
+        this.focusChild(yArr[0]);
+        this.normalizeScrollToFocus("up");
+        return yArr[0];
     }
 
     protected focusLastX(): DomElement | undefined {
         const xArr = this.getXArr();
-        if (!xArr) return;
-        if (xArr.length) {
-            this.focusChild(xArr[xArr.length - 1]);
-            return xArr[xArr.length - 1];
-        }
+        if (!xArr || !xArr.length) return;
+
+        this.focusChild(xArr[xArr.length - 1]);
+        this.normalizeScrollToFocus("right");
+        return xArr[xArr.length - 1];
     }
 
     protected focusLastY(): DomElement | undefined {
         const yArr = this.getYArr();
-        if (!yArr) return;
-        if (yArr.length) {
-            this.focusChild(yArr[yArr.length - 1]);
-            return yArr[yArr.length - 1];
-        }
-    }
+        if (!yArr || !yArr.length) return;
 
-    protected focusDisplacement(dx: number, dy: number): DomElement | undefined {
-        const data = this.getCurrFocusedData();
-        if (!data) return;
-
-        if (dx) {
-            const xArr = data.xArr;
-            const xIdx = data.xIdx;
-            if (!xArr || xIdx === undefined) return;
-
-            let nextIdx: number;
-            if (dx < 0) {
-                nextIdx = Math.max(0, xIdx + dx);
-            } else {
-                nextIdx = Math.min(xArr.length - 1, xIdx + dx);
-            }
-
-            this.focusChild(xArr[nextIdx]);
-            return xArr[nextIdx];
-        } else if (dy) {
-            const yArr = data.yArr;
-            const yIdx = data.yIdx;
-            if (!yArr || yIdx === undefined) return;
-
-            let nextIdx: number;
-            if (dx < 0) {
-                nextIdx = Math.max(0, yIdx + dy);
-            } else {
-                nextIdx = Math.min(yArr.length - 1, yIdx + dy);
-            }
-
-            this.focusChild(yArr[nextIdx]);
-            return yArr[nextIdx];
-        }
+        this.focusChild(yArr[yArr.length - 1]);
+        this.normalizeScrollToFocus("down");
+        return yArr[yArr.length - 1];
     }
 }

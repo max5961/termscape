@@ -1,4 +1,4 @@
-import { DomElement, FocusController } from "../dom/DomElement.js";
+import { DomElement, FocusManager } from "../dom/DomElement.js";
 import { Canvas, type SubCanvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
@@ -50,7 +50,7 @@ export class Compositor {
                 this.ops.defer(zIndex, () => this.draw.composeText(elem, style, canvas));
             }
 
-            if (elem instanceof FocusController) {
+            if (elem instanceof FocusManager) {
                 if (layoutChange) {
                     this.postLayoutDefer(() => {
                         elem.mapChildrenToVMap();
