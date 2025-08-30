@@ -861,28 +861,28 @@ export abstract class FocusManager<
 
     protected focusDown(n = 1): DomElement | undefined {
         const data = this.getFocusedData();
-        if (!data || !data.down) return;
+        if (!data) return;
 
         return this.displaceFocus(0, Math.abs(n));
     }
 
     protected focusUp(n = 1): DomElement | undefined {
         const data = this.getFocusedData();
-        if (!data || !data.up) return;
+        if (!data) return;
 
         return this.displaceFocus(0, -Math.abs(n));
     }
 
     protected focusLeft(n = 1): DomElement | undefined {
         const data = this.getFocusedData();
-        if (!data || !data.left) return;
+        if (!data) return;
 
         return this.displaceFocus(-Math.abs(n), 0);
     }
 
     protected focusRight(n = 1): DomElement | undefined {
         const data = this.getFocusedData();
-        if (!data || !data.right) return;
+        if (!data) return;
 
         return this.displaceFocus(Math.abs(n), 0);
     }
