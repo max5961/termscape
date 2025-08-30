@@ -132,6 +132,14 @@ export abstract class DomElement<
         return this.collection;
     }
 
+    public setAttribute(key: string, value: unknown) {
+        this.attributes.set(key, value);
+    }
+
+    public getAttribute(key: string) {
+        return this.attributes.get(key);
+    }
+
     // ========================================================================
     // Auto Render Proxy
     // ========================================================================
@@ -778,6 +786,7 @@ export abstract class FocusManager<
                     this.vmap.set(curr, {});
                 }
                 const data = this.vmap.get(curr)!;
+
                 data.left = prev;
                 data.right = next;
                 data.xIdx = i;
@@ -808,7 +817,13 @@ export abstract class FocusManager<
 
         console.log(
             Array.from(this.vmap.entries()).map(([el, data]) => {
-                //
+                return {
+                    ELEMENT: el.getAttribute("id"),
+                    up: data.up?.getAttribute("id"),
+                    right: data.right?.getAttribute("id"),
+                    down: data.down?.getAttribute("id"),
+                    left: data.left?.getAttribute("id"),
+                };
             }),
         );
     }
