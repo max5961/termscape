@@ -805,6 +805,12 @@ export abstract class FocusManager<
                 data.yArr = sortedY;
             }
         }
+
+        console.log(
+            Array.from(this.vmap.entries()).map(([el, data]) => {
+                //
+            }),
+        );
     }
 
     private getFocusedData() {

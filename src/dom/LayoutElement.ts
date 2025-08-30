@@ -31,33 +31,34 @@ export class LayoutElement extends FocusManager<VirtualLayoutStyle, ShadowLayout
     protected override getNavigableChildren(): DomElement[] {
         const nodes: LayoutNode[] = [];
 
-        this.dfs(this, (elem) => {
-            if (elem instanceof LayoutNode) {
-                nodes.push(elem);
+        // TODO - this needs to gaurd against nested layout nodes
+        const dfs = (child: DomElement) => {
+            if (child instanceof LayoutNode) {
+                nodes.push(child);
+            } else {
+                child.children.forEach((child) => dfs(child));
             }
-        });
+        };
+        this.children.forEach((child) => dfs(child));
 
         return nodes;
     }
 
     protected override handleAppendChild(child: DomElement): void {
-        if (!this.focused) return;
+        if (this.focused) return;
 
-        this.dfs(child, (elem) => {
-            if (elem instanceof LayoutNode) {
+        let found = false;
+        this.dfs(child, (child) => {
+            if (!found && child instanceof LayoutNode) {
                 child[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
                 this.focused = child;
-                return;
+                found = true;
             }
         });
     }
 
-    protected override handleRemoveChild(
-        _child: DomElement,
-        _freeRecursive?: boolean,
-    ): void {
-        // noop
-    }
+    // noop
+    protected override handleRemoveChild(_c: DomElement, _?: boolean): void {}
 
     public override focusUp(units = 1) {
         return super.focusUp(units);
@@ -77,5 +78,6 @@ export class LayoutNode extends BoxElement {
     constructor() {
         super();
         this.focusNode.becomeCheckpoint(false);
+        this.tagName = "LAYOUT_NODE";
     }
 }

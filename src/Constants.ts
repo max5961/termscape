@@ -10,6 +10,7 @@ export const TagNames = {
     Root: "ROOT_ELEMENT",
     List: "LIST_ELEMENT",
     Layout: "LAYOUT_ELEMENT",
+    LayoutNode: "LAYOUT_NODE",
 } as const;
 
 export const TextEffectSet = new Set<TextEffect>([
