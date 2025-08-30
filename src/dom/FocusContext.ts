@@ -1,3 +1,6 @@
+import { DOM_ELEMENT_STYLE_HANDLER } from "../Symbols.js";
+import type { DomElement } from "./DomElement.js";
+
 type Status = { focus: boolean; shallowFocus: boolean };
 
 export class Focus {
@@ -5,8 +8,10 @@ export class Focus {
     public nearestCheckpoint: CheckPoint | null;
     private checkpoint: CheckPoint | null;
     protected parent: Focus | null;
+    private elem: DomElement;
 
-    constructor() {
+    constructor(elem: DomElement) {
+        this.elem = elem;
         this.children = new Set();
         this.nearestCheckpoint = null;
         this.checkpoint = null;
@@ -38,7 +43,7 @@ export class Focus {
 
         this.checkpoint = checkpoint;
         this.nearestCheckpoint = checkpoint;
-        this.rewireChildren(checkpoint);
+        this.propagateChanges();
     }
 
     public becomeNormal(freeRecursive?: boolean) {
@@ -47,13 +52,14 @@ export class Focus {
         this.checkpoint = null;
         this.nearestCheckpoint = this.parent?.nearestCheckpoint ?? null;
         if (!freeRecursive) {
-            this.rewireChildren(this.nearestCheckpoint);
+            this.propagateChanges();
         }
     }
 
     public updateCheckpoint(focused: boolean) {
         if (!this.checkpoint) return;
         this.checkpoint.focused = focused;
+        this.propagateChanges();
     }
 
     public getStatus(): Status {
@@ -62,6 +68,23 @@ export class Focus {
         );
     }
 
+    private propagateChanges() {
+        this.rewireChildren(this.nearestCheckpoint);
+        this.reapplyStyles(this.elem);
+    }
+
+    private reapplyStyles = (elem: DomElement) => {
+        const styleHandler = elem[DOM_ELEMENT_STYLE_HANDLER];
+
+        if (styleHandler) {
+            elem.style = styleHandler;
+        }
+
+        elem.children.forEach((child) => {
+            this.reapplyStyles(child);
+        });
+    };
+
     private rewireChildren(nearest: CheckPoint | null) {
         this.children.forEach((child) => this.rewireHelper(child, nearest));
     }
@@ -69,6 +92,12 @@ export class Focus {
     private rewireHelper = (focus: Focus, nearest: CheckPoint | null) => {
         if (focus.checkpoint) return;
         focus.nearestCheckpoint = nearest;
+
+        const styleHandler = focus.elem[DOM_ELEMENT_STYLE_HANDLER];
+        if (styleHandler) {
+            focus.elem.style = styleHandler;
+        }
+
         focus.children.forEach((child) => this.rewireHelper(child, nearest));
     };
 }

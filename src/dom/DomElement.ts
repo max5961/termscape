@@ -20,6 +20,7 @@ import {
     ROOT_BRIDGE_DOM_ELEMENT,
     DOM_ELEMENT_CANVAS,
     DOM_ELEMENT_FOCUS_NODE,
+    DOM_ELEMENT_STYLE_HANDLER,
 } from "../Symbols.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
@@ -92,7 +93,7 @@ export abstract class DomElement<
         };
 
         this.styleHandler = null;
-        this.focusNode = new Focus();
+        this.focusNode = new Focus(this);
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {
@@ -121,6 +122,10 @@ export abstract class DomElement<
 
     get [DOM_ELEMENT_FOCUS_NODE]() {
         return this.focusNode;
+    }
+
+    get [DOM_ELEMENT_STYLE_HANDLER]() {
+        return this.styleHandler;
     }
 
     get children(): Readonly<DomElement[]> {
@@ -658,9 +663,7 @@ export abstract class FocusManager<
         if (!child || this.focused === child) return;
         if (!this.vmap.has(child)) return;
 
-        if (this.focused) {
-            this.focused[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(false);
-        }
+        this.focused?.[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(false);
         this.focused = child;
         this.focused[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
     }
