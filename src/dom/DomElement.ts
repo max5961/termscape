@@ -624,6 +624,7 @@ export abstract class FocusManager<
     protected abstract handleAppendChild(child: DomElement): void;
     // prettier-ignore
     protected abstract handleRemoveChild(child: DomElement, freeRecursive?: boolean): void;
+    protected abstract buildVisualMap(children: DomElement[], vmap: VisualNodeMap): void;
 
     public override appendChild(child: DomElement): void {
         super.appendChild(child);
@@ -636,15 +637,15 @@ export abstract class FocusManager<
     }
 
     public override removeChild(child: DomElement, freeRecursive?: boolean): void {
+        this.handleRemoveChild(child, freeRecursive);
         super.removeChild(child, freeRecursive);
 
+        // THis will be a problem for pages, so removeChild must be overriden there
         if (this.focused === child) {
             const data = this.getFocusedData();
             const next = data?.up || data?.down || data?.left || data?.right;
             this.focusChild(next);
         }
-
-        this.handleRemoveChild(child, freeRecursive);
     }
 
     public get focused() {
@@ -775,209 +776,10 @@ export abstract class FocusManager<
         }
     }
 
-    public mapChildrenToVMap(isLayout: boolean, style: ShadowStyle) {
+    public refreshVisualMap() {
         const children = this.getNavigableChildren();
         this.vmap = new Map();
-
-        if (!isLayout) {
-            const isColumn = style.flexDirection?.includes("column");
-            this.createListMap(children, !!isColumn);
-        } else {
-            this.createLayoutMap(children);
-        }
-    }
-
-    private createListMap(children: DomElement[], isColumn: boolean) {
-        if (!isColumn) {
-            const sortedX = children.slice().sort((prev, curr) => {
-                const prevStart = prev.getUnclippedRect()?.corner.x ?? 0;
-                const currStart = curr.getUnclippedRect()?.corner.x ?? 0;
-                return prevStart - currStart;
-            });
-            for (let i = 0; i < sortedX.length; ++i) {
-                const curr = sortedX[i];
-                const prev = sortedX[i - 1] as DomElement | undefined;
-                const next = sortedX[i + 1] as DomElement | undefined;
-
-                if (!this.vmap.has(curr)) {
-                    this.vmap.set(curr, {});
-                }
-                const data = this.vmap.get(curr)!;
-
-                data.xIdx = i;
-                data.xArr = sortedX;
-                data.left = prev;
-                data.right = next;
-            }
-        } else {
-            const sortedY = children.slice().sort((prev, curr) => {
-                const prevStart = prev.getUnclippedRect()?.corner.y ?? 0;
-                const currStart = curr.getUnclippedRect()?.corner.y ?? 0;
-                return prevStart - currStart;
-            });
-            for (let i = 0; i < sortedY.length; ++i) {
-                const curr = sortedY[i];
-                const prev = sortedY[i - 1] as DomElement | undefined;
-                const next = sortedY[i + 1] as DomElement | undefined;
-
-                if (!this.vmap.has(curr)) {
-                    this.vmap.set(curr, {});
-                }
-                const data = this.vmap.get(curr)!;
-                data.yIdx = i;
-                data.yArr = sortedY;
-                data.up = prev;
-                data.down = next;
-            }
-        }
-    }
-
-    private createLayoutMap(children: DomElement[]): void {
-        const xSort = this.bucketSort(
-            children,
-            (child) => child.getUnclippedRect()?.corner.x ?? 0,
-            (child) => child.getUnclippedRect()?.corner.y ?? 0,
-        );
-
-        const ySort = this.bucketSort(
-            children,
-            (child) => child.getUnclippedRect()?.corner.y ?? 0,
-            (child) => child.getUnclippedRect()?.corner.x ?? 0,
-        );
-
-        findEdges.call(this, xSort, "right", "left");
-        findEdges.call(this, ySort, "down", "up");
-
-        function findEdges(
-            this: FocusManager<VirtualStyle, ShadowStyle>,
-            sort: ReturnType<typeof this.bucketSort>,
-            incEdge: "down" | "right", // in a 2d graph, moving down *increases* the *y* val...
-            decEdge: "left" | "up", // and moving up decreases it
-        ) {
-            for (let i = 0; i < sort.bucketKeys.length; ++i) {
-                const bucketIdx = sort.bucketKeys[i];
-                const bucket = sort.buckets[bucketIdx];
-
-                for (let j = 0; j < bucket.length; ++j) {
-                    const elem = bucket[j];
-
-                    if (!this.vmap.get(elem)) {
-                        this.vmap.set(elem, {});
-                    }
-
-                    const adjacentFn =
-                        incEdge === "right" ? this.xAdjacentValid : this.yAdjacentValid;
-
-                    // Check adj inc
-                    let n = i + 1;
-                    let foundIncEdge = false;
-                    while (n < sort.bucketKeys.length) {
-                        const incBkIdx = sort.bucketKeys[n];
-                        const incBk = sort.buckets[incBkIdx];
-
-                        for (const incElem of incBk) {
-                            if (adjacentFn(elem, incElem)) {
-                                this.vmap.get(elem)![incEdge] = incElem;
-                                foundIncEdge = true;
-                                break;
-                            }
-                        }
-
-                        if (foundIncEdge) break;
-                        ++n;
-                    }
-
-                    // Check adj dec
-                    n = i - 1;
-                    let foundDecEdge = false;
-                    while (n >= 0) {
-                        const decBkIdx = sort.bucketKeys[n];
-                        const decBk = sort.buckets[decBkIdx];
-
-                        for (const decElem of decBk) {
-                            if (adjacentFn(elem, decElem)) {
-                                this.vmap.get(elem)![decEdge] = decElem;
-                                foundDecEdge = true;
-                                break;
-                            }
-                        }
-
-                        if (foundDecEdge) break;
-                        --n;
-                    }
-                }
-            }
-        }
-    }
-
-    private bucketSort(
-        children: DomElement[],
-        primaryAccessor: (child: DomElement) => number,
-        perpendicularAccessor: (child: DomElement) => number,
-    ) {
-        const buckets: Record<number, DomElement[]> = {};
-
-        children.forEach((child) => {
-            const idx = primaryAccessor(child);
-            if (!buckets[idx]) {
-                buckets[idx] = [];
-            }
-            buckets[idx].push(child);
-        });
-
-        const bucketKeys = objectKeys(buckets)
-            .map(Number)
-            .sort((a, b) => a - b);
-
-        bucketKeys.forEach((key) => {
-            buckets[key].sort((prev, curr) => {
-                const prevStart = perpendicularAccessor(prev);
-                const currStart = perpendicularAccessor(curr);
-                return prevStart - currStart;
-            });
-        });
-
-        return { bucketKeys, buckets };
-    }
-
-    /**
-     * Checks if the *left* or *right* element according to the sorted elements array
-     * is visually left or right. The adjacent element must share some *x-plane*
-     * space to be considered valid.  Diagonal connections are considered invalid.
-     * */
-    private xAdjacentValid(curr: DomElement, adj: DomElement | undefined): boolean {
-        const cRect = curr.getUnclippedRect();
-        const aRect = adj?.getUnclippedRect();
-        if (!aRect || !cRect) return false;
-
-        if (aRect.corner.x === cRect.corner.x) return false;
-
-        const cDepth = cRect.corner.y + cRect.height;
-        const aDepth = aRect.corner.y + aRect.height;
-
-        const fullyAbove = aDepth <= cRect.corner.y;
-        const fullyBelow = aRect.corner.y > cDepth;
-        return !fullyAbove && !fullyBelow;
-    }
-
-    /**
-     * Checks if the *up* or *down* element according to the sorted elements array
-     * is visually up or down. The adjacent element must share some *x-plane*
-     * space to be considered valid.  Diagonal connections are considered invalid.
-     * */
-    private yAdjacentValid(curr: DomElement, adj: DomElement | undefined): boolean {
-        const aRect = adj?.getUnclippedRect();
-        const cRect = curr.getUnclippedRect();
-        if (!aRect || !cRect) return false;
-
-        if (aRect.corner.y === cRect.corner.y) return false;
-
-        const cSpan = cRect.corner.x + cRect.width;
-        const aSpan = aRect.corner.x + aRect.width;
-
-        const fullyLeft = aSpan <= cRect.corner.x;
-        const fullyRight = aRect.corner.x > cSpan;
-        return !fullyLeft && !fullyRight;
+        this.buildVisualMap(children, this.vmap);
     }
 
     private getFocusedData() {

@@ -8,6 +8,7 @@ import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { Root } from "../dom/Root.js";
 import { LayoutElement } from "../dom/LayoutElement.js";
+import { PagesElement } from "../dom/PagesElement.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -30,6 +31,11 @@ export class Compositor {
         layoutChange: boolean,
         canvas: Canvas = this.canvas,
     ) {
+        if (elem.parentElement instanceof PagesElement && !elem.getFocus()) {
+            return;
+        }
+        // TODO - this needs to be recursive in order to nullify rects
+        // changes from display none to flex should also warrant a `layoutChange`
         if (elem.style.display === "none") return;
 
         const style = elem[DOM_ELEMENT_SHADOW_STYLE];
@@ -51,13 +57,10 @@ export class Compositor {
                 this.ops.defer(zIndex, () => this.draw.composeText(elem, style, canvas));
             }
 
-            if (elem instanceof FocusManager) {
-                if (layoutChange) {
-                    this.postLayoutDefer(() => {
-                        const isLayout = elem instanceof LayoutElement;
-                        elem.mapChildrenToVMap(isLayout, style);
-                    });
-                }
+            if (elem instanceof FocusManager && layoutChange) {
+                this.postLayoutDefer(() => {
+                    elem.refreshVisualMap();
+                });
             }
         }
 

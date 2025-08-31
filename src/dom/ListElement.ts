@@ -1,5 +1,6 @@
 import type { ShadowListStyle, VirtualListStyle, VirtualStyle } from "../style/Style.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
+import type { VisualNodeMap } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusManager } from "./DomElement.js";
 
@@ -22,6 +23,29 @@ export class ListElement extends FocusManager<VirtualListStyle, ShadowListStyle>
         keepFocusedVisible: true,
         blockChildrenShrink: true,
     };
+
+    public focusNext(units = 1) {
+        return this.isLTR() ? super.displaceRight(units) : super.displaceDown(units);
+    }
+    public focusPrev(units = 1) {
+        return this.isLTR() ? super.displaceLeft(units) : super.displaceUp(units);
+    }
+    public focusFirst() {
+        return this.isLTR() ? super.focusFirstX() : super.focusFirstY();
+    }
+    public focusLast() {
+        return this.isLTR() ? super.focusLastX() : super.focusLastY();
+    }
+    public override focusChild(child: DomElement) {
+        return super.focusChild(child);
+    }
+    public focusIndex(idx: number) {
+        return this.isLTR() ? super.focusXIdx(idx) : super.focusYIdx(idx);
+    }
+
+    private isLTR(): boolean | undefined {
+        return this.style.flexDirection?.includes("row");
+    }
 
     protected override getNavigableChildren(): DomElement[] {
         return this.children.slice();
@@ -48,31 +72,50 @@ export class ListElement extends FocusManager<VirtualListStyle, ShadowListStyle>
         child[DOM_ELEMENT_FOCUS_NODE].becomeNormal(freeRecursive);
     }
 
-    private isLTR(): boolean | undefined {
-        return this.style.flexDirection?.includes("row");
-    }
+    protected override buildVisualMap(children: DomElement[], vmap: VisualNodeMap): void {
+        const isColumn = this.style.flexDirection?.includes("column");
 
-    public focusNext(units = 1) {
-        return this.isLTR() ? super.displaceRight(units) : super.displaceDown(units);
-    }
+        if (!isColumn) {
+            const sortedX = children.slice().sort((prev, curr) => {
+                const prevStart = prev.getUnclippedRect()?.corner.x ?? 0;
+                const currStart = curr.getUnclippedRect()?.corner.x ?? 0;
+                return prevStart - currStart;
+            });
+            for (let i = 0; i < sortedX.length; ++i) {
+                const curr = sortedX[i];
+                const prev = sortedX[i - 1] as DomElement | undefined;
+                const next = sortedX[i + 1] as DomElement | undefined;
 
-    public focusPrev(units = 1) {
-        return this.isLTR() ? super.displaceLeft(units) : super.displaceUp(units);
-    }
+                if (!vmap.has(curr)) {
+                    vmap.set(curr, {});
+                }
+                const data = vmap.get(curr)!;
 
-    public focusFirst() {
-        return this.isLTR() ? super.focusFirstX() : super.focusFirstY();
-    }
+                data.xIdx = i;
+                data.xArr = sortedX;
+                data.left = prev;
+                data.right = next;
+            }
+        } else {
+            const sortedY = children.slice().sort((prev, curr) => {
+                const prevStart = prev.getUnclippedRect()?.corner.y ?? 0;
+                const currStart = curr.getUnclippedRect()?.corner.y ?? 0;
+                return prevStart - currStart;
+            });
+            for (let i = 0; i < sortedY.length; ++i) {
+                const curr = sortedY[i];
+                const prev = sortedY[i - 1] as DomElement | undefined;
+                const next = sortedY[i + 1] as DomElement | undefined;
 
-    public focusLast() {
-        return this.isLTR() ? super.focusLastX() : super.focusLastY();
-    }
-
-    public override focusChild(child: DomElement) {
-        return super.focusChild(child);
-    }
-
-    public focusIndex(idx: number) {
-        return this.isLTR() ? super.focusXIdx(idx) : super.focusYIdx(idx);
+                if (!vmap.has(curr)) {
+                    vmap.set(curr, {});
+                }
+                const data = vmap.get(curr)!;
+                data.yIdx = i;
+                data.yArr = sortedY;
+                data.up = prev;
+                data.down = next;
+            }
+        }
     }
 }

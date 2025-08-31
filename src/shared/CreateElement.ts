@@ -5,6 +5,7 @@ import { TextElement } from "../dom/TextElement.js";
 import { ListElement } from "../dom/ListElement.js";
 import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import type { RuntimeConfig } from "../Types.js";
+import { PagesElement } from "../dom/PagesElement.js";
 
 type TagMap = {
     box: BoxElement;
@@ -13,6 +14,7 @@ type TagMap = {
     root: Root;
     layout: LayoutElement;
     layoutnode: LayoutNode;
+    pages: PagesElement;
 };
 
 type Tag = keyof TagMap;
@@ -35,6 +37,9 @@ export function createElement<T extends Tag>(
     }
     if (tag === "layoutnode") {
         return new LayoutNode() as TagMap[T];
+    }
+    if (tag === "pages") {
+        return new PagesElement() as TagMap[T];
     }
     if (tag === "root") {
         return new Root(rootConfig ?? {}) as TagMap[T];
