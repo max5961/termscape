@@ -659,13 +659,29 @@ export abstract class FocusManager<
         return this.vmap;
     }
 
-    public focusChild(child: DomElement | undefined) {
+    public focusChild(child: DomElement | undefined): DomElement | undefined {
         if (!child || this.focused === child) return;
         if (!this.vmap.has(child)) return;
+
+        const prev = this.focused ? this.vmap.get(this.focused) : undefined;
+        const next = this.vmap.get(child);
 
         this.focused?.[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(false);
         this.focused = child;
         this.focused[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
+
+        const prevX = prev?.xIdx ?? 0;
+        const prevY = prev?.yIdx ?? 0;
+        const nextX = next?.xIdx ?? 0;
+        const nextY = next?.yIdx ?? 0;
+        const dx = nextX - prevX;
+        const dy = nextY - prevY;
+
+        this.normalizeScrollToFocus(
+            dx < 0 ? "left" : dx > 0 ? "right" : dy < 0 ? "up" : "down",
+        );
+
+        return this.focused;
     }
 
     /**
@@ -769,18 +785,6 @@ export abstract class FocusManager<
         } else {
             this.createLayoutMap(children);
         }
-
-        console.log(
-            Array.from(this.vmap.entries()).map(([el, data]) => {
-                return {
-                    ELEMENT: el.getAttribute("id"),
-                    up: data.up?.getAttribute("id"),
-                    right: data.right?.getAttribute("id"),
-                    down: data.down?.getAttribute("id"),
-                    left: data.left?.getAttribute("id"),
-                };
-            }),
-        );
     }
 
     private createListMap(children: DomElement[], isColumn: boolean) {
@@ -1021,61 +1025,65 @@ export abstract class FocusManager<
             ? applyDisplacement(dx, data.xIdx, data.xArr)
             : applyDisplacement(dy, data.yIdx, data.yArr);
 
-        this.normalizeScrollToFocus(
-            dx < 0 ? "left" : dx > 0 ? "right" : dy < 0 ? "up" : "down",
-        );
-
         return result;
     }
 
-    protected focusDown(n = 1): DomElement | undefined {
+    protected focusDown(): DomElement | undefined {
         const data = this.getFocusedData();
         if (!data) return;
-
-        if (data.down && n === 1) {
-            console.log("down");
-            this.focusChild(data.down);
-            return data.down;
+        if (data.down) {
+            return this.focusChild(data.down);
         }
+    }
+
+    protected focusUp(): DomElement | undefined {
+        const data = this.getFocusedData();
+        if (!data) return;
+        if (data.up) {
+            return this.focusChild(data.up);
+        }
+    }
+
+    protected focusLeft(): DomElement | undefined {
+        const data = this.getFocusedData();
+        if (!data) return;
+        if (data.left) {
+            return this.focusChild(data.left);
+        }
+    }
+
+    protected focusRight(): DomElement | undefined {
+        const data = this.getFocusedData();
+        if (!data) return;
+        if (data.right) {
+            return this.focusChild(data.right);
+        }
+    }
+
+    protected displaceDown(n = 1): DomElement | undefined {
+        const data = this.getFocusedData();
+        if (!data) return;
 
         return this.displaceFocus(0, Math.abs(n));
     }
 
-    protected focusUp(n = 1): DomElement | undefined {
+    protected displaceUp(n = 1): DomElement | undefined {
         const data = this.getFocusedData();
         if (!data) return;
-
-        if (data.up && n === 1) {
-            console.log("up");
-            this.focusChild(data.up);
-            return data.up;
-        }
 
         return this.displaceFocus(0, -Math.abs(n));
     }
 
-    protected focusLeft(n = 1): DomElement | undefined {
+    protected displaceLeft(n = 1): DomElement | undefined {
         const data = this.getFocusedData();
         if (!data) return;
-
-        if (data.left && n === 1) {
-            console.log("left");
-            this.focusChild(data.left);
-            return data.left;
-        }
 
         return this.displaceFocus(-Math.abs(n), 0);
     }
 
-    protected focusRight(n = 1): DomElement | undefined {
+    protected displaceRight(n = 1): DomElement | undefined {
         const data = this.getFocusedData();
         if (!data) return;
-
-        if (data.right && n === 1) {
-            console.log("right");
-            this.focusChild(data.right);
-            return data.right;
-        }
 
         return this.displaceFocus(Math.abs(n), 0);
     }
@@ -1104,35 +1112,27 @@ export abstract class FocusManager<
         const xArr = this.getXArr();
         if (!xArr || !xArr[0]) return;
 
-        this.focusChild(xArr[0]);
-        this.normalizeScrollToFocus("left");
-        return xArr[0];
+        return this.focusChild(xArr[0]);
     }
 
     protected focusFirstY(): DomElement | undefined {
         const yArr = this.getYArr();
         if (!yArr || !yArr[0]) return;
 
-        this.focusChild(yArr[0]);
-        this.normalizeScrollToFocus("up");
-        return yArr[0];
+        return this.focusChild(yArr[0]);
     }
 
     protected focusLastX(): DomElement | undefined {
         const xArr = this.getXArr();
         if (!xArr || !xArr.length) return;
 
-        this.focusChild(xArr[xArr.length - 1]);
-        this.normalizeScrollToFocus("right");
-        return xArr[xArr.length - 1];
+        return this.focusChild(xArr[xArr.length - 1]);
     }
 
     protected focusLastY(): DomElement | undefined {
         const yArr = this.getYArr();
         if (!yArr || !yArr.length) return;
 
-        this.focusChild(yArr[yArr.length - 1]);
-        this.normalizeScrollToFocus("down");
-        return yArr[yArr.length - 1];
+        return this.focusChild(yArr[yArr.length - 1]);
     }
 }

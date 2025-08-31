@@ -56,20 +56,39 @@ export class LayoutElement extends FocusManager<VirtualLayoutStyle, ShadowLayout
         });
     }
 
-    // noop
-    protected override handleRemoveChild(_c: DomElement, _?: boolean): void {}
+    // NOOP
+    // prettier-ignore
+    protected override handleRemoveChild(_child: DomElement, _freeRecursive?: boolean): void {}
 
-    public override focusUp(units = 1) {
-        return super.focusUp(units);
+    public override focusUp() {
+        return super.focusUp();
     }
-    public override focusDown(units = 1) {
-        return super.focusDown(units);
+    public override focusDown() {
+        return super.focusDown();
     }
-    public override focusLeft(units = 1) {
-        return super.focusLeft(units);
+    public override focusLeft() {
+        return super.focusLeft();
     }
-    public override focusRight(units = 1) {
-        return super.focusRight(units);
+    public override focusRight() {
+        return super.focusRight();
+    }
+    public override focusChild(child: LayoutNode) {
+        return super.focusChild(child);
+    }
+    public focusById(id: string): DomElement | undefined {
+        const entries = Array.from(this.visualMap.entries());
+        let found: DomElement | undefined;
+        for (let i = 0; i < entries.length; ++i) {
+            const [elem] = entries[i];
+            if (elem.getAttribute("id") === id) {
+                found = elem;
+                break;
+            }
+        }
+
+        if (found) {
+            return super.focusChild(found);
+        }
     }
 }
 

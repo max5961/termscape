@@ -53,11 +53,11 @@ export class ListElement extends FocusManager<VirtualListStyle, ShadowListStyle>
     }
 
     public focusNext(units = 1) {
-        return this.isLTR() ? super.focusRight(units) : super.focusDown(units);
+        return this.isLTR() ? super.displaceRight(units) : super.displaceDown(units);
     }
 
     public focusPrev(units = 1) {
-        return this.isLTR() ? super.focusLeft(units) : super.focusUp(units);
+        return this.isLTR() ? super.displaceLeft(units) : super.displaceUp(units);
     }
 
     public focusFirst() {
@@ -68,8 +68,8 @@ export class ListElement extends FocusManager<VirtualListStyle, ShadowListStyle>
         return this.isLTR() ? super.focusLastX() : super.focusLastY();
     }
 
-    public focusElement(element: DomElement) {
-        return super.focusChild(element);
+    public override focusChild(child: DomElement) {
+        return super.focusChild(child);
     }
 
     public focusIndex(idx: number) {
