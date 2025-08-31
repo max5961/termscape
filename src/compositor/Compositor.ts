@@ -7,6 +7,7 @@ import { DOM_ELEMENT_SHADOW_STYLE, DOM_ELEMENT_CANVAS } from "../Symbols.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { Root } from "../dom/Root.js";
+import { LayoutElement } from "../dom/LayoutElement.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -53,7 +54,8 @@ export class Compositor {
             if (elem instanceof FocusManager) {
                 if (layoutChange) {
                     this.postLayoutDefer(() => {
-                        elem.mapChildrenToVMap();
+                        const isLayout = elem instanceof LayoutElement;
+                        elem.mapChildrenToVMap(isLayout, style);
                     });
                 }
             }
