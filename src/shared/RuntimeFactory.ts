@@ -113,8 +113,11 @@ export function createRuntime(deps: RuntimeDependencies) {
         },
 
         getDomActions: (): Action[] => {
-            return Array.from(attached.actions.values()).flatMap((actionSet) => {
-                return Array.from(actionSet.values());
+            return Array.from(attached.actions.entries()).flatMap(([elem, actionSet]) => {
+                if (elem.getFocus()) {
+                    return Array.from(actionSet.values());
+                }
+                return [];
             });
         },
 

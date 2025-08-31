@@ -468,15 +468,7 @@ export abstract class DomElement<
 
     @RequestInput()
     public addKeyListener(action: Action): () => void {
-        const origCb = action.callback;
-        action.callback = () => {
-            if (this.getFocus()) {
-                origCb?.();
-            }
-        };
-
         this.metadata.actions.add(action);
-
         return () => {
             this.removeKeyListener(action);
         };
@@ -855,8 +847,8 @@ export abstract class FocusManager<
         function findEdges(
             this: FocusManager<VirtualStyle, ShadowStyle>,
             sort: ReturnType<typeof this.bucketSort>,
-            incEdge: "down" | "right", // in a 2d graph, moving down *increases* the *y* val
-            decEdge: "left" | "up",
+            incEdge: "down" | "right", // in a 2d graph, moving down *increases* the *y* val...
+            decEdge: "left" | "up", // and moving up decreases it
         ) {
             for (let i = 0; i < sort.bucketKeys.length; ++i) {
                 const bucketIdx = sort.bucketKeys[i];

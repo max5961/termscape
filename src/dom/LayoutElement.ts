@@ -31,7 +31,6 @@ export class LayoutElement extends FocusManager<VirtualLayoutStyle, ShadowLayout
     protected override getNavigableChildren(): DomElement[] {
         const nodes: LayoutNode[] = [];
 
-        // TODO - this needs to gaurd against nested layout nodes
         const dfs = (child: DomElement) => {
             if (child instanceof LayoutNode) {
                 nodes.push(child);
