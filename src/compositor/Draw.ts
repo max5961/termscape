@@ -1,7 +1,7 @@
-import type { BoxElement } from "../dom/BoxElement.js";
 import type { TextElement } from "../dom/TextElement.js";
 import type { Color } from "../Types.js";
-import type { ShadowStyle, VirtualTextStyle } from "../style/Style.js";
+import type { BaseShadowStyle, TextStyle } from "../style/Style.js";
+import type { BoxLike } from "./types.js";
 import { Canvas } from "./Canvas.js";
 import { alignRows, getRows } from "../shared/TextWrap.js";
 import { TEXT_PADDING } from "../Symbols.js";
@@ -27,7 +27,7 @@ export class Draw {
     // Box
     // =========================================================================
 
-    public composeBox(elem: BoxElement, style: ShadowStyle, canvas: Canvas) {
+    public composeBox(elem: BoxLike, style: BaseShadowStyle, canvas: Canvas) {
         if ((style.zIndex ?? 0) > this.lowestLayer || style.backgroundColor) {
             this.fillBg(canvas, style.backgroundColor);
         }
@@ -48,7 +48,7 @@ export class Draw {
     }
 
     /** renders only round borders for now */
-    private renderBorder(elem: BoxElement, style: ShadowStyle, canvas: Canvas) {
+    private renderBorder(elem: BoxLike, style: BaseShadowStyle, canvas: Canvas) {
         const width = elem.node.getComputedWidth();
         const height = elem.node.getComputedHeight();
 
@@ -91,7 +91,7 @@ export class Draw {
     // Text
     // =========================================================================
 
-    public composeText(elem: TextElement, style: VirtualTextStyle, canvas: Canvas) {
+    public composeText(elem: TextElement, style: TextStyle, canvas: Canvas) {
         if (style.wrap === "overflow") {
             return this.composeTextOverflow(elem, canvas);
         }

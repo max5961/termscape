@@ -102,78 +102,41 @@ export namespace DomElementStyle {
     };
 }
 
-export namespace TextElementStyle {
-    export type Style = {
-        color?: Color;
-        backgroundColor?: Color;
-        dimColor?: boolean;
-        bold?: boolean;
-        italic?: boolean;
-        underline?: boolean;
-        strikethrough?: boolean;
-        wrap?:
-            | "overflow"
-            | "wrap"
-            | "truncate-start"
-            | "truncate-middle"
-            | "truncate-end";
-        align?: "left" | "center" | "right";
-        imagePositive?: boolean;
-        imageNegative?: boolean;
-        fontDefault?: boolean;
-        font1?: boolean;
-        font2?: boolean;
-        font3?: boolean;
-        font4?: boolean;
-        font5?: boolean;
-        font6?: boolean;
-    };
-}
-
-export namespace FocusManagerStyle {
-    // prettier-ignore
-    export type Style = 
-        YogaStyle.Style & 
-        {
-            fallthrough?: boolean;
-            scrollOff?: number;
-            keepFocusedCenter?: boolean;
-            keepFocusedVisible?: boolean;
-            /**
-             * If `true`, children will have a locked `flexShrink` of `0`.  If `false`,
-             * children will be able to set flexShrink to any valid value.
-             *
-             * Why?  Because a list that overflows will shrink/disappear any shrinkable
-             * children in order to fit everything, instead of allowing overflow and letting
-             * the list scroll as intended. If overflow is not expected, then this
-             * behavior can be toggled off.
-             *
-             * @default `true`
-             */
-            blockChildrenShrink?: boolean;
-        }
-}
+export type TextStyle = {
+    color?: Color;
+    backgroundColor?: Color;
+    dimColor?: boolean;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    strikethrough?: boolean;
+    wrap?: "overflow" | "wrap" | "truncate-start" | "truncate-middle" | "truncate-end";
+    align?: "left" | "center" | "right";
+    imagePositive?: boolean;
+    imageNegative?: boolean;
+    fontDefault?: boolean;
+    font1?: boolean;
+    font2?: boolean;
+    font3?: boolean;
+    font4?: boolean;
+    font5?: boolean;
+    font6?: boolean;
+};
 
 type Shadow<T extends object> = {
     [P in keyof T]: Exclude<T[P], "inherit" | "auto">;
 };
 
 // prettier-ignore
-export type VirtualStyle = 
+export type BaseStyle = 
     YogaStyle.Style &
     DomElementStyle.Style &
-    TextElementStyle.Style &
-    FocusManagerStyle.Style;
-export type ShadowStyle = Shadow<VirtualStyle>;
+    TextStyle
 
-export type VirtualBoxStyle = YogaStyle.Style & DomElementStyle.Style;
-export type ShadowBoxStyle = Shadow<VirtualBoxStyle>;
+export type BaseShadowStyle = Shadow<BaseStyle>;
 
-export type VirtualTextStyle = TextElementStyle.Style;
-export type ShadowTextStyle = Shadow<VirtualTextStyle>;
+export type BoxStyle = YogaStyle.Style & DomElementStyle.Style;
+export type ShadowBoxStyle = Shadow<BoxStyle>;
 
-export type VirtualListStyle = FocusManagerStyle.Style;
-export type ShadowListStyle = Shadow<VirtualListStyle>;
-
-export type VirtualLayoutStyle = FocusManagerStyle.Style;
-export type ShadowLayoutStyle = Shadow<VirtualLayoutStyle>;
+// TextStyle already defined
+export type ShadowTextStyle = Shadow<TextStyle>;

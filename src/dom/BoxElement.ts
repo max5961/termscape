@@ -1,8 +1,9 @@
 import { DomElement } from "./DomElement.js";
 import type { TTagNames } from "../Types.js";
-import type { VirtualBoxStyle, ShadowBoxStyle, VirtualStyle } from "../style/Style.js";
+import type { BoxStyle, ShadowBoxStyle } from "../style/Style.js";
+import type { BaseProps } from "../Props.js";
 
-export class BoxElement extends DomElement<VirtualBoxStyle, ShadowBoxStyle> {
+export class BoxElement extends DomElement<BoxStyle, ShadowBoxStyle> {
     public tagName: TTagNames;
 
     constructor() {
@@ -11,10 +12,14 @@ export class BoxElement extends DomElement<VirtualBoxStyle, ShadowBoxStyle> {
         this.style = this.defaultStyles;
     }
 
-    protected override defaultStyles: VirtualStyle = {
+    protected override defaultStyles: BoxStyle = {
         flexWrap: "nowrap",
         flexDirection: "row",
         flexGrow: 0,
         flexShrink: 1,
     };
+
+    protected override get defaultProps(): BaseProps {
+        return {};
+    }
 }

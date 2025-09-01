@@ -1,14 +1,14 @@
-import type { BaseProps } from "../Props.js";
-import type { ShadowListStyle, VirtualListStyle, VirtualStyle } from "../style/Style.js";
+import type { FocusManagerProps } from "../Props.js";
+import type { BoxStyle, ShadowBoxStyle } from "../style/Style.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusManager } from "./DomElement.js";
 
 export class ListElement extends FocusManager<
-    VirtualListStyle,
-    ShadowListStyle,
-    BaseProps
+    BoxStyle,
+    ShadowBoxStyle,
+    FocusManagerProps
 > {
     public override tagName: "LIST_ELEMENT";
 
@@ -17,17 +17,22 @@ export class ListElement extends FocusManager<
         this.tagName = "LIST_ELEMENT";
     }
 
-    protected override defaultStyles: VirtualStyle = {
+    protected override defaultStyles: BoxStyle = {
         flexDirection: "column",
         flexWrap: "nowrap",
         overflow: "scroll",
         height: "100",
         width: "100",
-        fallthrough: false,
-        keepFocusedCenter: false,
-        keepFocusedVisible: true,
-        blockChildrenShrink: true,
     };
+
+    protected override get defaultProps(): FocusManagerProps {
+        return {
+            blockChildrenShrink: true,
+            fallthrough: false,
+            keepFocusedCenter: false,
+            keepFocusedVisible: true, // TODO
+        };
+    }
 
     public focusNext(units = 1) {
         return this.isLTR() ? super.displaceRight(units) : super.displaceDown(units);
@@ -63,9 +68,10 @@ export class ListElement extends FocusManager<
             this.focused = child;
         }
 
-        // TODO - this needs to be dynamic so change to this value should
-        // modify all existing children
-        if (this.style.blockChildrenShrink) {
+        // TODO: This needs to be dynamic so change to this value should modify
+        // all existing children... It also needs to revert to its original value
+        // when removing the element.
+        if (this.getProp("blockChildrenShrink")) {
             child.style.flexShrink = 0;
         }
     }

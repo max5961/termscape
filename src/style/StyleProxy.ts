@@ -3,17 +3,17 @@ import { AggregateHandlers, SanitizerHandlers, YogaHandlers } from "./StyleHandl
 import type { DomElement } from "../dom/DomElement.js";
 import { checkIfViewportDimensions } from "./util/checkIfViewportDimensions.js";
 import { shouldAlwaysRecalc } from "./util/recalculateStyle.js";
-import type { ShadowStyle, VirtualStyle } from "./Style.js";
+import type { BaseShadowStyle, BaseStyle } from "./Style.js";
 
 export function createVirtualStyleProxy<
-    T extends VirtualStyle = VirtualStyle,
-    U extends ShadowStyle = ShadowStyle,
+    T extends BaseStyle = BaseStyle,
+    U extends BaseShadowStyle = BaseShadowStyle,
 >(elem: DomElement, rootRef: DomElement["rootRef"], metadata: DomElement["metadata"]) {
     const virtualStyle = new Proxy<T>({} as T, {
-        get(target: T, prop: keyof VirtualStyle) {
+        get(target: T, prop: keyof BaseStyle) {
             return target[prop];
         },
-        set(target: T, prop: keyof VirtualStyle, newValue: any) {
+        set(target: T, prop: keyof BaseStyle, newValue: any) {
             const viewportProp = checkIfViewportDimensions(prop, newValue);
             const alwaysRecalc = shouldAlwaysRecalc(prop);
 
@@ -48,16 +48,16 @@ export function createVirtualStyleProxy<
     return { shadowStyle, virtualStyle };
 }
 
-function createShadowStyleProxy<T extends ShadowStyle>(
+function createShadowStyleProxy<T extends BaseShadowStyle>(
     node: YogaNode,
     rootRef: DomElement["rootRef"],
-    virtualStyle: VirtualStyle,
+    virtualStyle: BaseStyle,
 ) {
     const shadowStyle = new Proxy<T>({} as T, {
-        get(target: T, prop: keyof ShadowStyle) {
+        get(target: T, prop: keyof BaseShadowStyle) {
             return target[prop];
         },
-        set(target: T, prop: keyof ShadowStyle, newValue: any) {
+        set(target: T, prop: keyof BaseShadowStyle, newValue: any) {
             if (target[prop] !== newValue) {
                 target[prop] = newValue;
 

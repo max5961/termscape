@@ -1,28 +1,28 @@
 import { throwError } from "./ThrowError.js";
+import { objectKeys } from "../Util.js";
+import type { DomElement, RuntimeConfig, StyleHandler } from "../Types.js";
+import type { BaseProps, Props } from "../Props.js";
+import type { BoxStyle, BaseStyle, TextStyle } from "../style/Style.js";
 import { Root } from "../dom/Root.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { ListElement } from "../dom/ListElement.js";
 import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
-import type { DomElement, RuntimeConfig, StyleHandler } from "../Types.js";
 import { PagesElement } from "../dom/PagesElement.js";
-import type { BaseProps } from "../Props.js";
-import type {
-    VirtualBoxStyle,
-    VirtualLayoutStyle,
-    VirtualListStyle,
-    VirtualStyle,
-    VirtualTextStyle,
-} from "../style/Style.js";
-import { objectKeys } from "../Util.js";
-import type { Action } from "term-keymap";
 
-type DefaultConfig<T extends VirtualStyle> = {
-    style?: T | StyleHandler<T>;
+type RequiredConfig<Style extends BaseStyle, Props extends BaseProps> = {
+    style?: Style | StyleHandler<Style>;
     children?: DomElement[];
-    props?: BaseProps;
-    keyListeners?: Action[];
+    props: Props;
 };
+
+type OptionalConfig<Style extends BaseStyle, Props extends BaseProps> =
+    | undefined
+    | {
+          style?: Style | StyleHandler<Style>;
+          children?: DomElement[];
+          props?: Props;
+      };
 
 type TagMap = {
     root: {
@@ -30,27 +30,27 @@ type TagMap = {
         return: Root;
     };
     box: {
-        config: undefined | DefaultConfig<VirtualBoxStyle>;
+        config: OptionalConfig<BoxStyle, Props.Box>;
         return: BoxElement;
     };
     text: {
-        config: undefined | DefaultConfig<VirtualTextStyle>;
+        config: OptionalConfig<TextStyle, Props.Text>;
         return: TextElement;
     };
     list: {
-        config: undefined | DefaultConfig<VirtualListStyle>;
+        config: OptionalConfig<BoxStyle, Props.List>;
         return: ListElement;
     };
     layout: {
-        config: undefined | DefaultConfig<VirtualLayoutStyle>;
+        config: OptionalConfig<BoxStyle, Props.Layout>;
         return: LayoutElement;
     };
     layoutNode: {
-        config: undefined | DefaultConfig<VirtualBoxStyle>;
+        config: OptionalConfig<BoxStyle, Props.LayoutNode>;
         return: LayoutNode;
     };
     pages: {
-        config: undefined | DefaultConfig<VirtualBoxStyle>;
+        config: OptionalConfig<BoxStyle, Props.Pages>;
         return: PagesElement;
     };
 };
@@ -61,72 +61,63 @@ type RequiredTagMap = {
     [P in keyof TagMap]: ExtendsUndef<TagMap[P]["config"]> extends never ? P : never;
 }[keyof TagMap];
 
+type ConfigHelper<Style extends BaseStyle, Props extends BaseProps> = {
+    style?: Style | StyleHandler<Style>;
+    children?: DomElement[];
+    props?: Props;
+};
+
 type Tags = keyof TagMap;
 type Config<T extends Tags> = TagMap[T]["config"];
 type Return<T extends Tags> = TagMap[T]["return"];
+type DefaultConfig = ConfigHelper<BaseStyle, BaseProps>;
 
 export function createElement<T extends Tags>(
     tag: T,
-    ...rest: T extends RequiredTagMap ? [Config<T>] : [Config<T>?]
+    ...config: T extends RequiredTagMap ? [Config<T>] : [Config<T>?]
 ): Return<T> {
+    const cfg = config[0] as DefaultConfig;
     if (tag === "box") {
-        const config = rest[0] as Config<"box">;
         const box = new BoxElement();
-        if (!config) return box;
-
-        assignDefault(box, config);
+        applyConfig(box, cfg);
         return box;
     }
     if (tag === "text") {
-        const config = rest[0] as Config<"text">;
         const text = new TextElement();
-        if (!config) return text;
-
-        assignDefault(text, config);
+        applyConfig(text, cfg);
         return text;
     }
     if (tag === "pages") {
-        const config = rest[0] as Config<"pages">;
         const pages = new PagesElement();
-        if (!config) return pages;
-
-        assignDefault(pages, config);
+        applyConfig(pages, cfg);
         return pages;
     }
     if (tag === "list") {
-        const config = rest[0] as Config<"list">;
         const list = new ListElement();
-        if (!config) return list;
-
-        // Need to make ListElement essentially a Box with props for its settings
-        assignDefault(list, config);
+        applyConfig(list, cfg);
         return list;
     }
     if (tag === "layout") {
-        const config = rest[0] as Config<"layout">;
         const layout = new LayoutElement();
-        if (!config) return layout;
-
-        assignDefault(layout, config);
+        applyConfig(layout, cfg);
         return layout;
     }
     if (tag === "layoutNode") {
-        const config = rest[0] as Config<"layoutNode">;
         const layoutNode = new LayoutNode();
-        if (!config) return layoutNode;
-
-        assignDefault(layoutNode, config);
+        applyConfig(layoutNode, cfg);
         return layoutNode;
     }
     if (tag === "root") {
-        const config = rest[0] as Config<"root">;
-        return new Root(config ?? {});
+        const runtimeConfig = config[0] as Config<"root">;
+        return new Root(runtimeConfig ?? {});
     }
 
     throwError(null, "Invalid tagname.");
 }
 
-function assignDefault(elem: DomElement, config: Exclude<Config<"box">, undefined>) {
+function applyConfig(elem: DomElement, config: DefaultConfig): void {
+    if (!config) return;
+
     if (config.style) {
         elem.style = config.style;
     }

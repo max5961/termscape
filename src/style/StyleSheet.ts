@@ -1,13 +1,9 @@
-import type { VirtualBoxStyle, VirtualTextStyle } from "./Style.js";
+import type { BoxStyle, TextStyle } from "./Style.js";
 
 type Box = "Box";
 type Text = "Text";
 
-type InlineStyle<T> = T extends Box
-    ? VirtualBoxStyle
-    : T extends Text
-      ? VirtualTextStyle
-      : never;
+type InlineStyle<T> = T extends Box ? BoxStyle : T extends Text ? TextStyle : never;
 
 export const StyleSheet = {
     create<T extends Box | Text>(

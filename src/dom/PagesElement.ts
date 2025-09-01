@@ -1,4 +1,5 @@
-import type { ShadowStyle, VirtualStyle } from "../style/Style.js";
+import type { BaseProps } from "../Props.js";
+import type { BaseShadowStyle, BaseStyle } from "../style/Style.js";
 import type { TTagNames } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 
@@ -12,7 +13,7 @@ import { DomElement } from "./DomElement.js";
  * mouse or key events.
  */
 
-export class PagesElement extends DomElement<VirtualStyle, ShadowStyle> {
+export class PagesElement extends DomElement<BaseStyle, BaseShadowStyle> {
     public override tagName: TTagNames;
     private _idx: number;
     private pages: DomElement[];
@@ -24,7 +25,10 @@ export class PagesElement extends DomElement<VirtualStyle, ShadowStyle> {
         this.pages = [];
     }
 
-    protected override defaultStyles: VirtualStyle = {};
+    protected override defaultStyles: BaseStyle = {};
+    protected override get defaultProps(): BaseProps {
+        return {};
+    }
 
     // TODO
     public override insertBefore(_child: DomElement, _beforeChild: DomElement): void {}

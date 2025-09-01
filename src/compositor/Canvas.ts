@@ -7,7 +7,7 @@ import type {
     DomElement,
     YogaNode,
 } from "../Types.js";
-import type { ShadowStyle } from "../style/Style.js";
+import type { BaseShadowStyle } from "../style/Style.js";
 import { Pen } from "./Pen.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
 import { DOM_ELEMENT_SCROLL_OFFSET, DOM_ELEMENT_SHADOW_STYLE } from "../Symbols.js";
@@ -134,7 +134,7 @@ export class Canvas {
         // in the context of overflows set to hidden.
         let { minX, minY, maxX, maxY } = this;
 
-        const clampLimits = (visRect: Rect, style: ShadowStyle) => {
+        const clampLimits = (visRect: Rect, style: BaseShadowStyle) => {
             if (this.hasHiddenXOverflow(style)) {
                 minX = visRect.corner.x;
                 maxX = visRect.corner.x + visRect.width;
@@ -280,15 +280,15 @@ export class Canvas {
         };
     }
 
-    protected hasHiddenOverflow(style: ShadowStyle) {
+    protected hasHiddenOverflow(style: BaseShadowStyle) {
         return this.hasHiddenXOverflow(style) || this.hasHiddenYOverflow(style);
     }
 
-    protected hasHiddenXOverflow(style: ShadowStyle) {
+    protected hasHiddenXOverflow(style: BaseShadowStyle) {
         return style.overflowX === "hidden" || style.overflowX === "scroll";
     }
 
-    protected hasHiddenYOverflow(style: ShadowStyle) {
+    protected hasHiddenYOverflow(style: BaseShadowStyle) {
         return style.overflowY === "hidden" || style.overflowY === "scroll";
     }
 

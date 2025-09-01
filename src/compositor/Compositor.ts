@@ -7,8 +7,9 @@ import { DOM_ELEMENT_SHADOW_STYLE, DOM_ELEMENT_CANVAS } from "../Symbols.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { Root } from "../dom/Root.js";
-import { LayoutElement } from "../dom/LayoutElement.js";
 import { PagesElement } from "../dom/PagesElement.js";
+import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
+import { ListElement } from "../dom/ListElement.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -31,9 +32,6 @@ export class Compositor {
         layoutChange: boolean,
         canvas: Canvas = this.canvas,
     ) {
-        if (elem.parentElement instanceof PagesElement && !elem.getFocus()) {
-            return;
-        }
         // TODO - this needs to be recursive in order to nullify rects
         // changes from display none to flex should also warrant a `layoutChange`
         if (elem.style.display === "none") return;
@@ -49,7 +47,7 @@ export class Compositor {
         }
 
         if (canvas.canDraw()) {
-            if (elem instanceof BoxElement) {
+            if (this.isBoxLike(elem)) {
                 this.ops.defer(zIndex, () => this.draw.composeBox(elem, style, canvas));
             }
 
@@ -91,6 +89,16 @@ export class Compositor {
 
     private postLayoutDefer(cb: () => unknown): void {
         this.postLayout.push(cb);
+    }
+
+    private isBoxLike(elem: DomElement) {
+        return (
+            elem instanceof BoxElement ||
+            elem instanceof PagesElement ||
+            elem instanceof ListElement ||
+            elem instanceof LayoutElement ||
+            elem instanceof LayoutNode
+        );
     }
 
     public getHeight(): number {

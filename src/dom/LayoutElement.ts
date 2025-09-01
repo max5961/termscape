@@ -2,19 +2,11 @@ import { FocusManager } from "./DomElement.js";
 import type { DomElement, TTagNames, VisualNodeMap } from "../Types.js";
 import { BoxElement } from "./BoxElement.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
-import type {
-    VirtualStyle,
-    VirtualLayoutStyle,
-    ShadowLayoutStyle,
-} from "../style/Style.js";
+import type { BoxStyle, ShadowBoxStyle } from "../style/Style.js";
 import { objectKeys } from "../Util.js";
-import type { BaseProps } from "../Props.js";
+import type { BaseProps, FocusManagerProps } from "../Props.js";
 
-export class LayoutElement extends FocusManager<
-    VirtualLayoutStyle,
-    ShadowLayoutStyle,
-    BaseProps
-> {
+export class LayoutElement extends FocusManager<BoxStyle, ShadowBoxStyle, BaseProps> {
     public override tagName: TTagNames;
 
     constructor() {
@@ -22,17 +14,18 @@ export class LayoutElement extends FocusManager<
         this.tagName = "LAYOUT_ELEMENT";
     }
 
-    protected override defaultStyles: VirtualStyle = {
+    protected override defaultStyles: BoxStyle = {
         flexDirection: "column",
         flexWrap: "nowrap",
         overflow: "scroll",
         height: "100",
         width: "100",
-        fallthrough: false,
-        keepFocusedCenter: false,
-        keepFocusedVisible: true,
-        blockChildrenShrink: false,
     };
+
+    // TODO - only this prop for now
+    protected override get defaultProps(): FocusManagerProps {
+        return { blockChildrenShrink: false };
+    }
 
     public override focusUp() {
         return super.focusUp();

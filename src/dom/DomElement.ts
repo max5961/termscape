@@ -11,7 +11,8 @@ import type {
     StyleHandler,
     VisualNodeMap,
 } from "../Types.js";
-import type { VirtualStyle, ShadowStyle } from "../style/Style.js";
+import type { BaseStyle, BaseShadowStyle } from "../style/Style.js";
+import type { BaseProps, FocusManagerProps } from "../Props.js";
 import type { Root } from "./Root.js";
 import {
     DOM_ELEMENT_SCROLL_OFFSET,
@@ -24,16 +25,15 @@ import {
 } from "../Symbols.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
-import { objectKeys } from "../Util.js";
+import { objectEntries, objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
 import { throwError } from "../shared/ThrowError.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
-import type { BaseProps } from "../Props.js";
 
 export abstract class DomElement<
-    VStyle extends VirtualStyle = VirtualStyle,
-    SStyle extends ShadowStyle = ShadowStyle,
+    Style extends BaseStyle = BaseStyle,
+    ShadowStyle extends BaseShadowStyle = BaseShadowStyle,
     Props extends BaseProps = BaseProps,
 > {
     public abstract tagName: TTagNames;
@@ -48,14 +48,14 @@ export abstract class DomElement<
     protected props: Map<string, unknown>;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
     protected requiresStdin: boolean;
-    protected virtualStyle!: VStyle;
-    protected shadowStyle!: SStyle;
+    protected virtualStyle!: Style;
+    protected shadowStyle!: ShadowStyle;
     protected removeKeyListeners: (() => void)[];
     protected childrenSet: Set<DomElement>;
     protected readonly metadata: ElementMetaData;
-    protected readonly baseDefaultStyles: VirtualStyle;
-    protected abstract defaultStyles: VStyle;
-    protected styleHandler: StyleHandler<VStyle> | null;
+    protected readonly baseDefaultStyles: BaseStyle;
+    protected abstract defaultStyles: Style;
+    protected styleHandler: StyleHandler<Style> | null;
     protected focusNode: Focus;
 
     constructor() {
@@ -73,7 +73,7 @@ export abstract class DomElement<
         this.requiresStdin = false;
         this.metadata = new ElementMetaData(this);
 
-        const { virtualStyle, shadowStyle } = createVirtualStyleProxy<VStyle, SStyle>(
+        const { virtualStyle, shadowStyle } = createVirtualStyleProxy<Style, ShadowStyle>(
             this,
             this.rootRef,
             this.metadata,
@@ -96,6 +96,8 @@ export abstract class DomElement<
 
         this.styleHandler = null;
         this.focusNode = new Focus(this);
+
+        this.applyDefaultProps();
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {
@@ -142,11 +144,19 @@ export abstract class DomElement<
         return this.props.get(key as string) as Props[T] | undefined;
     }
 
+    private applyDefaultProps() {
+        for (const [k, v] of objectEntries(this.defaultProps)) {
+            this.setProp(k, v);
+        }
+    }
+
+    protected abstract get defaultProps(): Props;
+
     // ========================================================================
     // Auto Render Proxy
     // ========================================================================
 
-    set style(stylesheet: VStyle | StyleHandler<VStyle>) {
+    set style(stylesheet: Style | StyleHandler<Style>) {
         if (typeof stylesheet === "function") {
             this.styleHandler = stylesheet;
         } else {
@@ -163,7 +173,7 @@ export abstract class DomElement<
             ...this.baseDefaultStyles,
             ...this.defaultStyles,
             ...styles,
-        } as VStyle;
+        } as Style;
 
         const keys = [...objectKeys(withDefault), ...objectKeys(this.style)];
 
@@ -172,7 +182,7 @@ export abstract class DomElement<
         }
     }
 
-    get style(): VStyle {
+    get style(): Style {
         return this.virtualStyle;
     }
 
@@ -610,10 +620,10 @@ export abstract class DomElement<
 }
 
 export abstract class FocusManager<
-    VStyle extends VirtualStyle,
-    SStyle extends ShadowStyle,
-    Props extends BaseProps,
-> extends DomElement<VStyle, SStyle, Props> {
+    Style extends BaseStyle,
+    ShadowStyle extends BaseShadowStyle,
+    Props extends FocusManagerProps,
+> extends DomElement<Style, ShadowStyle, Props> {
     private vmap: VisualNodeMap;
     private _focused: DomElement | undefined;
 
@@ -643,7 +653,6 @@ export abstract class FocusManager<
         this.handleRemoveChild(child, freeRecursive);
         super.removeChild(child, freeRecursive);
 
-        // THis will be a problem for pages, so removeChild must be overriden there
         if (this.focused === child) {
             const data = this.getFocusedData();
             const next = data?.up || data?.down || data?.left || data?.right;
@@ -661,6 +670,10 @@ export abstract class FocusManager<
 
     protected get visualMap(): Readonly<VisualNodeMap> {
         return this.vmap;
+    }
+
+    private getFMProp<T extends keyof FocusManagerProps>(prop: T): FocusManagerProps[T] {
+        return this.getProp(prop);
     }
 
     public focusChild(child: DomElement | undefined): DomElement | undefined {
@@ -693,7 +706,7 @@ export abstract class FocusManager<
      */
     private normalizeScrollToFocus(direction: "up" | "down" | "left" | "right") {
         if (!this.focused) return;
-        if (!this.style.keepFocusedVisible) return;
+        if (!this.getFMProp("keepFocusedVisible")) return;
 
         const isScrollNegative = direction === "down" || direction === "left";
         const isLTR = direction === "left" || direction === "right";
@@ -709,9 +722,9 @@ export abstract class FocusManager<
             const fBot = fRect.corner.y + fRect.height;
             const wBot = wRect.corner.y + wRect.height;
 
-            const scrollOff = this.style.keepFocusedCenter
+            const scrollOff = this.getFMProp("keepFocusedCenter")
                 ? Math.floor(this.node.getComputedWidth() / 2)
-                : Math.min(this.style.scrollOff ?? 0, wBot);
+                : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
 
             // If focus item is as large or larger than window, pin to top.
             if (fRect.height >= wRect.height) {
@@ -760,9 +773,9 @@ export abstract class FocusManager<
                 }
             }
 
-            const scrollOff = this.style.keepFocusedCenter
+            const scrollOff = this.getFMProp("keepFocusedCenter")
                 ? Math.floor(this.node.getComputedHeight() / 2)
-                : Math.min(this.style.scrollOff ?? 0, wRight);
+                : Math.min(this.getFMProp("scrollOff") ?? 0, wRight);
 
             const itemRightWin = fRight > wRight - scrollOff;
             const itemLeftWin = fLeft <= wLeft + scrollOff;
@@ -808,7 +821,7 @@ export abstract class FocusManager<
 
             let next = idx + d;
 
-            if (this.style.fallthrough) {
+            if (this.getFMProp("fallthrough")) {
                 if (next < 0) {
                     next = arr.length - 1;
                 } else if (next > arr.length - 1) {

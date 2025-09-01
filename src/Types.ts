@@ -1,7 +1,7 @@
 import { configureStdin } from "term-keymap";
 import { TagNames } from "./Constants.js";
 import type { DomElement } from "./dom/DomElement.js";
-import type { VirtualStyle } from "./style/Style.js";
+import type { BaseStyle } from "./style/Style.js";
 export type { DomElement } from "./dom/DomElement.js";
 
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
@@ -106,11 +106,11 @@ export type WriteOpts = {
 };
 
 export type ViewportStyle = keyof Pick<
-    VirtualStyle,
+    BaseStyle,
     "height" | "width" | "minHeight" | "minWidth"
 >;
 
-export type StyleHandler<T extends VirtualStyle> = ({
+export type StyleHandler<T extends BaseStyle> = ({
     focus,
     shallowFocus,
 }: {

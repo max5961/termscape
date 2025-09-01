@@ -1,12 +1,14 @@
 import Yoga from "yoga-wasm-web/auto";
 import type { YogaNode, DomElement } from "../Types.js";
-import type { ShadowStyle, VirtualStyle } from "./Style.js";
+import type { BaseShadowStyle, BaseStyle } from "./Style.js";
+import type { FocusManagerProps } from "../Props.js";
+import type { FocusManager } from "../dom/DomElement.js";
 import { decodeShorthand } from "./util/decodeShorthand.js";
 import { ifUndef } from "../Util.js";
 import { parseDimensions } from "./util/parseDimensions.js";
 
 /**
- * The set handler in the Proxy for ShadowStyle passes the `prop` and `newValue` through
+ * The set handler in the Proxy for BaseShadowStyle passes the `prop` and `newValue` through
  * a series of hashable objects defined here.  This aims to allow rendering to focus
  * more on using data rather than interpreting it.
  *
@@ -31,11 +33,11 @@ import { parseDimensions } from "./util/parseDimensions.js";
 // =============================================================================
 
 export const SanitizerHandlers: {
-    [P in keyof VirtualStyle]: (
-        nextVal: VirtualStyle[P],
+    [P in keyof BaseStyle]: (
+        nextVal: BaseStyle[P],
         stdout: NodeJS.WriteStream,
         elem: DomElement,
-    ) => ShadowStyle[P];
+    ) => BaseShadowStyle[P];
 } = {
     zIndex(nextVal) {
         if (typeof nextVal === "string") {
@@ -76,7 +78,15 @@ export const SanitizerHandlers: {
         return newVal ?? "visible";
     },
     flexShrink(nextVal, _stdout, elem) {
-        if (elem.parentElement?.style.blockChildrenShrink) {
+        const blockedByParent = (
+            elem.parentElement as FocusManager<
+                BaseStyle,
+                BaseShadowStyle,
+                FocusManagerProps
+            >
+        )?.getProp("blockChildrenShrink");
+
+        if (blockedByParent) {
             return 0;
         } else {
             return nextVal;
@@ -89,10 +99,10 @@ export const SanitizerHandlers: {
 // =============================================================================
 
 export const AggregateHandlers: {
-    [P in keyof ShadowStyle]: (
-        next: ShadowStyle[P],
-        target: ShadowStyle,
-        virtual: VirtualStyle,
+    [P in keyof BaseShadowStyle]: (
+        next: BaseShadowStyle[P],
+        target: BaseShadowStyle,
+        virtual: BaseStyle,
     ) => void;
 } = {
     borderStyle(next, target, _virtual) {
@@ -155,11 +165,11 @@ export const AggregateHandlers: {
  * that the border must be set with the context of the scrollbar in mind.
  */
 export const YogaHandlers: {
-    [P in keyof ShadowStyle]: (
-        next: ShadowStyle[P],
+    [P in keyof BaseShadowStyle]: (
+        next: BaseShadowStyle[P],
         node: YogaNode,
-        target: ShadowStyle,
-        virtual: VirtualStyle,
+        target: BaseShadowStyle,
+        virtual: BaseStyle,
     ) => void;
 } = {
     display(next, node) {
