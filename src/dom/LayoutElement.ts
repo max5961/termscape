@@ -8,8 +8,13 @@ import type {
     ShadowLayoutStyle,
 } from "../style/Style.js";
 import { objectKeys } from "../Util.js";
+import type { BaseProps } from "../Props.js";
 
-export class LayoutElement extends FocusManager<VirtualLayoutStyle, ShadowLayoutStyle> {
+export class LayoutElement extends FocusManager<
+    VirtualLayoutStyle,
+    ShadowLayoutStyle,
+    BaseProps
+> {
     public override tagName: TTagNames;
 
     constructor() {
@@ -49,7 +54,7 @@ export class LayoutElement extends FocusManager<VirtualLayoutStyle, ShadowLayout
         let found: DomElement | undefined;
         for (let i = 0; i < entries.length; ++i) {
             const [elem] = entries[i];
-            if (elem.getAttribute("id") === id) {
+            if (elem.getProp("id") === id) {
                 found = elem;
                 break;
             }

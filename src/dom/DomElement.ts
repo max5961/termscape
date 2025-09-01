@@ -29,10 +29,12 @@ import { ElementMetaData } from "./ElementMetadata.js";
 import { throwError } from "../shared/ThrowError.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
+import type { BaseProps } from "../Props.js";
 
 export abstract class DomElement<
     VStyle extends VirtualStyle = VirtualStyle,
     SStyle extends ShadowStyle = ShadowStyle,
+    Props extends BaseProps = BaseProps,
 > {
     public abstract tagName: TTagNames;
     public node: YogaNode;
@@ -43,7 +45,7 @@ export abstract class DomElement<
     protected rect: DOMRect;
     protected canvas: Canvas | null;
     protected scrollOffset: Point;
-    protected attributes: Map<string, unknown>;
+    protected props: Map<string, unknown>;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
     protected requiresStdin: boolean;
     protected virtualStyle!: VStyle;
@@ -66,7 +68,7 @@ export abstract class DomElement<
         this.rect = this.initRect();
         this.canvas = null;
         this.scrollOffset = { x: 0, y: 0 };
-        this.attributes = new Map();
+        this.props = new Map();
         this.eventListeners = this.initEventListeners();
         this.requiresStdin = false;
         this.metadata = new ElementMetaData(this);
@@ -132,12 +134,12 @@ export abstract class DomElement<
         return this.collection;
     }
 
-    public setAttribute(key: string, value: unknown) {
-        this.attributes.set(key, value);
+    public setProp<T extends keyof Props>(key: T, value: Props[T]): void {
+        this.props.set(key as string, value);
     }
 
-    public getAttribute(key: string) {
-        return this.attributes.get(key);
+    public getProp<T extends keyof Props>(key: T): Props[T] | undefined {
+        return this.props.get(key as string) as Props[T] | undefined;
     }
 
     // ========================================================================
@@ -610,7 +612,8 @@ export abstract class DomElement<
 export abstract class FocusManager<
     VStyle extends VirtualStyle,
     SStyle extends ShadowStyle,
-> extends DomElement<VStyle, SStyle> {
+    Props extends BaseProps,
+> extends DomElement<VStyle, SStyle, Props> {
     private vmap: VisualNodeMap;
     private _focused: DomElement | undefined;
 

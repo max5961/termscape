@@ -4,45 +4,138 @@ import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { ListElement } from "../dom/ListElement.js";
 import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
-import type { RuntimeConfig } from "../Types.js";
+import type { DomElement, RuntimeConfig, StyleHandler } from "../Types.js";
 import { PagesElement } from "../dom/PagesElement.js";
+import type { BaseProps } from "../Props.js";
+import type {
+    VirtualBoxStyle,
+    VirtualLayoutStyle,
+    VirtualListStyle,
+    VirtualStyle,
+    VirtualTextStyle,
+} from "../style/Style.js";
+import { objectKeys } from "../Util.js";
+import type { Action } from "term-keymap";
 
-type TagMap = {
-    box: BoxElement;
-    text: TextElement;
-    list: ListElement;
-    root: Root;
-    layout: LayoutElement;
-    layoutnode: LayoutNode;
-    pages: PagesElement;
+type DefaultConfig<T extends VirtualStyle> = {
+    style?: T | StyleHandler<T>;
+    children?: DomElement[];
+    props?: BaseProps;
+    keyListeners?: Action[];
 };
 
-type Tag = keyof TagMap;
+type TagMap = {
+    root: {
+        config: undefined | RuntimeConfig;
+        return: Root;
+    };
+    box: {
+        config: undefined | DefaultConfig<VirtualBoxStyle>;
+        return: BoxElement;
+    };
+    text: {
+        config: undefined | DefaultConfig<VirtualTextStyle>;
+        return: TextElement;
+    };
+    list: {
+        config: undefined | DefaultConfig<VirtualListStyle>;
+        return: ListElement;
+    };
+    layout: {
+        config: undefined | DefaultConfig<VirtualLayoutStyle>;
+        return: LayoutElement;
+    };
+    layoutNode: {
+        config: undefined | DefaultConfig<VirtualBoxStyle>;
+        return: LayoutNode;
+    };
+    pages: {
+        config: undefined | DefaultConfig<VirtualBoxStyle>;
+        return: PagesElement;
+    };
+};
 
-export function createElement<T extends Tag>(
+type ExtendsUndef<T> = T extends undefined ? T : never;
+
+type RequiredTagMap = {
+    [P in keyof TagMap]: ExtendsUndef<TagMap[P]["config"]> extends never ? P : never;
+}[keyof TagMap];
+
+type Tags = keyof TagMap;
+type Config<T extends Tags> = TagMap[T]["config"];
+type Return<T extends Tags> = TagMap[T]["return"];
+
+export function createElement<T extends Tags>(
     tag: T,
-    rootConfig?: T extends "root" ? RuntimeConfig : undefined,
-): TagMap[T] {
+    ...rest: T extends RequiredTagMap ? [Config<T>] : [Config<T>?]
+): Return<T> {
     if (tag === "box") {
-        return new BoxElement() as TagMap[T];
+        const config = rest[0] as Config<"box">;
+        const box = new BoxElement();
+        if (!config) return box;
+
+        assignDefault(box, config);
+        return box;
     }
     if (tag === "text") {
-        return new TextElement() as TagMap[T];
-    }
-    if (tag === "list") {
-        return new ListElement() as TagMap[T];
-    }
-    if (tag === "layout") {
-        return new LayoutElement() as TagMap[T];
-    }
-    if (tag === "layoutnode") {
-        return new LayoutNode() as TagMap[T];
+        const config = rest[0] as Config<"text">;
+        const text = new TextElement();
+        if (!config) return text;
+
+        assignDefault(text, config);
+        return text;
     }
     if (tag === "pages") {
-        return new PagesElement() as TagMap[T];
+        const config = rest[0] as Config<"pages">;
+        const pages = new PagesElement();
+        if (!config) return pages;
+
+        assignDefault(pages, config);
+        return pages;
+    }
+    if (tag === "list") {
+        const config = rest[0] as Config<"list">;
+        const list = new ListElement();
+        if (!config) return list;
+
+        // Need to make ListElement essentially a Box with props for its settings
+        assignDefault(list, config);
+        return list;
+    }
+    if (tag === "layout") {
+        const config = rest[0] as Config<"layout">;
+        const layout = new LayoutElement();
+        if (!config) return layout;
+
+        assignDefault(layout, config);
+        return layout;
+    }
+    if (tag === "layoutNode") {
+        const config = rest[0] as Config<"layoutNode">;
+        const layoutNode = new LayoutNode();
+        if (!config) return layoutNode;
+
+        assignDefault(layoutNode, config);
+        return layoutNode;
     }
     if (tag === "root") {
-        return new Root(rootConfig ?? {}) as TagMap[T];
+        const config = rest[0] as Config<"root">;
+        return new Root(config ?? {});
     }
-    throwError(null, "Invalid tagname");
+
+    throwError(null, "Invalid tagname.");
+}
+
+function assignDefault(elem: DomElement, config: Exclude<Config<"box">, undefined>) {
+    if (config.style) {
+        elem.style = config.style;
+    }
+    if (config.children) {
+        config.children.forEach((child) => elem.appendChild(child));
+    }
+    if (config.props) {
+        for (const prop of objectKeys(config.props)) {
+            elem.setProp(prop, config.props[prop]);
+        }
+    }
 }

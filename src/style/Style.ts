@@ -1,5 +1,4 @@
 import { Borders, type BorderMap } from "../shared/Borders.js";
-import { DomElementCollection } from "../shared/DomChildrenCollection.js";
 import type { Color } from "../Types.js";
 
 export type BorderStyle = keyof typeof Borders;

@@ -1,10 +1,15 @@
+import type { BaseProps } from "../Props.js";
 import type { ShadowListStyle, VirtualListStyle, VirtualStyle } from "../style/Style.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusManager } from "./DomElement.js";
 
-export class ListElement extends FocusManager<VirtualListStyle, ShadowListStyle> {
+export class ListElement extends FocusManager<
+    VirtualListStyle,
+    ShadowListStyle,
+    BaseProps
+> {
     public override tagName: "LIST_ELEMENT";
 
     constructor() {
