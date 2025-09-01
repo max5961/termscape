@@ -2,58 +2,50 @@ import { TEXT_PADDING } from "../Symbols.js";
 import type { TextStyle } from "../style/Style.js";
 
 export function getRows(text: string, width: number): string[] {
-    const rows: string[] = [];
+    if (!text) return [];
+    if (width <= 0) return text.split("");
 
+    const result: string[] = [];
     let line = "";
-    let word = "";
     for (let i = 0; i < text.length; ++i) {
         const char = text[i];
-        const nextChar = text[i + 1];
 
-        if (char === " " && !line.length && rows.length) {
+        if (shouldTreatAsBreak(char)) {
+            result.push(line);
+            line = "";
+        } else if (char === "\t") {
+            text = text.slice(0, i) + "    " + text.slice(i + 1);
+            --i;
             continue;
-        }
-
-        line += char;
-        if (char === " ") {
-            word = "";
+        } else if (char === " ") {
+            line += " ";
         } else {
-            word += char;
+            line += char;
         }
 
-        if (line.length >= width) {
-            if (nextChar === " " || nextChar === undefined) {
-                word = "";
-            }
-
-            const diff = line.length - word.length;
-            const stop = diff ? Math.min(width, diff) : width;
-
-            const left = line.slice(0, stop);
-            const right = line.slice(stop);
-
-            rows.push(left);
-            if (nextChar === " ") {
-                line = " ";
-                ++i;
+        if (line.length > width) {
+            // line break is breaking a word
+            if (!line.endsWith(" ")) {
+                const breakIdx = findBreakIdx(line);
+                const left = line.slice(0, breakIdx);
+                const right = line.slice(breakIdx);
+                if (left) result.push(left);
+                line = right;
             } else {
-                line = "";
+                const left = line.slice(0, line.length - 1);
+                const right = line.slice(line.length - 1);
+                if (left) result.push(left);
+                line = right;
             }
-            word = right;
-            line += word;
         }
     }
 
-    if (line.length) {
-        rows.push(line);
-    }
+    if (line) result.push(line);
 
-    return rows.map((row, idx) => {
-        if (idx !== 0) {
-            return row.trimStart();
-        }
-        return row;
-    });
+    const lastChar = text[text.length - 1];
+    if (lastChar && shouldTreatAsBreak(lastChar)) result.push("");
+
+    return result;
 }
 
 export function alignRows(
@@ -105,4 +97,35 @@ export function alignRows(
 export function getAlignedRows(text: string, width: number, align: TextStyle["align"]) {
     const rows = getRows(text, width);
     return alignRows(rows, width, align);
+}
+
+export function shouldTreatAsBreak(char: string) {
+    if (char === "\t") return false;
+
+    const charCode = char.charCodeAt(0);
+
+    if (charCode < 32) {
+        return true;
+    }
+
+    if (charCode >= 127 && charCode <= 159) {
+        return true;
+    }
+
+    if (charCode === 8232 || charCode === 8233) {
+        return true;
+    }
+
+    return false;
+}
+
+function findBreakIdx(line: string): number {
+    let breakIdx = line.length;
+    while (--breakIdx >= 0) {
+        if (line[breakIdx] == " ") {
+            ++breakIdx;
+            break;
+        }
+    }
+    return breakIdx;
 }

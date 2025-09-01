@@ -15,10 +15,20 @@ describe("Text wrapping", () => {
 
     test("Whitespace only and exceeds width", () => {
         const rows = getRows("    ", 3);
-        expect(rows).toEqual(["   ", ""]);
+        expect(rows).toEqual(["   ", " "]);
     });
 
-    test("same width", () => {
+    test("Width of 1", () => {
+        const rows = getRows("foo", 1);
+        expect(rows).toEqual(["f", "o", "o"]);
+    });
+
+    test("Width of 0", () => {
+        const rows = getRows("foo", 0);
+        expect(rows).toEqual(["f", "o", "o"]);
+    });
+
+    test("Same width", () => {
         const rows = getRows("foo", 3);
         expect(rows).toEqual(["foo"]);
     });
@@ -40,32 +50,32 @@ describe("Text wrapping", () => {
 
     test("Excess whitespace that extends width should create new row", () => {
         const rows = getRows("foo    ", 5);
-        expect(rows).toEqual(["foo  ", ""]);
+        expect(rows).toEqual(["foo  ", "  "]);
     });
 
-    test("Excess whitespace only creates now rows", () => {
+    test("Excess whitespace should continue to make rows with whitespace", () => {
         const rows = getRows("      ", 2);
-        expect(rows).toEqual(["  ", "", ""]);
+        expect(rows).toEqual(["  ", "  ", "  "]);
     });
 
     test("Each word is same length as width", () => {
         const rows = getRows("foo bar baz", 3);
-        expect(rows).toEqual(["foo", "", "bar", "", "baz"]);
+        expect(rows).toEqual(["foo", " ", "bar", " ", "baz"]);
     });
 
-    test("New rows always trim preceding whitespace", () => {
+    test("New row with word respects preceding whitespace", () => {
         const rows = getRows("foo    ba", 3);
-        expect(rows).toEqual(["foo", "", "ba"]);
+        expect(rows).toEqual(["foo", "   ", " ba"]);
     });
 
-    test("Trimmed starting whitespace appends new rows", () => {
+    test("Whitespace before broken word appends new row", () => {
         const rows = getRows("foo    baz", 3);
-        expect(rows).toEqual(["foo", "", "", "baz"]);
+        expect(rows).toEqual(["foo", "   ", " ", "baz"]);
     });
 
     test("Words greater than width", () => {
         const rows = getRows("foobar bazban", 3);
-        expect(rows).toEqual(["foo", "bar", "", "baz", "ban"]);
+        expect(rows).toEqual(["foo", "bar", " ", "baz", "ban"]);
     });
 
     test("Words greater than width with unclean breaks", () => {
@@ -130,5 +140,17 @@ describe("Aligning text", () => {
                 [TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, "n"],
             ]);
         });
+    });
+});
+
+describe("Wrapping with control characters", () => {
+    test("newlines", () => {
+        const rows = getRows("foo\nbar\nbaz\n", 5);
+        expect(rows).toEqual(["foo", "bar", "baz", ""]);
+    });
+
+    test("tabs are treated as 4 spaces", () => {
+        const rows = getRows("foo\tbar", 4);
+        expect(rows).toEqual(["foo ", "   ", "bar"]);
     });
 });

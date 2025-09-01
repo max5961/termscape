@@ -34,6 +34,10 @@ export class TextElement extends DomElement<TextStyle, ShadowTextStyle> {
 
     private getMeasureFunc(): MeasureFunction {
         return (width: number) => {
+            // TODO - *fast* function to see if textContent contains breaking
+            // characters to force wrap no matter what.  Not too important because
+            // if rendering text from a file you're probably not going to want it
+            // all on 1 line.
             if (this.style.wrap !== "wrap" || this.textContent.length <= width) {
                 this.textHeight = 1;
             } else if (width <= 0) {

@@ -34,7 +34,7 @@ type TagMap = {
         return: BoxElement;
     };
     text: {
-        config: OptionalConfig<TextStyle, Props.Text>;
+        config: OptionalConfig<TextStyle, Props.Text> & { textContent?: string };
         return: TextElement;
     };
     list: {
@@ -85,6 +85,10 @@ export function createElement<T extends Tags>(
     if (tag === "text") {
         const text = new TextElement();
         applyConfig(text, cfg);
+        const textContent = (cfg as TagMap["text"]["config"]).textContent;
+        if (textContent) {
+            text.textContent = textContent;
+        }
         return text;
     }
     if (tag === "pages") {

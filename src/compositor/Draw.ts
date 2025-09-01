@@ -3,7 +3,7 @@ import type { Color } from "../Types.js";
 import type { BaseShadowStyle, TextStyle } from "../style/Style.js";
 import type { BoxLike } from "./types.js";
 import { Canvas } from "./Canvas.js";
-import { alignRows, getRows } from "../shared/TextWrap.js";
+import { alignRows, getRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
 import { TEXT_PADDING } from "../Symbols.js";
 import { Borders, createBox } from "../shared/Borders.js";
 
@@ -103,7 +103,10 @@ export class Draw {
         const pen = canvas.getPen();
 
         for (let i = 0; i < textContent.length; ++i) {
-            pen.draw(textContent[i], "r", 1);
+            const char = textContent[i];
+            if (shouldTreatAsBreak(char)) continue;
+            // TODO - pen needs to handle chars w/ width > 1
+            pen.draw(char === "\t" ? " " : char, "r", 1);
         }
     }
 

@@ -1,5 +1,6 @@
 import { describe, test, expect } from "vitest";
-import { Focus } from "../../src/dom/Context.js";
+import { Focus } from "@src/dom/FocusContext.js";
+import termscape from "@src/index.js";
 
 describe("Focus - appends", () => {
     let nodes = getNodes();
@@ -105,12 +106,12 @@ describe("Focus - appends", () => {
 
 function getNodes() {
     return {
-        root: new Focus(),
-        c1: new Focus(),
-        checkpoint1: new Focus(),
-        c2: new Focus(),
-        c3: new Focus(),
-        checkpoint2: new Focus(),
-        c4: new Focus(),
+        root: new Focus(termscape.createElement("box")),
+        c1: new Focus(termscape.createElement("box")),
+        checkpoint1: new Focus(termscape.createElement("box")),
+        c2: new Focus(termscape.createElement("box")),
+        c3: new Focus(termscape.createElement("box")),
+        checkpoint2: new Focus(termscape.createElement("box")),
+        c4: new Focus(termscape.createElement("box")),
     };
 }
