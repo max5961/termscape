@@ -11,6 +11,7 @@ export class Scheduler {
     private updater: null | Updater;
     private capturedOutput: string[];
     private writeOpts: WriteOpts;
+    private waitingOps: (() => unknown)[];
 
     constructor() {
         this.debounceMs = 16;
@@ -19,6 +20,7 @@ export class Scheduler {
         this.updater = null;
         this.capturedOutput = [];
         this.writeOpts = {};
+        this.waitingOps = [];
     }
 
     /**
@@ -64,6 +66,7 @@ export class Scheduler {
                 return this.dispatchUpdater();
             }
             this.wait = false;
+            this.execWaitingOps(true);
         }, this.debounceMs);
     }
 
@@ -77,6 +80,34 @@ export class Scheduler {
                 // @ts-ignore
                 this.writeOpts[key] = opts[key];
             }
+        }
+    }
+
+    /**
+     * Prevents stdin events from polluting the dom tree during rendering.
+     * */
+    public execWhenFree(op: () => unknown) {
+        if (!this.wait) {
+            op();
+        } else {
+            this.waitingOps.push(op);
+        }
+    }
+
+    /**
+     * `debounce` to false might be useful when reading text input, but otherwise
+     * if lag is high enough to cause timing issues with rendering and stdin events
+     * then executing all ops at once is less smooth and sometimes still causes
+     * issues.
+     * */
+    private execWaitingOps(debounce: boolean) {
+        if (debounce) {
+            const nextOp = this.waitingOps.pop();
+            nextOp?.();
+            this.waitingOps = [];
+        } else {
+            this.waitingOps.forEach((op) => op());
+            this.waitingOps = [];
         }
     }
 }

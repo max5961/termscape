@@ -798,7 +798,7 @@ export abstract class FocusManager<
         this.buildVisualMap(children, this.vmap);
     }
 
-    private getFocusedData() {
+    protected getFocusedData() {
         if (!this.focused) return;
         return this.vmap.get(this.focused);
     }

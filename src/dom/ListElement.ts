@@ -52,6 +52,10 @@ export class ListElement extends FocusManager<
     public focusIndex(idx: number) {
         return this.isLTR() ? super.focusXIdx(idx) : super.focusYIdx(idx);
     }
+    public getFocusedIndex(): number {
+        const data = this.getFocusedData();
+        return data?.xIdx || data?.yIdx || 0;
+    }
 
     private isLTR(): boolean | undefined {
         return this.style.flexDirection?.includes("row");

@@ -105,11 +105,13 @@ export function createRuntime(deps: RuntimeDependencies) {
         },
 
         handleStdinBuffer: (buf: Buffer) => {
-            const domActions = logic.getDomActions();
-            const actions = actionStore.getCombinedActions(domActions);
+            scheduler.execWhenFree(() => {
+                const domActions = logic.getDomActions();
+                const actions = actionStore.getCombinedActions(domActions);
 
-            const { data } = inputState.process(buf, actions);
-            mouseState.process(data);
+                const { data } = inputState.process(buf, actions);
+                mouseState.process(data);
+            });
         },
 
         getDomActions: (): Action[] => {
