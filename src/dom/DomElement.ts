@@ -27,9 +27,9 @@ import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
-import { throwError } from "../shared/ThrowError.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
+import { ErrorMessages, throwError } from "../shared/ThrowError.js";
 
 export abstract class DomElement<
     Style extends BaseStyle = BaseStyle,
@@ -242,10 +242,7 @@ export abstract class DomElement<
 
         const idx = this.children.findIndex((el) => el === beforeChild);
         if (idx === -1 || !this.childrenSet.has(beforeChild)) {
-            throwError(
-                this.getRoot(),
-                "Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.",
-            );
+            throwError(this.getRoot(), ErrorMessages.insertBefore);
         }
 
         const nextChildren = [] as DomElement[];
@@ -270,10 +267,7 @@ export abstract class DomElement<
         const idx = this.children.findIndex((el) => el === child);
 
         if (idx === -1 || !this.childrenSet.has(child)) {
-            throwError(
-                this.getRoot(),
-                "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
-            );
+            throwError(this.getRoot(), ErrorMessages.removeChild);
         }
 
         this.childrenSet.delete(child);

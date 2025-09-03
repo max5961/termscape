@@ -1,4 +1,5 @@
 import type { BaseProps } from "../Props.js";
+import { ErrorMessages, throwError } from "../shared/ThrowError.js";
 import type { BaseShadowStyle, BaseStyle } from "../style/Style.js";
 import type { TTagNames } from "../Types.js";
 import { DomElement } from "./DomElement.js";
@@ -15,13 +16,11 @@ import { DomElement } from "./DomElement.js";
 
 export class PagesElement extends DomElement<BaseStyle, BaseShadowStyle> {
     public override tagName: TTagNames;
-    private _idx: number;
     private pages: DomElement[];
 
     constructor() {
         super();
         this.tagName = "PAGES_ELEMENT";
-        this._idx = 0;
         this.pages = [];
     }
 
@@ -30,8 +29,23 @@ export class PagesElement extends DomElement<BaseStyle, BaseShadowStyle> {
         return {};
     }
 
+    private getIdx(): number {
+        return this.pages.findIndex((page) => page === this.currentPage);
+    }
+
+    private hasPage(page: DomElement | undefined): boolean {
+        if (!page) return false;
+        return this.pages.includes(page);
+    }
+
+    public get currentPage(): DomElement | undefined {
+        return this.children[0];
+    }
+
     // TODO
-    public override insertBefore(_child: DomElement, _beforeChild: DomElement): void {}
+    public override insertBefore(_child: DomElement, _beforeChild: DomElement): void {
+        throwError(this.getRoot(), "PageElement - todo");
+    }
 
     public override appendChild(child: DomElement): void {
         this.pages.push(child);
@@ -40,63 +54,66 @@ export class PagesElement extends DomElement<BaseStyle, BaseShadowStyle> {
         }
     }
 
-    public override removeChild(_child: DomElement, _freeRecursive?: boolean): void {
-        // const idx = this.pages.indexOf(child);
-        // if (idx === -1) throwError(this.getRoot(), "invalid child");
-        // this.pages.splice(idx, 1);
-        // super.removeChild(child, freeRecursive);
-        //
-        // if (!this.currentPage) {
-        //     this.idx = this.pages.length - 1;
-        // }
-    }
-
-    private get idx() {
-        return this._idx;
-    }
-
-    private set idx(nextIdx: number) {
-        if (nextIdx >= 0 && nextIdx <= this.pages.length - 1) {
-            const prev = this.pages[this.idx];
-            const next = this.pages[nextIdx];
-            this.swapDisplayedPage(prev, next);
-            this._idx = nextIdx;
+    // TODO
+    public override removeChild(child: DomElement, freeRecursive?: boolean): void {
+        // Handle the 'display' array (DomElement.children)
+        if (child === this.currentPage) {
+            const idx = this.getIdx();
+            const nextPage = this.pages[idx - 1] || this.pages[idx + 1];
+            this.displayPage(nextPage, freeRecursive, true);
         }
+
+        // Handle the 'virtual' pages array that only exists in this class.
+        const idx = this.pages.findIndex((page) => page === child);
+        if (idx < 0) {
+            throwError(this.getRoot(), ErrorMessages.removeChild);
+        }
+
+        this.pages.splice(idx, 1);
     }
 
-    private swapDisplayedPage(
-        prev: DomElement | undefined,
-        next: DomElement | undefined,
-    ) {
-        if (prev && next) {
-            super.removeChild(prev);
+    /**
+     * Most important controller for the class. **Always** removes the
+     * `currentPage` from the DomElement.children array, *then* attempts to
+     * display the requested page
+     * */
+    private displayPage(
+        page: DomElement | undefined,
+        freeRecursive?: boolean,
+        forceRemove?: boolean,
+    ): void {
+        if (!forceRemove) {
+            if (!page || this.currentPage === page || !this.hasPage(page)) return;
         }
-        if (next) {
-            super.appendChild(next);
-        }
-    }
 
-    public get currentPage(): DomElement | undefined {
-        return this.pages[this.idx];
+        const currentPage = this.currentPage;
+        const hasPage = this.hasPage(page);
+
+        if (currentPage && (forceRemove || hasPage)) {
+            super.removeChild(currentPage, freeRecursive);
+        }
+        if (page && hasPage) {
+            super.appendChild(page);
+        }
     }
 
     public focusNextPage() {
-        if (this.idx + 1 <= this.pages.length - 1) {
-            ++this.idx;
-        }
+        const idx = this.getIdx() + 1;
+        this.displayPage(this.pages[idx]);
     }
 
     public focusPrevPage() {
-        if (this.idx - 1 >= 0) {
-            --this.idx;
-        }
+        const idx = this.getIdx() - 1;
+        this.displayPage(this.pages[idx]);
     }
 
-    public focusPage(page: DomElement) {
-        if (this.currentPage === page) return;
-        const idx = this.pages.indexOf(page);
-        if (idx >= 0) {
-            this.idx = idx;
+    public focusPage(page: DomElement): void;
+    public focusPage(index: number): void;
+    public focusPage(pageOrIndex: DomElement | number): void {
+        if (typeof pageOrIndex === "number") {
+            this.displayPage(this.pages[pageOrIndex]);
+        } else {
+            this.displayPage(pageOrIndex);
         }
     }
 }

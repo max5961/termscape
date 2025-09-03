@@ -32,8 +32,6 @@ export class Compositor {
         layoutChange: boolean,
         canvas: Canvas = this.canvas,
     ) {
-        // TODO - this needs to be recursive in order to nullify rects
-        // changes from display none to flex should also warrant a `layoutChange`
         if (elem.style.display === "none") return;
 
         const style = elem[DOM_ELEMENT_SHADOW_STYLE];
@@ -41,10 +39,8 @@ export class Compositor {
 
         this.draw.updateLowestLayer(zIndex);
 
-        if (layoutChange) {
-            this.rects.setRect(elem, canvas);
-            this.rects.storeElementPosition(zIndex, elem);
-        }
+        this.rects.setRect(elem, canvas);
+        this.rects.storeElementPosition(zIndex, elem);
 
         if (canvas.canDraw()) {
             if (this.isBoxLike(elem)) {

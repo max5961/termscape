@@ -2,10 +2,17 @@ import { setMouse } from "term-keymap";
 import type { Root } from "../dom/Root.js";
 import { Ansi } from "./Ansi.js";
 
-class TermscapeError extends Error {
+export class TermscapeError extends Error {
     constructor(msg?: string) {
         super(msg);
         this.name = Ansi.style.cyan + "TermscapeError" + Ansi.style.reset;
+    }
+
+    public static removeChild(root: Root | null) {
+        throwError(
+            root,
+            "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
+        );
     }
 }
 
@@ -35,3 +42,10 @@ export function handleError(error: Error): never {
     // doesn't allow for catching errors, so throw it.
     throw error;
 }
+
+export const ErrorMessages = {
+    insertBefore:
+        "Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.",
+    removeChild:
+        "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
+} as const;

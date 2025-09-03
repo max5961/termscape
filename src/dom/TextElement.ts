@@ -4,6 +4,7 @@ import { type MeasureFunction } from "yoga-wasm-web/auto";
 import { getRows } from "../shared/TextWrap.js";
 import type { ShadowTextStyle, TextStyle } from "../style/Style.js";
 import type { BaseProps } from "../Props.js";
+import { Render } from "./util/decorators.js";
 
 export class TextElement extends DomElement<TextStyle, ShadowTextStyle> {
     private _textContent: string;
@@ -25,6 +26,13 @@ export class TextElement extends DomElement<TextStyle, ShadowTextStyle> {
     }
 
     public set textContent(val: string) {
+        if (val !== this._textContent) {
+            this.setTextContext(val);
+        }
+    }
+
+    @Render({ layoutChange: true })
+    private setTextContext(val: string): void {
         this._textContent = val;
     }
 
