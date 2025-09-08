@@ -34,20 +34,17 @@ export class WriterPrecise extends Writer {
             if (slices.length) dirtyRows.push([y, slices]);
         }
 
-        dirtyRows.forEach(([row, indexes]) => {
-            /**
-             * If the cursor position is 5 rows from the bottom, and we need to
-             * write 10 new rows, then we need to tell the terminal to scroll by
-             * writing a `\n` for each modified row.  If not, then the virtual
-             * row number that the cursor tracks will not be valid.  This is
-             * because if we tell the cursor to go to row 100, but there are only
-             * 50 rows in the term window, then it only goes to row 50, but our
-             * row number in the `Cursor` class will think we are on row 100.
-             * */
-            if (row > last.length - 1) {
-                this.cursor.deferOutput("\n", 1);
-            }
+        if (appendedRows.size) {
+            this.cursor.moveToRow(last.length - 1);
+            this.cursor.deferOutput("\n".repeat(appendedRows.size), appendedRows.size);
 
+            // If the cursor position is 5 rows from the bottom, and we need to
+            // write 10 new rows, then we need to tell the terminal to scroll by
+            // writing a `\n` for each modified row.  If not, then the virtual
+            // row number that the cursor tracks will not be valid.
+        }
+
+        dirtyRows.forEach(([row, indexes]) => {
             this.cursor.moveToRow(row);
 
             for (const slice of indexes) {
