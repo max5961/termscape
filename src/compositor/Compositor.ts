@@ -38,11 +38,11 @@ export class Compositor {
         const zIndex = style.zIndex ?? 0;
 
         this.draw.updateLowestLayer(zIndex);
-
         this.rects.setRect(elem, canvas);
-        this.rects.storeElementPosition(zIndex, elem);
 
         if (canvas.canDraw()) {
+            this.rects.storeElementPosition(zIndex, elem);
+
             if (this.isBoxLike(elem)) {
                 this.ops.defer(zIndex, () => this.draw.composeBox(elem, style, canvas));
             }
