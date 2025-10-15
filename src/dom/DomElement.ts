@@ -54,7 +54,6 @@ export abstract class DomElement<
     protected childrenSet: Set<DomElement>;
     protected readonly metadata: ElementMetaData;
     protected readonly baseDefaultStyles: BaseStyle;
-    protected abstract defaultStyles: Style;
     protected styleHandler: StyleHandler<Style> | null;
     protected focusNode: Focus;
 
@@ -98,6 +97,7 @@ export abstract class DomElement<
         this.focusNode = new Focus(this);
 
         this.applyDefaultProps();
+        this.applyDefaultStyles();
     }
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {
@@ -150,7 +150,12 @@ export abstract class DomElement<
         }
     }
 
+    private applyDefaultStyles() {
+        this.style = { ...this.baseDefaultStyles, ...this.defaultStyles };
+    }
+
     protected abstract get defaultProps(): Props;
+    protected abstract get defaultStyles(): Style;
 
     // ========================================================================
     // Auto Render Proxy

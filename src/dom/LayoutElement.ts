@@ -14,13 +14,15 @@ export class LayoutElement extends FocusManager<BoxStyle, ShadowBoxStyle, BasePr
         this.tagName = "LAYOUT_ELEMENT";
     }
 
-    protected override defaultStyles: BoxStyle = {
-        flexDirection: "column",
-        flexWrap: "nowrap",
-        overflow: "scroll",
-        height: "100",
-        width: "100",
-    };
+    protected override get defaultStyles(): BoxStyle {
+        return {
+            flexDirection: "column",
+            flexWrap: "nowrap",
+            overflow: "scroll",
+            height: "100",
+            width: "100",
+        };
+    }
 
     // TODO - only this prop for now
     protected override get defaultProps(): FocusManagerProps {

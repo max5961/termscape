@@ -12,12 +12,14 @@ export class BoxElement extends DomElement<BoxStyle, ShadowBoxStyle> {
         this.style = this.defaultStyles;
     }
 
-    protected override defaultStyles: BoxStyle = {
-        flexWrap: "nowrap",
-        flexDirection: "row",
-        flexGrow: 0,
-        flexShrink: 1,
-    };
+    protected override get defaultStyles(): BoxStyle {
+        return {
+            flexWrap: "nowrap",
+            flexDirection: "row",
+            flexGrow: 0,
+            flexShrink: 1,
+        };
+    }
 
     protected override get defaultProps(): BaseProps {
         return {};

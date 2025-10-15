@@ -24,7 +24,9 @@ export class PagesElement extends DomElement<BaseStyle, BaseShadowStyle> {
         this.pages = [];
     }
 
-    protected override defaultStyles: BaseStyle = {};
+    protected override get defaultStyles(): BaseStyle {
+        return {};
+    }
     protected override get defaultProps(): BaseProps {
         return {};
     }

@@ -70,7 +70,9 @@ export class Root extends DomElement {
         }
     }
 
-    protected override defaultStyles: BaseStyle = {};
+    protected override get defaultStyles(): BaseStyle {
+        return {};
+    }
     protected override get defaultProps(): BaseProps {
         return {};
     }

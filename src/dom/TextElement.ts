@@ -16,11 +16,13 @@ export class TextElement extends DomElement<TextStyle, ShadowTextStyle> {
         this.tagName = "TEXT_ELEMENT";
         this._textContent = "";
         this.node.setMeasureFunc(this.getMeasureFunc());
-        this.style = this.defaultStyles;
+        // this.style = this.defaultStyles;
         this.textHeight = 0;
     }
 
-    protected override defaultStyles: TextStyle = { wrap: "wrap" };
+    protected override get defaultStyles(): TextStyle {
+        return { wrap: "wrap" };
+    }
     protected override get defaultProps(): BaseProps {
         return {};
     }

@@ -17,13 +17,15 @@ export class ListElement extends FocusManager<
         this.tagName = "LIST_ELEMENT";
     }
 
-    protected override defaultStyles: BoxStyle = {
-        flexDirection: "column",
-        flexWrap: "nowrap",
-        overflow: "scroll",
-        height: "100",
-        width: "100",
-    };
+    protected override get defaultStyles(): BoxStyle {
+        return {
+            flexDirection: "column",
+            flexWrap: "nowrap",
+            overflow: "scroll",
+            height: "100",
+            width: "100",
+        };
+    }
 
     protected override get defaultProps(): FocusManagerProps {
         return {
@@ -132,5 +134,107 @@ export class ListElement extends FocusManager<
                 data.down = next;
             }
         }
+    }
+}
+
+type BigListProps<T> = {
+    initialNumToRender: number;
+    renderItem: (item: T) => DomElement;
+    getData: () => T[];
+};
+
+export class BigList<T> extends ListElement {
+    private winstart: number;
+    private winend!: number;
+    private initialNumToRender: number;
+    private renderItem: (_item: T) => DomElement;
+    private getData: () => T[];
+    private data: ReturnType<BigListProps<T>["getData"]>;
+    private generatedItems: DomElement[];
+    private focusedIdx: number;
+
+    constructor(props: BigListProps<T>) {
+        super();
+        this.initialNumToRender = props.initialNumToRender;
+        this.renderItem = props.renderItem;
+        this.getData = props.getData;
+        this.data = this.updateData();
+        this.winstart = this.initialNumToRender ?? 0;
+        this.updateMaxWin();
+        this.generatedItems = [];
+        this.focusedIdx = this.winstart;
+
+        this.handleSliceChange();
+    }
+
+    private updateData(): T[] {
+        this.data = this.getData();
+        return this.data;
+    }
+
+    private handleIdxChange(nextIdx: number) {
+        if (nextIdx < 0 || nextIdx >= this.data.length) return;
+
+        let displacement = 0;
+        if (nextIdx < this.winstart) {
+            displacement = -(this.winstart - nextIdx);
+        }
+        if (nextIdx >= this.winend) {
+            displacement = nextIdx - this.winend + 1;
+        }
+
+        if (!displacement) {
+            this.focusedIdx = nextIdx;
+            return this.handleFocusChange();
+        }
+
+        this.winstart += displacement;
+        this.winend += displacement;
+        this.focusedIdx = nextIdx;
+        return this.handleSliceChange();
+    }
+
+    private handleSliceChange() {
+        this.updateRealChildren();
+        return this.handleFocusChange();
+    }
+
+    private handleFocusChange() {
+        return this.focusChild(this.generatedItems[this.focusedIdx]);
+    }
+
+    private updateRealChildren(): void {
+        this.generatedItems = [];
+
+        for (let i = this.winstart; i < this.winend; ++i) {
+            const dataItem = this.data[i];
+            if (dataItem) {
+                this.generatedItems.push(this.renderItem(dataItem));
+            }
+        }
+
+        this.children.forEach((child) => this.removeChild(child));
+        this.generatedItems.forEach((child) => this.appendChild(child));
+    }
+
+    private updateMaxWin(): void {
+        const rows = this.getRoot()?.runtime.stdout.rows ?? 0;
+        const cols = this.getRoot()?.runtime.stdout.columns ?? 0;
+        const isColumn = this.style.flexDirection?.includes("column");
+        const max = Math.max(
+            rows,
+            cols,
+            isColumn ? process.stdout.rows : process.stdout.columns,
+        );
+
+        this.winend = this.winstart + max + 1;
+    }
+
+    public override focusNext(units = 1) {
+        return this.handleIdxChange(this.focusedIdx + units);
+    }
+
+    public override focusPrev(units = 1) {
+        return this.handleIdxChange(this.focusedIdx - units);
     }
 }
