@@ -200,7 +200,10 @@ export class BigList<T> extends ListElement {
     }
 
     private handleFocusChange() {
-        return this.focusChild(this.generatedItems[this.focusedIdx]);
+        const fromEnd = this.winend - this.focusedIdx;
+        const virFocusIdx = this.generatedItems.length - fromEnd;
+        const item = this.generatedItems[virFocusIdx];
+        return this.focusChild(item);
     }
 
     private updateRealChildren(): void {
@@ -213,8 +216,18 @@ export class BigList<T> extends ListElement {
             }
         }
 
-        this.children.forEach((child) => this.removeChild(child));
+        // This is where FocusManager is 'picking' an index to focus and running
+        // focusChild automatically, see 'FocusManager.removeChild' which checks to
+        // see if the child being removed is focused, if it is then it shifts focus
+        [...this.children].forEach((child) => this.removeChild(child));
         this.generatedItems.forEach((child) => this.appendChild(child));
+
+        // The real issue with this design is that once you remove or add a child
+        // you need to refresh the visual map to be safe. For the first render, this
+        // shouldn't really be an issue because there is no stdin to manipulate the
+        // list.  However, to ultimately be **safe**, it you may need to refresh
+        // the vmap on every tree manip and that could end up with a lot of redundancy
+        this.refreshVisualMap();
     }
 
     private updateMaxWin(): void {
