@@ -125,6 +125,15 @@ export class Cursor {
 
         this.execute();
     };
+
+    /**
+     * Clears everything from cursor to end of screen, but does not move cursor.
+     * Immediately executes the operation (does not batch).
+     */
+    public clearRowsBelow = () => {
+        this.deferAnsi(Ansi.eraseDisplay);
+        this.execute();
+    };
 }
 
 export class DebugCursor extends Cursor {

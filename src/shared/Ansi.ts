@@ -42,5 +42,8 @@ export const Ansi = {
     queryCursorPosition: "\x1b[6n",
 
     /** Dim color */
-    dimColor: "\u001B[2m",
+    dimColor: "\x1b[2m",
+
+    /** Clear from cursor to end of terminal */
+    eraseDisplay: "\x1b[J",
 } as const;

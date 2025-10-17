@@ -76,6 +76,10 @@ export class Renderer {
     }
 
     private refreshWrite(compositor: Compositor, opts: WriteOpts) {
+        if (opts.resize) {
+            this.cursor.clearRowsBelow();
+        }
+
         this.refreshWriter.instructCursor(
             this.lastCanvas,
             compositor.canvas,
