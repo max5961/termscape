@@ -47,11 +47,13 @@ export class Scheduler {
 
     private dispatchUpdater() {
         if (this.updater) {
-            // Join together captured output, then reset BEFORE the updater runs.
-            // By resetting before the updater runs, this allows Renderer methods
-            // to accrue console output and render hooks to utilize logging
-            const console = this.capturedOutput.join("");
-            this.writeOpts.capturedOutput = console;
+            /*
+             * Join together captured output, then reset BEFORE the updater runs.
+             * By resetting before the updater runs, this allows Renderer methods
+             * to accrue console output and render hooks to utilize logging
+             */
+            const consoleOutput = this.capturedOutput.join("");
+            this.writeOpts.capturedOutput = consoleOutput;
             this.capturedOutput = [];
 
             this.updater(this.writeOpts);
@@ -63,10 +65,26 @@ export class Scheduler {
 
         setTimeout(() => {
             if (this.updater) {
-                return this.dispatchUpdater();
+                this.dispatchUpdater();
+            } else {
+                this.wait = false;
             }
-            this.wait = false;
+
             this.execWaitingOps(true);
+
+            // if (this.updater) {
+            //     /*
+            //      * Moving `execWaitingOps` to run after running the updater. When
+            //      * `execWaitingOps` previously ran after the `wait` assignment,
+            //      * it worked to prevent pollution of keymap events during rendering
+            //      * but blocked the exec of keymaps during animations/transitions
+            //      * below the `debounceMs`.
+            //      */
+            //     this.dispatchUpdater();
+            //     return this.execWaitingOps(true);
+            // }
+            // this.wait = false;
+            // this.execWaitingOps(true);
         }, this.debounceMs);
     }
 
