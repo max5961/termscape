@@ -183,7 +183,8 @@ export function createRuntime(deps: RuntimeDependencies) {
             exitResolvers = [];
 
             if (config.exitForcesEndProc && !isBeforeExit) {
-                process.exit();
+                // Promise.resolve to allow for the Promise based exit handlers to execute.
+                Promise.resolve().then(() => process.exit());
             }
         },
 
