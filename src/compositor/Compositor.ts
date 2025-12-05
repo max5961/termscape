@@ -10,6 +10,7 @@ import { Root } from "../dom/Root.js";
 import { PagesElement } from "../dom/PagesElement.js";
 import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import { ListElement } from "../dom/ListElement.js";
+import { CanvasElement } from "../dom/CanvasElement.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -49,6 +50,14 @@ export class Compositor {
 
             if (elem instanceof TextElement) {
                 this.ops.defer(zIndex, () => this.draw.composeText(elem, style, canvas));
+            }
+
+            if (elem instanceof CanvasElement) {
+                const draw = elem.getProp("draw");
+                if (draw) {
+                    const pen = canvas.getPen();
+                    this.ops.defer(zIndex, () => draw(pen));
+                }
             }
 
             if (elem instanceof FocusManager && layoutChange) {

@@ -140,3 +140,7 @@ export type ShadowBoxStyle = Shadow<BoxStyle>;
 
 // TextStyle already defined
 export type ShadowTextStyle = Shadow<TextStyle>;
+
+// CanvaStyle
+export type CanvasStyle = YogaStyle.DimensionStyle & YogaStyle.MarginStyle;
+export type ShadowCanvasStyle = Shadow<CanvasStyle>;

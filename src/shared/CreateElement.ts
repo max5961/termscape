@@ -2,13 +2,14 @@ import { throwError } from "./ThrowError.js";
 import { objectKeys } from "../Util.js";
 import type { DomElement, RuntimeConfig, StyleHandler } from "../Types.js";
 import type { BaseProps, Props } from "../Props.js";
-import type { BoxStyle, BaseStyle, TextStyle } from "../style/Style.js";
+import type { BoxStyle, BaseStyle, TextStyle, CanvasStyle } from "../style/Style.js";
 import { Root } from "../dom/Root.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { ListElement } from "../dom/ListElement.js";
 import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import { PagesElement } from "../dom/PagesElement.js";
+import { CanvasElement } from "../dom/CanvasElement.js";
 
 type RequiredConfig<Style extends BaseStyle, Props extends BaseProps> = {
     style?: Style | StyleHandler<Style>;
@@ -52,6 +53,10 @@ type TagMap = {
     pages: {
         config: OptionalConfig<BoxStyle, Props.Pages>;
         return: PagesElement;
+    };
+    canvas: {
+        config: OptionalConfig<CanvasStyle, Props.Canvas>;
+        return: CanvasElement;
     };
 };
 
@@ -114,6 +119,11 @@ export function createElement<T extends Tags>(
     if (tag === "root") {
         const runtimeConfig = config[0] as Config<"root">;
         return new Root(runtimeConfig ?? {});
+    }
+    if (tag === "canvas") {
+        const canvas = new CanvasElement();
+        applyConfig(canvas, cfg);
+        return canvas;
     }
 
     throwError(null, "Invalid tagname.");

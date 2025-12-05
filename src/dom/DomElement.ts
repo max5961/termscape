@@ -136,6 +136,7 @@ export abstract class DomElement<
         return this.collection;
     }
 
+    @Render()
     public setProp<T extends keyof Props>(key: T, value: Props[T]): void {
         this.props.set(key as string, value);
     }

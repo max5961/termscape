@@ -1,3 +1,5 @@
+import type { Pen } from "./compositor/Pen.js";
+
 export type BaseProps = {
     id?: string;
     className?: string;
@@ -39,4 +41,5 @@ export namespace Props {
     export type List = BaseProps & FocusManagerProps;
     export type Pages = BaseProps;
     export type Root = BaseProps;
+    export type Canvas = BaseProps & { draw: (pen: Pen) => unknown };
 }

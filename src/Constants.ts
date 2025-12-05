@@ -12,6 +12,7 @@ export const TagNames = {
     Layout: "LAYOUT_ELEMENT",
     LayoutNode: "LAYOUT_NODE",
     Pages: "PAGES_ELEMENT",
+    Canvas: "CANVAS_ELEMENT",
 } as const;
 
 export const TextEffectSet = new Set<TextEffect>([
