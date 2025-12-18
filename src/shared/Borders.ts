@@ -1,5 +1,3 @@
-import { Ansi } from "./Ansi.js";
-
 type Border = {
     top: string;
     topLeft: string;

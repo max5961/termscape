@@ -11,7 +11,7 @@ export const TagNameEnum = {
     List: "list",
     Layout: "layout",
     LayoutNode: "layout-node",
-    Pages: "pages",
+    Book: "book",
     Canvas: "canvas",
 } as const;
 

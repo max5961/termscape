@@ -7,7 +7,7 @@ import { DOM_ELEMENT_SHADOW_STYLE, DOM_ELEMENT_CANVAS } from "../Symbols.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { Root } from "../dom/Root.js";
-import { PagesElement } from "../dom/PagesElement.js";
+import { BookElement } from "../dom/BookElement.js";
 import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import { ListElement } from "../dom/ListElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
@@ -99,7 +99,7 @@ export class Compositor {
     private isBoxLike(elem: DomElement) {
         return (
             elem instanceof BoxElement ||
-            elem instanceof PagesElement ||
+            elem instanceof BookElement ||
             elem instanceof ListElement ||
             elem instanceof LayoutElement ||
             elem instanceof LayoutNode

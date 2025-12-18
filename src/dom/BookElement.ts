@@ -5,7 +5,7 @@ import type { BaseStyle } from "../style/Style.js";
 import { DomElement } from "./DomElement.js";
 
 /**
- * The `PagesElement` does not manage focus like `ListElement` and `PageElement`,
+ * The `BookElement` does not manage focus like `ListElement` and `PageElement`,
  * rather it keeps a virtual array of children, and decides the which one
  * of the children is displayed by adding the current page to the 'real' children
  * array and removing when the next page is focused.  A perf benefit of this is
@@ -14,7 +14,7 @@ import { DomElement } from "./DomElement.js";
  * mouse or key events.
  */
 
-export class PagesElement extends DomElement<{
+export class BookElement extends DomElement<{
     Style: BaseStyle;
     Props: BaseProps;
 }> {
@@ -25,8 +25,8 @@ export class PagesElement extends DomElement<{
         this.pages = [];
     }
 
-    public override get tagName(): typeof TagNameEnum.Pages {
-        return "pages";
+    public override get tagName(): typeof TagNameEnum.Book {
+        return "book";
     }
 
     protected override get defaultStyles(): BaseStyle {

@@ -8,7 +8,7 @@ import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { ListElement } from "../dom/ListElement.js";
 import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
-import { PagesElement } from "../dom/PagesElement.js";
+import { BookElement } from "../dom/BookElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 
 type RequiredConfig<Style extends BaseStyle, Props extends BaseProps> = {
@@ -50,9 +50,9 @@ type TagMap = {
         config: OptionalConfig<BoxStyle, Props.LayoutNode>;
         return: LayoutNode;
     };
-    pages: {
+    book: {
         config: OptionalConfig<BoxStyle, Props.Pages>;
-        return: PagesElement;
+        return: BookElement;
     };
     canvas: {
         config: OptionalConfig<CanvasStyle, Props.Canvas>;
@@ -96,8 +96,8 @@ export function createElement<T extends Tags>(
         }
         return text;
     }
-    if (tag === "pages") {
-        const pages = new PagesElement();
+    if (tag === "book") {
+        const pages = new BookElement();
         applyConfig(pages, cfg);
         return pages;
     }
