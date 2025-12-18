@@ -7,13 +7,13 @@ import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "../shared/RuntimeFactory.js";
 import { ROOT_BRIDGE_DOM_ELEMENT } from "../Symbols.js";
-import type { EventEmitterMap, RuntimeConfig, TTagNames, WriteOpts } from "../Types.js";
+import type { EventEmitterMap, RuntimeConfig, TagName, WriteOpts } from "../Types.js";
 import type { BaseStyle } from "../style/Style.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import type { BaseProps } from "../Props.js";
+import type { TagNameEnum } from "../Constants.js";
 
 export class Root extends DomElement {
-    public tagName: TTagNames;
     public hooks: RenderHooksManager;
     public runtime: Runtime["api"];
 
@@ -31,7 +31,6 @@ export class Root extends DomElement {
 
     constructor(config: RuntimeConfig) {
         super();
-        this.tagName = "ROOT_ELEMENT";
         this.rootRef = { root: this };
         this.hasRendered = false;
 
@@ -68,6 +67,10 @@ export class Root extends DomElement {
         if (config.startOnCreate ?? true) {
             this.runtimeCtl.startRuntime();
         }
+    }
+
+    public override get tagName(): typeof TagNameEnum.Root {
+        return "root";
     }
 
     protected override get defaultStyles(): BaseStyle {

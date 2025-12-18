@@ -4,15 +4,15 @@ import Yoga from "yoga-wasm-web/auto";
 
 export const Yg = Yoga;
 
-export const TagNames = {
-    Box: "BOX_ELEMENT",
-    Text: "TEXT_ELEMENT",
-    Root: "ROOT_ELEMENT",
-    List: "LIST_ELEMENT",
-    Layout: "LAYOUT_ELEMENT",
-    LayoutNode: "LAYOUT_NODE",
-    Pages: "PAGES_ELEMENT",
-    Canvas: "CANVAS_ELEMENT",
+export const TagNameEnum = {
+    Box: "box",
+    Text: "text",
+    Root: "root",
+    List: "list",
+    Layout: "layout",
+    LayoutNode: "layout-node",
+    Pages: "pages",
+    Canvas: "canvas",
 } as const;
 
 export const TextEffectSet = new Set<TextEffect>([

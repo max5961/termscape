@@ -1,7 +1,7 @@
+import type { TagNameEnum } from "../Constants.js";
 import type { BaseProps } from "../Props.js";
 import { ErrorMessages, throwError } from "../shared/ThrowError.js";
 import type { BaseStyle } from "../style/Style.js";
-import type { TTagNames } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 
 /**
@@ -18,13 +18,15 @@ export class PagesElement extends DomElement<{
     Style: BaseStyle;
     Props: BaseProps;
 }> {
-    public override tagName: TTagNames;
     private pages: DomElement[];
 
     constructor() {
         super();
-        this.tagName = "PAGES_ELEMENT";
         this.pages = [];
+    }
+
+    public override get tagName(): typeof TagNameEnum.Pages {
+        return "pages";
     }
 
     protected override get defaultStyles(): BaseStyle {

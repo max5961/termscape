@@ -1,5 +1,5 @@
 import { configureStdin } from "term-keymap";
-import { TagNames } from "./Constants.js";
+import { TagNameEnum } from "./Constants.js";
 import type { DomElement } from "./dom/DomElement.js";
 import type { BaseStyle } from "./style/Style.js";
 export type { DomElement } from "./dom/DomElement.js";
@@ -13,7 +13,7 @@ export type Hex = `#${string}`;
 
 export type Rgb = `rgb(${string}${string}${string})`;
 
-export type TTagNames = (typeof TagNames)[keyof typeof TagNames];
+export type TagName = (typeof TagNameEnum)[keyof typeof TagNameEnum];
 
 export type Point = { x: number; y: number };
 

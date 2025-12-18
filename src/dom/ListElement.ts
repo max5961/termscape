@@ -5,17 +5,19 @@ import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusManager } from "./DomElement.js";
+import { TagNameEnum } from "../Constants.js";
 
 export class ListElement extends FocusManager<{
     Style: BoxStyle;
     ShadowStyle: ShadowBoxStyle;
     Props: FocusManagerProps;
 }> {
-    public override tagName: "LIST_ELEMENT";
-
     constructor() {
         super();
-        this.tagName = "LIST_ELEMENT";
+    }
+
+    public override get tagName(): typeof TagNameEnum.List {
+        return "list";
     }
 
     protected override get defaultStyles(): BoxStyle {

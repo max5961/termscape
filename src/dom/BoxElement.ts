@@ -1,17 +1,14 @@
 import { DomElement } from "./DomElement.js";
-import type { TTagNames } from "../Types.js";
 import type { BoxStyle } from "../style/Style.js";
 import type { Props } from "../Props.js";
+import { TagNameEnum } from "../Constants.js";
 
-export class BoxElement extends DomElement<{
+export abstract class AbstractBoxElement extends DomElement<{
     Style: BoxStyle;
     Props: Props.Box;
 }> {
-    public tagName: TTagNames;
-
     constructor() {
         super();
-        this.tagName = "BOX_ELEMENT";
         this.style = this.defaultStyles;
     }
 
@@ -26,5 +23,15 @@ export class BoxElement extends DomElement<{
 
     protected override get defaultProps(): Props.Box {
         return {};
+    }
+}
+
+export class BoxElement extends AbstractBoxElement {
+    constructor() {
+        super();
+    }
+
+    override get tagName(): typeof TagNameEnum.Box {
+        return "box";
     }
 }

@@ -1,20 +1,22 @@
 import { FocusManager } from "./DomElement.js";
-import type { DomElement, TTagNames, VisualNodeMap } from "../Types.js";
-import { BoxElement } from "./BoxElement.js";
+import type { DomElement, VisualNodeMap } from "../Types.js";
+import { AbstractBoxElement } from "./BoxElement.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 import type { BoxStyle } from "../style/Style.js";
 import { objectKeys } from "../Util.js";
 import type { BaseProps, FocusManagerProps } from "../Props.js";
+import { TagNameEnum } from "../Constants.js";
 
 export class LayoutElement extends FocusManager<{
     Style: BoxStyle;
     Props: BaseProps;
 }> {
-    public override tagName: TTagNames;
-
     constructor() {
         super();
-        this.tagName = "LAYOUT_ELEMENT";
+    }
+
+    public override get tagName(): typeof TagNameEnum.Layout {
+        return "layout";
     }
 
     protected override get defaultStyles(): BoxStyle {
@@ -253,10 +255,13 @@ export class LayoutElement extends FocusManager<{
     }
 }
 
-export class LayoutNode extends BoxElement {
+export class LayoutNode extends AbstractBoxElement {
     constructor() {
         super();
         this.focusNode.becomeCheckpoint(false);
-        this.tagName = "LAYOUT_NODE";
+    }
+
+    override get tagName(): typeof TagNameEnum.LayoutNode {
+        return "layout-node";
     }
 }

@@ -5,11 +5,11 @@ import type {
     MouseEventType,
     MouseEventHandler,
     DOMRect,
-    TTagNames,
     YogaNode,
     Point,
     StyleHandler,
     VisualNodeMap,
+    TagName,
 } from "../Types.js";
 import type { BaseStyle, BaseShadowStyle } from "../style/Style.js";
 import type { BaseProps, FocusManagerProps } from "../Props.js";
@@ -37,7 +37,6 @@ export abstract class DomElement<
         Props: BaseProps;
     } = { Style: BaseStyle; Props: BaseProps },
 > {
-    public abstract tagName: TTagNames;
     public node: YogaNode;
     public parentElement: null | DomElement;
     public collection: DomElement[];
@@ -100,6 +99,8 @@ export abstract class DomElement<
         this.applyDefaultProps();
         this.applyDefaultStyles();
     }
+
+    public abstract get tagName(): TagName;
 
     get [DOM_ELEMENT_SHADOW_STYLE]() {
         return this.shadowStyle;
