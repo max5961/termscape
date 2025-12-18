@@ -2,11 +2,14 @@ import { DomElement } from "./DomElement.js";
 import type { TTagNames } from "../Types.js";
 import { type MeasureFunction } from "yoga-wasm-web/auto";
 import { getRows } from "../shared/TextWrap.js";
-import type { ShadowTextStyle, TextStyle } from "../style/Style.js";
+import type { TextStyle } from "../style/Style.js";
 import type { BaseProps } from "../Props.js";
 import { Render } from "./util/decorators.js";
 
-export class TextElement extends DomElement<TextStyle, ShadowTextStyle> {
+export class TextElement extends DomElement<{
+    Style: TextStyle;
+    Props: BaseProps;
+}> {
     private _textContent: string;
     public tagName: TTagNames;
     public textHeight: number;

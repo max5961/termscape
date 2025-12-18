@@ -32,9 +32,10 @@ import { Focus } from "./FocusContext.js";
 import { ErrorMessages, throwError } from "../shared/ThrowError.js";
 
 export abstract class DomElement<
-    Style extends BaseStyle = BaseStyle,
-    ShadowStyle extends BaseShadowStyle = BaseShadowStyle,
-    Props extends BaseProps = BaseProps,
+    Schema extends {
+        Style: BaseStyle;
+        Props: BaseProps;
+    } = { Style: BaseStyle; Props: BaseProps },
 > {
     public abstract tagName: TTagNames;
     public node: YogaNode;
@@ -45,16 +46,16 @@ export abstract class DomElement<
     protected rect: DOMRect;
     protected canvas: Canvas | null;
     protected scrollOffset: Point;
-    protected props: Map<string, unknown>;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
     protected requiresStdin: boolean;
-    protected virtualStyle!: Style;
-    protected shadowStyle!: ShadowStyle;
+    protected props: Map<string, unknown>;
+    protected virtualStyle!: Schema["Style"];
+    protected shadowStyle!: BaseShadowStyle;
     protected removeKeyListeners: (() => void)[];
     protected childrenSet: Set<DomElement>;
     protected readonly metadata: ElementMetaData;
     protected readonly baseDefaultStyles: BaseStyle;
-    protected styleHandler: StyleHandler<Style> | null;
+    protected styleHandler: StyleHandler<Schema["Style"]> | null;
     protected focusNode: Focus;
 
     constructor() {
@@ -72,7 +73,7 @@ export abstract class DomElement<
         this.requiresStdin = false;
         this.metadata = new ElementMetaData(this);
 
-        const { virtualStyle, shadowStyle } = createVirtualStyleProxy<Style, ShadowStyle>(
+        const { virtualStyle, shadowStyle } = createVirtualStyleProxy<Schema["Style"]>(
             this,
             this.rootRef,
             this.metadata,
@@ -137,12 +138,17 @@ export abstract class DomElement<
     }
 
     @Render()
-    public setProp<T extends keyof Props>(key: T, value: Props[T]): void {
+    public setProp<T extends keyof Schema["Props"]>(
+        key: T,
+        value: Schema["Props"][T],
+    ): void {
         this.props.set(key as string, value);
     }
 
-    public getProp<T extends keyof Props>(key: T): Props[T] | undefined {
-        return this.props.get(key as string) as Props[T] | undefined;
+    public getProp<T extends keyof Schema["Props"]>(
+        key: T,
+    ): Schema["Props"][T] | undefined {
+        return this.props.get(key as string) as Schema["Props"][T] | undefined;
     }
 
     private applyDefaultProps() {
@@ -155,14 +161,14 @@ export abstract class DomElement<
         this.style = { ...this.baseDefaultStyles, ...this.defaultStyles };
     }
 
-    protected abstract get defaultProps(): Props;
-    protected abstract get defaultStyles(): Style;
+    protected abstract get defaultProps(): Schema["Props"];
+    protected abstract get defaultStyles(): Schema["Style"];
 
     // ========================================================================
     // Auto Render Proxy
     // ========================================================================
 
-    set style(stylesheet: Style | StyleHandler<Style>) {
+    set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
         if (typeof stylesheet === "function") {
             this.styleHandler = stylesheet;
         } else {
@@ -179,7 +185,7 @@ export abstract class DomElement<
             ...this.baseDefaultStyles,
             ...this.defaultStyles,
             ...styles,
-        } as Style;
+        } as Schema["Style"];
 
         const keys = [...objectKeys(withDefault), ...objectKeys(this.style)];
 
@@ -188,7 +194,7 @@ export abstract class DomElement<
         }
     }
 
-    get style(): Style {
+    get style(): Schema["Style"] {
         return this.virtualStyle;
     }
 
@@ -620,10 +626,11 @@ export abstract class DomElement<
 }
 
 export abstract class FocusManager<
-    Style extends BaseStyle,
-    ShadowStyle extends BaseShadowStyle,
-    Props extends FocusManagerProps,
-> extends DomElement<Style, ShadowStyle, Props> {
+    Schema extends {
+        Style: BaseStyle;
+        Props: FocusManagerProps;
+    },
+> extends DomElement<Schema> {
     private vmap: VisualNodeMap;
     private _focused: DomElement | undefined;
 

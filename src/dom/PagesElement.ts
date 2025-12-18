@@ -1,6 +1,6 @@
 import type { BaseProps } from "../Props.js";
 import { ErrorMessages, throwError } from "../shared/ThrowError.js";
-import type { BaseShadowStyle, BaseStyle } from "../style/Style.js";
+import type { BaseStyle } from "../style/Style.js";
 import type { TTagNames } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 
@@ -14,7 +14,10 @@ import { DomElement } from "./DomElement.js";
  * mouse or key events.
  */
 
-export class PagesElement extends DomElement<BaseStyle, BaseShadowStyle> {
+export class PagesElement extends DomElement<{
+    Style: BaseStyle;
+    Props: BaseProps;
+}> {
     public override tagName: TTagNames;
     private pages: DomElement[];
 

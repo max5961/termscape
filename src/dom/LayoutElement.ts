@@ -2,11 +2,14 @@ import { FocusManager } from "./DomElement.js";
 import type { DomElement, TTagNames, VisualNodeMap } from "../Types.js";
 import { BoxElement } from "./BoxElement.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
-import type { BoxStyle, ShadowBoxStyle } from "../style/Style.js";
+import type { BoxStyle } from "../style/Style.js";
 import { objectKeys } from "../Util.js";
 import type { BaseProps, FocusManagerProps } from "../Props.js";
 
-export class LayoutElement extends FocusManager<BoxStyle, ShadowBoxStyle, BaseProps> {
+export class LayoutElement extends FocusManager<{
+    Style: BoxStyle;
+    Props: BaseProps;
+}> {
     public override tagName: TTagNames;
 
     constructor() {

@@ -5,10 +5,11 @@ import { checkIfViewportDimensions } from "./util/checkIfViewportDimensions.js";
 import { shouldAlwaysRecalc } from "./util/recalculateStyle.js";
 import type { BaseShadowStyle, BaseStyle } from "./Style.js";
 
-export function createVirtualStyleProxy<
-    T extends BaseStyle = BaseStyle,
-    U extends BaseShadowStyle = BaseShadowStyle,
->(elem: DomElement, rootRef: DomElement["rootRef"], metadata: DomElement["metadata"]) {
+export function createVirtualStyleProxy<T extends BaseStyle = BaseStyle>(
+    elem: DomElement,
+    rootRef: DomElement["rootRef"],
+    metadata: DomElement["metadata"],
+) {
     const virtualStyle = new Proxy<T>({} as T, {
         get(target: T, prop: keyof BaseStyle) {
             return target[prop];
@@ -43,12 +44,12 @@ export function createVirtualStyleProxy<
             return true;
         },
     });
-    const shadowStyle = createShadowStyleProxy<U>(elem.node, rootRef, virtualStyle);
+    const shadowStyle = createShadowStyleProxy(elem.node, rootRef, virtualStyle);
 
     return { shadowStyle, virtualStyle };
 }
 
-function createShadowStyleProxy<T extends BaseShadowStyle>(
+function createShadowStyleProxy<T extends BaseShadowStyle = BaseShadowStyle>(
     node: YogaNode,
     rootRef: DomElement["rootRef"],
     virtualStyle: BaseStyle,

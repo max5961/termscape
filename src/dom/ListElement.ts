@@ -1,15 +1,16 @@
 import type { FocusManagerProps } from "../Props.js";
+import { logger } from "../shared/Logger.js";
 import type { BoxStyle, ShadowBoxStyle } from "../style/Style.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusManager } from "./DomElement.js";
 
-export class ListElement extends FocusManager<
-    BoxStyle,
-    ShadowBoxStyle,
-    FocusManagerProps
-> {
+export class ListElement extends FocusManager<{
+    Style: BoxStyle;
+    ShadowStyle: ShadowBoxStyle;
+    Props: FocusManagerProps;
+}> {
     public override tagName: "LIST_ELEMENT";
 
     constructor() {
@@ -80,6 +81,10 @@ export class ListElement extends FocusManager<
         if (this.getProp("blockChildrenShrink")) {
             child.style.flexShrink = 0;
         }
+
+        // child.style.flexBasis = Number.NaN; // auto (content size)
+        child.style.flexGrow = 0;
+        child.style.flexShrink = 1;
     }
 
     protected override handleRemoveChild(
@@ -113,6 +118,17 @@ export class ListElement extends FocusManager<
                 data.left = prev;
                 data.right = next;
             }
+
+            /*
+             * ---DEBUG ROW LIST---
+             * Why is the row list initially setting wierd flex dimensions, and then
+             * as things start to come into focus it changes...?  But this is only a
+             * problem when setting flex direction to row, or rather anything without
+             * a fixed height/width with the flex shrink blocked.
+             * */
+            logger.write({
+                vmap: Array.from(vmap.keys()).map((elem) => elem.getBoundingClientRect()),
+            });
         } else {
             const sortedY = children.slice().sort((prev, curr) => {
                 const prevStart = prev.getUnclippedRect()?.corner.y ?? 0;

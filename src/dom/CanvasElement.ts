@@ -1,12 +1,11 @@
 import type { Props } from "../Props.js";
-import type { CanvasStyle, ShadowCanvasStyle } from "../style/Style.js";
+import type { CanvasStyle } from "../style/Style.js";
 import { DomElement } from "./DomElement.js";
 
-export class CanvasElement extends DomElement<
-    CanvasStyle,
-    ShadowCanvasStyle,
-    Props.Canvas
-> {
+export class CanvasElement extends DomElement<{
+    Style: CanvasStyle;
+    Props: Props.Canvas;
+}> {
     public override tagName: "CANVAS_ELEMENT";
 
     constructor() {

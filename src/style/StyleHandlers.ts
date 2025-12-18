@@ -79,11 +79,11 @@ export const SanitizerHandlers: {
     },
     flexShrink(nextVal, _stdout, elem) {
         const blockedByParent = (
-            elem.parentElement as FocusManager<
-                BaseStyle,
-                BaseShadowStyle,
-                FocusManagerProps
-            >
+            elem.parentElement as FocusManager<{
+                Style: BaseStyle;
+                ShadowStyle: BaseShadowStyle;
+                Props: FocusManagerProps;
+            }>
         )?.getProp("blockChildrenShrink");
 
         if (blockedByParent) {

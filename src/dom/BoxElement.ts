@@ -1,9 +1,12 @@
 import { DomElement } from "./DomElement.js";
 import type { TTagNames } from "../Types.js";
-import type { BoxStyle, ShadowBoxStyle } from "../style/Style.js";
-import type { BaseProps } from "../Props.js";
+import type { BoxStyle } from "../style/Style.js";
+import type { Props } from "../Props.js";
 
-export class BoxElement extends DomElement<BoxStyle, ShadowBoxStyle> {
+export class BoxElement extends DomElement<{
+    Style: BoxStyle;
+    Props: Props.Box;
+}> {
     public tagName: TTagNames;
 
     constructor() {
@@ -21,7 +24,7 @@ export class BoxElement extends DomElement<BoxStyle, ShadowBoxStyle> {
         };
     }
 
-    protected override get defaultProps(): BaseProps {
+    protected override get defaultProps(): Props.Box {
         return {};
     }
 }
