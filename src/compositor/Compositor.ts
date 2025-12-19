@@ -3,7 +3,11 @@ import { Canvas, type SubCanvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
-import { DOM_ELEMENT_SHADOW_STYLE, DOM_ELEMENT_CANVAS } from "../Symbols.js";
+import {
+    DOM_ELEMENT_SHADOW_STYLE,
+    DOM_ELEMENT_CANVAS,
+    DOM_ELEMENT_INTERNAL_CHILDREN,
+} from "../Symbols.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { Root } from "../dom/Root.js";
@@ -67,7 +71,7 @@ export class Compositor {
             }
         }
 
-        for (const child of elem.children) {
+        for (const child of elem[DOM_ELEMENT_INTERNAL_CHILDREN]) {
             let subCanvas = child[DOM_ELEMENT_CANVAS] as SubCanvas | null;
 
             if (layoutChange || !subCanvas) {

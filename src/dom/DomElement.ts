@@ -22,6 +22,7 @@ import {
     DOM_ELEMENT_CANVAS,
     DOM_ELEMENT_FOCUS_NODE,
     DOM_ELEMENT_STYLE_HANDLER,
+    DOM_ELEMENT_INTERNAL_CHILDREN,
 } from "../Symbols.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
@@ -39,9 +40,9 @@ export abstract class DomElement<
 > {
     public node: YogaNode;
     public parentElement: null | DomElement;
-    public collection: DomElement[];
 
     protected readonly rootRef: { root: Root | null };
+    protected $$children: DomElement[];
     protected rect: DOMRect;
     protected canvas: Canvas | null;
     protected scrollOffset: Point;
@@ -60,7 +61,9 @@ export abstract class DomElement<
     constructor() {
         this.node = Yoga.Node.create();
         this.parentElement = null;
-        this.collection = [];
+
+        /** Privately using the `children` getter conflicts with the `BookElement` implementation */
+        this.$$children = [];
         this.childrenSet = new Set();
 
         this.rootRef = { root: null };
@@ -134,8 +137,12 @@ export abstract class DomElement<
         return this.styleHandler;
     }
 
+    get [DOM_ELEMENT_INTERNAL_CHILDREN]() {
+        return this.$$children;
+    }
+
     get children(): Readonly<DomElement[]> {
-        return this.collection;
+        return this.$$children;
     }
 
     @Render()
@@ -164,6 +171,10 @@ export abstract class DomElement<
 
     protected abstract get defaultProps(): Schema["Props"];
     protected abstract get defaultStyles(): Schema["Style"];
+
+    protected throwError(errorMsg: string) {
+        return throwError(this.getRoot(), errorMsg);
+    }
 
     // ========================================================================
     // Auto Render Proxy
@@ -237,7 +248,7 @@ export abstract class DomElement<
         this.focusNode.children.add(child.focusNode);
 
         this.node.insertChild(child.node, this.node.getChildCount());
-        this.collection.push(child);
+        this.$$children.push(child);
         child.parentElement = this;
         const root = this.getRoot();
         child.setRoot(root);
@@ -253,21 +264,24 @@ export abstract class DomElement<
         this.childrenSet.add(child);
         this.focusNode.children.add(child.focusNode);
 
-        const idx = this.children.findIndex((el) => el === beforeChild);
-        if (idx === -1 || !this.childrenSet.has(beforeChild)) {
-            throwError(this.getRoot(), ErrorMessages.insertBefore);
-        }
-
         const nextChildren = [] as DomElement[];
-        for (let i = 0; i < this.children.length; ++i) {
-            if (i === idx) {
+        let foundBeforeChild = false;
+        let childIdx = 0;
+        for (let i = 0; i < this.$$children.length; ++i) {
+            if (this.$$children[i] === beforeChild) {
                 nextChildren.push(child);
+                foundBeforeChild = true;
+                childIdx = i;
             }
-            nextChildren.push(this.children[i]);
+            nextChildren.push(this.$$children[i]);
         }
 
-        this.collection = nextChildren;
-        this.node.insertChild(child.node, idx);
+        if (!foundBeforeChild) {
+            this.throwError(ErrorMessages.insertBefore);
+        }
+
+        this.$$children = nextChildren;
+        this.node.insertChild(child.node, childIdx);
         child.parentElement = this;
         const root = this.getRoot();
         child.setRoot(root);
@@ -277,10 +291,10 @@ export abstract class DomElement<
 
     @Render({ layoutChange: true })
     public removeChild(child: DomElement, freeRecursive?: boolean) {
-        const idx = this.children.findIndex((el) => el === child);
+        const idx = this.$$children.findIndex((el) => el === child);
 
         if (idx === -1 || !this.childrenSet.has(child)) {
-            throwError(this.getRoot(), ErrorMessages.removeChild);
+            this.throwError(ErrorMessages.removeChild);
         }
 
         this.childrenSet.delete(child);
@@ -288,7 +302,7 @@ export abstract class DomElement<
 
         child.beforeDetaching();
 
-        this.collection.splice(idx, 1);
+        this.$$children.splice(idx, 1);
         this.node.removeChild(child.node);
 
         // If React removes a child, it should be gc'd.  If removing w/o React,

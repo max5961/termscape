@@ -6,5 +6,6 @@ export const DOM_ELEMENT_SCROLL_OFFSET = Symbol.for("termscape.domelement.corner
 export const DOM_ELEMENT_CANVAS = Symbol.for("termscape.domelement.canvas");
 export const DOM_ELEMENT_FOCUS_NODE = Symbol.for("termscape.domelement.focus_node");
 export const DOM_ELEMENT_STYLE_HANDLER = Symbol.for("termscape.domelement.style_handler");
+export const DOM_ELEMENT_INTERNAL_CHILDREN = Symbol.for("termscape.domelement.children");
 export const TEXT_PADDING = Symbol.for("termscape.padding_text");
 export const CANVAS_INITIALIZER = Symbol.for("termscape.canvas_initializer");
