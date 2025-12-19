@@ -617,7 +617,7 @@ export abstract class DomElement<
 
     protected dfs(elem: DomElement, cb: (elem: DomElement) => void) {
         cb(elem);
-        elem.children.forEach((child) => {
+        elem.$$children.forEach((child) => {
             this.dfs(child, cb);
         });
     }
