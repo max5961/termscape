@@ -1,6 +1,13 @@
 type Enum<T extends string> = { [P in T]: T };
 
-export function stringEnum<T extends string>(...p: T[]): Readonly<Enum<T>> {
+/**
+ * FUTURE POSSIBLE TODO - Is it possible to narrow an explicitly injected T to
+ * just the supplied compile time literal args and return an Enum type with only
+ * the narrowed type???  That way you can start with a wide type for type safety
+ * when declaring the args, but the return type is compliant with the args.  Without
+ * this, then the return type is not type safe for an explicit `T` value.
+ * */
+export function stringEnum<const T extends string>(...p: T[]): Readonly<Enum<T>> {
     const result = {} as Enum<T>;
 
     for (let i = 0; i < p.length; ++i) {

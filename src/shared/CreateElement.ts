@@ -135,12 +135,14 @@ function applyConfig(elem: DomElement, config: DefaultConfig): void {
     if (config.style) {
         elem.style = config.style;
     }
-    if (config.children) {
-        config.children.forEach((child) => elem.appendChild(child));
-    }
+
     if (config.props) {
         for (const prop of objectKeys(config.props)) {
             elem.setProp(prop, config.props[prop]);
         }
+    }
+
+    if (config.children) {
+        config.children.forEach((child) => elem.appendChild(child));
     }
 }

@@ -81,7 +81,6 @@ export const SanitizerHandlers: {
         const blockedByParent = (
             elem.parentElement as FocusManager<{
                 Style: BaseStyle;
-                ShadowStyle: BaseShadowStyle;
                 Props: FocusManagerProps;
             }>
         )?.getProp("blockChildrenShrink");

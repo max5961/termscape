@@ -31,6 +31,7 @@ import { ElementMetaData } from "./ElementMetadata.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
 import { ErrorMessages, throwError } from "../shared/ThrowError.js";
+import { recalculateStyle } from "../style/util/recalculateStyle.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -42,7 +43,7 @@ export abstract class DomElement<
     public parentElement: null | DomElement;
 
     protected readonly rootRef: { root: Root | null };
-    protected $$children: DomElement[];
+    protected __children__: DomElement[];
     protected rect: DOMRect;
     protected canvas: Canvas | null;
     protected scrollOffset: Point;
@@ -63,7 +64,7 @@ export abstract class DomElement<
         this.parentElement = null;
 
         /** Privately using the `children` getter conflicts with the `BookElement` implementation */
-        this.$$children = [];
+        this.__children__ = [];
         this.childrenSet = new Set();
 
         this.rootRef = { root: null };
@@ -138,11 +139,11 @@ export abstract class DomElement<
     }
 
     get [DOM_ELEMENT_INTERNAL_CHILDREN]() {
-        return this.$$children;
+        return this.__children__;
     }
 
     get children(): Readonly<DomElement[]> {
-        return this.$$children;
+        return this.__children__;
     }
 
     @Render()
@@ -248,7 +249,7 @@ export abstract class DomElement<
         this.focusNode.children.add(child.focusNode);
 
         this.node.insertChild(child.node, this.node.getChildCount());
-        this.$$children.push(child);
+        this.__children__.push(child);
         child.parentElement = this;
         const root = this.getRoot();
         child.setRoot(root);
@@ -267,20 +268,20 @@ export abstract class DomElement<
         const nextChildren = [] as DomElement[];
         let foundBeforeChild = false;
         let childIdx = 0;
-        for (let i = 0; i < this.$$children.length; ++i) {
-            if (this.$$children[i] === beforeChild) {
+        for (let i = 0; i < this.__children__.length; ++i) {
+            if (this.__children__[i] === beforeChild) {
                 nextChildren.push(child);
                 foundBeforeChild = true;
                 childIdx = i;
             }
-            nextChildren.push(this.$$children[i]);
+            nextChildren.push(this.__children__[i]);
         }
 
         if (!foundBeforeChild) {
             this.throwError(ErrorMessages.insertBefore);
         }
 
-        this.$$children = nextChildren;
+        this.__children__ = nextChildren;
         this.node.insertChild(child.node, childIdx);
         child.parentElement = this;
         const root = this.getRoot();
@@ -291,7 +292,7 @@ export abstract class DomElement<
 
     @Render({ layoutChange: true })
     public removeChild(child: DomElement, freeRecursive?: boolean) {
-        const idx = this.$$children.findIndex((el) => el === child);
+        const idx = this.__children__.findIndex((el) => el === child);
 
         if (idx === -1 || !this.childrenSet.has(child)) {
             this.throwError(ErrorMessages.removeChild);
@@ -302,7 +303,7 @@ export abstract class DomElement<
 
         child.beforeDetaching();
 
-        this.$$children.splice(idx, 1);
+        this.__children__.splice(idx, 1);
         this.node.removeChild(child.node);
 
         // If React removes a child, it should be gc'd.  If removing w/o React,
@@ -617,7 +618,7 @@ export abstract class DomElement<
 
     protected dfs(elem: DomElement, cb: (elem: DomElement) => void) {
         cb(elem);
-        elem.$$children.forEach((child) => {
+        elem.__children__.forEach((child) => {
             this.dfs(child, cb);
         });
     }
@@ -655,6 +656,10 @@ export abstract class FocusManager<
         this._focused = undefined;
     }
 
+    private static RecalulateFlexShrink = (child: DomElement) => {
+        recalculateStyle(child, "flexShrink");
+    };
+
     protected abstract getNavigableChildren(): DomElement[];
     protected abstract handleAppendChild(child: DomElement): void;
     // prettier-ignore
@@ -664,11 +669,15 @@ export abstract class FocusManager<
     public override appendChild(child: DomElement): void {
         super.appendChild(child);
         this.handleAppendChild(child);
+
+        FocusManager.RecalulateFlexShrink(child);
     }
 
     public override insertBefore(child: DomElement, beforeChild: DomElement): void {
         super.insertBefore(child, beforeChild);
         this.handleAppendChild(child);
+
+        FocusManager.RecalulateFlexShrink(child);
     }
 
     public override removeChild(child: DomElement, freeRecursive?: boolean): void {
@@ -679,6 +688,27 @@ export abstract class FocusManager<
             const data = this.getFocusedData();
             const next = data?.up || data?.down || data?.left || data?.right;
             this.focusChild(next);
+        }
+
+        FocusManager.RecalulateFlexShrink(child);
+    }
+
+    /*
+     * This needs to be overridden to ensure that `flexShrink` styles for children
+     * are recalculated if `blockChildrenShrink` is set
+     * */
+    public override setProp<T extends keyof Schema["Props"]>(
+        key: T,
+        value: Schema["Props"][T],
+    ): void {
+        super.setProp(key, value);
+
+        // If `blockChildrenShrink` is true, style handlers will set `flexShrink`
+        // to `0`
+        if (key === "blockChildrenShrink") {
+            this.__children__.forEach((child) => {
+                recalculateStyle(child, "flexShrink");
+            });
         }
     }
 

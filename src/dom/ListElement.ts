@@ -1,5 +1,4 @@
 import type { FocusManagerProps } from "../Props.js";
-import { logger } from "../shared/Logger.js";
 import type { BoxStyle, ShadowBoxStyle } from "../style/Style.js";
 import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 import type { VisualNodeMap } from "../Types.js";
@@ -67,26 +66,15 @@ export class ListElement extends FocusManager<{
     }
 
     protected override getNavigableChildren(): DomElement[] {
-        return this.children.slice();
+        return this.__children__.slice();
     }
 
     protected override handleAppendChild(child: DomElement): void {
         child[DOM_ELEMENT_FOCUS_NODE].becomeCheckpoint(false);
-        if (this.children.length === 1) {
+        if (this.__children__.length === 1) {
             child[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
             this.focused = child;
         }
-
-        // TODO: This needs to be dynamic so change to this value should modify
-        // all existing children... It also needs to revert to its original value
-        // when removing the element.
-        if (this.getProp("blockChildrenShrink")) {
-            child.style.flexShrink = 0;
-        }
-
-        // child.style.flexBasis = Number.NaN; // auto (content size)
-        child.style.flexGrow = 0;
-        child.style.flexShrink = 1;
     }
 
     protected override handleRemoveChild(
@@ -120,17 +108,6 @@ export class ListElement extends FocusManager<{
                 data.left = prev;
                 data.right = next;
             }
-
-            /*
-             * ---DEBUG ROW LIST---
-             * Why is the row list initially setting wierd flex dimensions, and then
-             * as things start to come into focus it changes...?  But this is only a
-             * problem when setting flex direction to row, or rather anything without
-             * a fixed height/width with the flex shrink blocked.
-             * */
-            logger.write({
-                vmap: Array.from(vmap.keys()).map((elem) => elem.getBoundingClientRect()),
-            });
         } else {
             const sortedY = children.slice().sort((prev, curr) => {
                 const prevStart = prev.getUnclippedRect()?.corner.y ?? 0;
@@ -237,7 +214,7 @@ export class BigList<T> extends ListElement {
         // This is where FocusManager is 'picking' an index to focus and running
         // focusChild automatically, see 'FocusManager.removeChild' which checks to
         // see if the child being removed is focused, if it is then it shifts focus
-        [...this.children].forEach((child) => this.removeChild(child));
+        [...this.__children__].forEach((child) => this.removeChild(child));
         this.generatedItems.forEach((child) => this.appendChild(child));
 
         // The real issue with this design is that once you remove or add a child

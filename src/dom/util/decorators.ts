@@ -1,5 +1,6 @@
 import { DomElement } from "../DomElement.js";
 import type { WriteOpts } from "../../Types.js";
+import { recalculateStyle } from "../../style/util/recalculateStyle.js";
 
 function createDecorator<T extends DomElement, U>(cb: {
     (this: T, ...injected: U[]): unknown;

@@ -7,7 +7,7 @@ import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "../shared/RuntimeFactory.js";
 import { ROOT_BRIDGE_DOM_ELEMENT } from "../Symbols.js";
-import type { EventEmitterMap, RuntimeConfig, TagName, WriteOpts } from "../Types.js";
+import type { EventEmitterMap, RuntimeConfig, WriteOpts } from "../Types.js";
 import type { BaseStyle } from "../style/Style.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import type { BaseProps } from "../Props.js";
