@@ -15,12 +15,18 @@ import { BookElement } from "../dom/BookElement.js";
 import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import { ListElement } from "../dom/ListElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
+import type { FocusManagerBaseProps } from "../Props.js";
+import type { BaseStyle } from "../style/Style.js";
 
 export class Compositor {
     public canvas: Canvas;
     public ops: Operations;
     public rects: DomRects;
     public draw: Draw;
+    public focusManagers: FocusManager<{
+        Style: BaseStyle;
+        Props: FocusManagerBaseProps;
+    }>[];
     private postLayout: (() => unknown)[];
 
     constructor(root: Root) {
@@ -30,6 +36,7 @@ export class Compositor {
         this.rects = new DomRects();
         this.draw = new Draw();
         this.postLayout = [];
+        this.focusManagers = [];
     }
 
     public buildLayout(
@@ -64,10 +71,14 @@ export class Compositor {
                 }
             }
 
-            if (elem instanceof FocusManager && layoutChange) {
-                this.postLayoutDefer(() => {
-                    elem.refreshVisualMap();
-                });
+            if (elem instanceof FocusManager) {
+                if (layoutChange) {
+                    this.postLayoutDefer(() => {
+                        elem.refreshVisualMap();
+                    });
+                }
+
+                this.focusManagers.push(elem);
             }
         }
 

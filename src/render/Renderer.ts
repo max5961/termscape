@@ -9,6 +9,7 @@ import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../shared/Ansi.js";
 import { Root } from "../dom/Root.js";
 import type { WriteOpts } from "../Types.js";
+import { FOCUS_MANAGER_DID_ADJUST_TO_FOCUS } from "../Symbols.js";
 
 export class Renderer {
     public lastCanvas: Canvas | null;
@@ -38,13 +39,24 @@ export class Renderer {
     public writeToStdout = (opts: WriteOpts) => {
         if (this.hooks.renderIsBlocked) return;
 
-        // onBlur hooks
-
         this.preLayoutHooks();
-        const compositor = this.getComposedLayout(opts);
-        this.postLayoutHooks(compositor);
+        let compositor = this.getComposedLayout(opts);
 
-        // onFocus hooks
+        if (compositor.focusManagers.length) {
+            let adjusted = false;
+
+            compositor.focusManagers.forEach((focusManager) => {
+                if (focusManager[FOCUS_MANAGER_DID_ADJUST_TO_FOCUS]()) {
+                    adjusted = true;
+                }
+            });
+
+            if (adjusted) {
+                compositor = this.getComposedLayout({ ...opts, layoutChange: true });
+            }
+        }
+
+        this.postLayoutHooks(compositor);
 
         this.deferWrite(compositor, opts);
         this.preWriteHooks();

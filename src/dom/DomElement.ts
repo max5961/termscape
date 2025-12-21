@@ -23,6 +23,8 @@ import {
     DOM_ELEMENT_FOCUS_NODE,
     DOM_ELEMENT_STYLE_HANDLER,
     DOM_ELEMENT_INTERNAL_CHILDREN,
+    DOM_ELEMENT_APPLY_CORNER_OFFSET,
+    FOCUS_MANAGER_DID_ADJUST_TO_FOCUS,
 } from "../Symbols.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
@@ -32,7 +34,6 @@ import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
 import { ErrorMessages, throwError } from "../shared/ThrowError.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
-import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -59,6 +60,7 @@ export abstract class DomElement<
     protected readonly baseDefaultStyles: BaseStyle;
     protected styleHandler: StyleHandler<Schema["Style"]> | null;
     protected focusNode: Focus;
+    protected lastOffsetChangeWasFocus: boolean;
 
     constructor() {
         this.node = Yoga.Node.create();
@@ -76,6 +78,7 @@ export abstract class DomElement<
         this.eventListeners = this.initEventListeners();
         this.requiresStdin = false;
         this.metadata = new ElementMetaData(this);
+        this.lastOffsetChangeWasFocus = false;
 
         const { virtualStyle, shadowStyle } = createVirtualStyleProxy<Schema["Style"]>(
             this,
@@ -518,29 +521,61 @@ export abstract class DomElement<
     // =========================================================================
 
     public scrollDown(units = 1) {
+        this.lastOffsetChangeWasFocus = false;
         this.applyScroll(0, -units);
     }
 
     public scrollUp(units = 1) {
+        this.lastOffsetChangeWasFocus = false;
         this.applyScroll(0, units);
     }
 
     public scrollLeft(units = 1) {
+        this.lastOffsetChangeWasFocus = false;
         this.applyScroll(units, 0);
     }
 
     public scrollRight(units = 1) {
+        this.lastOffsetChangeWasFocus = false;
         this.applyScroll(-units, 0);
     }
 
-    private applyScroll(dx: number, dy: number) {
+    public scrollDownWithFocus(units: number, triggerRender: boolean) {
+        this.lastOffsetChangeWasFocus = true;
+        this.applyScroll(0, -units, triggerRender);
+    }
+
+    public scrollUpWithFocus(units: number, triggerRender: boolean) {
+        this.lastOffsetChangeWasFocus = true;
+        this.applyScroll(0, units, triggerRender);
+    }
+
+    public scrollLeftWithFocus(units: number, triggerRender: boolean) {
+        this.lastOffsetChangeWasFocus = true;
+        this.applyScroll(units, 0, triggerRender);
+    }
+
+    public scrollRightWithFocus(units: number, triggerRender: boolean) {
+        this.lastOffsetChangeWasFocus = true;
+        this.applyScroll(-units, 0, triggerRender);
+    }
+
+    private applyScroll(dx: number, dy: number, triggerRender = true) {
         const allowedUnits = this.requestScroll(dx, dy);
 
         if (allowedUnits) {
             // scroll up/down
-            if (dy) this.applyCornerOffset(0, allowedUnits);
+            if (dy) {
+                return triggerRender
+                    ? this.applyCornerOffset(0, allowedUnits)
+                    : this[DOM_ELEMENT_APPLY_CORNER_OFFSET](0, allowedUnits);
+            }
             // scroll left/right
-            if (dx) this.applyCornerOffset(allowedUnits, 0);
+            if (dx) {
+                return triggerRender
+                    ? this.applyCornerOffset(allowedUnits, 0)
+                    : this[DOM_ELEMENT_APPLY_CORNER_OFFSET](allowedUnits, 0);
+            }
         }
     }
 
@@ -640,6 +675,14 @@ export abstract class DomElement<
 
     @Render({ layoutChange: true })
     private applyCornerOffset(dx: number, dy: number) {
+        this[DOM_ELEMENT_APPLY_CORNER_OFFSET](dx, dy);
+    }
+
+    /**
+     * Applies the corner offset without triggering a render change.  This is
+     * necessary during rendering and prevents the cascade of a new render.
+     * */
+    [DOM_ELEMENT_APPLY_CORNER_OFFSET](dx: number, dy: number) {
         this.scrollOffset.x += dx;
         this.scrollOffset.y += dy;
     }
@@ -694,6 +737,7 @@ export abstract class FocusManager<
         super();
         this.vmap = new Map();
         this._focused = undefined;
+        this.lastOffsetChangeWasFocus = true;
     }
 
     private static RecalulateFlexShrink = (child: DomElement) => {
@@ -793,7 +837,39 @@ export abstract class FocusManager<
         return this.focused;
     }
 
-    private focusedIsVisible() {
+    /**
+     * Handle layout changes or first renders that have pushed the focused item
+     * out of visibility, and subsequently adjust the corner offset **without**
+     * causing a re-render since this will be handled during compositing.
+     *
+     * @returns `true` if the corner offset was adjusted
+     * */
+    [FOCUS_MANAGER_DID_ADJUST_TO_FOCUS](): boolean {
+        // Allow for non-focus scrolling to occur and obscure the focused child
+        if (!this.lastOffsetChangeWasFocus) return false;
+
+        // If undefined, this means that no layout has been generated yet
+        const visibility = this.focusedChildVisibilityStatus();
+        if (!visibility) return false;
+
+        const { itemBelowWin, itemAboveWin, itemRightWin, itemLeftWin } = visibility;
+
+        // Focused item is visible - no need to adjust corner offset
+        if (!itemBelowWin && !itemAboveWin && !itemRightWin && !itemLeftWin) {
+            return false;
+        }
+
+        if (itemBelowWin || itemAboveWin) {
+            this.normalizeScrollToFocus("up");
+        }
+        if (itemRightWin || itemLeftWin) {
+            this.normalizeScrollToFocus("left");
+        }
+
+        return true;
+    }
+
+    private focusedChildVisibilityStatus() {
         const fRect = this.focused?.getUnclippedRect();
         const wRect = this.canvas?.unclippedContentRect;
 
@@ -809,9 +885,15 @@ export abstract class FocusManager<
         const fRight = fRect.corner.x + fRect.width;
         const wRight = wRect.corner.x + wRect.width;
 
-        const scrollOff = this.getFMProp("keepFocusedCenter")
-            ? Math.floor(this.node.getComputedWidth() / 2)
+        let scrollOff = this.getFMProp("keepFocusedCenter")
+            ? Math.floor(this.node.getComputedHeight() / 2)
             : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
+
+        if (this.style.flexDirection?.includes("row")) {
+            scrollOff = this.getFMProp("keepFocusedCenter")
+                ? Math.floor(this.node.getComputedWidth() / 2)
+                : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
+        }
 
         const itemBelowWin = fBot > wBot - scrollOff;
         const itemAboveWin = fTop <= wTop + scrollOff;
@@ -830,7 +912,10 @@ export abstract class FocusManager<
     /**
      * Adjust the `scrollOffset` in order to keep the focused element in view
      */
-    public normalizeScrollToFocus(direction: "up" | "down" | "left" | "right") {
+    public normalizeScrollToFocus(
+        direction: "up" | "down" | "left" | "right",
+        triggerRender = true,
+    ) {
         if (!this.focused) return;
         if (!this.getFMProp("keepFocusedVisible")) return;
 
@@ -856,9 +941,9 @@ export abstract class FocusManager<
             if (fRect.height >= wRect.height) {
                 const toScroll = fTop - wTop;
                 if (toScroll > 0) {
-                    this.scrollDown(toScroll);
+                    this.scrollDownWithFocus(toScroll, triggerRender);
                 } else {
-                    this.scrollUp(Math.abs(toScroll));
+                    this.scrollUpWithFocus(Math.abs(toScroll), triggerRender);
                 }
                 return;
             }
@@ -868,8 +953,8 @@ export abstract class FocusManager<
 
             const scroll = () => {
                 return isScrollNegative || this.getFMProp("keepFocusedCenter")
-                    ? this.scrollDown(fBot - wBot + scrollOff)
-                    : this.scrollUp(wTop + scrollOff - fTop);
+                    ? this.scrollDownWithFocus(fBot - wBot + scrollOff, triggerRender)
+                    : this.scrollUpWithFocus(wTop + scrollOff - fTop, triggerRender);
             };
 
             if (itemBelowWin || itemAboveWin) {
@@ -893,9 +978,9 @@ export abstract class FocusManager<
             if (fRect.width >= wRect.width) {
                 const toScroll = fRight - wRight;
                 if (toScroll > 0) {
-                    this.scrollRight(toScroll);
+                    this.scrollRightWithFocus(toScroll, triggerRender);
                 } else {
-                    this.scrollLeft(Math.abs(toScroll));
+                    this.scrollLeftWithFocus(Math.abs(toScroll), triggerRender);
                 }
             }
 
@@ -908,8 +993,11 @@ export abstract class FocusManager<
 
             const scroll = () => {
                 return isScrollNegative || this.getFMProp("keepFocusedCenter")
-                    ? this.scrollRight(fRight - wRight + scrollOff)
-                    : this.scrollLeft(wLeft + scrollOff - fLeft);
+                    ? this.scrollRightWithFocus(
+                          fRight - wRight + scrollOff,
+                          triggerRender,
+                      )
+                    : this.scrollLeftWithFocus(wLeft + scrollOff - fLeft, triggerRender);
             };
 
             if (itemRightWin || itemLeftWin) {
