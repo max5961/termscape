@@ -38,9 +38,13 @@ export class Renderer {
     public writeToStdout = (opts: WriteOpts) => {
         if (this.hooks.renderIsBlocked) return;
 
+        // onBlur hooks
+
         this.preLayoutHooks();
         const compositor = this.getComposedLayout(opts);
         this.postLayoutHooks(compositor);
+
+        // onFocus hooks
 
         this.deferWrite(compositor, opts);
         this.preWriteHooks();

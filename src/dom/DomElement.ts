@@ -32,6 +32,7 @@ import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
 import { ErrorMessages, throwError } from "../shared/ThrowError.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
+import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -534,6 +535,7 @@ export abstract class DomElement<
 
     private applyScroll(dx: number, dy: number) {
         const allowedUnits = this.requestScroll(dx, dy);
+
         if (allowedUnits) {
             // scroll up/down
             if (dy) this.applyCornerOffset(0, allowedUnits);
@@ -542,6 +544,10 @@ export abstract class DomElement<
         }
     }
 
+    /**
+     * A negative dy scrolls *down* by "pulling" content *up*.
+     * A negative dx scrolls *left* by "pulling" content *left*
+     * */
     private requestScroll(dx: number, dy: number): number {
         if (!this.canvas) return 0;
 
@@ -551,33 +557,67 @@ export abstract class DomElement<
 
         if (dy) {
             const deepest = this.getDeepestContent(this, "y");
+            const highest = this.getHighestContent(this, "y");
 
-            // Negative y scrollOffset scrolls *down* by "pulling" content *up*
+            // Pulling content up - scrolling down
             if (dy < 0) {
                 if (contentDepth >= deepest) return 0;
                 return Math.max(dy, contentDepth - deepest);
+
+                // Pushing content down - scrolling up
             } else {
-                // scrollOffset can only move in negative space, so its abs value
-                // if the max allowed units before scrolling exceeds top
-                return Math.min(dy, Math.abs(this.scrollOffset.y));
+                if (contentRect.corner.y <= highest) return 0;
+                return Math.min(dy, contentRect.corner.y - highest);
             }
         }
 
         if (dx) {
-            const deepest = this.getDeepestContent(this, "x");
+            const mostRight = this.getDeepestContent(this, "x");
+            const mostLeft = this.getHighestContent(this, "x");
 
-            // Scroll *left* attempt
+            // Pulling content left - scrolling right
             if (dx < 0) {
-                if (contentWidth >= deepest) return 0;
-                return Math.max(dx, contentWidth - deepest);
+                if (contentWidth >= mostRight) return 0;
+                return Math.max(dx, contentWidth - mostRight);
+
+                // Pushing content right - scrolling left
             } else {
-                return Math.min(dx, Math.abs(this.scrollOffset.x));
+                if (contentRect.corner.x <= mostLeft) return 0;
+                return Math.min(dx, contentRect.corner.x - mostLeft);
             }
         }
 
         return 0;
     }
 
+    /**
+     * Should not be allowed to scroll such that the highest content is *lower*
+     * than the top border of the content window
+     * */
+    private getHighestContent(elem: DomElement, axis: "x" | "y", level = 0) {
+        const rect = elem.canvas?.unclippedRect;
+        if (!rect) return 0;
+
+        let highest: number;
+        if (axis === "x") {
+            highest = rect.corner.x;
+        } else {
+            highest = rect.corner.y;
+        }
+
+        if (level === 0) highest = Infinity;
+
+        for (const child of elem.__children__) {
+            highest = Math.min(highest, this.getHighestContent(child, axis, level + 1));
+        }
+
+        return highest;
+    }
+
+    /**
+     * Should not be allowed to scroll such that the lowest content is *higher*
+     * than the bottom border of the content window
+     * */
     private getDeepestContent(elem: DomElement, axis: "x" | "y", level = 0) {
         const rect = elem.canvas?.unclippedRect;
         if (!rect) return 0;
@@ -591,7 +631,7 @@ export abstract class DomElement<
 
         if (level === 0) deepest = -Infinity; // Don't calc `this`
 
-        for (const child of elem.children) {
+        for (const child of elem.__children__) {
             deepest = Math.max(deepest, this.getDeepestContent(child, axis, level + 1));
         }
 
@@ -753,10 +793,44 @@ export abstract class FocusManager<
         return this.focused;
     }
 
+    private focusedIsVisible() {
+        const fRect = this.focused?.getUnclippedRect();
+        const wRect = this.canvas?.unclippedContentRect;
+
+        if (!fRect || !wRect) return;
+
+        const wTop = wRect.corner.y;
+        const fTop = fRect.corner.y;
+        const wBot = wRect.corner.y + wRect.height;
+        const fBot = fRect.corner.y + fRect.height;
+
+        const fLeft = fRect.corner.x;
+        const wLeft = wRect.corner.x;
+        const fRight = fRect.corner.x + fRect.width;
+        const wRight = wRect.corner.x + wRect.width;
+
+        const scrollOff = this.getFMProp("keepFocusedCenter")
+            ? Math.floor(this.node.getComputedWidth() / 2)
+            : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
+
+        const itemBelowWin = fBot > wBot - scrollOff;
+        const itemAboveWin = fTop <= wTop + scrollOff;
+
+        const itemRightWin = fRight > wRight - scrollOff;
+        const itemLeftWin = fLeft <= wLeft + scrollOff;
+
+        return {
+            itemBelowWin,
+            itemAboveWin,
+            itemRightWin,
+            itemLeftWin,
+        };
+    }
+
     /**
      * Adjust the `scrollOffset` in order to keep the focused element in view
      */
-    private normalizeScrollToFocus(direction: "up" | "down" | "left" | "right") {
+    public normalizeScrollToFocus(direction: "up" | "down" | "left" | "right") {
         if (!this.focused) return;
         if (!this.getFMProp("keepFocusedVisible")) return;
 
@@ -769,13 +843,13 @@ export abstract class FocusManager<
         if (!fRect || !wRect) return;
 
         if (!isLTR) {
-            const fTop = fRect.corner.y;
             const wTop = wRect.corner.y;
-            const fBot = fRect.corner.y + fRect.height;
+            const fTop = fRect.corner.y;
             const wBot = wRect.corner.y + wRect.height;
+            const fBot = fRect.corner.y + fRect.height;
 
             const scrollOff = this.getFMProp("keepFocusedCenter")
-                ? Math.floor(this.node.getComputedWidth() / 2)
+                ? Math.floor(this.node.getComputedHeight() / 2)
                 : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
 
             // If focus item is as large or larger than window, pin to top.
@@ -793,7 +867,7 @@ export abstract class FocusManager<
             const itemAboveWin = fTop <= wTop + scrollOff;
 
             const scroll = () => {
-                return isScrollNegative
+                return isScrollNegative || this.getFMProp("keepFocusedCenter")
                     ? this.scrollDown(fBot - wBot + scrollOff)
                     : this.scrollUp(wTop + scrollOff - fTop);
             };
@@ -826,14 +900,14 @@ export abstract class FocusManager<
             }
 
             const scrollOff = this.getFMProp("keepFocusedCenter")
-                ? Math.floor(this.node.getComputedHeight() / 2)
+                ? Math.floor(this.node.getComputedWidth() / 2)
                 : Math.min(this.getFMProp("scrollOff") ?? 0, wRight);
 
             const itemRightWin = fRight > wRight - scrollOff;
             const itemLeftWin = fLeft <= wLeft + scrollOff;
 
             const scroll = () => {
-                return isScrollNegative
+                return isScrollNegative || this.getFMProp("keepFocusedCenter")
                     ? this.scrollRight(fRight - wRight + scrollOff)
                     : this.scrollLeft(wLeft + scrollOff - fLeft);
             };

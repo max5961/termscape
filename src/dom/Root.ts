@@ -2,7 +2,7 @@ import Yoga from "yoga-wasm-web/auto";
 import EventEmitter from "events";
 import { type Action } from "term-keymap";
 import { RenderHooksManager } from "../render/RenderHooks.js";
-import { DomElement } from "./DomElement.js";
+import { DomElement, FocusManager } from "./DomElement.js";
 import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "../shared/RuntimeFactory.js";
@@ -29,10 +29,14 @@ export class Root extends DomElement {
         viewportEls: Set<DomElement>;
     };
 
+    // Handle work that can only be done once the Yoga layout is known
+    private postLayoutOps: (() => unknown)[];
+
     constructor(config: RuntimeConfig) {
         super();
         this.rootRef = { root: this };
         this.hasRendered = false;
+        this.postLayoutOps = [];
 
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
         this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
