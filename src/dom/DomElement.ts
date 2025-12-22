@@ -603,8 +603,6 @@ export abstract class DomElement<
             const lowest = this.contentRange.low;
             const highest = this.contentRange.high;
 
-            logger.write({ lowest, highest, contentDepth });
-
             // Pulling content up - scrolling down
             if (dy < 0) {
                 if (contentDepth >= lowest) return 0;

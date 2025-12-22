@@ -38,9 +38,15 @@ export class TextElement extends DomElement<{
         }
     }
 
-    @Render({ layoutChange: true })
     private setTextContext(val: string): void {
+        if (this._textContent === val) return;
+        this.setTextContentWithRender(val);
+    }
+
+    @Render({ layoutChange: true })
+    private setTextContentWithRender(val: string): void {
         this._textContent = val;
+        this.node.markDirty(); // Yoga will not run the measureFunc otherwise
     }
 
     public get textContent() {
@@ -62,7 +68,7 @@ export class TextElement extends DomElement<{
             }
 
             return {
-                width: width,
+                width: Math.min(this.textContent.length, width),
                 height: this.textHeight,
             };
         };
