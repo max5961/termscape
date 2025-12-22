@@ -1,6 +1,6 @@
 import type { TagNameEnum } from "../Constants.js";
 import type { BaseProps } from "../Props.js";
-import { ErrorMessages } from "../shared/ThrowError.js";
+import { ErrorMessages } from "../shared/ErrorMessages.js";
 import type { BaseStyle } from "../style/Style.js";
 import { DomElement } from "./DomElement.js";
 

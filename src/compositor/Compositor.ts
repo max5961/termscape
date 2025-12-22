@@ -91,7 +91,8 @@ export class Compositor {
             elem.contentRange = elem.initContentRange();
         }
 
-        if (elem.style.overflow === "scroll" || elem.style.overflow === "hidden") {
+        // if (elem.style.overflow === "scroll" || elem.style.overflow === "hidden") {
+        if (elem.style.overflow === "scroll") {
             this.scrollManagers.push(elem);
             parentScrollManagers.push(elem);
         }

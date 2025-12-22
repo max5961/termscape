@@ -20,8 +20,10 @@ import { objectEntries, objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
-import { ErrorMessages, throwError } from "../shared/ThrowError.js";
+import { throwError } from "../shared/ThrowError.js";
+import { ErrorMessages } from "../shared/ErrorMessages.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
+import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -558,6 +560,10 @@ export abstract class DomElement<
     }
 
     private applyScroll(dx: number, dy: number, triggerRender = true) {
+        if (this.style.overflow !== "scroll") {
+            this.throwError(ErrorMessages.invalidOverflowStyleForScroll);
+        }
+
         const allowedUnits = this.requestScroll(dx, dy);
 
         if (allowedUnits) {
@@ -596,6 +602,8 @@ export abstract class DomElement<
         if (dy) {
             const lowest = this.contentRange.low;
             const highest = this.contentRange.high;
+
+            logger.write({ lowest, highest, contentDepth });
 
             // Pulling content up - scrolling down
             if (dy < 0) {
