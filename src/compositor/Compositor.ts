@@ -12,6 +12,7 @@ import { ListElement } from "../dom/ListElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { FocusManagerBaseProps } from "../Props.js";
 import type { BaseStyle } from "../style/Style.js";
+import { logger } from "../shared/Logger.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -128,7 +129,7 @@ export class Compositor {
                 });
             }
 
-            this.buildLayout(child, layoutChange, subCanvas, parentScrollManagers);
+            this.buildLayout(child, layoutChange, subCanvas, [...parentScrollManagers]);
         }
 
         if (elem instanceof Root) {

@@ -586,8 +586,8 @@ export abstract class DomElement<
         // Corner offsets **MUST** be whole numbers.  When drawing to the Canvas,
         // if the computed rects are floats, then nothing will be drawn since
         // you can't index a point on a grid with a float.
-        dx = Math.floor(dx);
-        dy = Math.floor(dy);
+        dx = dx > 0 ? Math.floor(dx) : Math.ceil(dx);
+        dy = dy > 0 ? Math.floor(dy) : Math.ceil(dy);
 
         const contentRect = this.canvas.unclippedContentRect;
         const contentDepth = contentRect.corner.y + contentRect.height;
