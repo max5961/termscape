@@ -17,6 +17,7 @@ import { ListElement } from "../dom/ListElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { FocusManagerBaseProps } from "../Props.js";
 import type { BaseStyle } from "../style/Style.js";
+import { initContentRange } from "../Util.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -45,6 +46,7 @@ export class Compositor {
         elem: DomElement,
         layoutChange: boolean,
         canvas: Canvas = this.canvas,
+        scrollers: DomElement[] = [],
     ) {
         if (elem.style.display === "none") return;
 
@@ -83,21 +85,49 @@ export class Compositor {
                 this.focusManagers.push(elem);
             }
 
+            if (layoutChange) {
+                elem.contentRange = initContentRange();
+            }
             if (elem.style.overflow === "scroll" || elem.style.overflow === "hidden") {
                 this.scrollers.push(elem);
+                scrollers.push(elem);
             }
         }
 
         for (const child of elem[DOM_ELEMENT_INTERNAL_CHILDREN]) {
             let subCanvas = child[DOM_ELEMENT_CANVAS] as SubCanvas | null;
-
             if (layoutChange || !subCanvas) {
                 subCanvas = this.getSubCanvas(child, elem, canvas);
             }
 
             subCanvas.setGrid(this.canvas.grid);
             child[DOM_ELEMENT_CANVAS] = subCanvas;
-            this.buildLayout(child, layoutChange, subCanvas);
+
+            if (layoutChange) {
+                scrollers.forEach((scroller) => {
+                    const childUnclipped = child.getUnclippedRect();
+                    if (childUnclipped) {
+                        scroller.contentRange.high = Math.min(
+                            scroller.contentRange.high,
+                            childUnclipped.corner.y,
+                        );
+                        scroller.contentRange.low = Math.max(
+                            scroller.contentRange.low,
+                            childUnclipped.corner.y + childUnclipped.height,
+                        );
+                        scroller.contentRange.left = Math.min(
+                            scroller.contentRange.left,
+                            childUnclipped.corner.x,
+                        );
+                        scroller.contentRange.right = Math.max(
+                            scroller.contentRange.right,
+                            childUnclipped.corner.x + childUnclipped.width,
+                        );
+                    }
+                });
+            }
+
+            this.buildLayout(child, layoutChange, subCanvas, scrollers);
         }
 
         if (elem instanceof Root) {

@@ -28,13 +28,12 @@ import {
 } from "../Symbols.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
-import { objectEntries, objectKeys } from "../Util.js";
+import { initContentRange, objectEntries, objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
 import { ErrorMessages, throwError } from "../shared/ThrowError.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
-import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -44,6 +43,7 @@ export abstract class DomElement<
 > {
     public node: YogaNode;
     public parentElement: null | DomElement;
+    public contentRange: ReturnType<typeof initContentRange>;
 
     protected readonly rootRef: { root: Root | null };
     protected __children__: DomElement[];
@@ -66,6 +66,7 @@ export abstract class DomElement<
     constructor() {
         this.node = Yoga.Node.create();
         this.parentElement = null;
+        this.contentRange = initContentRange();
 
         /** Privately using the `children` getter conflicts with the `BookElement` implementation */
         this.__children__ = [];
@@ -545,6 +546,7 @@ export abstract class DomElement<
         this.applyScroll(-units, 0);
     }
 
+    // These should be internal accessors
     public scrollDownWithFocus(units: number, triggerRender: boolean) {
         this.lastOffsetChangeWasFocus = true;
         this.applyScroll(0, -units, triggerRender);
@@ -596,13 +598,13 @@ export abstract class DomElement<
         const contentWidth = contentRect.corner.x + contentRect.width;
 
         if (dy) {
-            const deepest = this.getDeepestContent(this, "y");
-            const highest = this.getHighestContent(this, "y");
+            const lowest = this.contentRange.low;
+            const highest = this.contentRange.high;
 
             // Pulling content up - scrolling down
             if (dy < 0) {
-                if (contentDepth >= deepest) return 0;
-                return Math.max(dy, contentDepth - deepest);
+                if (contentDepth >= lowest) return 0;
+                return Math.max(dy, contentDepth - lowest);
 
                 // Pushing content down - scrolling up
             } else {
@@ -612,8 +614,8 @@ export abstract class DomElement<
         }
 
         if (dx) {
-            const mostRight = this.getDeepestContent(this, "x");
-            const mostLeft = this.getHighestContent(this, "x");
+            const mostRight = this.contentRange.left;
+            const mostLeft = this.contentRange.right;
 
             // Pulling content left - scrolling right
             if (dx < 0) {
@@ -696,10 +698,10 @@ export abstract class DomElement<
      * After resizes, corner offset might be unoptimized
      * */
     public adjustScrollToGivenConstraints(): boolean {
-        const highest = this.getHighestContent(this, "y");
-        const deepest = this.getDeepestContent(this, "y");
-        const mostLeft = this.getHighestContent(this, "x");
-        const mostRight = this.getDeepestContent(this, "x");
+        const highest = this.contentRange.high;
+        const deepest = this.contentRange.low;
+        const mostLeft = this.contentRange.left;
+        const mostRight = this.contentRange.right;
 
         const rect = this.getUnclippedContentRect();
 

@@ -62,3 +62,16 @@ export const ifMut = <T>(val: T, cb: (next: T) => T | undefined) => {
     const result = cb(val);
     return result === undefined ? val : result;
 };
+
+/**
+ * Returns the initial values for deepest child nodes content.  Used in constructor
+ * and during compositing
+ * */
+export function initContentRange() {
+    return {
+        high: Infinity,
+        low: -Infinity,
+        left: Infinity,
+        right: -Infinity,
+    };
+}
