@@ -22,7 +22,6 @@ import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
 import { ErrorMessages, throwError } from "../shared/ThrowError.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
-import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -583,6 +582,12 @@ export abstract class DomElement<
      * */
     private requestScroll(dx: number, dy: number): number {
         if (!this.canvas) return 0;
+
+        // Corner offsets **MUST** be whole numbers.  When drawing to the Canvas,
+        // if the computed rects are floats, then nothing will be drawn since
+        // you can't index a point on a grid with a float.
+        dx = Math.floor(dx);
+        dy = Math.floor(dy);
 
         const contentRect = this.canvas.unclippedContentRect;
         const contentDepth = contentRect.corner.y + contentRect.height;
