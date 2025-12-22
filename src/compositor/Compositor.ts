@@ -27,6 +27,7 @@ export class Compositor {
         Style: BaseStyle;
         Props: FocusManagerBaseProps;
     }>[];
+    public scrollers: DomElement[];
     private postLayout: (() => unknown)[];
 
     constructor(root: Root) {
@@ -37,6 +38,7 @@ export class Compositor {
         this.draw = new Draw();
         this.postLayout = [];
         this.focusManagers = [];
+        this.scrollers = [];
     }
 
     public buildLayout(
@@ -79,6 +81,10 @@ export class Compositor {
                 }
 
                 this.focusManagers.push(elem);
+            }
+
+            if (elem.style.overflow === "scroll" || elem.style.overflow === "hidden") {
+                this.scrollers.push(elem);
             }
         }
 

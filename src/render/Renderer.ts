@@ -41,21 +41,7 @@ export class Renderer {
 
         this.preLayoutHooks();
         let compositor = this.getComposedLayout(opts);
-
-        if (compositor.focusManagers.length) {
-            let adjusted = false;
-
-            compositor.focusManagers.forEach((focusManager) => {
-                if (focusManager[FOCUS_MANAGER_DID_ADJUST_TO_FOCUS]()) {
-                    adjusted = true;
-                }
-            });
-
-            if (adjusted) {
-                compositor = this.getComposedLayout({ ...opts, layoutChange: true });
-            }
-        }
-
+        compositor = this.recomposeIfMutOffset(compositor, opts);
         this.postLayoutHooks(compositor);
 
         this.deferWrite(compositor, opts);
@@ -63,6 +49,34 @@ export class Renderer {
         this.performWrite();
         this.postWriteHooks();
     };
+
+    private recomposeIfMutOffset(compositor: Compositor, opts: WriteOpts): Compositor {
+        const reassignCompositor = () => {
+            compositor = this.getComposedLayout({ ...opts, layoutChange: true });
+        };
+
+        if (compositor.scrollers.length) {
+            let adjusted = false;
+            compositor.scrollers.forEach((scroller) => {
+                if (scroller.adjustScrollToGivenConstraints()) {
+                    adjusted = true;
+                }
+            });
+            if (adjusted) reassignCompositor();
+        }
+
+        if (compositor.focusManagers.length) {
+            let adjusted = false;
+            compositor.focusManagers.forEach((focusManager) => {
+                if (focusManager[FOCUS_MANAGER_DID_ADJUST_TO_FOCUS]()) {
+                    adjusted = true;
+                }
+            });
+            if (adjusted) reassignCompositor();
+        }
+
+        return compositor;
+    }
 
     private getComposedLayout(opts: WriteOpts): Compositor {
         const compositor = new Compositor(this.root);

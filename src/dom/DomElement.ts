@@ -34,6 +34,7 @@ import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
 import { ErrorMessages, throwError } from "../shared/ThrowError.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
+import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -404,6 +405,10 @@ export abstract class DomElement<
         return this.canvas?.unclippedRect;
     }
 
+    public getUnclippedContentRect() {
+        return this.canvas?.unclippedContentRect;
+    }
+
     public containsPoint(x: number, y: number): boolean {
         if (x < this.rect.x) return false;
         if (y < this.rect.y) return false;
@@ -685,6 +690,48 @@ export abstract class DomElement<
     [DOM_ELEMENT_APPLY_CORNER_OFFSET](dx: number, dy: number) {
         this.scrollOffset.x += dx;
         this.scrollOffset.y += dy;
+    }
+
+    /**
+     * After resizes, corner offset might be unoptimized
+     * */
+    public adjustScrollToGivenConstraints(): boolean {
+        const highest = this.getHighestContent(this, "y");
+        const deepest = this.getDeepestContent(this, "y");
+        const mostLeft = this.getHighestContent(this, "x");
+        const mostRight = this.getDeepestContent(this, "x");
+
+        const rect = this.getUnclippedContentRect();
+
+        if (rect) {
+            const deepestRect = rect.corner.y + rect.height;
+            const highestRect = rect.corner.y;
+            const leftestRect = rect.corner.x;
+            const rightestRect = rect.corner.x + rect.width;
+
+            if (
+                (highestRect > highest && deepestRect > deepest) ||
+                (deepestRect < deepest && highestRect < highest)
+            ) {
+                this[DOM_ELEMENT_APPLY_CORNER_OFFSET](
+                    0,
+                    Math.min(highestRect - highest, deepestRect - deepest),
+                );
+                return true;
+            }
+
+            if (
+                (leftestRect > mostLeft && mostRight > mostRight) ||
+                (rightestRect < mostRight && leftestRect < mostLeft)
+            ) {
+                this[DOM_ELEMENT_APPLY_CORNER_OFFSET](
+                    0,
+                    Math.min(leftestRect - mostLeft, rightestRect, mostRight),
+                );
+            }
+        }
+
+        return false;
     }
 
     // =========================================================================
