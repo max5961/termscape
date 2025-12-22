@@ -43,6 +43,10 @@ export class Renderer {
         compositor = this.recomposeIfMutOffset(compositor, opts);
         this.postLayoutHooks(compositor);
 
+        compositor.elementsWithPostLayoutHooks.forEach((elem) => {
+            elem.postLayoutHooks.forEach((hook) => hook());
+        });
+
         this.deferWrite(compositor, opts);
         this.preWriteHooks();
         this.performWrite();

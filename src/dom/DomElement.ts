@@ -22,6 +22,7 @@ import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
 import { ErrorMessages, throwError } from "../shared/ThrowError.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
+import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -49,6 +50,8 @@ export abstract class DomElement<
     public focusNode: Focus;
     /** @internal */
     public styleHandler: StyleHandler<Schema["Style"]> | null;
+    /** @internal */
+    public postLayoutHooks: Set<() => unknown>;
 
     protected readonly rootRef: { root: Root | null };
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
@@ -78,6 +81,7 @@ export abstract class DomElement<
         this.requiresStdin = false;
         this.metadata = new ElementMetaData(this);
         this.lastOffsetChangeWasFocus = false;
+        this.postLayoutHooks = new Set();
 
         const { virtualStyle, shadowStyle } = createVirtualStyleProxy<Schema["Style"]>(
             this,
@@ -157,6 +161,14 @@ export abstract class DomElement<
             left: Infinity,
             right: -Infinity,
         };
+    }
+
+    /**
+     * Runs postlayout calculations
+     * */
+    public postLayoutHook(cb: () => unknown) {
+        this.postLayoutHooks.add(cb);
+        return () => this.postLayoutHooks.delete(cb);
     }
 
     // ========================================================================
@@ -668,6 +680,40 @@ export abstract class DomElement<
         }
 
         return false;
+    }
+
+    public getScrollData(): { x: number; y: number } {
+        const rect = this.getUnclippedContentRect();
+        const result = { x: 0, y: 0 };
+        if (!rect) return result;
+
+        const lowest = this.contentRange.low;
+        const highest = this.contentRange.high;
+        const currentY = rect.corner.y - highest;
+        const possibleY = Math.abs(this.requestScroll(0, -Infinity));
+
+        if (highest >= rect.corner.y) {
+            result.y = 0;
+        } else if (lowest <= rect.corner.y + rect.height) {
+            result.y = 100;
+        } else {
+            result.y = Math.floor((currentY / (currentY + possibleY)) * 100);
+        }
+
+        const mostLeft = this.contentRange.left;
+        const mostRight = this.contentRange.right;
+        const currentX = rect.corner.x - mostLeft;
+        const possibleX = Math.abs(this.requestScroll(-Infinity, 0));
+
+        if (mostLeft >= rect.corner.x) {
+            result.x = 0;
+        } else if (mostRight <= rect.corner.x + rect.width) {
+            result.x = 100;
+        } else {
+            result.x = Math.floor((currentX / (currentX + possibleX)) * 100);
+        }
+
+        return result;
     }
 
     // =========================================================================
