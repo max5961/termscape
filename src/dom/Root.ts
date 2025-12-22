@@ -2,11 +2,10 @@ import Yoga from "yoga-wasm-web/auto";
 import EventEmitter from "events";
 import { type Action } from "term-keymap";
 import { RenderHooksManager } from "../render/RenderHooks.js";
-import { DomElement, FocusManager } from "./DomElement.js";
+import { DomElement } from "./DomElement.js";
 import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "../shared/RuntimeFactory.js";
-import { ROOT_BRIDGE_DOM_ELEMENT } from "../Symbols.js";
 import type { EventEmitterMap, RuntimeConfig, WriteOpts } from "../Types.js";
 import type { BaseStyle } from "../style/Style.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
@@ -85,6 +84,8 @@ export class Root extends DomElement {
     }
 
     /**
+     * @internal
+     *
      * This is called post attach and pre detach in DomElement.
      * ON ATTACH:
      * It connects the `actions` Set<Action> in DomElement to this Root.
@@ -94,7 +95,7 @@ export class Root extends DomElement {
      * ON DETACH:
      * These references are removed.
      * */
-    public [ROOT_BRIDGE_DOM_ELEMENT](
+    public bridgeDomElement(
         metadata: DomElement["metadata"],
         { attached }: { attached: boolean },
     ) {

@@ -1,4 +1,3 @@
-import { DOM_ELEMENT_STYLE_HANDLER } from "../Symbols.js";
 import type { DomElement } from "./DomElement.js";
 
 type Status = { focus: boolean; shallowFocus: boolean };
@@ -74,7 +73,7 @@ export class Focus {
     }
 
     private reapplyStyles = (elem: DomElement) => {
-        const styleHandler = elem[DOM_ELEMENT_STYLE_HANDLER];
+        const styleHandler = elem.styleHandler;
 
         if (styleHandler) {
             elem.style = styleHandler;
@@ -93,7 +92,7 @@ export class Focus {
         if (focus.checkpoint) return;
         focus.nearestCheckpoint = nearest;
 
-        const styleHandler = focus.elem[DOM_ELEMENT_STYLE_HANDLER];
+        const styleHandler = focus.elem.styleHandler;
         if (styleHandler) {
             focus.elem.style = styleHandler;
         }

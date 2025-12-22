@@ -1,7 +1,6 @@
 import { FocusManager } from "./DomElement.js";
 import type { DomElement, VisualNodeMap } from "../Types.js";
 import { AbstractBoxElement } from "./BoxElement.js";
-import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 import type { BoxStyle } from "../style/Style.js";
 import { objectKeys } from "../Util.js";
 import type { BaseProps, FocusManagerProps } from "../Props.js";
@@ -86,7 +85,7 @@ export class LayoutElement extends FocusManager<{
         let found = false;
         this.dfs(child, (child) => {
             if (!found && child instanceof LayoutNode) {
-                child[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
+                child.focusNode.updateCheckpoint(true);
                 this.focused = child;
                 found = true;
             }
@@ -100,7 +99,7 @@ export class LayoutElement extends FocusManager<{
         let found = false;
         this.dfs(child, (child) => {
             if (!found && child instanceof LayoutNode) {
-                child[DOM_ELEMENT_FOCUS_NODE].becomeNormal(freeRecursive);
+                child.focusNode.becomeNormal(freeRecursive);
                 found = true;
             }
         });

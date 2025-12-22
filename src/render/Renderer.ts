@@ -9,7 +9,6 @@ import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../shared/Ansi.js";
 import { Root } from "../dom/Root.js";
 import type { WriteOpts } from "../Types.js";
-import { FOCUS_MANAGER_DID_ADJUST_TO_FOCUS } from "../Symbols.js";
 
 export class Renderer {
     public lastCanvas: Canvas | null;
@@ -55,10 +54,10 @@ export class Renderer {
             compositor = this.getComposedLayout({ ...opts, layoutChange: true });
         };
 
-        if (compositor.scrollers.length) {
+        if (compositor.scrollManagers.length) {
             let adjusted = false;
-            compositor.scrollers.forEach((scroller) => {
-                if (scroller.adjustScrollToGivenConstraints()) {
+            compositor.scrollManagers.forEach((elem) => {
+                if (elem.adjustScrollToFillContainer()) {
                     adjusted = true;
                 }
             });
@@ -68,7 +67,7 @@ export class Renderer {
         if (compositor.focusManagers.length) {
             let adjusted = false;
             compositor.focusManagers.forEach((focusManager) => {
-                if (focusManager[FOCUS_MANAGER_DID_ADJUST_TO_FOCUS]()) {
+                if (focusManager.adjustOffsetToFocus()) {
                     adjusted = true;
                 }
             });
@@ -100,7 +99,6 @@ export class Renderer {
     private performWrite() {
         process.stdout.write(Ansi.beginSynchronizedUpdate);
         this.cursor.execute();
-        //
         process.stdout.write(Ansi.endSynchronizedUpdate);
     }
 

@@ -1,6 +1,5 @@
 import { Canvas } from "./Canvas.js";
 import { DomElement } from "../dom/DomElement.js";
-import { DOM_ELEMENT_RECT } from "../Symbols.js";
 
 export type DomRectLayer = {
     x: Record<number, DomElement[]>;
@@ -34,12 +33,12 @@ export class DomRects {
     }
 
     public setRect(elem: DomElement, canvas: Canvas) {
-        elem[DOM_ELEMENT_RECT] = canvas.getDomRect();
+        elem.rect = canvas.getDomRect();
     }
 
     public storeElementPosition(zIndex: number, elem: DomElement) {
-        const x = elem[DOM_ELEMENT_RECT].x;
-        const y = elem[DOM_ELEMENT_RECT].y;
+        const x = elem.rect.x;
+        const y = elem.rect.y;
 
         this.layers[zIndex] = this.layers[zIndex] ?? {
             x: {},

@@ -14,21 +14,9 @@ import type {
 import type { BaseStyle, BaseShadowStyle } from "../style/Style.js";
 import type { BaseProps, FocusManagerProps } from "../Props.js";
 import type { Root } from "./Root.js";
-import {
-    DOM_ELEMENT_SCROLL_OFFSET,
-    DOM_ELEMENT_RECT,
-    DOM_ELEMENT_SHADOW_STYLE,
-    ROOT_BRIDGE_DOM_ELEMENT,
-    DOM_ELEMENT_CANVAS,
-    DOM_ELEMENT_FOCUS_NODE,
-    DOM_ELEMENT_STYLE_HANDLER,
-    DOM_ELEMENT_INTERNAL_CHILDREN,
-    DOM_ELEMENT_APPLY_CORNER_OFFSET,
-    FOCUS_MANAGER_DID_ADJUST_TO_FOCUS,
-} from "../Symbols.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
-import { initContentRange, objectEntries, objectKeys } from "../Util.js";
+import { objectEntries, objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
@@ -43,30 +31,39 @@ export abstract class DomElement<
 > {
     public node: YogaNode;
     public parentElement: null | DomElement;
-    public contentRange: ReturnType<typeof initContentRange>;
+    public contentRange: ReturnType<DomElement["initContentRange"]>;
+
+    /** @internal */
+    public rect: DOMRect;
+    /** @internal */
+    public virtualStyle!: Schema["Style"];
+    /** @internal */
+    public shadowStyle!: BaseShadowStyle;
+    /** @internal */
+    public scrollOffset: Point;
+    /** @internal */
+    public canvas: Canvas | null;
+    /** @internal */
+    public __children__: DomElement[];
+    /** @internal */
+    public focusNode: Focus;
+    /** @internal */
+    public styleHandler: StyleHandler<Schema["Style"]> | null;
 
     protected readonly rootRef: { root: Root | null };
-    protected __children__: DomElement[];
-    protected rect: DOMRect;
-    protected canvas: Canvas | null;
-    protected scrollOffset: Point;
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
     protected requiresStdin: boolean;
     protected props: Map<string, unknown>;
-    protected virtualStyle!: Schema["Style"];
-    protected shadowStyle!: BaseShadowStyle;
     protected removeKeyListeners: (() => void)[];
     protected childrenSet: Set<DomElement>;
     protected readonly metadata: ElementMetaData;
     protected readonly baseDefaultStyles: BaseStyle;
-    protected styleHandler: StyleHandler<Schema["Style"]> | null;
-    protected focusNode: Focus;
     protected lastOffsetChangeWasFocus: boolean;
 
     constructor() {
         this.node = Yoga.Node.create();
         this.parentElement = null;
-        this.contentRange = initContentRange();
+        this.contentRange = this.initContentRange();
 
         /** Privately using the `children` getter conflicts with the `BookElement` implementation */
         this.__children__ = [];
@@ -112,42 +109,6 @@ export abstract class DomElement<
 
     public abstract get tagName(): TagName;
 
-    get [DOM_ELEMENT_SHADOW_STYLE]() {
-        return this.shadowStyle;
-    }
-
-    get [DOM_ELEMENT_RECT]() {
-        return this.rect;
-    }
-
-    set [DOM_ELEMENT_RECT](rect: DOMRect) {
-        this.rect = rect;
-    }
-
-    get [DOM_ELEMENT_SCROLL_OFFSET]() {
-        return this.scrollOffset;
-    }
-
-    get [DOM_ELEMENT_CANVAS]() {
-        return this.canvas;
-    }
-
-    set [DOM_ELEMENT_CANVAS](canvas: Canvas | null) {
-        this.canvas = canvas;
-    }
-
-    get [DOM_ELEMENT_FOCUS_NODE]() {
-        return this.focusNode;
-    }
-
-    get [DOM_ELEMENT_STYLE_HANDLER]() {
-        return this.styleHandler;
-    }
-
-    get [DOM_ELEMENT_INTERNAL_CHILDREN]() {
-        return this.__children__;
-    }
-
     get children(): Readonly<DomElement[]> {
         return this.__children__;
     }
@@ -181,6 +142,21 @@ export abstract class DomElement<
 
     protected throwError(errorMsg: string) {
         return throwError(this.getRoot(), errorMsg);
+    }
+
+    /**
+     * @internal
+     *
+     * Returns the initial values for deepest child nodes content.  Used in constructor
+     * and during compositing
+     * */
+    public initContentRange() {
+        return {
+            high: Infinity,
+            low: -Infinity,
+            left: Infinity,
+            right: -Infinity,
+        };
     }
 
     // ========================================================================
@@ -228,7 +204,7 @@ export abstract class DomElement<
         this.dfs(this, (elem) => {
             elem.setRoot(root);
 
-            root[ROOT_BRIDGE_DOM_ELEMENT](elem.metadata, { attached: true });
+            root.bridgeDomElement(elem.metadata, { attached: true });
 
             if (elem.requiresStdin) {
                 root.requestInputStream();
@@ -243,7 +219,7 @@ export abstract class DomElement<
             elem.setRoot(null);
 
             if (root) {
-                root[ROOT_BRIDGE_DOM_ELEMENT](elem.metadata, { attached: false });
+                root.bridgeDomElement(elem.metadata, { attached: false });
             }
         });
     }
@@ -546,22 +522,25 @@ export abstract class DomElement<
         this.applyScroll(-units, 0);
     }
 
-    // These should be internal accessors
+    /** @internal */
     public scrollDownWithFocus(units: number, triggerRender: boolean) {
         this.lastOffsetChangeWasFocus = true;
         this.applyScroll(0, -units, triggerRender);
     }
 
+    /** @internal */
     public scrollUpWithFocus(units: number, triggerRender: boolean) {
         this.lastOffsetChangeWasFocus = true;
         this.applyScroll(0, units, triggerRender);
     }
 
+    /** @internal */
     public scrollLeftWithFocus(units: number, triggerRender: boolean) {
         this.lastOffsetChangeWasFocus = true;
         this.applyScroll(units, 0, triggerRender);
     }
 
+    /** @internal */
     public scrollRightWithFocus(units: number, triggerRender: boolean) {
         this.lastOffsetChangeWasFocus = true;
         this.applyScroll(-units, 0, triggerRender);
@@ -575,13 +554,13 @@ export abstract class DomElement<
             if (dy) {
                 return triggerRender
                     ? this.applyCornerOffset(0, allowedUnits)
-                    : this[DOM_ELEMENT_APPLY_CORNER_OFFSET](0, allowedUnits);
+                    : this.applyCornerOffsetWithoutRender(0, allowedUnits);
             }
             // scroll left/right
             if (dx) {
                 return triggerRender
                     ? this.applyCornerOffset(allowedUnits, 0)
-                    : this[DOM_ELEMENT_APPLY_CORNER_OFFSET](allowedUnits, 0);
+                    : this.applyCornerOffsetWithoutRender(allowedUnits, 0);
             }
         }
     }
@@ -632,72 +611,30 @@ export abstract class DomElement<
         return 0;
     }
 
-    /**
-     * Should not be allowed to scroll such that the highest content is *lower*
-     * than the top border of the content window
-     * */
-    private getHighestContent(elem: DomElement, axis: "x" | "y", level = 0) {
-        const rect = elem.canvas?.unclippedRect;
-        if (!rect) return 0;
-
-        let highest: number;
-        if (axis === "x") {
-            highest = rect.corner.x;
-        } else {
-            highest = rect.corner.y;
-        }
-
-        if (level === 0) highest = Infinity;
-
-        for (const child of elem.__children__) {
-            highest = Math.min(highest, this.getHighestContent(child, axis, level + 1));
-        }
-
-        return highest;
-    }
-
-    /**
-     * Should not be allowed to scroll such that the lowest content is *higher*
-     * than the bottom border of the content window
-     * */
-    private getDeepestContent(elem: DomElement, axis: "x" | "y", level = 0) {
-        const rect = elem.canvas?.unclippedRect;
-        if (!rect) return 0;
-
-        let deepest: number;
-        if (axis === "x") {
-            deepest = rect.corner.x + rect.width;
-        } else {
-            deepest = rect.corner.y + rect.height;
-        }
-
-        if (level === 0) deepest = -Infinity; // Don't calc `this`
-
-        for (const child of elem.__children__) {
-            deepest = Math.max(deepest, this.getDeepestContent(child, axis, level + 1));
-        }
-
-        return deepest;
-    }
-
     @Render({ layoutChange: true })
     private applyCornerOffset(dx: number, dy: number) {
-        this[DOM_ELEMENT_APPLY_CORNER_OFFSET](dx, dy);
+        this.applyCornerOffsetWithoutRender(dx, dy);
     }
 
     /**
+     * @internal
+     *
      * Applies the corner offset without triggering a render change.  This is
      * necessary during rendering and prevents the cascade of a new render.
      * */
-    [DOM_ELEMENT_APPLY_CORNER_OFFSET](dx: number, dy: number) {
+    public applyCornerOffsetWithoutRender(dx: number, dy: number) {
         this.scrollOffset.x += dx;
         this.scrollOffset.y += dy;
     }
 
     /**
-     * After resizes, corner offset might be unoptimized
+     * @internal
+     *
+     * After resizes, corner offset might be unoptimized.
+     *
+     * @returns `true` if any adjustments were made
      * */
-    public adjustScrollToGivenConstraints(): boolean {
+    public adjustScrollToFillContainer(): boolean {
         const highest = this.contentRange.high;
         const deepest = this.contentRange.low;
         const mostLeft = this.contentRange.left;
@@ -715,10 +652,8 @@ export abstract class DomElement<
                 (highestRect > highest && deepestRect > deepest) ||
                 (deepestRect < deepest && highestRect < highest)
             ) {
-                this[DOM_ELEMENT_APPLY_CORNER_OFFSET](
-                    0,
-                    Math.min(highestRect - highest, deepestRect - deepest),
-                );
+                const displacement = this.requestScroll(0, Infinity);
+                this.applyCornerOffsetWithoutRender(0, displacement);
                 return true;
             }
 
@@ -726,10 +661,9 @@ export abstract class DomElement<
                 (leftestRect > mostLeft && mostRight > mostRight) ||
                 (rightestRect < mostRight && leftestRect < mostLeft)
             ) {
-                this[DOM_ELEMENT_APPLY_CORNER_OFFSET](
-                    0,
-                    Math.min(leftestRect - mostLeft, rightestRect, mostRight),
-                );
+                const displacement = this.requestScroll(0, -Infinity);
+                this.applyCornerOffsetWithoutRender(0, displacement);
+                return true;
             }
         }
 
@@ -868,9 +802,9 @@ export abstract class FocusManager<
         const prev = this.focused ? this.vmap.get(this.focused) : undefined;
         const next = this.vmap.get(child);
 
-        this.focused?.[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(false);
+        this.focused?.focusNode.updateCheckpoint(false);
         this.focused = child;
-        this.focused[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
+        this.focused.focusNode.updateCheckpoint(true);
 
         const prevX = prev?.xIdx ?? 0;
         const prevY = prev?.yIdx ?? 0;
@@ -887,13 +821,15 @@ export abstract class FocusManager<
     }
 
     /**
+     * @internal
+     *
      * Handle layout changes or first renders that have pushed the focused item
      * out of visibility, and subsequently adjust the corner offset **without**
      * causing a re-render since this will be handled during compositing.
      *
      * @returns `true` if the corner offset was adjusted
      * */
-    [FOCUS_MANAGER_DID_ADJUST_TO_FOCUS](): boolean {
+    public adjustOffsetToFocus(): boolean {
         // Allow for non-focus scrolling to occur and obscure the focused child
         if (!this.lastOffsetChangeWasFocus) return false;
 
@@ -909,10 +845,10 @@ export abstract class FocusManager<
         }
 
         if (itemBelowWin || itemAboveWin) {
-            this.normalizeScrollToFocus("up");
+            this.normalizeScrollToFocus("up", false);
         }
         if (itemRightWin || itemLeftWin) {
-            this.normalizeScrollToFocus("left");
+            this.normalizeScrollToFocus("left", false);
         }
 
         return true;
@@ -959,6 +895,8 @@ export abstract class FocusManager<
     }
 
     /**
+     * @internal
+     *
      * Adjust the `scrollOffset` in order to keep the focused element in view
      */
     public normalizeScrollToFocus(

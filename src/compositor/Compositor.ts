@@ -3,11 +3,6 @@ import { Canvas, type SubCanvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
-import {
-    DOM_ELEMENT_SHADOW_STYLE,
-    DOM_ELEMENT_CANVAS,
-    DOM_ELEMENT_INTERNAL_CHILDREN,
-} from "../Symbols.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { Root } from "../dom/Root.js";
@@ -17,7 +12,6 @@ import { ListElement } from "../dom/ListElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { FocusManagerBaseProps } from "../Props.js";
 import type { BaseStyle } from "../style/Style.js";
-import { initContentRange } from "../Util.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -28,29 +22,29 @@ export class Compositor {
         Style: BaseStyle;
         Props: FocusManagerBaseProps;
     }>[];
-    public scrollers: DomElement[];
+    public scrollManagers: DomElement[];
     private postLayout: (() => unknown)[];
 
     constructor(root: Root) {
         this.canvas = new Canvas({ stdout: root.runtime.stdout });
-        root[DOM_ELEMENT_CANVAS] = this.canvas;
+        root.canvas = this.canvas;
         this.ops = new Operations();
         this.rects = new DomRects();
         this.draw = new Draw();
         this.postLayout = [];
         this.focusManagers = [];
-        this.scrollers = [];
+        this.scrollManagers = [];
     }
 
     public buildLayout(
         elem: DomElement,
         layoutChange: boolean,
         canvas: Canvas = this.canvas,
-        scrollers: DomElement[] = [],
+        parentScrollManagers: DomElement[] = [],
     ) {
         if (elem.style.display === "none") return;
 
-        const style = elem[DOM_ELEMENT_SHADOW_STYLE];
+        const style = elem.shadowStyle;
         const zIndex = style.zIndex ?? 0;
 
         this.draw.updateLowestLayer(zIndex);
@@ -84,27 +78,28 @@ export class Compositor {
 
                 this.focusManagers.push(elem);
             }
-
-            if (layoutChange) {
-                elem.contentRange = initContentRange();
-            }
-            if (elem.style.overflow === "scroll" || elem.style.overflow === "hidden") {
-                this.scrollers.push(elem);
-                scrollers.push(elem);
-            }
         }
 
-        for (const child of elem[DOM_ELEMENT_INTERNAL_CHILDREN]) {
-            let subCanvas = child[DOM_ELEMENT_CANVAS] as SubCanvas | null;
+        if (layoutChange) {
+            elem.contentRange = elem.initContentRange();
+        }
+
+        if (elem.style.overflow === "scroll" || elem.style.overflow === "hidden") {
+            this.scrollManagers.push(elem);
+            parentScrollManagers.push(elem);
+        }
+
+        for (const child of elem.__children__) {
+            let subCanvas = child.canvas as SubCanvas | null;
             if (layoutChange || !subCanvas) {
                 subCanvas = this.getSubCanvas(child, elem, canvas);
             }
 
             subCanvas.setGrid(this.canvas.grid);
-            child[DOM_ELEMENT_CANVAS] = subCanvas;
+            child.canvas = subCanvas;
 
             if (layoutChange) {
-                scrollers.forEach((scroller) => {
+                parentScrollManagers.forEach((scroller) => {
                     const childUnclipped = child.getUnclippedRect();
                     if (childUnclipped) {
                         scroller.contentRange.high = Math.min(
@@ -127,7 +122,7 @@ export class Compositor {
                 });
             }
 
-            this.buildLayout(child, layoutChange, subCanvas, scrollers);
+            this.buildLayout(child, layoutChange, subCanvas, parentScrollManagers);
         }
 
         if (elem instanceof Root) {

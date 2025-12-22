@@ -10,7 +10,6 @@ import type {
 import type { BaseShadowStyle } from "../style/Style.js";
 import { Pen } from "./Pen.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
-import { DOM_ELEMENT_SCROLL_OFFSET, DOM_ELEMENT_SHADOW_STYLE } from "../Symbols.js";
 import { TextElement } from "../dom/TextElement.js";
 
 /**
@@ -113,9 +112,9 @@ export class Canvas {
     }): SubCanvas {
         const chNode = child.node;
 
-        const chStyle = child[DOM_ELEMENT_SHADOW_STYLE];
-        const elemStyle = elem[DOM_ELEMENT_SHADOW_STYLE];
-        const scrollOffset = elem[DOM_ELEMENT_SCROLL_OFFSET];
+        const chStyle = child.shadowStyle;
+        const elemStyle = elem.shadowStyle;
+        const scrollOffset = elem.scrollOffset;
 
         const realWidth = chNode.getComputedWidth();
         let realHeight = chNode.getComputedHeight();

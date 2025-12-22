@@ -27,6 +27,7 @@
         "resolveJsonModule": true,
         "isolatedModules": true,
         "noUnusedLocals": false,
+        "stripInternal": true,
 
         "lib": ["es2022"]
     },

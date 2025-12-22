@@ -1,6 +1,5 @@
 import type { FocusManagerProps } from "../Props.js";
 import type { BoxStyle, ShadowBoxStyle } from "../style/Style.js";
-import { DOM_ELEMENT_FOCUS_NODE } from "../Symbols.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusManager } from "./DomElement.js";
@@ -70,9 +69,9 @@ export class ListElement extends FocusManager<{
     }
 
     protected override handleAppendChild(child: DomElement): void {
-        child[DOM_ELEMENT_FOCUS_NODE].becomeCheckpoint(false);
+        child.focusNode.becomeCheckpoint(false);
         if (this.__children__.length === 1) {
-            child[DOM_ELEMENT_FOCUS_NODE].updateCheckpoint(true);
+            child.focusNode.updateCheckpoint(true);
             this.focused = child;
         }
     }
@@ -81,7 +80,7 @@ export class ListElement extends FocusManager<{
         child: DomElement,
         freeRecursive?: boolean,
     ): void {
-        child[DOM_ELEMENT_FOCUS_NODE].becomeNormal(freeRecursive);
+        child.focusNode.becomeNormal(freeRecursive);
     }
 
     protected override buildVisualMap(children: DomElement[], vmap: VisualNodeMap): void {
