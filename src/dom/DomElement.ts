@@ -390,12 +390,20 @@ export abstract class DomElement<
         return this.rect;
     }
 
-    public getUnclippedRect() {
+    public get unclippedRect() {
         return this.canvas?.unclippedRect;
     }
 
-    public getUnclippedContentRect() {
+    public get unclippedContentRect() {
         return this.canvas?.unclippedContentRect;
+    }
+
+    public get visibleRect() {
+        return this.canvas?.visibleRect;
+    }
+
+    public get visibleContentRect() {
+        return this.canvas?.visibleContentRect;
     }
 
     public containsPoint(x: number, y: number): boolean {
@@ -662,7 +670,7 @@ export abstract class DomElement<
         const mostLeft = this.contentRange.left;
         const mostRight = this.contentRange.right;
 
-        const rect = this.getUnclippedContentRect();
+        const rect = this.unclippedContentRect;
 
         if (rect) {
             const deepestRect = rect.corner.y + rect.height;
@@ -693,7 +701,7 @@ export abstract class DomElement<
     }
 
     public getScrollData(): { x: number; y: number } {
-        const rect = this.getUnclippedContentRect();
+        const rect = this.unclippedContentRect;
         const result = { x: 0, y: 0 };
         if (!rect) return result;
 
@@ -911,8 +919,8 @@ export abstract class FocusManager<
     }
 
     private focusedChildVisibilityStatus() {
-        const fRect = this.focused?.getUnclippedRect();
-        const wRect = this.canvas?.unclippedContentRect;
+        const fRect = this.focused?.unclippedRect;
+        const wRect = this.unclippedContentRect;
 
         if (!fRect || !wRect) return;
 
@@ -966,7 +974,7 @@ export abstract class FocusManager<
         const isLTR = direction === "left" || direction === "right";
 
         // Scroll Window Rect & Focus Item Rect
-        const fRect = this.focused.getUnclippedRect();
+        const fRect = this.focused.unclippedRect;
         const wRect = this.canvas?.unclippedContentRect;
         if (!fRect || !wRect) return;
 

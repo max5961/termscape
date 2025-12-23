@@ -140,8 +140,8 @@ export class Draw {
     }
 
     private getTextRowSlice(elem: TextElement, _rows: string[]) {
-        const unclippedRect = elem.getUnclippedRect();
-        const visRect = elem.canvas?.getVisibleContentRect();
+        const unclippedRect = elem.unclippedRect;
+        const visRect = elem.canvas?.visibleContentRect;
         const slice = { start: 0, end: 0 };
         if (!unclippedRect || !visRect) return slice;
 

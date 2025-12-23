@@ -100,7 +100,7 @@ export class Compositor {
 
             if (layoutChange) {
                 parentScrollManagers.forEach((scroller) => {
-                    const unclippedChild = child.getUnclippedRect();
+                    const unclippedChild = child.unclippedRect;
                     if (unclippedChild) {
                         scroller.contentRange.high = Math.min(
                             scroller.contentRange.high,

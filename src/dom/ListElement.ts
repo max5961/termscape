@@ -88,8 +88,8 @@ export class ListElement extends FocusManager<{
 
         if (!isColumn) {
             const sortedX = children.slice().sort((prev, curr) => {
-                const prevStart = prev.getUnclippedRect()?.corner.x ?? 0;
-                const currStart = curr.getUnclippedRect()?.corner.x ?? 0;
+                const prevStart = prev.unclippedRect?.corner.x ?? 0;
+                const currStart = curr.unclippedRect?.corner.x ?? 0;
                 return prevStart - currStart;
             });
             for (let i = 0; i < sortedX.length; ++i) {
@@ -109,8 +109,8 @@ export class ListElement extends FocusManager<{
             }
         } else {
             const sortedY = children.slice().sort((prev, curr) => {
-                const prevStart = prev.getUnclippedRect()?.corner.y ?? 0;
-                const currStart = curr.getUnclippedRect()?.corner.y ?? 0;
+                const prevStart = prev.unclippedRect?.corner.y ?? 0;
+                const currStart = curr.unclippedRect?.corner.y ?? 0;
                 return prevStart - currStart;
             });
             for (let i = 0; i < sortedY.length; ++i) {

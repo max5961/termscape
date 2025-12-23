@@ -69,9 +69,10 @@ export class Canvas {
     public readonly canvasHeight: number;
     public readonly canvasWidth: number;
 
-    public readonly unclippedRect: Rect;
-    public readonly unclippedContentRect: Rect;
-    public readonly visibleRect: Rect;
+    private readonly _unclippedRect: Rect;
+    private readonly _unclippedContentRect: Rect;
+    private readonly _visibleRect: Rect;
+    private readonly _visibleContentRect: Rect | null; // on demand
 
     protected readonly stdout: CanvasDeps["stdout"]; // Only used in root Canvas
 
@@ -91,14 +92,59 @@ export class Canvas {
         this.canvasHeight = deps.canvasHeight ?? this.limits.maxY - this.limits.minY;
         this.canvasWidth = deps.canvasWidth ?? this.limits.maxX - this.limits.minX;
 
-        this.unclippedRect = deps.unclippedRect ?? {
+        this._unclippedRect = deps.unclippedRect ?? {
             corner: this.corner,
             height: this.canvasHeight,
             width: this.canvasWidth,
         };
 
-        this.unclippedContentRect = deps.unclippedContentRect ?? this.unclippedRect;
-        this.visibleRect = deps.visibleRect ?? this.unclippedRect;
+        this._unclippedContentRect = deps.unclippedContentRect ?? this._unclippedRect;
+        this._visibleRect = deps.visibleRect ?? this._unclippedRect;
+        this._visibleContentRect = null;
+    }
+
+    /**
+     * Represents the dimensions of the node without any mutations arising from
+     * overflow settings in the overall layout.
+     *
+     * Also represents the limits of what the Pen will attempt to draw to.  This
+     * doesn't mean that children cannot bleed out of the unclipped rect, but the
+     * unclipped rect is the canvas that the Pen uses.
+     */
+    public get unclippedRect(): Rect {
+        return this._unclippedRect;
+    }
+
+    /**
+     * Represents the *content* dimensions of a given node.
+     *
+     * In other words, drawable dimensions a child node would given should this
+     * node restrict its overflow, which takes into account borders, padding,
+     * scrollbars set on this node.
+     * */
+    public get unclippedContentRect(): Rect {
+        return this._unclippedContentRect;
+    }
+
+    /**
+     * Represents the *visible* dimensions of a given node, which takes into
+     * account the overflow settings in the overall layout.
+     * */
+    public get visibleRect(): Rect {
+        return this._visibleRect ?? this.getClippedRect(this._unclippedRect, this.limits);
+    }
+
+    /**
+     * @see `unclippedContentRect` and `visibleRect`
+     *
+     * Represents the *content* dimensions of the *visible* portion of the node.
+     * */
+    public get visibleContentRect(): Rect {
+        // visibleContentRect is created *on demand*
+        return (
+            this._visibleContentRect ??
+            this.getClippedRect(this._unclippedContentRect, this.limits)
+        );
     }
 
     public createChildCanvas(child: DomElement): SubCanvas {
@@ -131,7 +177,7 @@ export class Canvas {
 
         // Clamp child limits according to parent overflow
         if (this.overFlowIsHidden()) {
-            const visContent = this.getVisibleContentRect();
+            const visContent = this.visibleContentRect;
 
             if (this.xOverflowIsHidden()) {
                 childLimits.minX = visContent.corner.x;
@@ -159,17 +205,6 @@ export class Canvas {
         });
     }
 
-    /**
-     * Gets the unclipped `Rect` of a given node.
-     *
-     * This unclipped rect represents the state of the node without any
-     * mutations arising from overflow settings in the overall layout.
-     *
-     * The unclipped rect also represents the limits of what the Pen will
-     * attempt to draw to.  This doesn't mean that children cannot bleed out of
-     * the unclipped rect, but the unclipped rect is the canvas that the Pen
-     * uses.
-     */
     private getUnclippedRect(corner: Point, node: YogaNode, canvasHeight?: number): Rect {
         return {
             corner: corner,
@@ -178,17 +213,6 @@ export class Canvas {
         };
     }
 
-    /**
-     * Gets the unclipped `Rect` of a given node, but clamps the dimensions to
-     * represent only the drawable portion of the node.  Regardless of if
-     * this node hides overflow or not, this Rect represents the drawable
-     * portion if it did, which takes into account borders and padding.
-     *
-     * This Rect does **not** take into account any mutations arising from
-     * overflow settings in the overall layout.
-     *
-     * @see `Canvas.getUnclippedRect`
-     * */
     private getUnclippedContentRect(
         corner: Point,
         node: YogaNode,
@@ -221,7 +245,7 @@ export class Canvas {
     }
 
     /**
-     * Returns a new `Rect` that is clamped to only its *visible* limits
+     * Returns a new `Rect` with its dimensions clipped to overflow restrictions.
      * */
     private getClippedRect(rect: Rect, limits: Limits): Rect {
         let { x, y } = rect.corner;
@@ -244,14 +268,6 @@ export class Canvas {
         if (num < min) return min;
         if (num > max) return max;
         return num;
-    }
-
-    public getVisibleContentRect(): Rect {
-        return this.getClippedRect(this.unclippedContentRect, this.limits);
-    }
-
-    public getVisibleRect(): Rect {
-        return this.getClippedRect(this.unclippedRect, this.limits);
     }
 
     public getDomRect(): DOMRect {
@@ -299,7 +315,10 @@ export class Canvas {
     }
 
     /**
-     * If the unclippedRect bleeds into the limits box, then it can be drawn.
+     * Determines if drawing this node will actually perform any operations, or
+     * if it will always try to draw past its limits.
+     *
+     * If the `unclippedRect` bleeds into the limits box, then it can be drawn.
      * Otherwise it cannot.  This doesn't stop children of the node from having
      * unclipped rects that bleed into the limits though.  For rendering purposes,
      * elements will never draw past their unclipped rect dimensions.

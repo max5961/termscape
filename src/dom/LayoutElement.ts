@@ -108,14 +108,14 @@ export class LayoutElement extends FocusManager<{
     protected override buildVisualMap(children: DomElement[], vmap: VisualNodeMap): void {
         const xSort = this.bucketSort(
             children,
-            (child) => child.getUnclippedRect()?.corner.x ?? 0,
-            (child) => child.getUnclippedRect()?.corner.y ?? 0,
+            (child) => child.unclippedRect?.corner.x ?? 0,
+            (child) => child.unclippedRect?.corner.y ?? 0,
         );
 
         const ySort = this.bucketSort(
             children,
-            (child) => child.getUnclippedRect()?.corner.y ?? 0,
-            (child) => child.getUnclippedRect()?.corner.x ?? 0,
+            (child) => child.unclippedRect?.corner.y ?? 0,
+            (child) => child.unclippedRect?.corner.x ?? 0,
         );
 
         this.findEdges(vmap, xSort, "right", "left");
@@ -219,8 +219,8 @@ export class LayoutElement extends FocusManager<{
      * space to be considered valid.  Diagonal connections are considered invalid.
      * */
     private xAdjacentValid(curr: DomElement, adj: DomElement | undefined): boolean {
-        const cRect = curr.getUnclippedRect();
-        const aRect = adj?.getUnclippedRect();
+        const cRect = curr.unclippedRect;
+        const aRect = adj?.unclippedRect;
         if (!aRect || !cRect) return false;
 
         if (aRect.corner.x === cRect.corner.x) return false;
@@ -239,8 +239,8 @@ export class LayoutElement extends FocusManager<{
      * space to be considered valid.  Diagonal connections are considered invalid.
      * */
     private yAdjacentValid(curr: DomElement, adj: DomElement | undefined): boolean {
-        const aRect = adj?.getUnclippedRect();
-        const cRect = curr.getUnclippedRect();
+        const aRect = adj?.unclippedRect;
+        const cRect = curr.unclippedRect;
         if (!aRect || !cRect) return false;
 
         if (aRect.corner.y === cRect.corner.y) return false;
