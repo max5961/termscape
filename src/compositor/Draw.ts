@@ -3,7 +3,12 @@ import type { Color } from "../Types.js";
 import type { BaseShadowStyle, TextStyle } from "../style/Style.js";
 import type { BoxLike } from "./types.js";
 import { Canvas } from "./Canvas.js";
-import { alignRows, getRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
+import {
+    alignRows,
+    getAlignedRows,
+    getRows,
+    shouldTreatAsBreak,
+} from "../shared/TextWrap.js";
 import { TEXT_PADDING } from "../Symbols.js";
 import { Borders, createBox } from "../shared/Borders.js";
 
@@ -114,15 +119,12 @@ export class Draw {
     private composeTextWrap(elem: TextElement, canvas: Canvas) {
         const pen = canvas.getPen();
 
-        const unalignedRows = getRows(elem.textContent, canvas.canvasWidth);
-        const rows = alignRows(unalignedRows, canvas.canvasWidth, elem.style.align);
-
         pen.setStyle(elem.style);
 
-        const _slice = this.getTextRowSlice(elem, unalignedRows);
+        const rows = elem.alignedRows ?? [];
+        const slice = this.getTextRowSlice(elem, rows);
 
-        for (let i = 0; i < rows.length; ++i) {
-            // for (let i = _slice.start; i < _slice.end; ++i) {
+        for (let i = slice.start; i < slice.end; ++i) {
             pen.moveTo(0, i);
             for (let j = 0; j < rows[i].length; ++j) {
                 let char = rows[i][j];
@@ -139,19 +141,15 @@ export class Draw {
         }
     }
 
-    private getTextRowSlice(elem: TextElement, _rows: string[]) {
+    private getTextRowSlice(elem: TextElement, rows: ReturnType<typeof getAlignedRows>) {
         const unclippedRect = elem.unclippedRect;
-        const visRect = elem.canvas?.visibleContentRect;
+        const visRect = elem.visibleContentRect;
         const slice = { start: 0, end: 0 };
         if (!unclippedRect || !visRect) return slice;
 
         slice.start = Math.max(0, visRect.corner.y - unclippedRect.corner.y);
         slice.end = Math.max(0, slice.start + visRect.height);
-
-        // This is just covering up a bigger issue of incorrect dimensions for
-        // visible dom rects...
-        slice.start = Math.min(slice.start, _rows.length);
-        slice.end = Math.min(slice.end, _rows.length);
+        slice.end = Math.min(slice.end, rows.length);
 
         return slice;
     }
