@@ -7,7 +7,6 @@ import type {
     DomElement,
     YogaNode,
 } from "../Types.js";
-import type { BaseShadowStyle } from "../style/Style.js";
 import { Pen } from "./Pen.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
 import { TextElement } from "../dom/TextElement.js";
@@ -47,159 +46,153 @@ export type Grid = (string | GridToken)[][];
 
 export type CanvasDeps = {
     stdout: Stdout;
+    el: DomElement;
     grid?: Grid;
     corner?: Point;
-    realHeight?: number;
-    realWidth?: number;
-    minX?: number;
-    minY?: number;
-    maxX?: number;
-    maxY?: number;
+    canvasHeight?: number;
+    canvasWidth?: number;
+    limits?: Limits;
+
+    // Rects
     unclippedRect?: Rect;
     unclippedContentRect?: Rect;
+    visibleRect?: Rect;
 };
 
 export type SubCanvasDeps = Required<CanvasDeps>;
 
 export class Canvas {
-    public pos: Point;
     public grid: Grid;
+    public el: DomElement;
     public readonly corner: Readonly<Point>;
-    public readonly minX: number;
-    public readonly minY: number;
-    public readonly maxX: number;
-    public readonly maxY: number;
-    public readonly realHeight: number;
-    public readonly realWidth: number;
+    public readonly limits: Limits;
+    public readonly canvasHeight: number;
+    public readonly canvasWidth: number;
+
     public readonly unclippedRect: Rect;
     public readonly unclippedContentRect: Rect;
+    public readonly visibleRect: Rect;
 
     private readonly stdout: CanvasDeps["stdout"]; // Only used in root Canvas
 
     constructor(deps: CanvasDeps) {
         this.stdout = deps.stdout;
+        this.el = deps.el;
         this.grid = deps.grid ?? [];
         this.corner = deps.corner ?? { x: 0, y: 0 };
 
-        this.minX = Math.max(0, deps.minX ?? 0);
-        this.minY = Math.max(0, deps.minY ?? 0);
-        this.maxX = deps.maxX ?? deps.stdout.columns;
-        this.maxY = deps.maxY ?? deps.stdout.rows;
-        this.realHeight = deps.realHeight ?? this.maxY - this.minY;
-        this.realWidth = deps.realWidth ?? this.maxX - this.minX;
+        this.limits = {
+            minX: Math.max(0, deps.limits?.minX ?? 0),
+            minY: Math.max(0, deps.limits?.minY ?? 0),
+            maxX: deps.limits?.maxX ?? deps.stdout.columns,
+            maxY: deps.limits?.maxY ?? deps.stdout.rows,
+        };
+
+        this.canvasHeight = deps.canvasHeight ?? this.limits.maxY - this.limits.minY;
+        this.canvasWidth = deps.canvasWidth ?? this.limits.maxX - this.limits.minX;
 
         this.unclippedRect = deps.unclippedRect ?? {
             corner: this.corner,
-            height: this.realHeight,
-            width: this.realWidth,
+            height: this.canvasHeight,
+            width: this.canvasWidth,
         };
 
-        this.unclippedContentRect = deps.unclippedContentRect ?? {
-            corner: this.corner,
-            height: this.realHeight,
-            width: this.realWidth,
-        };
-
-        this.pos = { ...this.corner };
+        this.unclippedContentRect = deps.unclippedContentRect ?? this.unclippedRect;
+        this.visibleRect = deps.visibleRect ?? this.unclippedRect;
     }
 
-    public createChildCanvas({
-        child,
-        elem,
-    }: {
-        child: DomElement;
-        elem: DomElement;
-    }): SubCanvas {
-        const chNode = child.node;
-
-        const chStyle = child.shadowStyle;
-        const elemStyle = elem.shadowStyle;
-        const scrollOffset = elem.scrollOffset;
-
-        const realWidth = chNode.getComputedWidth();
-        let realHeight = chNode.getComputedHeight();
-
-        if (child instanceof TextElement) {
-            realHeight = child.textHeight;
-        }
+    public createChildCanvas(child: DomElement): SubCanvas {
+        const canvasWidth = child.node.getComputedWidth();
+        const canvasHeight =
+            child instanceof TextElement
+                ? child.textHeight
+                : child.node.getComputedHeight();
 
         // Child corner depends on parent corner.
-        const chCorner: Canvas["corner"] = {
-            x: this.corner.x + chNode.getComputedLeft() + scrollOffset.x,
-            y: this.corner.y + chNode.getComputedTop() + scrollOffset.y,
+        const childCorner: Canvas["corner"] = {
+            x: this.corner.x + child.node.getComputedLeft() + this.el.scrollOffset.x,
+            y: this.corner.y + child.node.getComputedTop() + this.el.scrollOffset.y,
         };
 
-        // Subcanvas limits are inherited its parent and are only clamped when
-        // in the context of overflows set to hidden.
-        let { minX, minY, maxX, maxY } = this;
-
-        const clampLimits = (visRect: Rect, style: BaseShadowStyle) => {
-            if (this.hasHiddenXOverflow(style)) {
-                minX = visRect.corner.x;
-                maxX = visRect.corner.x + visRect.width;
-            }
-            if (this.hasHiddenYOverflow(style)) {
-                minY = visRect.corner.y;
-                maxY = visRect.corner.y + visRect.height;
-            }
-        };
-
-        const unclipped = this.getUnclippedRect(chCorner, chNode, realHeight);
-        const unclippedContent = this.getUnclippedContentRect(
-            chCorner,
-            chNode,
-            realHeight,
+        const unclippedChild = this.getUnclippedRect(
+            childCorner,
+            child.node,
+            canvasHeight,
+        );
+        const unclippedChildContent = this.getUnclippedContentRect(
+            childCorner,
+            child.node,
+            canvasHeight,
         );
 
-        // PRE-CLAMP child to its vis rect
-        // (unnecessary so long as the Draw class does its job properly)
-        if (this.hasHiddenOverflow(chStyle)) {
-            const visRect = this.getVisRect(unclipped, { minX, minY, maxX, maxY });
-            clampLimits(visRect, chStyle);
+        // SubCanvas limits are inherited from the parent and are only clamped
+        // when the parent restricts overflow.
+        const childLimits = { ...this.limits };
+
+        // Clamp child limits according to parent overflow
+        if (this.overFlowIsHidden()) {
+            const visContent = this.getVisibleContentRect();
+
+            if (this.xOverflowIsHidden()) {
+                childLimits.minX = visContent.corner.x;
+                childLimits.maxX = visContent.corner.x + visContent.width;
+            }
+            if (this.yOverflowIsHidden()) {
+                childLimits.minY = visContent.corner.y;
+                childLimits.maxY = visContent.corner.y + visContent.height;
+            }
         }
 
-        // Clamp child to the parent's content rect
-        if (this.hasHiddenOverflow(elemStyle)) {
-            const rect = this.unclippedContentRect;
-            const visRect = this.getVisRect(rect, { minX, minY, maxX, maxY });
-            clampLimits(visRect, elemStyle);
-        }
+        const childVisRect = this.getClippedRect(unclippedChild, childLimits);
 
         return new SubCanvas({
-            minX,
-            minY,
-            maxX,
-            maxY,
-            realHeight,
-            realWidth,
-            unclippedRect: unclipped,
-            unclippedContentRect: unclippedContent,
-            corner: chCorner,
+            canvasHeight,
+            canvasWidth,
+            unclippedRect: unclippedChild,
+            unclippedContentRect: unclippedChildContent,
+            limits: childLimits,
+            visibleRect: childVisRect,
+            corner: childCorner,
             stdout: this.stdout,
             grid: this.grid,
+            el: child,
         });
     }
 
     /**
-     * This is the box agnostic of any overflow settings from ancestor nodes.
+     * Gets the unclipped `Rect` of a given node.
+     *
+     * This unclipped rect represents the state of the node without any
+     * mutations arising from overflow settings in the overall layout.
+     *
+     * The unclipped rect also represents the limits of what the Pen will
+     * attempt to draw to.  This doesn't mean that children cannot bleed out of
+     * the unclipped rect, but the unclipped rect is the canvas that the Pen
+     * uses.
      */
-    public getUnclippedRect(corner: Point, node: YogaNode, realHeight?: number): Rect {
+    private getUnclippedRect(corner: Point, node: YogaNode, canvasHeight?: number): Rect {
         return {
             corner: corner,
-            height: realHeight ?? node.getComputedHeight(),
+            height: canvasHeight ?? node.getComputedHeight(),
             width: node.getComputedWidth(),
         };
     }
 
     /**
-     * This is the content box of a node.  In other words, this is the unclipped
-     * rect but with the borders, padding, and anything else such as scrollbars
-     * clipped away.
+     * Gets the unclipped `Rect` of a given node, but clamps the dimensions to
+     * represent only the drawable portion of the node.  Regardless of if
+     * this node hides overflow or not, this Rect represents the drawable
+     * portion if it did, which takes into account borders and padding.
+     *
+     * This Rect does **not** take into account any mutations arising from
+     * overflow settings in the overall layout.
+     *
+     * @see `Canvas.getUnclippedRect`
      * */
-    public getUnclippedContentRect(
+    private getUnclippedContentRect(
         corner: Point,
         node: YogaNode,
-        realHeight?: number,
+        canvasHeight?: number,
     ): Rect {
         let leftOff, rightOff, bottomOff, topOff;
         leftOff = rightOff = bottomOff = topOff = 0;
@@ -222,50 +215,47 @@ export class Canvas {
 
         return {
             corner: offsetCorner,
-            height: (realHeight ?? node.getComputedHeight()) - bottomOff - topOff,
+            height: (canvasHeight ?? node.getComputedHeight()) - bottomOff - topOff,
             width: node.getComputedWidth() - leftOff - rightOff,
         };
     }
 
-    public getVisRect(rect: Rect, limits: Limits): Rect {
+    /**
+     * Returns a new `Rect` that is clamped to only its *visible* limits
+     * */
+    private getClippedRect(rect: Rect, limits: Limits): Rect {
         let { x, y } = rect.corner;
-        x = Math.max(x, limits.minX);
-        x = Math.min(x, limits.maxX);
-        y = Math.max(y, limits.minY);
-        y = Math.min(y, limits.maxY);
+        let xDepth = x + rect.width;
+        let yDepth = y + rect.height;
 
-        let { height, width } = rect;
-
-        if (x + width > limits.maxX) {
-            width = Math.max(0, limits.maxX - x);
-        }
-        if (y + height > limits.maxY) {
-            height = Math.max(0, limits.maxY - y);
-        }
+        x = this.clampNumToLimits(x, limits.minX, limits.maxX);
+        y = this.clampNumToLimits(y, limits.minY, limits.maxY);
+        xDepth = this.clampNumToLimits(xDepth, limits.minX, limits.maxX);
+        yDepth = this.clampNumToLimits(yDepth, limits.minY, limits.maxY);
 
         return {
             corner: { x, y },
-            height,
-            width,
+            height: yDepth - y,
+            width: xDepth - x,
         };
     }
 
-    public getVisContentRect(): Rect {
-        return this.getVisRect(this.unclippedContentRect, {
-            maxX: this.maxX,
-            maxY: this.maxY,
-            minX: this.minX,
-            minY: this.minY,
-        });
+    private clampNumToLimits(num: number, min: number, max: number): number {
+        if (num < min) return min;
+        if (num > max) return max;
+        return num;
+    }
+
+    public getVisibleContentRect(): Rect {
+        return this.getClippedRect(this.unclippedContentRect, this.limits);
+    }
+
+    public getVisibleRect(): Rect {
+        return this.getClippedRect(this.unclippedRect, this.limits);
     }
 
     public getDomRect(): DOMRect {
-        const vis = this.getVisRect(this.unclippedRect, {
-            maxX: this.maxX,
-            maxY: this.maxY,
-            minX: this.minX,
-            minY: this.minY,
-        });
+        const vis = this.getClippedRect(this.unclippedRect, this.limits);
 
         return {
             x: vis.corner.x,
@@ -279,16 +269,22 @@ export class Canvas {
         };
     }
 
-    protected hasHiddenOverflow(style: BaseShadowStyle) {
-        return this.hasHiddenXOverflow(style) || this.hasHiddenYOverflow(style);
+    protected overFlowIsHidden() {
+        return this.xOverflowIsHidden() || this.yOverflowIsHidden();
     }
 
-    protected hasHiddenXOverflow(style: BaseShadowStyle) {
-        return style.overflowX === "hidden" || style.overflowX === "scroll";
+    protected xOverflowIsHidden() {
+        return (
+            this.el.shadowStyle.overflowX === "hidden" ||
+            this.el.shadowStyle.overflowX === "scroll"
+        );
     }
 
-    protected hasHiddenYOverflow(style: BaseShadowStyle) {
-        return style.overflowY === "hidden" || style.overflowY === "scroll";
+    protected yOverflowIsHidden() {
+        return (
+            this.el.shadowStyle.overflowY === "hidden" ||
+            this.el.shadowStyle.overflowY === "scroll"
+        );
     }
 
     public getPen(): Pen {
@@ -302,8 +298,14 @@ export class Canvas {
         return stringifyRowSegment(this.grid, y, start, end);
     }
 
+    /**
+     * If the unclippedRect bleeds into the limits box, then it can be drawn.
+     * Otherwise it cannot.  This doesn't stop children of the node from having
+     * unclipped rects that bleed into the limits though.  For rendering purposes,
+     * elements will never draw past their unclipped rect dimensions.
+     * */
     public canDraw(): boolean {
-        return this.maxY - this.minY > 0 && this.maxX - this.minX > 0;
+        return this.visibleRect.height > 0 && this.visibleRect.width > 0;
     }
 }
 
@@ -315,7 +317,10 @@ export class SubCanvas extends Canvas {
 
     private forceGridToAccomodate() {
         const currDepth = this.grid.length;
-        const requestedDepth = Math.min(this.corner.y + this.realHeight, this.maxY);
+        const requestedDepth = Math.min(
+            this.corner.y + this.canvasHeight,
+            this.limits.maxY,
+        );
         const rowsNeeded = requestedDepth - currDepth;
 
         for (let i = 0; i < rowsNeeded; ++i) {
@@ -324,7 +329,7 @@ export class SubCanvas extends Canvas {
     }
 
     private requestNewRow() {
-        if (this.grid.length < this.maxY) {
+        if (this.grid.length < this.limits.maxY) {
             this.grid.push(
                 Array.from({ length: process.stdout.columns }).fill(" ") as string[],
             );

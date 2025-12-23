@@ -1,4 +1,5 @@
 import type { Point } from "../Types.js";
+import { logger } from "../shared/Logger.js";
 import type { TextStyle } from "../style/Style.js";
 import type { Canvas, Grid } from "./Canvas.js";
 import { Glyph } from "./Glyph.js";
@@ -46,11 +47,23 @@ export class Pen {
         this.corner = { ...deps.canvas.corner };
 
         this.limits = {
-            minX: deps.canvas.minX,
-            minY: deps.canvas.minY,
-            maxX: deps.canvas.maxX,
-            maxY: deps.canvas.maxY,
+            minX: deps.canvas.limits.minX,
+            minY: deps.canvas.limits.minY,
+            maxX: deps.canvas.limits.maxX,
+            maxY: deps.canvas.limits.maxY,
         };
+        // this.limits = {
+        //     minX: Math.max(deps.canvas.unclippedRect.corner.x, deps.canvas.limits.minX),
+        //     maxX: Math.min(
+        //         deps.canvas.unclippedRect.corner.x + deps.canvas.unclippedRect.width,
+        //         deps.canvas.limits.maxX,
+        //     ),
+        //     minY: Math.max(deps.canvas.unclippedRect.corner.y, deps.canvas.limits.minY),
+        //     maxY: Math.min(
+        //         deps.canvas.unclippedRect.corner.y + deps.canvas.unclippedRect.width,
+        //         deps.canvas.limits.maxY,
+        //     ),
+        // };
 
         this.glyph = new Glyph();
     }
@@ -123,10 +136,18 @@ export class Pen {
             return false;
         }
 
-        if (x < this.limits.minX) return false;
-        if (y < this.limits.minY) return false;
-        if (x >= this.limits.maxX) return false;
-        if (y >= this.limits.maxY) return false;
+        if (x < this.limits.minX) {
+            return false;
+        }
+        if (y < this.limits.minY) {
+            return false;
+        }
+        if (x >= this.limits.maxX) {
+            return false;
+        }
+        if (y >= this.limits.maxY) {
+            return false;
+        }
         return true;
     }
 }

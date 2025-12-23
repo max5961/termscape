@@ -12,7 +12,6 @@ import { ListElement } from "../dom/ListElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { FocusManagerBaseProps } from "../Props.js";
 import type { BaseStyle } from "../style/Style.js";
-import { logger } from "../shared/Logger.js";
 
 export class Compositor {
     public canvas: Canvas;
@@ -28,7 +27,7 @@ export class Compositor {
     public elementsWithPostLayoutHooks: DomElement[];
 
     constructor(root: Root) {
-        this.canvas = new Canvas({ stdout: root.runtime.stdout });
+        this.canvas = new Canvas({ stdout: root.runtime.stdout, el: root });
         root.canvas = this.canvas;
         this.ops = new Operations();
         this.rects = new DomRects();
@@ -91,59 +90,54 @@ export class Compositor {
             elem.contentRange = elem.initContentRange();
         }
 
-        // if (elem.style.overflow === "scroll" || elem.style.overflow === "hidden") {
         if (elem.style.overflow === "scroll") {
             this.scrollManagers.push(elem);
             parentScrollManagers.push(elem);
         }
 
         for (const child of elem.__children__) {
-            let subCanvas = child.canvas as SubCanvas | null;
-            if (layoutChange || !subCanvas) {
-                subCanvas = this.getSubCanvas(child, elem, canvas);
+            if (layoutChange || !child.canvas) {
+                child.canvas = canvas.createChildCanvas(child);
             }
 
-            subCanvas.setGrid(this.canvas.grid);
-            child.canvas = subCanvas;
+            // Removing this causes breaking changes...so the SubCanvas constructor
+            // is not using the correct grid reference, which SHOULD be passed
+            // down to each child.
+            (child.canvas as SubCanvas).setGrid(this.canvas.grid);
 
             if (layoutChange) {
                 parentScrollManagers.forEach((scroller) => {
-                    const childUnclipped = child.getUnclippedRect();
-                    if (childUnclipped) {
+                    const unclippedChild = child.getUnclippedRect();
+                    if (unclippedChild) {
                         scroller.contentRange.high = Math.min(
                             scroller.contentRange.high,
-                            childUnclipped.corner.y,
+                            unclippedChild.corner.y,
                         );
                         scroller.contentRange.low = Math.max(
                             scroller.contentRange.low,
-                            childUnclipped.corner.y + childUnclipped.height,
+                            unclippedChild.corner.y + unclippedChild.height,
                         );
                         scroller.contentRange.left = Math.min(
                             scroller.contentRange.left,
-                            childUnclipped.corner.x,
+                            unclippedChild.corner.x,
                         );
                         scroller.contentRange.right = Math.max(
                             scroller.contentRange.right,
-                            childUnclipped.corner.x + childUnclipped.width,
+                            unclippedChild.corner.x + unclippedChild.width,
                         );
                     }
                 });
             }
 
-            this.buildLayout(child, layoutChange, subCanvas, [...parentScrollManagers]);
+            this.buildLayout(child, layoutChange, child.canvas, [
+                ...parentScrollManagers,
+            ]);
         }
 
         if (elem instanceof Root) {
             this.ops.performAll();
             this.postLayout.forEach((cb) => cb());
         }
-    }
-
-    private getSubCanvas(child: DomElement, elem: DomElement, canvas: Canvas): SubCanvas {
-        return canvas.createChildCanvas({
-            child,
-            elem,
-        });
     }
 
     private postLayoutDefer(cb: () => unknown): void {

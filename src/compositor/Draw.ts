@@ -42,9 +42,9 @@ export class Draw {
         const pen = canvas.getPen();
         pen.set("backgroundColor", color);
 
-        for (let y = 0; y < canvas.realHeight; ++y) {
+        for (let y = 0; y < canvas.canvasHeight; ++y) {
             pen.moveTo(0, y);
-            pen.draw(" ", "r", canvas.realWidth);
+            pen.draw(" ", "r", canvas.canvasWidth);
         }
     }
 
@@ -115,8 +115,8 @@ export class Draw {
     private composeTextWrap(elem: TextElement, canvas: Canvas) {
         const pen = canvas.getPen();
 
-        const unalignedRows = getRows(elem.textContent, canvas.realWidth);
-        const rows = alignRows(unalignedRows, canvas.realWidth, elem.style.align);
+        const unalignedRows = getRows(elem.textContent, canvas.canvasWidth);
+        const rows = alignRows(unalignedRows, canvas.canvasWidth, elem.style.align);
 
         pen.setStyle(elem.style);
 
@@ -124,8 +124,8 @@ export class Draw {
 
         // logger.write({ _slice, tc: elem.textContent });
 
-        // for (let i = 0; i < rows.length; ++i) {
-        for (let i = _slice.start; i < _slice.end; ++i) {
+        for (let i = 0; i < rows.length; ++i) {
+            // for (let i = _slice.start; i < _slice.end; ++i) {
             pen.moveTo(0, i);
             for (let j = 0; j < rows[i].length; ++j) {
                 let char = rows[i][j];
@@ -144,7 +144,7 @@ export class Draw {
 
     private getTextRowSlice(elem: TextElement, _rows: string[]) {
         const unclippedRect = elem.getUnclippedRect();
-        const visRect = elem.canvas?.getVisContentRect();
+        const visRect = elem.canvas?.getVisibleContentRect();
         const slice = { start: 0, end: 0 };
         if (!unclippedRect || !visRect) return slice;
 
@@ -155,6 +155,36 @@ export class Draw {
         // visible dom rects...
         slice.start = Math.min(slice.start, _rows.length);
         slice.end = Math.min(slice.end, _rows.length);
+
+        // if (elem.textContent === "albumdl") {
+        //     logger.write({
+        //         albumdl: "ALBUMDL",
+        //         visRect,
+        //         unclippedRect,
+        //         limits: {
+        //             minX: elem.canvas!.minX,
+        //             minY: elem.canvas!.minY,
+        //             maxX: elem.canvas!.maxX,
+        //             maxY: elem.canvas!.maxY,
+        //         },
+        //         slice,
+        //     });
+        // }
+        //
+        // if (elem.textContent === "zap") {
+        //     logger.write({
+        //         zap: "ZAP",
+        //         visRect,
+        //         unclippedRect,
+        //         limits: {
+        //             minX: elem.canvas!.minX,
+        //             minY: elem.canvas!.minY,
+        //             maxX: elem.canvas!.maxX,
+        //             maxY: elem.canvas!.maxY,
+        //         },
+        //         slice,
+        //     });
+        // }
 
         return slice;
     }
