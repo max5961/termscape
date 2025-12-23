@@ -23,7 +23,6 @@ import { Focus } from "./FocusContext.js";
 import { throwError } from "../shared/ThrowError.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
-import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {

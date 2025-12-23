@@ -1,5 +1,4 @@
 import type { Point } from "../Types.js";
-import { logger } from "../shared/Logger.js";
 import type { TextStyle } from "../style/Style.js";
 import type { Canvas, Grid } from "./Canvas.js";
 import { Glyph } from "./Glyph.js";

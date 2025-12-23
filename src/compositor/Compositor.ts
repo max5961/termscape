@@ -96,14 +96,7 @@ export class Compositor {
         }
 
         for (const child of elem.__children__) {
-            if (layoutChange || !child.canvas) {
-                child.canvas = canvas.createChildCanvas(child);
-            }
-
-            // Removing this causes breaking changes...so the SubCanvas constructor
-            // is not using the correct grid reference, which SHOULD be passed
-            // down to each child.
-            (child.canvas as SubCanvas).setGrid(this.canvas.grid);
+            child.canvas = this.getRefreshedChildCanvas(child, canvas, layoutChange);
 
             if (layoutChange) {
                 parentScrollManagers.forEach((scroller) => {
@@ -138,6 +131,18 @@ export class Compositor {
             this.ops.performAll();
             this.postLayout.forEach((cb) => cb());
         }
+    }
+
+    private getRefreshedChildCanvas(
+        child: DomElement,
+        canvas: Canvas,
+        layoutChange: boolean,
+    ): Canvas {
+        if (layoutChange || !child.canvas) {
+            child.canvas = canvas.createChildCanvas(child);
+        }
+        (child.canvas as SubCanvas).bindGrid(this.canvas.grid);
+        return child.canvas;
     }
 
     private postLayoutDefer(cb: () => unknown): void {

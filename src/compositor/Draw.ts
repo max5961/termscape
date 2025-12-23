@@ -6,7 +6,6 @@ import { Canvas } from "./Canvas.js";
 import { alignRows, getRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
 import { TEXT_PADDING } from "../Symbols.js";
 import { Borders, createBox } from "../shared/Borders.js";
-import { logger } from "../shared/Logger.js";
 
 export class Draw {
     /**
@@ -122,8 +121,6 @@ export class Draw {
 
         const _slice = this.getTextRowSlice(elem, unalignedRows);
 
-        // logger.write({ _slice, tc: elem.textContent });
-
         for (let i = 0; i < rows.length; ++i) {
             // for (let i = _slice.start; i < _slice.end; ++i) {
             pen.moveTo(0, i);
@@ -155,36 +152,6 @@ export class Draw {
         // visible dom rects...
         slice.start = Math.min(slice.start, _rows.length);
         slice.end = Math.min(slice.end, _rows.length);
-
-        // if (elem.textContent === "albumdl") {
-        //     logger.write({
-        //         albumdl: "ALBUMDL",
-        //         visRect,
-        //         unclippedRect,
-        //         limits: {
-        //             minX: elem.canvas!.minX,
-        //             minY: elem.canvas!.minY,
-        //             maxX: elem.canvas!.maxX,
-        //             maxY: elem.canvas!.maxY,
-        //         },
-        //         slice,
-        //     });
-        // }
-        //
-        // if (elem.textContent === "zap") {
-        //     logger.write({
-        //         zap: "ZAP",
-        //         visRect,
-        //         unclippedRect,
-        //         limits: {
-        //             minX: elem.canvas!.minX,
-        //             minY: elem.canvas!.minY,
-        //             maxX: elem.canvas!.maxX,
-        //             maxY: elem.canvas!.maxY,
-        //         },
-        //         slice,
-        //     });
-        // }
 
         return slice;
     }

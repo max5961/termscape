@@ -73,7 +73,7 @@ export class Canvas {
     public readonly unclippedContentRect: Rect;
     public readonly visibleRect: Rect;
 
-    private readonly stdout: CanvasDeps["stdout"]; // Only used in root Canvas
+    protected readonly stdout: CanvasDeps["stdout"]; // Only used in root Canvas
 
     constructor(deps: CanvasDeps) {
         this.stdout = deps.stdout;
@@ -312,7 +312,6 @@ export class Canvas {
 export class SubCanvas extends Canvas {
     constructor(deps: SubCanvasDeps) {
         super(deps);
-        this.forceGridToAccomodate();
     }
 
     private forceGridToAccomodate() {
@@ -331,13 +330,19 @@ export class SubCanvas extends Canvas {
     private requestNewRow() {
         if (this.grid.length < this.limits.maxY) {
             this.grid.push(
-                Array.from({ length: process.stdout.columns }).fill(" ") as string[],
+                Array.from({ length: this.stdout.columns }).fill(" ") as string[],
             );
         }
     }
 
-    public setGrid(grid: Grid) {
-        this.grid = grid;
+    /**
+     * The root canvas is recreated on every cycle, and therefore receives a new
+     * grid on every pass as well.  The child canvases are only recreated on
+     * layout changes, so the root/children lifecycles are mismatched and this
+     * leads to grid mismatches unless bound every cycle.
+     * */
+    public bindGrid(rootCanvasGrid: Grid) {
+        this.grid = rootCanvasGrid;
         this.forceGridToAccomodate();
     }
 }
