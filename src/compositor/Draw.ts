@@ -6,6 +6,7 @@ import { Canvas } from "./Canvas.js";
 import { alignRows, getRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
 import { TEXT_PADDING } from "../Symbols.js";
 import { Borders, createBox } from "../shared/Borders.js";
+import { logger } from "../shared/Logger.js";
 
 export class Draw {
     /**
@@ -95,6 +96,7 @@ export class Draw {
         if (style.wrap === "overflow") {
             return this.composeTextOverflow(elem, canvas);
         }
+
         return this.composeTextWrap(elem, canvas);
     }
 
@@ -113,15 +115,17 @@ export class Draw {
     private composeTextWrap(elem: TextElement, canvas: Canvas) {
         const pen = canvas.getPen();
 
-        const rows = alignRows(
-            getRows(elem.textContent, canvas.realWidth),
-            canvas.realWidth,
-            elem.style.align,
-        );
+        const unalignedRows = getRows(elem.textContent, canvas.realWidth);
+        const rows = alignRows(unalignedRows, canvas.realWidth, elem.style.align);
 
         pen.setStyle(elem.style);
 
-        for (let i = 0; i < rows.length; ++i) {
+        const _slice = this.getTextRowSlice(elem, unalignedRows);
+
+        // logger.write({ _slice, tc: elem.textContent });
+
+        // for (let i = 0; i < rows.length; ++i) {
+        for (let i = _slice.start; i < _slice.end; ++i) {
             pen.moveTo(0, i);
             for (let j = 0; j < rows[i].length; ++j) {
                 let char = rows[i][j];
@@ -136,5 +140,22 @@ export class Draw {
                 pen.draw(char as string, "r", 1);
             }
         }
+    }
+
+    private getTextRowSlice(elem: TextElement, _rows: string[]) {
+        const unclippedRect = elem.getUnclippedRect();
+        const visRect = elem.canvas?.getVisContentRect();
+        const slice = { start: 0, end: 0 };
+        if (!unclippedRect || !visRect) return slice;
+
+        slice.start = Math.max(0, visRect.corner.y - unclippedRect.corner.y);
+        slice.end = Math.max(0, slice.start + visRect.height);
+
+        // This is just covering up a bigger issue of incorrect dimensions for
+        // visible dom rects...
+        slice.start = Math.min(slice.start, _rows.length);
+        slice.end = Math.min(slice.end, _rows.length);
+
+        return slice;
     }
 }
