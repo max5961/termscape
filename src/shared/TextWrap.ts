@@ -1,11 +1,17 @@
 import { TEXT_PADDING } from "../Symbols.js";
 import type { TextStyle } from "../style/Style.js";
 
-export function getRows(text: string, width: number): string[] {
+export function getRows(
+    text: string,
+    width: number,
+    tracker?: { idx: number },
+    stopRows?: number,
+): string[] {
     if (!text) return [];
     if (width <= 0) return text.split("");
 
     const result: string[] = [];
+
     let line = "";
     for (let i = 0; i < text.length; ++i) {
         const char = text[i];
@@ -38,6 +44,13 @@ export function getRows(text: string, width: number): string[] {
                 line = right;
             }
         }
+
+        if (stopRows && result.length >= stopRows) {
+            if (line) result.push(line);
+            return result;
+        }
+
+        if (tracker) tracker.idx = i;
     }
 
     if (line) result.push(line);

@@ -96,8 +96,8 @@ export class Draw {
     // Text
     // =========================================================================
 
-    public composeText(elem: TextElement, style: TextStyle, canvas: Canvas) {
-        if (style.wrap === "overflow") {
+    public composeText(elem: TextElement, _style: TextStyle, canvas: Canvas) {
+        if (elem.style.wrap === "overflow") {
             return this.composeTextOverflow(elem, canvas);
         }
 
@@ -121,7 +121,7 @@ export class Draw {
 
         pen.setStyle(elem.style);
 
-        const rows = elem.alignedRows ?? [];
+        const rows = elem.alignedRows;
         const slice = this.getTextRowSlice(elem, rows);
 
         for (let i = slice.start; i < slice.end; ++i) {
