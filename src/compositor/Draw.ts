@@ -1,16 +1,17 @@
-import type { TextElement } from "../dom/TextElement.js";
-import type { Color } from "../Types.js";
-import type { BaseShadowStyle, TextStyle } from "../style/Style.js";
+import type { Color, DomElement } from "../Types.js";
+import type { BaseShadowStyle } from "../style/Style.js";
 import type { BoxLike } from "./types.js";
 import { Canvas } from "./Canvas.js";
-import {
-    alignRows,
-    getAlignedRows,
-    getRows,
-    shouldTreatAsBreak,
-} from "../shared/TextWrap.js";
+import { getAlignedRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
 import { TEXT_PADDING } from "../Symbols.js";
 import { Borders, createBox } from "../shared/Borders.js";
+import { BoxElement } from "../dom/BoxElement.js";
+import { BookElement } from "../dom/BookElement.js";
+import { ListElement } from "../dom/ListElement.js";
+import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
+import { TextElement } from "../dom/TextElement.js";
+import { CanvasElement } from "../dom/CanvasElement.js";
+import type { Pen } from "./Pen.js";
 
 export class Draw {
     /**
@@ -18,21 +19,69 @@ export class Draw {
      * wipe their backgrounds.  This ensures that nodes that don't need to wipe
      * backgrounds don't waste time doing so.
      */
-    private lowestLayer: number;
+    private _lowestLayer: number;
+    public box: DrawBox;
+    public text: DrawText;
+    public canvasElement: DrawCanvasElement;
 
     constructor() {
-        this.lowestLayer = 0;
+        this._lowestLayer = 0;
+        this.box = new DrawBox(this);
+        this.text = new DrawText(this);
+        this.canvasElement = new DrawCanvasElement(this);
     }
 
     public updateLowestLayer(zIndex: number): void {
-        this.lowestLayer = Math.min(this.lowestLayer, zIndex);
+        this._lowestLayer = Math.min(this._lowestLayer, zIndex);
     }
 
-    // =========================================================================
-    // Box
-    // =========================================================================
+    public get lowestLayer() {
+        return this._lowestLayer;
+    }
 
-    public composeBox(elem: BoxLike, style: BaseShadowStyle, canvas: Canvas) {
+    public compose(elem: DomElement, canvas: Canvas): void {
+        if (this.isBoxLike(elem)) {
+            this.box.compose(elem, canvas);
+        } else if (elem instanceof TextElement) {
+            this.text.compose(elem, canvas);
+        } else if (elem instanceof CanvasElement) {
+            this.canvasElement.compose(elem, canvas);
+        }
+    }
+
+    private isBoxLike(elem: DomElement) {
+        return (
+            elem instanceof BoxElement ||
+            elem instanceof BookElement ||
+            elem instanceof ListElement ||
+            elem instanceof LayoutElement ||
+            elem instanceof LayoutNode
+        );
+    }
+}
+
+abstract class DrawContract<T extends BoxLike | TextElement | CanvasElement> {
+    private draw: Draw;
+
+    constructor(draw: Draw) {
+        this.draw = draw;
+    }
+
+    protected get lowestLayer() {
+        return this.draw.lowestLayer;
+    }
+
+    public abstract compose(elem: T, canvas: Canvas): void;
+}
+
+class DrawBox extends DrawContract<BoxLike> {
+    constructor(draw: Draw) {
+        super(draw);
+    }
+
+    public override compose(elem: BoxLike, canvas: Canvas): void {
+        const style = elem.shadowStyle;
+
         if ((style.zIndex ?? 0) > this.lowestLayer || style.backgroundColor) {
             this.fillBg(canvas, style.backgroundColor);
         }
@@ -52,7 +101,6 @@ export class Draw {
         }
     }
 
-    /** renders only round borders for now */
     private renderBorder(elem: BoxLike, style: BaseShadowStyle, canvas: Canvas) {
         const width = elem.node.getComputedWidth();
         const height = elem.node.getComputedHeight();
@@ -91,13 +139,18 @@ export class Draw {
             .set("dimColor", style.borderLeftDimColor)
             .draw(map.left, "u", height - 2)
     }
+}
 
-    // =========================================================================
-    // Text
-    // =========================================================================
+class DrawText extends DrawContract<TextElement> {
+    constructor(draw: Draw) {
+        super(draw);
+    }
 
-    public composeText(elem: TextElement, _style: TextStyle, canvas: Canvas) {
-        if (elem.style.wrap === "overflow") {
+    public override compose(elem: TextElement, canvas: Canvas): void {
+        if (
+            elem.shadowStyle.wrap === "overflow" ||
+            elem.textContent.length <= canvas.canvasWidth
+        ) {
             return this.composeTextOverflow(elem, canvas);
         }
 
@@ -107,6 +160,7 @@ export class Draw {
     private composeTextOverflow(elem: TextElement, canvas: Canvas) {
         const textContent = elem.textContent;
         const pen = canvas.getPen();
+        pen.setStyle(elem.shadowStyle);
 
         for (let i = 0; i < textContent.length; ++i) {
             const char = textContent[i];
@@ -119,7 +173,7 @@ export class Draw {
     private composeTextWrap(elem: TextElement, canvas: Canvas) {
         const pen = canvas.getPen();
 
-        pen.setStyle(elem.style);
+        pen.setStyle(elem.shadowStyle);
 
         const rows = elem.alignedRows;
         const slice = this.getTextRowSlice(elem, rows);
@@ -128,17 +182,27 @@ export class Draw {
             pen.moveTo(0, i);
             for (let j = 0; j < rows[i].length; ++j) {
                 let char = rows[i][j];
-
-                if (char === TEXT_PADDING) {
-                    char = " ";
-                    pen.set("underline", false);
-                } else {
-                    pen.set("underline", elem.style.underline);
-                }
-
+                char = this.resolveTextPadding(pen, elem, char);
                 pen.draw(char as string, "r", 1);
             }
         }
+    }
+
+    private resolveTextPadding(
+        pen: Pen,
+        elem: TextElement,
+        char: string | symbol,
+    ): string {
+        if (char === TEXT_PADDING) {
+            pen.set("underline", false);
+            pen.set("backgroundColor", undefined);
+            char = " ";
+        } else {
+            pen.set("underline", elem.style.underline);
+            pen.set("backgroundColor", elem.style.backgroundColor);
+        }
+
+        return char as string;
     }
 
     private getTextRowSlice(elem: TextElement, rows: ReturnType<typeof getAlignedRows>) {
@@ -152,5 +216,19 @@ export class Draw {
         slice.end = Math.min(slice.end, rows.length);
 
         return slice;
+    }
+}
+
+class DrawCanvasElement extends DrawContract<CanvasElement> {
+    constructor(draw: Draw) {
+        super(draw);
+    }
+
+    public override compose(elem: CanvasElement, canvas: Canvas): void {
+        const draw = elem.getProp("draw");
+        if (draw) {
+            const pen = canvas.getPen();
+            draw(pen);
+        }
     }
 }

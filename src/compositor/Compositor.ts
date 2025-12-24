@@ -58,23 +58,7 @@ export class Compositor {
 
         if (canvas.canDraw()) {
             this.rects.storeElementPosition(zIndex, elem);
-
-            if (this.isBoxLike(elem)) {
-                this.ops.defer(zIndex, () => this.draw.composeBox(elem, style, canvas));
-            }
-
-            if (elem instanceof TextElement) {
-                this.ops.defer(zIndex, () => this.draw.composeText(elem, style, canvas));
-            }
-
-            if (elem instanceof CanvasElement) {
-                const draw = elem.getProp("draw");
-                if (draw) {
-                    const pen = canvas.getPen();
-                    this.ops.defer(zIndex, () => draw(pen));
-                }
-            }
-
+            this.ops.defer(zIndex, () => this.draw.compose(elem, canvas));
             if (elem instanceof FocusManager) {
                 if (layoutChange) {
                     this.postLayoutDefer(() => {

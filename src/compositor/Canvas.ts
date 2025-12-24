@@ -106,10 +106,6 @@ export class Canvas {
     /**
      * Represents the dimensions of the node without any mutations arising from
      * overflow settings in the overall layout.
-     *
-     * Also represents the limits of what the Pen will attempt to draw to.  This
-     * doesn't mean that children cannot bleed out of the unclipped rect, but the
-     * unclipped rect is the canvas that the Pen uses.
      */
     public get unclippedRect(): Rect {
         return this._unclippedRect;

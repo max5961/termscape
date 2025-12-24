@@ -102,8 +102,6 @@ export class TextElement extends DomElement<{
             }
 
             return {
-                // This might block the Pen class from writing beyond its visRect,
-                // so the Pen class would need to make exceptions for TextElements
                 width: Math.min(this.textContent.length, width),
                 height: this.textHeight,
             };

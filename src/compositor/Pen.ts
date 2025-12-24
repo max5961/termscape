@@ -51,18 +51,6 @@ export class Pen {
             maxX: deps.canvas.limits.maxX,
             maxY: deps.canvas.limits.maxY,
         };
-        // this.limits = {
-        //     minX: Math.max(deps.canvas.unclippedRect.corner.x, deps.canvas.limits.minX),
-        //     maxX: Math.min(
-        //         deps.canvas.unclippedRect.corner.x + deps.canvas.unclippedRect.width,
-        //         deps.canvas.limits.maxX,
-        //     ),
-        //     minY: Math.max(deps.canvas.unclippedRect.corner.y, deps.canvas.limits.minY),
-        //     maxY: Math.min(
-        //         deps.canvas.unclippedRect.corner.y + deps.canvas.unclippedRect.width,
-        //         deps.canvas.limits.maxY,
-        //     ),
-        // };
 
         this.glyph = new Glyph();
     }
