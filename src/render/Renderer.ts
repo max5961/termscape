@@ -44,7 +44,7 @@ export class Renderer {
         this.postLayoutHooks(compositor);
 
         compositor.elementsWithPostLayoutHooks.forEach((elem) => {
-            elem.postLayoutHooks.forEach((hook) => hook());
+            elem.postLayoutHooks.forEach(process.nextTick);
         });
 
         this.deferWrite(compositor, opts);
