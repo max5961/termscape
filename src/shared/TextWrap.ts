@@ -76,9 +76,9 @@ export function alignRows(
                 return arrRow;
             }
 
-            const leftWs = new Array(diff).fill(TEXT_PADDING);
+            const leftWs = Array.from({ length: diff }).fill(TEXT_PADDING);
 
-            return [...leftWs, ...arrRow];
+            return [...leftWs, ...arrRow] as (string | symbol)[];
         });
     }
 
@@ -96,10 +96,10 @@ export function alignRows(
                 return arrRow;
             }
 
-            const leftWs = new Array(left).fill(TEXT_PADDING);
-            const rightWs = new Array(right).fill(TEXT_PADDING);
+            const leftWs = Array.from({ length: left }).fill(TEXT_PADDING);
+            const rightWs = Array.from({ length: right }).fill(TEXT_PADDING);
 
-            return [...leftWs, ...arrRow, ...rightWs];
+            return [...leftWs, ...arrRow, ...rightWs] as (string | symbol)[];
         });
     }
 
