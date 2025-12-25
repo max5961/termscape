@@ -8,6 +8,7 @@ export type BaseProps = {
 };
 
 export type Scrollbar = {
+    /** TODO */
     mode?: "auto" | "always" | "hidden";
     side?: "right" | "left" | "top" | "bottom";
     placement?: "padding" | "border";

@@ -156,7 +156,11 @@ class DrawBox extends DrawContract<BoxLike> {
         const scrollbar = elem.getBaseProp("scrollbar") as Required<Scrollbar>;
 
         const units = this.getScrollBarUnits(elem, scrollbar.side);
-        const move = this.getStartScrollbarDisplacement(elem, scrollbar.side);
+        const move = this.getStartScrollbarDisplacement(
+            elem,
+            scrollbar.side,
+            scrollbar.placement,
+        );
         const direction =
             scrollbar.side === "right" || scrollbar.side === "left" ? "d" : "r";
 
@@ -176,15 +180,29 @@ class DrawBox extends DrawContract<BoxLike> {
             pen.set("imageNegative", scrollbar.barChar === " ");
         };
 
+        const drawTrack = (units: number) => {
+            if (
+                // in padding zone - safe to draw
+                scrollbar.placement === "padding" ||
+                // trackChar or trackColor is intentional - overwriting the border is okay
+                scrollbar.trackChar !== " " ||
+                scrollbar.trackColor
+            ) {
+                pen.draw(scrollbar.trackChar, direction, units);
+            } else {
+                pen.move(direction, units);
+            }
+        };
+
         // track start
         setTrackPen();
-        pen.draw(scrollbar.trackChar, direction, units.startUnits);
+        drawTrack(units.startUnits);
         // bar
         setBarPen();
         pen.draw(scrollbar.barChar, direction, units.barUnits);
         // track end
         setTrackPen();
-        pen.draw(scrollbar.trackChar, direction, units.endUnits);
+        drawTrack(units.endUnits);
     }
 
     private getScrollBarUnits(elem: BoxLike, side: Scrollbar["side"]) {
@@ -215,23 +233,36 @@ class DrawBox extends DrawContract<BoxLike> {
         };
     }
 
-    private getStartScrollbarDisplacement(elem: BoxLike, side: Scrollbar["side"]) {
+    private getStartScrollbarDisplacement(
+        elem: BoxLike,
+        side: Scrollbar["side"],
+        placement: Scrollbar["placement"],
+    ) {
         const unclipped = elem.unclippedRect;
 
         const move: Point = { x: 0, y: 0 };
         if (side === "right") {
-            // right corner
             move.x = unclipped.width - 1;
-            move.x -= elem.node.getComputedBorder(Yoga.EDGE_RIGHT);
+            if (placement === "padding") {
+                move.x -= elem.node.getComputedBorder(Yoga.EDGE_RIGHT);
+            }
             move.y += elem.node.getComputedBorder(Yoga.EDGE_TOP);
-        } else if (side === "left" || side === "top") {
-            // left corner
+        } else if (side === "left") {
+            move.y += elem.node.getComputedBorder(Yoga.EDGE_TOP);
+            if (placement === "padding") {
+                move.x += elem.node.getComputedBorder(Yoga.EDGE_LEFT);
+            }
+        } else if (side === "top") {
             move.x += elem.node.getComputedBorder(Yoga.EDGE_LEFT);
-            move.y += elem.node.getComputedBorder(Yoga.EDGE_TOP);
+            if (placement === "padding") {
+                move.y += elem.node.getComputedBorder(Yoga.EDGE_TOP);
+            }
         } else if (side === "bottom") {
             move.y = unclipped.height - 1;
             move.x += elem.node.getComputedBorder(Yoga.EDGE_LEFT);
-            move.y -= elem.node.getComputedBorder(Yoga.EDGE_BOTTOM);
+            if (placement === "padding") {
+                move.y -= elem.node.getComputedBorder(Yoga.EDGE_BOTTOM);
+            }
         }
 
         return move;
