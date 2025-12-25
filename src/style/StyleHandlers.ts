@@ -230,7 +230,9 @@ export const YogaHandlers: {
         node.setPadding(Yoga.EDGE_LEFT, combined);
     },
     paddingRight(next, node, target) {
-        const combined = (next ?? 0) + (target.scrollbarPaddingRight ?? 0);
+        // const combined = (next ?? 0) + (target.scrollbarPaddingRight ?? 0);
+        next ??= 0;
+        const combined = next + next ? 0 : target.scrollbarPaddingRight ?? 0;
         node.setPadding(Yoga.EDGE_RIGHT, combined);
     },
     scrollbarPaddingTop(next, node, target) {
@@ -247,6 +249,8 @@ export const YogaHandlers: {
     },
     scrollbarPaddingRight(next, node, target) {
         const combined = (next ?? 0) + (target.paddingRight ?? 0);
+        next ??= 0;
+        next = target.paddingRight ? target.paddingRight : combined;
         node.setPadding(Yoga.EDGE_RIGHT, combined);
     },
     borderTop(next, node, target) {

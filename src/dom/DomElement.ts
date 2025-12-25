@@ -982,12 +982,12 @@ export abstract class FocusManager<
         const wRight = wRect.corner.x + wRect.width;
 
         let scrollOff = this.getFMProp("keepFocusedCenter")
-            ? Math.floor(this.node.getComputedHeight() / 2)
+            ? Math.floor(wRect.height / 2)
             : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
 
         if (this.style.flexDirection?.includes("row")) {
             scrollOff = this.getFMProp("keepFocusedCenter")
-                ? Math.floor(this.node.getComputedWidth() / 2)
+                ? Math.floor(wRect.width / 2)
                 : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
         }
 
@@ -1032,7 +1032,7 @@ export abstract class FocusManager<
             const fBot = fRect.corner.y + fRect.height;
 
             const scrollOff = this.getFMProp("keepFocusedCenter")
-                ? Math.floor(this.node.getComputedHeight() / 2)
+                ? Math.floor(wRect.height / 2)
                 : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
 
             // If focus item is as large or larger than window, pin to top.
@@ -1083,7 +1083,7 @@ export abstract class FocusManager<
             }
 
             const scrollOff = this.getFMProp("keepFocusedCenter")
-                ? Math.floor(this.node.getComputedWidth() / 2)
+                ? Math.floor(wRect.width / 2)
                 : Math.min(this.getFMProp("scrollOff") ?? 0, wRight);
 
             const itemRightWin = fRight > wRight - scrollOff;

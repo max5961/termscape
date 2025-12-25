@@ -162,15 +162,6 @@ class DrawBox extends DrawContract<BoxLike> {
         const pen = canvas.getPen();
         this.getScrollbarPenStart(pen, scrollbar.edge, scrollbar.placement);
 
-        // pen.moveXToEdge("right", "border", "inner");
-        // pen.moveYToEdge("top", "content", "inner");
-
-        // pen.moveTo(move.x, move.y);
-        // pen.moveXToEdge("left", "padding", "inside");
-        // pen.moveYToEdge("top", "content", "inside");
-        // pen.moveXToEdge("right", "padding", "inside");
-        // pen.moveYToEdge("top", "content", "inside");
-
         const setTrackPen = () => {
             pen.set("color", scrollbar.trackColor);
             pen.set(
