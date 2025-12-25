@@ -7,14 +7,13 @@ import {
     shouldTreatAsBreak,
 } from "../shared/TextWrap.js";
 import type { TextStyle } from "../style/Style.js";
-import type { BaseProps } from "../Props.js";
+import type { BaseProps, Props } from "../Props.js";
 import { Render } from "./util/decorators.js";
 import type { TagNameEnum } from "../Constants.js";
-import { logger } from "../shared/Logger.js";
 
 export class TextElement extends DomElement<{
     Style: TextStyle;
-    Props: BaseProps;
+    Props: Props.Text;
 }> {
     private _textContent: string;
     public textHeight!: number;

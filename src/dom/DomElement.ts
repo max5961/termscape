@@ -12,7 +12,7 @@ import type {
     TagName,
 } from "../Types.js";
 import type { BaseStyle, BaseShadowStyle } from "../style/Style.js";
-import type { BaseProps, FocusManagerProps, Scrollbar } from "../Props.js";
+import type { BaseProps, FocusManagerProps, Scrollbar, Title } from "../Props.js";
 import type { Root } from "./Root.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
@@ -124,6 +124,8 @@ export abstract class DomElement<
     ): void {
         if ((key as keyof BaseProps) === "scrollbar" && value) {
             this.initializeScrollbar(value);
+        } else if ((key as string).includes("title")) {
+            this.initializeTitle(value as Title);
         }
 
         this.props.set(key as string, Object.freeze(value));
@@ -146,6 +148,14 @@ export abstract class DomElement<
             this.style.scrollbarPaddingBottom = scrollbar.side === "bottom" ? 1 : 0;
             this.style.scrollbarPaddingLeft = scrollbar.side === "left" ? 1 : 0;
             this.style.scrollbarPaddingRight = scrollbar.side === "right" ? 1 : 0;
+        }
+    }
+
+    private initializeTitle(title: Title) {
+        title.style ??= "strikethrough";
+        if (typeof title.style === "object") {
+            title.style.left = title.style.left ?? "";
+            title.style.right = title.style.right ?? "";
         }
     }
 

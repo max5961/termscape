@@ -5,6 +5,12 @@ export type BaseProps = {
     id?: string;
     className?: string;
     scrollbar?: Scrollbar;
+    titleTopLeft?: Title;
+    titleTopCenter?: Title;
+    titleTopRight?: Title;
+    titleBottomLeft?: Title;
+    titleBottomCenter?: Title;
+    titleBottomRight?: Title;
 };
 
 export type Scrollbar = {
@@ -16,6 +22,24 @@ export type Scrollbar = {
     barColor?: Color;
     trackChar?: string;
     trackColor?: Color;
+};
+
+export type Title = {
+    textContent: string;
+    color?: Color;
+    style?:
+        | TitleStyleConfig
+        | "strikethrough"
+        | "capped"
+        | "capped-reverse"
+        | "bracketed";
+};
+
+export type TitleStyleConfig = {
+    left: string;
+    right: string;
+    leftColor?: Color;
+    rightColor?: Color;
 };
 
 export type FocusManagerScrollProps = {

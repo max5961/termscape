@@ -13,9 +13,7 @@ import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { Pen } from "./Pen.js";
-import type { Scrollbar } from "../Props.js";
-import { logger } from "../shared/Logger.js";
-import type { Scroll } from "../shared/Scroll.js";
+import type { BaseProps, Scrollbar, Title } from "../Props.js";
 
 export class Draw {
     /**
@@ -98,6 +96,8 @@ class DrawBox extends DrawContract<BoxLike> {
         if (scrollbar) {
             this.renderScrollbar(elem, canvas);
         }
+
+        this.renderTitles(elem, canvas);
     }
 
     private fillBg(canvas: Canvas, color?: Color) {
@@ -293,6 +293,56 @@ class DrawBox extends DrawContract<BoxLike> {
         }
 
         return move;
+    }
+
+    private static TitleProps: (keyof BaseProps)[] = [
+        "titleTopLeft",
+        "titleTopCenter",
+        "titleTopRight",
+        "titleBottomLeft",
+        "titleBottomCenter",
+        "titleBottomRight",
+    ];
+
+    private renderTitles(elem: BoxLike, canvas: Canvas): void {
+        DrawBox.TitleProps.forEach((prop) => {
+            // just doing titleTopLeft for now
+            if (prop !== "titleTopLeft") return;
+
+            const title = elem.getBaseProp(prop) as Title;
+            if (!title) return;
+
+            const pen = canvas.getPen();
+            pen.move("r", 1);
+
+            if (title.style === "bracketed") {
+                pen.set("color", elem.shadowStyle.borderTopColor);
+                pen.draw("╬", "r", 1);
+            }
+            if (typeof title.style === "object") {
+                pen.set("color", title.style.leftColor);
+                for (let i = 0; i < title.style.left.length; ++i) {
+                    pen.draw(title.style.left[i], "r", 1);
+                }
+            }
+
+            for (let i = 0; i < title.textContent.length; ++i) {
+                pen.set("color", title.color);
+                pen.draw(title.textContent[i], "r", 1);
+            }
+
+            if (title.style === "bracketed") {
+                pen.set("color", elem.shadowStyle.borderTopColor);
+                pen.draw("╬", "r", 1);
+            }
+
+            if (typeof title.style === "object") {
+                pen.set("color", title.style.rightColor);
+                for (let i = 0; i < title.style.right.length; ++i) {
+                    pen.draw(title.style.right[i], "r", 1);
+                }
+            }
+        });
     }
 }
 
