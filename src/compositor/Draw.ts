@@ -183,7 +183,8 @@ class DrawBox extends DrawContract<BoxLike> {
         const drawTrack = (units: number) => {
             if (
                 // in padding zone - safe to draw
-                scrollbar.placement === "padding" ||
+                scrollbar.placement === "padding-start" ||
+                scrollbar.placement === "padding-end" ||
                 // trackChar or trackColor is intentional - overwriting the border is okay
                 scrollbar.trackChar !== " " ||
                 scrollbar.trackColor
@@ -241,28 +242,54 @@ class DrawBox extends DrawContract<BoxLike> {
         const unclipped = elem.unclippedRect;
 
         const move: Point = { x: 0, y: 0 };
+        // RIGHT
         if (side === "right") {
             move.x = unclipped.width - 1;
-            if (placement === "padding") {
+            if (placement === "padding-start") {
                 move.x -= elem.node.getComputedBorder(Yoga.EDGE_RIGHT);
+            } else if (placement === "padding-end") {
+                move.x -= elem.node.getComputedPadding(Yoga.EDGE_RIGHT);
             }
-            move.y += elem.node.getComputedBorder(Yoga.EDGE_TOP);
-        } else if (side === "left") {
-            move.y += elem.node.getComputedBorder(Yoga.EDGE_TOP);
-            if (placement === "padding") {
+            move.y +=
+                elem.node.getComputedBorder(Yoga.EDGE_TOP) +
+                elem.node.getComputedPadding(Yoga.EDGE_TOP);
+        }
+
+        // LEFT
+        else if (side === "left") {
+            if (placement === "padding-start") {
                 move.x += elem.node.getComputedBorder(Yoga.EDGE_LEFT);
+            } else if (placement === "padding-end") {
+                move.x += elem.node.getComputedPadding(Yoga.EDGE_LEFT);
             }
-        } else if (side === "top") {
-            move.x += elem.node.getComputedBorder(Yoga.EDGE_LEFT);
-            if (placement === "padding") {
+            move.y +=
+                elem.node.getComputedBorder(Yoga.EDGE_TOP) +
+                elem.node.getComputedPadding(Yoga.EDGE_TOP);
+        }
+
+        // RIGHT
+        else if (side === "top") {
+            if (placement === "padding-start") {
                 move.y += elem.node.getComputedBorder(Yoga.EDGE_TOP);
+            } else if (placement === "padding-end") {
+                move.y += elem.node.getComputedPadding(Yoga.EDGE_TOP);
             }
-        } else if (side === "bottom") {
+            move.x +=
+                elem.node.getComputedBorder(Yoga.EDGE_LEFT) +
+                elem.node.getComputedPadding(Yoga.EDGE_LEFT);
+        }
+
+        // BOTTOM
+        else if (side === "bottom") {
             move.y = unclipped.height - 1;
-            move.x += elem.node.getComputedBorder(Yoga.EDGE_LEFT);
-            if (placement === "padding") {
+            if (placement === "padding-start") {
                 move.y -= elem.node.getComputedBorder(Yoga.EDGE_BOTTOM);
+            } else if (placement === "padding-end") {
+                move.y -= elem.node.getComputedPadding(Yoga.EDGE_BOTTOM);
             }
+            move.x +=
+                elem.node.getComputedBorder(Yoga.EDGE_LEFT) +
+                elem.node.getComputedPadding(Yoga.EDGE_LEFT);
         }
 
         return move;

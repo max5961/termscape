@@ -132,7 +132,7 @@ export abstract class DomElement<
     private initializeScrollbar(scrollbar: Scrollbar) {
         scrollbar.side ??= "right";
         scrollbar.mode ??= "always";
-        scrollbar.placement ??= "padding";
+        scrollbar.placement ??= "padding-start";
         scrollbar.barChar = scrollbar.barChar ? scrollbar.barChar[0] : " ";
         scrollbar.trackChar = scrollbar.trackChar ? scrollbar.trackChar[0] : " ";
 

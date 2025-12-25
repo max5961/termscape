@@ -11,7 +11,7 @@ export type Scrollbar = {
     /** TODO */
     mode?: "auto" | "always" | "hidden";
     side?: "right" | "left" | "top" | "bottom";
-    placement?: "padding" | "border";
+    placement?: "padding-start" | "padding-end" | "border";
     barChar?: string;
     barColor?: Color;
     trackChar?: string;
