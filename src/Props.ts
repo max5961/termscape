@@ -16,8 +16,8 @@ export type BaseProps = {
 export type Scrollbar = {
     /** TODO */
     mode?: "auto" | "always" | "hidden";
-    side?: "right" | "left" | "top" | "bottom";
-    placement?: "padding-start" | "padding-end" | "border";
+    edge?: "right" | "left" | "top" | "bottom";
+    placement?: "border" | "padding-inner" | "padding-outer";
     barChar?: string;
     barColor?: Color;
     trackChar?: string;

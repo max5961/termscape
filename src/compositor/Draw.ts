@@ -155,17 +155,21 @@ class DrawBox extends DrawContract<BoxLike> {
         // color to undefined isn't an issue if there isn't a color set.
         const scrollbar = elem.getBaseProp("scrollbar") as Required<Scrollbar>;
 
-        const units = this.getScrollBarUnits(elem, scrollbar.side);
-        const move = this.getStartScrollbarDisplacement(
-            elem,
-            scrollbar.side,
-            scrollbar.placement,
-        );
+        const units = this.getScrollBarUnits(elem, scrollbar.edge);
         const direction =
-            scrollbar.side === "right" || scrollbar.side === "left" ? "d" : "r";
+            scrollbar.edge === "right" || scrollbar.edge === "left" ? "d" : "r";
 
         const pen = canvas.getPen();
-        pen.moveTo(move.x, move.y);
+        this.getScrollbarPenStart(pen, scrollbar.edge, scrollbar.placement);
+
+        // pen.moveXToEdge("right", "border", "inner");
+        // pen.moveYToEdge("top", "content", "inner");
+
+        // pen.moveTo(move.x, move.y);
+        // pen.moveXToEdge("left", "padding", "inside");
+        // pen.moveYToEdge("top", "content", "inside");
+        // pen.moveXToEdge("right", "padding", "inside");
+        // pen.moveYToEdge("top", "content", "inside");
 
         const setTrackPen = () => {
             pen.set("color", scrollbar.trackColor);
@@ -183,8 +187,8 @@ class DrawBox extends DrawContract<BoxLike> {
         const drawTrack = (units: number) => {
             if (
                 // in padding zone - safe to draw
-                scrollbar.placement === "padding-start" ||
-                scrollbar.placement === "padding-end" ||
+                scrollbar.placement === "padding-inner" ||
+                scrollbar.placement === "padding-outer" ||
                 // trackChar or trackColor is intentional - overwriting the border is okay
                 scrollbar.trackChar !== " " ||
                 scrollbar.trackColor
@@ -206,7 +210,7 @@ class DrawBox extends DrawContract<BoxLike> {
         drawTrack(units.endUnits);
     }
 
-    private getScrollBarUnits(elem: BoxLike, side: Scrollbar["side"]) {
+    private getScrollBarUnits(elem: BoxLike, side: Scrollbar["edge"]) {
         let contentUnits: number;
         let unclippedContentUnits: number;
         let pctScrolled: number;
@@ -234,65 +238,31 @@ class DrawBox extends DrawContract<BoxLike> {
         };
     }
 
-    private getStartScrollbarDisplacement(
-        elem: BoxLike,
-        side: Scrollbar["side"],
+    private getScrollbarPenStart(
+        pen: Pen,
+        edge: Exclude<Scrollbar["edge"], undefined>,
         placement: Scrollbar["placement"],
     ) {
-        const unclipped = elem.unclippedRect;
-
-        const move: Point = { x: 0, y: 0 };
         // RIGHT
-        if (side === "right") {
-            move.x = unclipped.width - 1;
-            if (placement === "padding-start") {
-                move.x -= elem.node.getComputedBorder(Yoga.EDGE_RIGHT);
-            } else if (placement === "padding-end") {
-                move.x -= elem.node.getComputedPadding(Yoga.EDGE_RIGHT);
-            }
-            move.y +=
-                elem.node.getComputedBorder(Yoga.EDGE_TOP) +
-                elem.node.getComputedPadding(Yoga.EDGE_TOP);
+        if (edge === "left" || edge === "right") {
+            pen.moveYToEdge("top", "content", "inner");
+            pen.moveXToEdge(
+                edge,
+                placement === "border" ? "border" : "padding",
+                placement === "border" || placement === "padding-inner"
+                    ? "inner"
+                    : "outer",
+            );
+        } else {
+            pen.moveXToEdge("left", "content", "inner");
+            pen.moveYToEdge(
+                edge,
+                placement === "border" ? "border" : "content",
+                placement === "border" || placement === "padding-inner"
+                    ? "inner"
+                    : "outer",
+            );
         }
-
-        // LEFT
-        else if (side === "left") {
-            if (placement === "padding-start") {
-                move.x += elem.node.getComputedBorder(Yoga.EDGE_LEFT);
-            } else if (placement === "padding-end") {
-                move.x += elem.node.getComputedPadding(Yoga.EDGE_LEFT);
-            }
-            move.y +=
-                elem.node.getComputedBorder(Yoga.EDGE_TOP) +
-                elem.node.getComputedPadding(Yoga.EDGE_TOP);
-        }
-
-        // RIGHT
-        else if (side === "top") {
-            if (placement === "padding-start") {
-                move.y += elem.node.getComputedBorder(Yoga.EDGE_TOP);
-            } else if (placement === "padding-end") {
-                move.y += elem.node.getComputedPadding(Yoga.EDGE_TOP);
-            }
-            move.x +=
-                elem.node.getComputedBorder(Yoga.EDGE_LEFT) +
-                elem.node.getComputedPadding(Yoga.EDGE_LEFT);
-        }
-
-        // BOTTOM
-        else if (side === "bottom") {
-            move.y = unclipped.height - 1;
-            if (placement === "padding-start") {
-                move.y -= elem.node.getComputedBorder(Yoga.EDGE_BOTTOM);
-            } else if (placement === "padding-end") {
-                move.y -= elem.node.getComputedPadding(Yoga.EDGE_BOTTOM);
-            }
-            move.x +=
-                elem.node.getComputedBorder(Yoga.EDGE_LEFT) +
-                elem.node.getComputedPadding(Yoga.EDGE_LEFT);
-        }
-
-        return move;
     }
 
     private static TitleProps: (keyof BaseProps)[] = [

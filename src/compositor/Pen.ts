@@ -1,4 +1,5 @@
-import type { Point } from "../Types.js";
+import Yoga from "yoga-wasm-web/auto";
+import type { DomElement, Point } from "../Types.js";
 import type { TextStyle } from "../style/Style.js";
 import type { Canvas, Grid } from "./Canvas.js";
 import { Glyph } from "./Glyph.js";
@@ -39,11 +40,13 @@ export class Pen {
         maxY: number;
     };
     private readonly glyph: Glyph;
+    private readonly elem: DomElement;
 
     constructor(deps: PenDeps) {
         this.grid = deps.grid;
         this.pos = { ...deps.canvas.corner };
         this.corner = { ...deps.canvas.corner };
+        this.elem = deps.canvas.el;
 
         this.limits = {
             minX: deps.canvas.limits.minX,
@@ -68,11 +71,164 @@ export class Pen {
     }
 
     /**
-     * Moves to a position relative to the corner of the canvas.
+     * Moves to a position **relative** to the corner of the canvas.
      * */
     public moveTo = (x: number, y: number): Pen => {
         this.pos.x = this.corner.x + x;
         this.pos.y = this.corner.y + y;
+        return this;
+    };
+
+    /**
+     * @internal
+     *
+     * Moves to a position relative to the **root** canvas.
+     * */
+    public moveToGlobal = (x: number, y: number): Pen => {
+        this.pos.x = x;
+        this.pos.y = y;
+        return this;
+    };
+
+    public moveXToEdge = (
+        edge: "left" | "right",
+        /**
+         * Same as CSS box model
+         * */
+        box: "border" | "padding" | "content",
+        /**
+         * For example, if padding is 5:
+         * - 'inside' positions at the inner edge of the selected box
+         * - 'outside' positions at the outer edge of the selected box
+         * */
+        side: "inner" | "outer",
+    ): Pen => {
+        const border = {
+            left: this.elem.node.getComputedBorder(Yoga.EDGE_LEFT),
+            right: this.elem.node.getComputedBorder(Yoga.EDGE_RIGHT),
+        };
+
+        const padding = {
+            left: this.elem.node.getComputedPadding(Yoga.EDGE_LEFT),
+            right: this.elem.node.getComputedPadding(Yoga.EDGE_RIGHT),
+        };
+
+        const rect = this.elem.unclippedRect;
+        const content = this.elem.unclippedContentRect;
+
+        let x = 0;
+
+        // LEFT
+        if (edge === "left") {
+            if (box === "border") {
+                if (side === "outer") {
+                    x = rect.corner.x;
+                } else {
+                    x += rect.corner.x + Math.max(1, border.left) - 1;
+                }
+            } else if (box === "padding") {
+                if (side === "outer") {
+                    x = rect.corner.x + border.left;
+                } else {
+                    x = rect.corner.x + border.left + Math.max(1, padding.left) - 1;
+                }
+            } else if (box === "content") {
+                x = content.corner.x;
+            }
+        }
+
+        // RIGHT
+        else if (edge === "right") {
+            if (box === "border") {
+                if (side === "outer") {
+                    x = rect.corner.x + rect.width - 1;
+                } else {
+                    x = rect.corner.x + rect.width - 1 - Math.max(1, border.right) + 1;
+                }
+            } else if (box === "padding") {
+                if (side === "outer") {
+                    x = rect.corner.x + rect.width - border.right - 1;
+                } else {
+                    // prettier-ignore
+                    x = rect.corner.x + rect.width - border.right - Math.max(1, padding.right);
+                }
+            } else if (box === "content") {
+                x = content.corner.x + content.width;
+            }
+        }
+
+        this.pos.x = x;
+        return this;
+    };
+
+    public moveYToEdge = (
+        edge: "top" | "bottom",
+        /**
+         * Same as CSS box model
+         * */
+        box: "border" | "padding" | "content",
+        /**
+         * For example, if padding is 5:
+         * - 'inside' positions at the inner edge of the selected box
+         * - 'outside' positions at the outer edge of the selected box
+         * */
+        side: "inner" | "outer",
+    ): Pen => {
+        const border = {
+            top: this.elem.node.getComputedBorder(Yoga.EDGE_TOP),
+            bottom: this.elem.node.getComputedBorder(Yoga.EDGE_BOTTOM),
+        };
+
+        const padding = {
+            top: this.elem.node.getComputedPadding(Yoga.EDGE_TOP),
+            bottom: this.elem.node.getComputedPadding(Yoga.EDGE_BOTTOM),
+        };
+
+        const rect = this.elem.unclippedRect;
+        const content = this.elem.unclippedContentRect;
+
+        let y = 0;
+
+        // TOP
+        if (edge === "top") {
+            if (box === "border") {
+                if (side === "outer") {
+                    y = rect.corner.y;
+                } else {
+                    y = rect.corner.y + Math.max(1, border.top) - 1;
+                }
+            } else if (box === "padding") {
+                if (side === "outer") {
+                    y = rect.corner.y + border.top;
+                } else {
+                    y = rect.corner.y + border.top + Math.max(1, padding.top) - 1;
+                }
+            } else if (box === "content") {
+                y = content.corner.y;
+            }
+        }
+
+        // BOTTOM
+        else if (edge === "bottom") {
+            if (box === "border") {
+                if (side === "outer") {
+                    y = rect.corner.x + rect.height - 1;
+                } else {
+                    y = rect.corner.x + rect.height - 1 - Math.max(1, border.bottom) + 1;
+                }
+            } else if (box === "padding") {
+                if (side === "outer") {
+                    y = rect.corner.y + rect.height - border.bottom;
+                } else {
+                    // prettier-ignore
+                    y = rect.corner.y + rect.height - border.bottom - Math.max(1, padding.bottom) + 1;
+                }
+            } else if (box === "content") {
+                y = content.corner.y + content.height;
+            }
+        }
+
+        this.pos.y = y;
         return this;
     };
 

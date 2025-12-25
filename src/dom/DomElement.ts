@@ -132,22 +132,22 @@ export abstract class DomElement<
     }
 
     private initializeScrollbar(scrollbar: Scrollbar) {
-        scrollbar.side ??= "right";
+        scrollbar.edge ??= "right";
         scrollbar.mode ??= "always";
-        scrollbar.placement ??= "padding-start";
+        scrollbar.placement ??= "padding-outer";
         scrollbar.barChar = scrollbar.barChar ? scrollbar.barChar[0] : " ";
         scrollbar.trackChar = scrollbar.trackChar ? scrollbar.trackChar[0] : " ";
 
         if (scrollbar.placement === "border") {
-            this.style.scrollbarBorderTop = scrollbar.side === "top" ? 1 : 0;
-            this.style.scrollbarBorderBottom = scrollbar.side === "bottom" ? 1 : 0;
-            this.style.scrollbarBorderLeft = scrollbar.side === "left" ? 1 : 0;
-            this.style.scrollbarBorderRight = scrollbar.side === "right" ? 1 : 0;
+            this.style.scrollbarBorderTop = scrollbar.edge === "top" ? 1 : 0;
+            this.style.scrollbarBorderBottom = scrollbar.edge === "bottom" ? 1 : 0;
+            this.style.scrollbarBorderLeft = scrollbar.edge === "left" ? 1 : 0;
+            this.style.scrollbarBorderRight = scrollbar.edge === "right" ? 1 : 0;
         } else {
-            this.style.scrollbarPaddingTop = scrollbar.side === "top" ? 1 : 0;
-            this.style.scrollbarPaddingBottom = scrollbar.side === "bottom" ? 1 : 0;
-            this.style.scrollbarPaddingLeft = scrollbar.side === "left" ? 1 : 0;
-            this.style.scrollbarPaddingRight = scrollbar.side === "right" ? 1 : 0;
+            this.style.scrollbarPaddingTop = scrollbar.edge === "top" ? 1 : 0;
+            this.style.scrollbarPaddingBottom = scrollbar.edge === "bottom" ? 1 : 0;
+            this.style.scrollbarPaddingLeft = scrollbar.edge === "left" ? 1 : 0;
+            this.style.scrollbarPaddingRight = scrollbar.edge === "right" ? 1 : 0;
         }
     }
 
