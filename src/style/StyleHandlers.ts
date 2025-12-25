@@ -157,11 +157,6 @@ export const AggregateHandlers: {
 // APPLY YOGA STYLES
 // =============================================================================
 
-/**
- * Future considerations - `target` param exists so that features like scrollbars
- * are possible.  A scrollbar should be increment the border and in order to do
- * that the border must be set with the context of the scrollbar in mind.
- */
 export const YogaHandlers: {
     [P in keyof BaseShadowStyle]: (
         next: BaseShadowStyle[P],
@@ -218,72 +213,108 @@ export const YogaHandlers: {
         node.setMargin(Yoga.EDGE_LEFT, next ?? 0);
     },
     paddingTop(next, node, target) {
-        const combined = (next ?? 0) + (target.scrollbarPaddingTop ?? 0);
-        node.setPadding(Yoga.EDGE_TOP, combined);
+        node.setPadding(
+            Yoga.EDGE_TOP,
+            Math.max(next ?? 0, target.scrollbarPaddingTop ?? 0),
+        );
     },
     paddingBottom(next, node, target) {
-        const combined = (next ?? 0) + (target.scrollbarPaddingBottom ?? 0);
-        node.setPadding(Yoga.EDGE_BOTTOM, combined);
+        node.setPadding(
+            Yoga.EDGE_BOTTOM,
+            Math.max(next ?? 0, target.scrollbarPaddingBottom ?? 0),
+        );
     },
     paddingLeft(next, node, target) {
-        const combined = (next ?? 0) + (target.scrollbarPaddingLeft ?? 0);
-        node.setPadding(Yoga.EDGE_LEFT, combined);
+        node.setPadding(
+            Yoga.EDGE_LEFT,
+            Math.max(next ?? 0, target.scrollbarPaddingLeft ?? 0),
+        );
     },
     paddingRight(next, node, target) {
-        // const combined = (next ?? 0) + (target.scrollbarPaddingRight ?? 0);
-        next ??= 0;
-        const combined = next + next ? 0 : target.scrollbarPaddingRight ?? 0;
-        node.setPadding(Yoga.EDGE_RIGHT, combined);
+        node.setPadding(
+            Yoga.EDGE_RIGHT,
+            Math.max(next ?? 0, target.scrollbarPaddingRight ?? 0),
+        );
     },
     scrollbarPaddingTop(next, node, target) {
-        const combined = (next ?? 0) + (target.paddingTop ?? 0);
-        node.setPadding(Yoga.EDGE_TOP, combined);
+        // prettier-ignore
+        node.setPadding(
+            Yoga.EDGE_TOP,
+            Math.max(next ?? 0, target.paddingTop ?? 0),
+        );
     },
     scrollbarPaddingBottom(next, node, target) {
-        const combined = (next ?? 0) + (target.paddingBottom ?? 0);
-        node.setPadding(Yoga.EDGE_BOTTOM, combined);
+        // prettier-ignore
+        node.setPadding(
+            Yoga.EDGE_BOTTOM,
+            Math.max(next ?? 0, target.paddingBottom ?? 0),
+        );
     },
     scrollbarPaddingLeft(next, node, target) {
-        const combined = (next ?? 0) + (target.paddingLeft ?? 0);
-        node.setPadding(Yoga.EDGE_LEFT, combined);
+        // prettier-ignore
+        node.setPadding(
+            Yoga.EDGE_LEFT,
+            Math.max(next ?? 0, target.paddingLeft ?? 0),
+        );
     },
     scrollbarPaddingRight(next, node, target) {
-        const combined = (next ?? 0) + (target.paddingRight ?? 0);
-        next ??= 0;
-        next = target.paddingRight ? target.paddingRight : combined;
-        node.setPadding(Yoga.EDGE_RIGHT, combined);
+        // prettier-ignore
+        node.setPadding(
+            Yoga.EDGE_RIGHT,
+            Math.max(next ?? 0, target.paddingRight ?? 0),
+        );
     },
     borderTop(next, node, target) {
-        const combined = Math.max(next ? 1 : 0, target.scrollbarBorderTop ?? 0);
-        node.setBorder(Yoga.EDGE_TOP, combined);
+        node.setBorder(
+            Yoga.EDGE_TOP,
+            Math.max(next ? 1 : 0, target.scrollbarBorderTop ?? 0),
+        );
     },
     borderBottom(next, node, target) {
-        const combined = Math.max(next ? 1 : 0, target.scrollbarBorderBottom ?? 0);
-        node.setBorder(Yoga.EDGE_BOTTOM, combined);
+        node.setBorder(
+            Yoga.EDGE_BOTTOM,
+            Math.max(next ? 1 : 0, target.scrollbarBorderBottom ?? 0),
+        );
     },
     borderLeft(next, node, target) {
-        const combined = Math.max(next ? 1 : 0, target.scrollbarBorderLeft ?? 0);
-        node.setBorder(Yoga.EDGE_LEFT, combined);
+        node.setBorder(
+            Yoga.EDGE_LEFT,
+            Math.max(next ? 1 : 0, target.scrollbarBorderLeft ?? 0),
+        );
     },
     borderRight(next, node, target) {
-        const combined = Math.max(next ? 1 : 0, target.scrollbarBorderRight ?? 0);
-        node.setBorder(Yoga.EDGE_RIGHT, combined);
-    },
-    scrollbarBorderRight(next, node, target) {
-        const combined = Math.max(next ?? 0, target.borderRight ? 1 : 0);
-        node.setBorder(Yoga.EDGE_RIGHT, combined);
-    },
-    scrollbarBorderLeft(next, node, target) {
-        const combined = Math.max(next ?? 0, target.borderLeft ? 1 : 0);
-        node.setBorder(Yoga.EDGE_LEFT, combined);
+        node.setBorder(
+            Yoga.EDGE_RIGHT,
+            Math.max(next ? 1 : 0, target.scrollbarBorderRight ?? 0),
+        );
     },
     scrollbarBorderTop(next, node, target) {
-        const combined = Math.max(next ?? 0, target.borderTop ? 1 : 0);
-        node.setBorder(Yoga.EDGE_TOP, combined);
+        // prettier-ignore
+        node.setBorder(
+            Yoga.EDGE_TOP,
+            Math.max(next ?? 0, target.borderTop ? 1 : 0),
+        );
     },
     scrollbarBorderBottom(next, node, target) {
-        const combined = Math.max(next ?? 0, target.borderBottom ? 1 : 0);
-        node.setBorder(Yoga.EDGE_BOTTOM, combined);
+        // prettier-ignore
+        node.setBorder(
+            Yoga.EDGE_BOTTOM,
+            Math.max(next ?? 0, target.borderBottom ? 1 : 0),
+        );
+    },
+    scrollbarBorderRight(next, node, target) {
+        // prettier-ignore
+        node.setBorder(
+            Yoga.EDGE_RIGHT,
+            Math.max(next ?? 0, target.borderRight ? 1 : 0),
+        );
+    },
+    scrollbarBorderLeft(next, node, target) {
+        // prettier-ignore
+        node.setBorder(
+            Yoga.EDGE_LEFT,
+            Math.max(next ?? 0, target.borderLeft ? 1 : 0),
+        );
     },
     columnGap(next, node) {
         node.setGap(Yoga.GUTTER_COLUMN, next ?? 0);

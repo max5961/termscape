@@ -1,5 +1,4 @@
-import Yoga from "yoga-wasm-web/auto";
-import type { Color, DomElement, Point } from "../Types.js";
+import type { Color, DomElement } from "../Types.js";
 import type { BaseShadowStyle } from "../style/Style.js";
 import type { BoxLike } from "./types.js";
 import { Canvas } from "./Canvas.js";
