@@ -18,8 +18,7 @@ import { parseDimensions } from "./util/parseDimensions.js";
  *          `target[prop]` to avoid getting caught in the set trap.
  * 2) **AggregateHandlers**
  *        - Handles styles which by themselves provide no usable data to the
- *          renderer.  For example, `margin` can be thought of as a shorthand
- *          for setting `marginTop,Bottom,Right,Left`.  By itself, the renderer
+ *          renderer.  For example, `margin` can be thought of as a shorthand for setting `marginTop,Bottom,Right,Left`.  By itself, the renderer
  *          and yoga-layout cannot safely go by just the `margin` value.  It
  *          needs to know the context of the other margin settings.  Styles from
  *          aggregates have consumers that can only be set if they are
@@ -174,30 +173,6 @@ export const YogaHandlers: {
     display(next, node) {
         node.setDisplay(next === "flex" ? Yoga.DISPLAY_FLEX : Yoga.DISPLAY_NONE);
     },
-    marginTop(next, node) {
-        node.setMargin(Yoga.EDGE_TOP, next ?? 0);
-    },
-    marginRight(next, node) {
-        node.setMargin(Yoga.EDGE_RIGHT, next ?? 0);
-    },
-    marginBottom(next, node) {
-        node.setMargin(Yoga.EDGE_BOTTOM, next ?? 0);
-    },
-    marginLeft(next, node) {
-        node.setMargin(Yoga.EDGE_LEFT, next ?? 0);
-    },
-    paddingTop(next, node) {
-        node.setPadding(Yoga.EDGE_TOP, next ?? 0);
-    },
-    paddingBottom(next, node) {
-        node.setPadding(Yoga.EDGE_BOTTOM, next ?? 0);
-    },
-    paddingLeft(next, node) {
-        node.setPadding(Yoga.EDGE_LEFT, next ?? 0);
-    },
-    paddingRight(next, node) {
-        node.setPadding(Yoga.EDGE_RIGHT, next ?? 0);
-    },
     height(next, node) {
         if (typeof next === "number") {
             node.setHeight(next);
@@ -230,17 +205,81 @@ export const YogaHandlers: {
             node.setMinHeight(next ?? 0);
         }
     },
-    borderTop(next, node) {
-        node.setBorder(Yoga.EDGE_TOP, next ? 1 : 0);
+    marginTop(next, node) {
+        node.setMargin(Yoga.EDGE_TOP, next ?? 0);
     },
-    borderBottom(next, node) {
-        node.setBorder(Yoga.EDGE_BOTTOM, next ? 1 : 0);
+    marginRight(next, node) {
+        node.setMargin(Yoga.EDGE_RIGHT, next ?? 0);
     },
-    borderLeft(next, node) {
-        node.setBorder(Yoga.EDGE_LEFT, next ? 1 : 0);
+    marginBottom(next, node) {
+        node.setMargin(Yoga.EDGE_BOTTOM, next ?? 0);
     },
-    borderRight(next, node) {
-        node.setBorder(Yoga.EDGE_RIGHT, next ? 1 : 0);
+    marginLeft(next, node) {
+        node.setMargin(Yoga.EDGE_LEFT, next ?? 0);
+    },
+    paddingTop(next, node, target) {
+        const combined = (next ?? 0) + (target.scrollbarPaddingTop ?? 0);
+        node.setPadding(Yoga.EDGE_TOP, combined);
+    },
+    paddingBottom(next, node, target) {
+        const combined = (next ?? 0) + (target.scrollbarPaddingBottom ?? 0);
+        node.setPadding(Yoga.EDGE_BOTTOM, combined);
+    },
+    paddingLeft(next, node, target) {
+        const combined = (next ?? 0) + (target.scrollbarPaddingLeft ?? 0);
+        node.setPadding(Yoga.EDGE_LEFT, combined);
+    },
+    paddingRight(next, node, target) {
+        const combined = (next ?? 0) + (target.scrollbarPaddingRight ?? 0);
+        node.setPadding(Yoga.EDGE_RIGHT, combined);
+    },
+    scrollbarPaddingTop(next, node, target) {
+        const combined = (next ?? 0) + (target.paddingTop ?? 0);
+        node.setPadding(Yoga.EDGE_TOP, combined);
+    },
+    scrollbarPaddingBottom(next, node, target) {
+        const combined = (next ?? 0) + (target.paddingBottom ?? 0);
+        node.setPadding(Yoga.EDGE_BOTTOM, combined);
+    },
+    scrollbarPaddingLeft(next, node, target) {
+        const combined = (next ?? 0) + (target.paddingLeft ?? 0);
+        node.setPadding(Yoga.EDGE_LEFT, combined);
+    },
+    scrollbarPaddingRight(next, node, target) {
+        const combined = (next ?? 0) + (target.paddingRight ?? 0);
+        node.setPadding(Yoga.EDGE_RIGHT, combined);
+    },
+    borderTop(next, node, target) {
+        const combined = Math.max(next ? 1 : 0, target.scrollbarBorderTop ?? 0);
+        node.setBorder(Yoga.EDGE_TOP, combined);
+    },
+    borderBottom(next, node, target) {
+        const combined = Math.max(next ? 1 : 0, target.scrollbarBorderBottom ?? 0);
+        node.setBorder(Yoga.EDGE_BOTTOM, combined);
+    },
+    borderLeft(next, node, target) {
+        const combined = Math.max(next ? 1 : 0, target.scrollbarBorderLeft ?? 0);
+        node.setBorder(Yoga.EDGE_LEFT, combined);
+    },
+    borderRight(next, node, target) {
+        const combined = Math.max(next ? 1 : 0, target.scrollbarBorderRight ?? 0);
+        node.setBorder(Yoga.EDGE_RIGHT, combined);
+    },
+    scrollbarBorderRight(next, node, target) {
+        const combined = Math.max(next ?? 0, target.borderRight ? 1 : 0);
+        node.setBorder(Yoga.EDGE_RIGHT, combined);
+    },
+    scrollbarBorderLeft(next, node, target) {
+        const combined = Math.max(next ?? 0, target.borderLeft ? 1 : 0);
+        node.setBorder(Yoga.EDGE_LEFT, combined);
+    },
+    scrollbarBorderTop(next, node, target) {
+        const combined = Math.max(next ?? 0, target.borderTop ? 1 : 0);
+        node.setBorder(Yoga.EDGE_TOP, combined);
+    },
+    scrollbarBorderBottom(next, node, target) {
+        const combined = Math.max(next ?? 0, target.borderBottom ? 1 : 0);
+        node.setBorder(Yoga.EDGE_BOTTOM, combined);
     },
     columnGap(next, node) {
         node.setGap(Yoga.GUTTER_COLUMN, next ?? 0);

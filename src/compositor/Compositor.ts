@@ -3,13 +3,7 @@ import { Canvas, type SubCanvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
-import { BoxElement } from "../dom/BoxElement.js";
-import { TextElement } from "../dom/TextElement.js";
 import { Root } from "../dom/Root.js";
-import { BookElement } from "../dom/BookElement.js";
-import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
-import { ListElement } from "../dom/ListElement.js";
-import { CanvasElement } from "../dom/CanvasElement.js";
 import type { FocusManagerBaseProps } from "../Props.js";
 import type { BaseStyle } from "../style/Style.js";
 
@@ -131,16 +125,6 @@ export class Compositor {
 
     private postLayoutDefer(cb: () => unknown): void {
         this.postLayout.push(cb);
-    }
-
-    private isBoxLike(elem: DomElement) {
-        return (
-            elem instanceof BoxElement ||
-            elem instanceof BookElement ||
-            elem instanceof ListElement ||
-            elem instanceof LayoutElement ||
-            elem instanceof LayoutNode
-        );
     }
 
     public getHeight(): number {

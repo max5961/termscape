@@ -1,4 +1,5 @@
-import type { Color, DomElement } from "../Types.js";
+import Yoga from "yoga-wasm-web/auto";
+import type { Color, DomElement, Point } from "../Types.js";
 import type { BaseShadowStyle } from "../style/Style.js";
 import type { BoxLike } from "./types.js";
 import { Canvas } from "./Canvas.js";
@@ -12,6 +13,9 @@ import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { Pen } from "./Pen.js";
+import type { Scrollbar } from "../Props.js";
+import { logger } from "../shared/Logger.js";
+import type { Scroll } from "../shared/Scroll.js";
 
 export class Draw {
     /**
@@ -89,6 +93,11 @@ class DrawBox extends DrawContract<BoxLike> {
         if (style.borderStyle) {
             this.renderBorder(elem, style, canvas);
         }
+
+        const scrollbar = elem.getBaseProp("scrollbar");
+        if (scrollbar) {
+            this.renderScrollbar(elem, canvas);
+        }
     }
 
     private fillBg(canvas: Canvas, color?: Color) {
@@ -138,6 +147,94 @@ class DrawBox extends DrawContract<BoxLike> {
             .set("color", style.borderLeftColor)
             .set("dimColor", style.borderLeftDimColor)
             .draw(map.left, "u", height - 2)
+    }
+
+    private renderScrollbar(elem: BoxLike, canvas: Canvas) {
+        // type casting `Required`, but its possible that trackColor and barColor
+        // are undefined.  This doesn't matter though, since setting the Pen
+        // color to undefined isn't an issue if there isn't a color set.
+        const scrollbar = elem.getBaseProp("scrollbar") as Required<Scrollbar>;
+
+        const units = this.getScrollBarUnits(elem, scrollbar.side);
+        const move = this.getStartScrollbarDisplacement(elem, scrollbar.side);
+        const direction =
+            scrollbar.side === "right" || scrollbar.side === "left" ? "d" : "r";
+
+        const pen = canvas.getPen();
+        pen.moveTo(move.x, move.y);
+
+        const setTrackPen = () => {
+            pen.set("color", scrollbar.trackColor);
+            pen.set(
+                "imageNegative",
+                scrollbar.trackChar === " " && !!scrollbar.trackColor,
+            );
+        };
+
+        const setBarPen = () => {
+            pen.set("color", scrollbar.barColor);
+            pen.set("imageNegative", scrollbar.barChar === " ");
+        };
+
+        // track start
+        setTrackPen();
+        pen.draw(scrollbar.trackChar, direction, units.startUnits);
+        // bar
+        setBarPen();
+        pen.draw(scrollbar.barChar, direction, units.barUnits);
+        // track end
+        setTrackPen();
+        pen.draw(scrollbar.trackChar, direction, units.endUnits);
+    }
+
+    private getScrollBarUnits(elem: BoxLike, side: Scrollbar["side"]) {
+        let contentUnits: number;
+        let unclippedContentUnits: number;
+        let pctScrolled: number;
+        if (side === "left" || side === "right") {
+            contentUnits = elem.unclippedContentRect.height;
+            unclippedContentUnits = elem.contentRange.low - elem.contentRange.high;
+            pctScrolled = elem.getScrollData().y;
+        } else {
+            contentUnits = elem.unclippedContentRect.width;
+            unclippedContentUnits = elem.contentRange.right - elem.contentRange.left;
+            pctScrolled = elem.getScrollData().x;
+        }
+
+        const barPct = Math.min(1, contentUnits / unclippedContentUnits);
+        const barUnits = Math.max(1, Math.ceil(barPct * contentUnits));
+
+        const trackUnits = elem.unclippedContentRect.height - barUnits;
+        const trackStartUnits = Math.ceil((trackUnits * pctScrolled) / 100);
+        const trackEndUnits = Math.max(0, trackUnits - trackStartUnits);
+
+        return {
+            startUnits: trackStartUnits,
+            barUnits: barUnits,
+            endUnits: trackEndUnits,
+        };
+    }
+
+    private getStartScrollbarDisplacement(elem: BoxLike, side: Scrollbar["side"]) {
+        const unclipped = elem.unclippedRect;
+
+        const move: Point = { x: 0, y: 0 };
+        if (side === "right") {
+            // right corner
+            move.x = unclipped.width - 1;
+            move.x -= elem.node.getComputedBorder(Yoga.EDGE_RIGHT);
+            move.y += elem.node.getComputedBorder(Yoga.EDGE_TOP);
+        } else if (side === "left" || side === "top") {
+            // left corner
+            move.x += elem.node.getComputedBorder(Yoga.EDGE_LEFT);
+            move.y += elem.node.getComputedBorder(Yoga.EDGE_TOP);
+        } else if (side === "bottom") {
+            move.y = unclipped.height - 1;
+            move.x += elem.node.getComputedBorder(Yoga.EDGE_LEFT);
+            move.y -= elem.node.getComputedBorder(Yoga.EDGE_BOTTOM);
+        }
+
+        return move;
     }
 }
 

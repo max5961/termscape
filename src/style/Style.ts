@@ -10,6 +10,7 @@ export namespace YogaStyle {
         DimensionStyle &
         MarginStyle &
         PaddingStyle &
+        ScrollbarStyle & 
         FlexStyle &
         GapStyle;
 
@@ -38,6 +39,18 @@ export namespace YogaStyle {
         paddingBottom?: number;
         paddingLeft?: number;
         paddingRight?: number;
+    };
+
+    /** @internal */
+    export type ScrollbarStyle = {
+        scrollbarPaddingLeft?: number;
+        scrollbarPaddingRight?: number;
+        scrollbarPaddingTop?: number;
+        scrollbarPaddingBottom?: number;
+        scrollbarBorderLeft?: number;
+        scrollbarBorderRight?: number;
+        scrollbarBorderTop?: number;
+        scrollbarBorderBottom?: number;
     };
 
     export type FlexStyle = {

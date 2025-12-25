@@ -1,8 +1,20 @@
 import type { Pen } from "./compositor/Pen.js";
+import type { Color } from "./Types.js";
 
 export type BaseProps = {
     id?: string;
     className?: string;
+    scrollbar?: Scrollbar;
+};
+
+export type Scrollbar = {
+    mode?: "auto" | "always" | "hidden";
+    side?: "right" | "left" | "top" | "bottom";
+    placement?: "padding" | "border";
+    barChar?: string;
+    barColor?: Color;
+    trackChar?: string;
+    trackColor?: Color;
 };
 
 export type FocusManagerScrollProps = {
@@ -35,7 +47,7 @@ export type FocusManagerProps =
 
 export namespace Props {
     export type Box = BaseProps;
-    export type Text = BaseProps;
+    export type Text = Omit<BaseProps, "scrollbar">;
     export type Layout = BaseProps & FocusManagerBaseProps;
     export type LayoutNode = BaseProps;
     export type List = BaseProps & FocusManagerProps;

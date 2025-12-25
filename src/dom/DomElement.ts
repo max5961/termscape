@@ -12,13 +12,13 @@ import type {
     TagName,
 } from "../Types.js";
 import type { BaseStyle, BaseShadowStyle } from "../style/Style.js";
-import type { BaseProps, FocusManagerProps } from "../Props.js";
+import type { BaseProps, FocusManagerProps, Scrollbar } from "../Props.js";
 import type { Root } from "./Root.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
-import { Canvas } from "../compositor/Canvas.js";
+import { Canvas, type Rect } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
 import { throwError } from "../shared/ThrowError.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
@@ -122,7 +122,35 @@ export abstract class DomElement<
         key: T,
         value: Schema["Props"][T],
     ): void {
-        this.props.set(key as string, value);
+        if ((key as keyof BaseProps) === "scrollbar" && value) {
+            this.initializeScrollbar(value);
+        }
+
+        this.props.set(key as string, Object.freeze(value));
+    }
+
+    private initializeScrollbar(scrollbar: Scrollbar) {
+        scrollbar.side ??= "right";
+        scrollbar.mode ??= "always";
+        scrollbar.barChar = scrollbar.barChar ? scrollbar.barChar[0] : " ";
+        scrollbar.trackChar = scrollbar.trackChar ? scrollbar.trackChar[0] : " ";
+
+        if (scrollbar.placement === "border") {
+            this.style.scrollbarBorderTop = scrollbar.side === "top" ? 1 : 0;
+            this.style.scrollbarBorderBottom = scrollbar.side === "bottom" ? 1 : 0;
+            this.style.scrollbarBorderLeft = scrollbar.side === "left" ? 1 : 0;
+            this.style.scrollbarBorderRight = scrollbar.side === "right" ? 1 : 0;
+        } else {
+            this.style.scrollbarPaddingTop = scrollbar.side === "top" ? 1 : 0;
+            this.style.scrollbarPaddingBottom = scrollbar.side === "bottom" ? 1 : 0;
+            this.style.scrollbarPaddingLeft = scrollbar.side === "left" ? 1 : 0;
+            this.style.scrollbarPaddingRight = scrollbar.side === "right" ? 1 : 0;
+        }
+    }
+
+    /** @internal */
+    public getBaseProp<T extends keyof BaseProps>(key: T): BaseProps[T] | undefined {
+        return this.props.get(key) as BaseProps[T] | undefined;
     }
 
     public getProp<T extends keyof Schema["Props"]>(
@@ -390,20 +418,28 @@ export abstract class DomElement<
         return this.rect;
     }
 
-    public get unclippedRect() {
-        return this.canvas?.unclippedRect;
+    private getDefaultRect(): Rect {
+        return {
+            corner: { x: 0, y: 0 },
+            height: 0,
+            width: 0,
+        };
     }
 
-    public get unclippedContentRect() {
-        return this.canvas?.unclippedContentRect;
+    public get unclippedRect(): Rect {
+        return this.canvas?.unclippedRect ?? this.getDefaultRect();
     }
 
-    public get visibleRect() {
-        return this.canvas?.visibleRect;
+    public get unclippedContentRect(): Rect {
+        return this.canvas?.unclippedContentRect ?? this.getDefaultRect();
     }
 
-    public get visibleContentRect() {
-        return this.canvas?.visibleContentRect;
+    public get visibleRect(): Rect {
+        return this.canvas?.visibleRect ?? this.getDefaultRect();
+    }
+
+    public get visibleContentRect(): Rect {
+        return this.canvas?.visibleContentRect ?? this.getDefaultRect();
     }
 
     public containsPoint(x: number, y: number): boolean {

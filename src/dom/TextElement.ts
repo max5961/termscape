@@ -10,6 +10,7 @@ import type { TextStyle } from "../style/Style.js";
 import type { BaseProps } from "../Props.js";
 import { Render } from "./util/decorators.js";
 import type { TagNameEnum } from "../Constants.js";
+import { logger } from "../shared/Logger.js";
 
 export class TextElement extends DomElement<{
     Style: TextStyle;
