@@ -3,6 +3,7 @@ import type { DomElement, Point } from "../Types.js";
 import type { TextStyle } from "../style/Style.js";
 import type { Canvas, Grid } from "./Canvas.js";
 import { Glyph } from "./Glyph.js";
+import { ErrorMessages } from "../shared/ErrorMessages.js";
 
 type Direction = "u" | "d" | "l" | "r";
 
@@ -69,6 +70,21 @@ export class Pen {
             this.glyph.style[style] = config[style];
         }
     }
+
+    public getGlobalPos(): Point {
+        return { ...this.pos };
+    }
+
+    /**
+     * Moves to a position **relative** to the current position.
+     * */
+    public move = (dir: Direction, units: number): Pen => {
+        if (dir === "u") this.pos.y -= units;
+        if (dir === "d") this.pos.y += units;
+        if (dir === "l") this.pos.x -= units;
+        if (dir === "r") this.pos.x += units;
+        return this;
+    };
 
     /**
      * Moves to a position **relative** to the corner of the canvas.
@@ -232,16 +248,11 @@ export class Pen {
         return this;
     };
 
-    public move = (dir: Direction, units: number): Pen => {
-        if (dir === "u") this.pos.y -= units;
-        if (dir === "d") this.pos.y += units;
-        if (dir === "l") this.pos.x -= units;
-        if (dir === "r") this.pos.x += units;
-        return this;
-    };
-
     public draw = (char: string, dir: Direction, units: number): Pen => {
         if (char === "") return this;
+        if (char === undefined) {
+            this.elem.throwError(ErrorMessages.drawUndefinedError);
+        }
 
         const ansi = this.glyph.open();
 

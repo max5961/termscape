@@ -52,11 +52,12 @@ export abstract class DomElement<
     public styleHandler: StyleHandler<Schema["Style"]> | null;
     /** @internal */
     public postLayoutHooks: Set<() => unknown>;
+    /** @internal */
+    public props: Map<string, unknown>;
 
     protected readonly rootRef: { root: Root | null };
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
     protected requiresStdin: boolean;
-    protected props: Map<string, unknown>;
     protected removeKeyListeners: (() => void)[];
     protected childrenSet: Set<DomElement>;
     protected readonly metadata: ElementMetaData;
@@ -183,7 +184,8 @@ export abstract class DomElement<
     protected abstract get defaultProps(): Schema["Props"];
     protected abstract get defaultStyles(): Schema["Style"];
 
-    protected throwError(errorMsg: string) {
+    /** @internal */
+    public throwError(errorMsg: string) {
         return throwError(this.getRoot(), errorMsg);
     }
 

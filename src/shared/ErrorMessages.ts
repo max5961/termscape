@@ -15,4 +15,6 @@ scroll container would not be yield the intended result.
 `
             : ` Cannot perform a scroll operation on an element whose 'style.overflow' is not 
 set to 'scroll'.`,
+    drawUndefinedError:
+        "Pen.draw received undefined as the first argument: Must be a string type.",
 } as const;

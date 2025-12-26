@@ -4,7 +4,7 @@ import type { BoxLike } from "./types.js";
 import { Canvas } from "./Canvas.js";
 import { getAlignedRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
 import { TEXT_PADDING } from "../Symbols.js";
-import { Borders, createBox } from "../shared/Borders.js";
+import { Borders, createBox, TitleBorders } from "../shared/Borders.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { BookElement } from "../dom/BookElement.js";
 import { ListElement } from "../dom/ListElement.js";
@@ -12,7 +12,9 @@ import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { Pen } from "./Pen.js";
-import type { BaseProps, Scrollbar, Title } from "../Props.js";
+import type { BaseProps, Scrollbar, Title, TitleStyleConfig } from "../Props.js";
+import { objectKeys } from "../Util.js";
+import { logger } from "../shared/Logger.js";
 
 export class Draw {
     /**
@@ -91,8 +93,7 @@ class DrawBox extends DrawContract<BoxLike> {
             this.renderBorder(elem, style, canvas);
         }
 
-        const scrollbar = elem.getBaseProp("scrollbar");
-        if (scrollbar) {
+        if (elem.getBaseProp("scrollbar")) {
             this.renderScrollbar(elem, canvas);
         }
 
@@ -114,10 +115,7 @@ class DrawBox extends DrawContract<BoxLike> {
         const height = elem.node.getComputedHeight();
 
         const pen = canvas.getPen();
-
-        const map = Array.isArray(elem.style.borderStyle)
-            ? createBox(elem.style.borderStyle)
-            : Borders[elem.style.borderStyle!];
+        const map = this.getBorders(elem);
 
         // prettier-ignore
         pen
@@ -146,6 +144,12 @@ class DrawBox extends DrawContract<BoxLike> {
             .set("color", style.borderLeftColor)
             .set("dimColor", style.borderLeftDimColor)
             .draw(map.left, "u", height - 2)
+    }
+
+    private getBorders(elem: BoxLike): ReturnType<typeof createBox> {
+        return Array.isArray(elem.style.borderStyle)
+            ? createBox(elem.style.borderStyle)
+            : Borders[elem.style.borderStyle!];
     }
 
     private renderScrollbar(elem: BoxLike, canvas: Canvas) {
@@ -256,53 +260,107 @@ class DrawBox extends DrawContract<BoxLike> {
     }
 
     private static TitleProps: (keyof BaseProps)[] = [
-        "titleTopLeft",
-        "titleTopCenter",
         "titleTopRight",
-        "titleBottomLeft",
-        "titleBottomCenter",
         "titleBottomRight",
+        "titleTopCenter",
+        "titleBottomCenter",
+        "titleTopLeft",
+        "titleBottomLeft",
     ];
 
     private renderTitles(elem: BoxLike, canvas: Canvas): void {
-        DrawBox.TitleProps.forEach((prop) => {
-            // just doing titleTopLeft for now
-            if (prop !== "titleTopLeft") return;
+        const pen = canvas.getPen();
 
-            const title = elem.getBaseProp(prop) as Title;
+        DrawBox.TitleProps.forEach((prop) => {
+            const title = elem.getBaseProp(prop) as Title | undefined;
             if (!title) return;
 
-            const pen = canvas.getPen();
-            pen.move("r", 1);
-
-            if (title.style === "bracketed") {
-                pen.set("color", elem.shadowStyle.borderTopColor);
-                pen.draw("╬", "r", 1);
+            if (prop.includes("Top")) {
+                pen.moveYToEdge("top", "border", "inner");
+            } else {
+                pen.moveYToEdge("bottom", "border", "inner");
             }
-            if (typeof title.style === "object") {
-                pen.set("color", title.style.leftColor);
-                for (let i = 0; i < title.style.left.length; ++i) {
-                    pen.draw(title.style.left[i], "r", 1);
+
+            const config = this.getTitleStyleConfig(elem, title);
+            const textWidth =
+                config.left.length + config.right.length + title.textContent.length;
+            const contentRect = elem.unclippedContentRect;
+
+            const canDraw = () => {
+                return (
+                    pen.getGlobalPos().x < contentRect.corner.x + contentRect.width &&
+                    pen.getGlobalPos().x >= contentRect.corner.x
+                );
+            };
+
+            if (prop.includes("Left")) {
+                pen.moveXToEdge("left", "padding", "outer");
+            } else if (prop.includes("Center")) {
+                pen.moveXToEdge("left", "padding", "outer");
+                // prettier-ignore
+                pen.move("r", Math.floor(contentRect.width / 2 - textWidth / 2));
+            } else {
+                pen.moveXToEdge("right", "padding", "outer");
+                pen.move("l", textWidth);
+            }
+
+            // LEFT CHAR
+            pen.set("color", config.leftColor);
+            for (let i = 0; i < config.left.length; ++i) {
+                if (canDraw()) {
+                    pen.draw(config.left[i], "r", 1);
+                } else {
+                    pen.move("r", 1);
                 }
             }
 
+            // TEXT CONTENT
+            pen.set("color", title.color);
             for (let i = 0; i < title.textContent.length; ++i) {
-                pen.set("color", title.color);
-                pen.draw(title.textContent[i], "r", 1);
+                if (canDraw()) {
+                    pen.draw(title.textContent[i], "r", 1);
+                } else {
+                    pen.move("r", 1);
+                }
             }
 
-            if (title.style === "bracketed") {
-                pen.set("color", elem.shadowStyle.borderTopColor);
-                pen.draw("╬", "r", 1);
-            }
-
-            if (typeof title.style === "object") {
-                pen.set("color", title.style.rightColor);
-                for (let i = 0; i < title.style.right.length; ++i) {
-                    pen.draw(title.style.right[i], "r", 1);
+            // RIGHT CHAR
+            pen.set("color", config.rightColor);
+            for (let i = 0; i < config.right.length; ++i) {
+                if (canDraw()) {
+                    pen.draw(config.right[i], "r", 1);
+                } else {
+                    pen.move("r", 1);
                 }
             }
         });
+    }
+
+    private getTitleStyleConfig(elem: BoxLike, title: Title): TitleStyleConfig {
+        if (typeof title.style === "object") {
+            return {
+                ...title.style,
+                right: title.style.right ?? "",
+                left: title.style.left ?? "",
+            };
+        }
+        if (title.style === undefined) {
+            return { left: "", right: "" };
+        }
+
+        const borders = this.getBorders(elem);
+        const hashedConfig = TitleBorders[title.style][
+            borders.top as keyof (typeof TitleBorders)["capped"]
+        ] ?? { left: "", right: "" };
+
+        return {
+            left: hashedConfig.left ?? "",
+            right: hashedConfig.right ?? "",
+
+            // TODO - these need to be able to handle borderTop/borderBottom specific colors
+            leftColor: elem.shadowStyle.borderColor,
+            rightColor: elem.shadowStyle.borderColor,
+        };
     }
 }
 

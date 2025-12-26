@@ -78,3 +78,42 @@ export const Borders = {
         ["█", "▄", "█"],
     ]),
 } as const;
+
+export const TitleBorders = {
+    ["strikethrough"]: {
+        "─": { left: "", right: "" },
+        "━": { left: "", right: "" },
+        "═": { left: "", right: "" },
+        "▀": { left: "", right: "" },
+        "-": { left: "", right: "" },
+    },
+    ["capped"]: {
+        "─": { left: "┤", right: "├" },
+        "━": { left: "┫", right: "┣" },
+        "═": { left: "╣", right: "╠" },
+        "▀": { left: "", right: "" },
+        "-": { left: "|", right: "|" },
+    },
+    ["capped-reverse"]: {
+        "─": { left: "┼", right: "┼" },
+        "━": { left: "╋", right: "╋" },
+        "═": { left: "╬", right: "╬" },
+        "▀": { left: "", right: "" },
+        "-": { left: "+", right: "+" },
+    },
+    ["bracket-top"]: {
+        "─": { left: "┘", right: "└" },
+        "━": { left: "┛", right: "┗" },
+        "═": { left: "╝", right: "╚" },
+        "▀": { left: "█", right: "█" },
+        "-": { left: "]", right: "[" },
+    },
+
+    ["bracket-bottom"]: {
+        "─": { left: "┐", right: "┌" },
+        "━": { left: "┓", right: "┏" },
+        "═": { left: "╗", right: "╔" },
+        "▀": { left: "", right: "" },
+        "-": { left: "]", right: "[" },
+    },
+};

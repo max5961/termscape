@@ -1,4 +1,5 @@
 import type { Pen } from "./compositor/Pen.js";
+import type { TitleBorders } from "./shared/Borders.js";
 import type { Color } from "./Types.js";
 
 export type BaseProps = {
@@ -27,12 +28,7 @@ export type Scrollbar = {
 export type Title = {
     textContent: string;
     color?: Color;
-    style?:
-        | TitleStyleConfig
-        | "strikethrough"
-        | "capped"
-        | "capped-reverse"
-        | "bracketed";
+    style?: TitleStyleConfig | keyof typeof TitleBorders;
 };
 
 export type TitleStyleConfig = {
