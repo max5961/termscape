@@ -1,11 +1,14 @@
 import { Canvas } from "../compositor/Canvas.js";
+import type { Root } from "../dom/Root.js";
 import { Cursor } from "./Cursor.js";
 
 export abstract class Writer {
     protected cursor: Cursor;
+    protected root: Root;
 
-    constructor(cursor: Cursor) {
+    constructor(cursor: Cursor, root: Root) {
         this.cursor = cursor;
+        this.root = root;
     }
 
     /**

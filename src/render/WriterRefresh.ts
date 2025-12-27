@@ -1,12 +1,13 @@
 import { Canvas } from "../compositor/Canvas.js";
+import type { Root } from "../dom/Root.js";
 import { Cursor } from "./Cursor.js";
 import { Writer } from "./Writer.js";
 
 export class WriterRefresh extends Writer {
     private lastOutput: string;
 
-    constructor(cursor: Cursor) {
-        super(cursor);
+    constructor(cursor: Cursor, root: Root) {
+        super(cursor, root);
         this.lastOutput = "";
     }
 
@@ -15,18 +16,7 @@ export class WriterRefresh extends Writer {
         nextCanvas: Canvas,
         capturedOutput?: string,
     ): void {
-        let newLines = 0;
-        const output = nextCanvas.grid
-            .map((_row, y) => {
-                const nl = y === nextCanvas.grid.length - 1 ? "" : "\n";
-                if (nl) ++newLines;
-
-                // prettier-ignore
-                return nextCanvas
-                    .stringifyRowSegment(y)
-                    .trimEnd() + nl;
-            })
-            .join("");
+        const { newLines, output } = nextCanvas.stringifyGrid();
 
         if (output !== this.lastOutput || capturedOutput) {
             if (lastCanvas) {
@@ -56,6 +46,6 @@ export class WriterRefresh extends Writer {
     }
 
     public isFullscreen(nextCanvas: Canvas) {
-        return nextCanvas.grid.length >= process.stdout.rows;
+        return nextCanvas.grid.length >= this.root.runtime.stdout.rows;
     }
 }

@@ -310,6 +310,23 @@ export class Canvas {
         return stringifyRowSegment(this.grid, y, start, end);
     }
 
+    public stringifyGrid(): { newLines: number; output: string } {
+        let newLines = 0;
+        const output = this.grid
+            .map((_row, y) => {
+                const nl = y === this.grid.length - 1 ? "" : "\n";
+                if (nl) ++newLines;
+
+                // prettier-ignore
+                return this
+                    .stringifyRowSegment(y)
+                    .trimEnd() + nl;
+            })
+            .join("");
+
+        return { newLines, output };
+    }
+
     /**
      * Determines if drawing this node will actually perform any operations, or
      * if it will always try to draw past its limits.

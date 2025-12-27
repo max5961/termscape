@@ -30,8 +30,8 @@ export class Renderer {
         this.cursor = process.env["RENDER_DEBUG"]
             ? new DebugCursor(root)
             : new Cursor(root);
-        this.preciseWriter = new WriterPrecise(this.cursor);
-        this.refreshWriter = new WriterRefresh(this.cursor);
+        this.preciseWriter = new WriterPrecise(this.cursor, this.root);
+        this.refreshWriter = new WriterRefresh(this.cursor, this.root);
         this.lastWasResize = 0;
     }
 
@@ -101,9 +101,9 @@ export class Renderer {
     }
 
     private performWrite() {
-        process.stdout.write(Ansi.beginSynchronizedUpdate);
+        this.root.runtime.stdout.write(Ansi.beginSynchronizedUpdate);
         this.cursor.execute();
-        process.stdout.write(Ansi.endSynchronizedUpdate);
+        this.root.runtime.stdout.write(Ansi.endSynchronizedUpdate);
     }
 
     private refreshWrite(compositor: Compositor, opts: WriteOpts) {

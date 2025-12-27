@@ -2,13 +2,14 @@ import { Canvas } from "../compositor/Canvas.js";
 import { Cursor } from "./Cursor.js";
 import { Writer } from "./Writer.js";
 import type { GridToken } from "../Types.js";
+import type { Root } from "../dom/Root.js";
 
 type Row = Canvas["grid"][number];
 type Slice = { s: number; e: number };
 
 export class WriterPrecise extends Writer {
-    constructor(cursor: Cursor) {
-        super(cursor);
+    constructor(cursor: Cursor, root: Root) {
+        super(cursor, root);
     }
 
     public instructCursor(lastCanvas: Canvas, nextCanvas: Canvas): void {

@@ -168,7 +168,7 @@ export function createRuntime(deps: RuntimeDependencies) {
             isStarted = false;
             requestedListening = false;
 
-            process.stdout.write("\n"); // cursor stays on final row
+            config.stdout.write("\n"); // cursor stays on final row
             logic.enterDefaultScreen({ render: false });
             logic.pauseStdin();
 

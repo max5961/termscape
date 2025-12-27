@@ -144,7 +144,7 @@ export class Root extends DomElement {
 
         if (opts.layoutChange || !this.hasRendered) {
             this.node.calculateLayout(
-                process.stdout.columns,
+                this.runtime.stdout.columns,
                 undefined,
                 Yoga.DIRECTION_LTR,
             );

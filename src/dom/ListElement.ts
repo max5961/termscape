@@ -231,7 +231,9 @@ export class BigList<T> extends ListElement {
         const max = Math.max(
             rows,
             cols,
-            isColumn ? process.stdout.rows : process.stdout.columns,
+            isColumn
+                ? this.getRoot()?.runtime.stdout.rows ?? process.stdout.rows
+                : this.getRoot()?.runtime.stdout.columns ?? process.stdout.columns,
         );
 
         this.winend = this.winstart + max + 1;
