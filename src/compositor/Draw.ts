@@ -1,3 +1,4 @@
+import Yoga from "yoga-wasm-web/auto";
 import type { Color, DomElement } from "../Types.js";
 import type { BaseShadowStyle } from "../style/Style.js";
 import type { BoxLike } from "./types.js";
@@ -13,8 +14,6 @@ import { TextElement } from "../dom/TextElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { Pen } from "./Pen.js";
 import type { BaseProps, Scrollbar, Title, TitleStyleConfig } from "../Props.js";
-import { objectKeys } from "../Util.js";
-import { logger } from "../shared/Logger.js";
 
 export class Draw {
     /**
@@ -284,12 +283,15 @@ class DrawBox extends DrawContract<BoxLike> {
             const config = this.getTitleStyleConfig(elem, title);
             const textWidth =
                 config.left.length + config.right.length + title.textContent.length;
-            const contentRect = elem.unclippedContentRect;
+            const rect = elem.unclippedRect;
+            const borderLeft = elem.node.getComputedBorder(Yoga.EDGE_LEFT);
+            const borderRight = elem.node.getComputedBorder(Yoga.EDGE_RIGHT);
+            const contentWidth = rect.width - borderLeft - borderRight;
 
             const canDraw = () => {
                 return (
-                    pen.getGlobalPos().x < contentRect.corner.x + contentRect.width &&
-                    pen.getGlobalPos().x >= contentRect.corner.x
+                    pen.getGlobalPos().x < rect.corner.x + rect.width - borderRight &&
+                    pen.getGlobalPos().x >= rect.corner.x + borderLeft
                 );
             };
 
@@ -298,7 +300,7 @@ class DrawBox extends DrawContract<BoxLike> {
             } else if (prop.includes("Center")) {
                 pen.moveXToEdge("left", "padding", "outer");
                 // prettier-ignore
-                pen.move("r", Math.floor(contentRect.width / 2 - textWidth / 2));
+                pen.move("r", Math.floor(contentWidth / 2 - textWidth / 2));
             } else {
                 pen.moveXToEdge("right", "padding", "outer");
                 pen.move("l", textWidth);
