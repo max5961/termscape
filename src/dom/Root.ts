@@ -103,6 +103,7 @@ export class Root extends DomElement {
         const { actions, viewportStyles } = metadata;
 
         if (attached) {
+            viewportStyles.forEach((style) => recalculateStyle(metadata.ref, style));
             this.attached.actions.set(elem, actions);
             metadata.viewportEls = this.attached.viewportEls;
 
