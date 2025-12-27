@@ -145,6 +145,8 @@ export class Canvas {
 
     public createChildCanvas(child: DomElement): SubCanvas {
         const canvasWidth = child.node.getComputedWidth();
+        // @ts-ignore
+        // const canvasHeight = child.textHeight || child.node.getComputedHeight();
         const canvasHeight =
             child instanceof TextElement
                 ? child.textHeight

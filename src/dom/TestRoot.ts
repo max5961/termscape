@@ -135,7 +135,7 @@ export class TestRoot extends Root {
         this.frames = [];
         this.maxFrames = runtime.maxFrames;
 
-        this.hooks.postLayout(this.postLayout);
+        // this.hooks.postLayout(this.postLayout);
     }
 
     private postLayout = (canvas: Canvas) => {

@@ -1,6 +1,6 @@
 import { Compositor } from "../compositor/Compositor.js";
-import { RenderHooks } from "./RenderHooks.js";
-import { Performance } from "./Performance.js";
+// import { RenderHooks } from "./RenderHooks.js";
+// import { Performance } from "./Performance.js";
 import { Cursor, DebugCursor } from "./Cursor.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { WriterRefresh } from "./WriterRefresh.js";
@@ -13,11 +13,11 @@ import type { WriteOpts } from "../Types.js";
 export class Renderer {
     public lastCanvas: Canvas | null;
     public rects: DomRects;
-    private perf: Performance;
+    // private perf: Performance;
     private cursor: Cursor;
     private preciseWriter: WriterPrecise;
     private refreshWriter: WriterRefresh;
-    public hooks: RenderHooks;
+    // public hooks: RenderHooks;
     private lastWasResize: number;
     private root: Root;
 
@@ -25,8 +25,8 @@ export class Renderer {
         this.root = root;
         this.lastCanvas = null;
         this.rects = new DomRects();
-        this.hooks = new RenderHooks();
-        this.perf = new Performance(false);
+        // this.hooks = new RenderHooks();
+        // this.perf = new Performance(false);
         this.cursor = process.env["RENDER_DEBUG"]
             ? new DebugCursor(root)
             : new Cursor(root);
@@ -35,22 +35,44 @@ export class Renderer {
         this.lastWasResize = 0;
     }
 
-    public writeToStdout = (opts: WriteOpts) => {
-        if (this.hooks.renderIsBlocked) return;
+    private renderIsBlocked() {
+        const handlers = this.root.hooks.getHookSet("block-render");
+        if (handlers.size) {
+            return Array.from(handlers).every((handler) => handler(undefined));
+        } else {
+            return false;
+        }
+    }
 
-        this.preLayoutHooks();
+    public writeToStdout = (opts: WriteOpts) => {
+        if (this.renderIsBlocked()) return;
+
+        this.root.hooks.exec("pre-layout", undefined);
+        const preLayoutMs = performance.now();
         let compositor = this.getComposedLayout(opts);
         compositor = this.recomposeIfMutOffset(compositor, opts);
-        this.postLayoutHooks(compositor);
+        const postLayoutMs = performance.now();
+        this.root.hooks.exec("post-layout", compositor.canvas);
 
         compositor.elementsWithPostLayoutHooks.forEach((elem) => {
             elem.postLayoutHooks.forEach(process.nextTick);
         });
 
-        this.deferWrite(compositor, opts);
-        this.preWriteHooks();
+        const lastCanvas = this.lastCanvas;
+        const nextCanvas = compositor.canvas;
+
+        this.root.hooks.exec("pre-write", { lastCanvas, nextCanvas });
+        const preDiffMs = performance.now();
+        const didRefreshWrite = this.deferWrite(compositor, opts);
+        const postDiffMs = performance.now();
         this.performWrite();
-        this.postWriteHooks();
+        this.root.hooks.exec("post-write", { lastCanvas, nextCanvas });
+
+        this.root.hooks.exec("performance", {
+            layoutMs: postLayoutMs - preLayoutMs,
+            diffMs: postDiffMs - preDiffMs,
+            diffStrategy: didRefreshWrite ? "refresh" : "precise",
+        });
     };
 
     private recomposeIfMutOffset(compositor: Compositor, opts: WriteOpts): Compositor {
@@ -88,9 +110,11 @@ export class Renderer {
     }
 
     private deferWrite(compositor: Compositor, opts: WriteOpts) {
+        let didRefreshWrite = true;
         if (this.shouldRefreshWrite(opts)) {
             this.refreshWrite(compositor, opts);
         } else {
+            didRefreshWrite = false;
             this.preciseWriter.instructCursor(this.lastCanvas!, compositor.canvas);
             this.refreshWriter.resetLastOutput();
         }
@@ -98,6 +122,7 @@ export class Renderer {
         this.cursor.moveToRow(compositor.canvas.grid.length - 1);
         this.lastCanvas = compositor.canvas;
         this.rects = compositor.rects;
+        return didRefreshWrite;
     }
 
     private performWrite() {
@@ -130,28 +155,28 @@ export class Renderer {
     // Render Hooks
     // =========================================================================
 
-    private preLayoutHooks() {
-        this.perf.tracking = !!this.hooks.renderPerf.size;
-        this.perf.preLayout();
-    }
-
-    private postLayoutHooks(compositor: Compositor) {
-        this.perf.postLayout();
-        this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));
-    }
-
-    private preWriteHooks() {
-        this.perf.preWrite();
-    }
-
-    private postWriteHooks() {
-        this.perf.postWrite();
-        if (this.perf.tracking) {
-            this.hooks.renderPerf.forEach((cb) => {
-                cb(this.perf.getPerf());
-            });
-        }
-    }
+    // private preLayoutHooks() {
+    //     this.perf.tracking = !!this.hooks.renderPerf.size;
+    //     this.perf.preLayout();
+    // }
+    //
+    // private postLayoutHooks(compositor: Compositor) {
+    //     this.perf.postLayout();
+    //     this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));
+    // }
+    //
+    // private preWriteHooks() {
+    //     this.perf.preWrite();
+    // }
+    //
+    // private postWriteHooks() {
+    //     this.perf.postWrite();
+    //     if (this.perf.tracking) {
+    //         this.hooks.renderPerf.forEach((cb) => {
+    //             cb(this.perf.getPerf());
+    //         });
+    //     }
+    // }
 
     // =========================================================================
     // Util

@@ -11,10 +11,12 @@ import type { BaseStyle } from "../style/Style.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import type { BaseProps } from "../Props.js";
 import type { TagNameEnum } from "../Constants.js";
+import { HooksManager } from "../render/Hooks.js";
 
 export class Root extends DomElement {
-    public hooks: RenderHooksManager;
+    // public hooks: RenderHooksManager;
     public runtime: Runtime["api"];
+    public hooks: HooksManager;
 
     protected override readonly rootRef: { readonly root: Root };
 
@@ -29,13 +31,14 @@ export class Root extends DomElement {
     };
 
     // Handle work that can only be done once the Yoga layout is known
-    private postLayoutOps: (() => unknown)[];
+    // private postLayoutOps: (() => unknown)[];
 
     constructor(config: RuntimeConfig) {
         super();
         this.rootRef = { root: this };
         this.hasRendered = false;
-        this.postLayoutOps = [];
+        this.hooks = new HooksManager();
+        // this.postLayoutOps = [];
 
         this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
         this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
@@ -43,7 +46,7 @@ export class Root extends DomElement {
         this.node.setFlexShrink(1);
 
         this.renderer = new Renderer(this);
-        this.hooks = new RenderHooksManager(this.renderer.hooks);
+        // this.hooks = new RenderHooksManager(this.renderer.hooks);
         this.scheduler = new Scheduler();
 
         this.Emitter = new EventEmitter();
@@ -81,6 +84,14 @@ export class Root extends DomElement {
     }
     protected override get defaultProps(): BaseProps {
         return {};
+    }
+
+    public addHook(...args: Parameters<HooksManager["addHook"]>) {
+        this.hooks.addHook(...args);
+    }
+
+    public removeHook(...args: Parameters<HooksManager["removeHook"]>) {
+        this.hooks.removeHook(...args);
     }
 
     /**

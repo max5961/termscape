@@ -18,7 +18,7 @@ import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
-import { Canvas, type Rect } from "../compositor/Canvas.js";
+import { type Canvas, type Rect } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
 import { throwError } from "../shared/ThrowError.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";

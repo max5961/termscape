@@ -2,7 +2,7 @@ import Yoga from "yoga-wasm-web/auto";
 import type { Color, DomElement } from "../Types.js";
 import type { BaseShadowStyle } from "../style/Style.js";
 import type { BoxLike } from "./types.js";
-import { Canvas } from "./Canvas.js";
+import type { Canvas } from "./Canvas.js";
 import { getAlignedRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
 import { TEXT_PADDING } from "../Symbols.js";
 import { Borders, createBox, TitleBorders } from "../shared/Borders.js";
