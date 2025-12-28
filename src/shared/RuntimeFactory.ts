@@ -14,6 +14,7 @@ import type { Scheduler } from "./Scheduler.js";
 import type { EventEmitter } from "stream";
 import { handleError } from "./ThrowError.js";
 import { MouseState } from "./MouseState.js";
+import { logger } from "./Logger.js";
 
 type Config = Required<RuntimeConfig>;
 export type RuntimeDependencies = {

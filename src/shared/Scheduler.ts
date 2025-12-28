@@ -1,4 +1,4 @@
-import { Root } from "../dom/Root.js";
+import type { Root } from "../dom/Root.js";
 import type { WriteOpts } from "../Types.js";
 import { objectKeys } from "../Util.js";
 
@@ -12,8 +12,9 @@ export class Scheduler {
     private capturedOutput: string[];
     private writeOpts: WriteOpts;
     private waitingOps: (() => unknown)[];
+    private isTestRoot: boolean;
 
-    constructor() {
+    constructor({ isTestRoot }: { isTestRoot: boolean }) {
         this.debounceMs = 16;
         this.tickScheduled = false;
         this.wait = false;
@@ -21,6 +22,7 @@ export class Scheduler {
         this.capturedOutput = [];
         this.writeOpts = {};
         this.waitingOps = [];
+        this.isTestRoot = !isTestRoot;
     }
 
     /**
@@ -70,21 +72,7 @@ export class Scheduler {
                 this.wait = false;
             }
 
-            this.execWaitingOps(true);
-
-            // if (this.updater) {
-            //     /*
-            //      * Moving `execWaitingOps` to run after running the updater. When
-            //      * `execWaitingOps` previously ran after the `wait` assignment,
-            //      * it worked to prevent pollution of keymap events during rendering
-            //      * but blocked the exec of keymaps during animations/transitions
-            //      * below the `debounceMs`.
-            //      */
-            //     this.dispatchUpdater();
-            //     return this.execWaitingOps(true);
-            // }
-            // this.wait = false;
-            // this.execWaitingOps(true);
+            this.execWaitingOps();
         }, this.debounceMs);
     }
 
@@ -113,18 +101,22 @@ export class Scheduler {
     }
 
     /**
-     * `debounce` to false might be useful when reading text input, but otherwise
-     * if lag is high enough to cause timing issues with rendering and stdin events
-     * then executing all ops at once is less smooth and sometimes still causes
-     * issues.
+     * Used to have a `debounce` option here.  But, making it default **except**
+     * for during testing code.  With debouncing enabled, behavior during slow
+     * renders seems more natural to me.  That said, if you were to not debounce,
+     * then `process.stdin` naturally debounces because it batches together
+     * multiple keypresses made during long synchronous blocks of code, which
+     * causes keymaps listening for a single keypress to no longer match.
+     *
+     * During testing however, debouncing should be turned off, since we want to
+     * be able to send keypresses to a mock stdin with a minimal interval time
+     * in order to keep the test runner from waiting.
      * */
-    private execWaitingOps(debounce: boolean) {
-        if (debounce) {
-            const nextOp = this.waitingOps.pop();
-            nextOp?.();
-            this.waitingOps = [];
-        } else {
-            this.waitingOps.forEach((op) => op());
+    private execWaitingOps() {
+        const nextOp = this.waitingOps.pop();
+        nextOp?.();
+
+        if (this.isTestRoot) {
             this.waitingOps = [];
         }
     }

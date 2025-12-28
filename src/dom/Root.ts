@@ -11,7 +11,7 @@ import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import type { BaseProps } from "../Props.js";
 import type { TagNameEnum } from "../Constants.js";
 import { HooksManager, type Hook, type HookHandler } from "../render/Hooks.js";
-import { ROOT_ELEMENT } from "../Symbols.js";
+import { ROOT_ELEMENT, TEST_ROOT_ELEMENT } from "../Symbols.js";
 
 export class Root extends DomElement {
     protected static override identity = ROOT_ELEMENT;
@@ -47,8 +47,7 @@ export class Root extends DomElement {
         this.node.setFlexShrink(1);
 
         this.renderer = new Renderer(this);
-        // this.hooks = new RenderHooksManager(this.renderer.hooks);
-        this.scheduler = new Scheduler();
+        this.scheduler = new Scheduler({ isTestRoot: this.is(TEST_ROOT_ELEMENT) });
 
         this.Emitter = new EventEmitter();
         this.Emitter.on("MouseEvent", this.handleMouseEvent);
