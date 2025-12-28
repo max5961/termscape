@@ -87,6 +87,8 @@ export namespace DomElementStyle {
         {
             zIndex?: number | "auto";
             backgroundColor?: Color;
+            backgroundStyle?: "dotted" | "dashed"
+            backgroundStyleColor?: Color;
             wipeBackground?: boolean;
         };
 

@@ -89,8 +89,12 @@ class DrawBox extends DrawContract<BoxLike> {
     public override compose(elem: BoxLike, canvas: Canvas): void {
         const style = elem.shadowStyle;
 
-        if ((style.zIndex ?? 0) > this.lowestLayer || style.backgroundColor) {
-            this.fillBg(canvas, style.backgroundColor);
+        if (
+            (style.zIndex ?? 0) > this.lowestLayer ||
+            style.backgroundColor ||
+            style.backgroundStyle
+        ) {
+            this.fillBg(canvas, elem);
         }
 
         if (style.borderStyle) {
@@ -104,13 +108,27 @@ class DrawBox extends DrawContract<BoxLike> {
         this.renderTitles(elem, canvas);
     }
 
-    private fillBg(canvas: Canvas, color?: Color) {
+    private fillBg(canvas: Canvas, elem: BoxLike) {
         const pen = canvas.getPen();
-        pen.set("backgroundColor", color);
+
+        let char = " ";
+        if (elem.style.backgroundStyle === "dashed") {
+            char = "╱";
+        } else if (elem.style.backgroundStyle === "dotted") {
+            char = ".";
+        }
+
+        if (char === " ") {
+            pen.set("color", elem.style.backgroundColor);
+        } else {
+            pen.set("backgroundColor", elem.style.backgroundColor);
+        }
+
+        pen.set("color", elem.style.backgroundStyleColor);
 
         for (let y = 0; y < canvas.canvasHeight; ++y) {
             pen.moveTo(0, y);
-            pen.draw(" ", "r", canvas.canvasWidth);
+            pen.draw(char, "r", canvas.canvasWidth);
         }
     }
 
