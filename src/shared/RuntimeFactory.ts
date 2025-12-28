@@ -198,7 +198,13 @@ export function createRuntime(deps: RuntimeDependencies) {
             isListening = true;
 
             try {
-                configureStdin(config);
+                // This fn is just a utility to check for raw mode and enable
+                // kitty protocol support, but it will write to the stdout, and
+                // therefore pollute any mock stdout. If using a mock stdin,
+                // kitty keycodes can still be sent and parsed.
+                if (config.stdin === process.stdin) {
+                    configureStdin(config);
+                }
                 config.stdin.resume();
                 config.stdin.on("data", logic.handleStdinBuffer);
             } catch {

@@ -10,7 +10,7 @@ import type { BaseStyle } from "../style/Style.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import type { BaseProps } from "../Props.js";
 import type { TagNameEnum } from "../Constants.js";
-import { HooksManager } from "../render/Hooks.js";
+import { HooksManager, type Hook, type HookHandler } from "../render/Hooks.js";
 import { ROOT_ELEMENT } from "../Symbols.js";
 
 export class Root extends DomElement {
@@ -87,12 +87,12 @@ export class Root extends DomElement {
         return {};
     }
 
-    public addHook(...args: Parameters<HooksManager["addHook"]>) {
-        this.hooks.addHook(...args);
+    public addHook<T extends Hook>(hook: T, cb: HookHandler<T>) {
+        this.hooks.addHook(hook, cb);
     }
 
-    public removeHook(...args: Parameters<HooksManager["removeHook"]>) {
-        this.hooks.removeHook(...args);
+    public removeHook<T extends Hook>(hook: T, cb: HookHandler<T>) {
+        this.hooks.removeHook(hook, cb);
     }
 
     /**

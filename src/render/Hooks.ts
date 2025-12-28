@@ -24,7 +24,7 @@ export type HookContext<T extends Hook> = T extends "pre-layout" | "block-render
           ? PerformanceData
           : undefined;
 
-type HookHandler<T extends Hook> = (
+export type HookHandler<T extends Hook> = (
     content: HookContext<T>,
 ) => T extends "block-render" ? boolean : unknown;
 
