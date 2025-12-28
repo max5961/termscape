@@ -54,9 +54,9 @@ export abstract class DomElement<
     /** @internal */
     public styleHandler: StyleHandler<Schema["Style"]> | null;
     /** @internal */
-    public postLayoutHooks: Set<() => unknown>;
-    /** @internal */
     public props: Map<string, unknown>;
+    /** @internal */
+    public afterLayoutHandlers: Set<() => unknown>;
 
     protected readonly rootRef: { root: Root | null };
     protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
@@ -88,7 +88,7 @@ export abstract class DomElement<
         this.requiresStdin = false;
         this.metadata = new ElementMetaData(this);
         this.lastOffsetChangeWasFocus = false;
-        this.postLayoutHooks = new Set();
+        this.afterLayoutHandlers = new Set();
 
         const { virtualStyle, shadowStyle } = createVirtualStyleProxy<Schema["Style"]>(
             this,
@@ -234,11 +234,46 @@ export abstract class DomElement<
     }
 
     /**
-     * Runs postlayout calculations
+     * Schedules work to run after the next layout is finished calculating. This
+     * is intended for cases where layout-dependent data is needed after an
+     * expected state change. If your use case doesn't involve inspecting scroll
+     * data or the rect of a node or its children, then it may be the wrong
+     * function to use.
+     *
+     * This method supports two usage patterns:
+     * 1) Single use
+     * When called with no arguments (or a timeout value), a Promise is returned
+     * that resolves after the next layout completes. An optional timeout value
+     * resolves the Promise in case a render never occurs.  This is to prevent
+     * rare cases where the app hangs up due to a render never occuring again.
+     *
+     * 2) Subscription
+     * When called with a callback argument, the callback is executed after
+     * every layout pass.
+     *
+     * @returns
+     * - `Promise<void>` in 'single use' mode
+     * - An unsubscribe function in 'subscription' mode.
      * */
-    public postLayoutHook(cb: () => unknown) {
-        this.postLayoutHooks.add(cb);
-        return () => this.postLayoutHooks.delete(cb);
+    public afterLayout(timeoutFallback?: number): Promise<void>;
+    public afterLayout(subscriber: () => unknown): () => void;
+    public afterLayout(
+        timeoutFallbackOrSubscriber?: number | (() => unknown),
+    ): (() => void) | Promise<void> {
+        if (typeof timeoutFallbackOrSubscriber === "function") {
+            this.afterLayoutHandlers.add(timeoutFallbackOrSubscriber);
+            return () => this.afterLayoutHandlers.delete(timeoutFallbackOrSubscriber);
+        }
+
+        return new Promise<void>((res) => {
+            const removeSelf = () => {
+                this.afterLayoutHandlers.delete(removeSelf);
+                res();
+            };
+
+            this.afterLayoutHandlers.add(removeSelf);
+            setTimeout(removeSelf, timeoutFallbackOrSubscriber ?? 500);
+        });
     }
 
     // ========================================================================

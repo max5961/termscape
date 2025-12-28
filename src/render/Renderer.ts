@@ -1,6 +1,4 @@
 import { Compositor } from "../compositor/Compositor.js";
-// import { RenderHooks } from "./RenderHooks.js";
-// import { Performance } from "./Performance.js";
 import { Cursor, DebugCursor } from "./Cursor.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { WriterRefresh } from "./WriterRefresh.js";
@@ -13,11 +11,9 @@ import type { WriteOpts } from "../Types.js";
 export class Renderer {
     public lastCanvas: Canvas | null;
     public rects: DomRects;
-    // private perf: Performance;
     private cursor: Cursor;
     private preciseWriter: WriterPrecise;
     private refreshWriter: WriterRefresh;
-    // public hooks: RenderHooks;
     private lastWasResize: number;
     private root: Root;
 
@@ -25,8 +21,6 @@ export class Renderer {
         this.root = root;
         this.lastCanvas = null;
         this.rects = new DomRects();
-        // this.hooks = new RenderHooks();
-        // this.perf = new Performance(false);
         this.cursor = process.env["RENDER_DEBUG"]
             ? new DebugCursor(root)
             : new Cursor(root);
@@ -54,9 +48,7 @@ export class Renderer {
         const postLayoutMs = performance.now();
         this.root.hooks.exec("post-layout", compositor.canvas);
 
-        compositor.elementsWithPostLayoutHooks.forEach((elem) => {
-            elem.postLayoutHooks.forEach(process.nextTick);
-        });
+        compositor.afterLayoutHandlers.forEach(process.nextTick);
 
         const lastCanvas = this.lastCanvas;
         const nextCanvas = compositor.canvas;

@@ -18,7 +18,7 @@ export class Compositor {
     }>[];
     public scrollManagers: DomElement[];
     private postLayout: (() => unknown)[];
-    public elementsWithPostLayoutHooks: DomElement[];
+    public afterLayoutHandlers: (() => unknown)[];
 
     constructor(root: Root) {
         this.canvas = new Canvas({ stdout: root.runtime.stdout, el: root });
@@ -29,7 +29,7 @@ export class Compositor {
         this.postLayout = [];
         this.focusManagers = [];
         this.scrollManagers = [];
-        this.elementsWithPostLayoutHooks = [];
+        this.afterLayoutHandlers = [];
     }
 
     public buildLayout(
@@ -46,8 +46,8 @@ export class Compositor {
         this.draw.updateLowestLayer(zIndex);
         this.rects.setRect(elem, canvas);
 
-        if (elem.postLayoutHooks.size) {
-            this.elementsWithPostLayoutHooks.push(elem);
+        if (elem.afterLayoutHandlers.size) {
+            this.afterLayoutHandlers.push(...elem.afterLayoutHandlers.values());
         }
 
         if (canvas.canDraw()) {
