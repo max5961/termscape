@@ -5,11 +5,14 @@ import type { BoxStyle } from "../style/Style.js";
 import { objectKeys } from "../Util.js";
 import type { BaseProps, FocusManagerProps } from "../Props.js";
 import { TagNameEnum } from "../Constants.js";
+import { LAYOUT_ELEMENT, LAYOUT_NODE } from "../Symbols.js";
 
 export class LayoutElement extends FocusManager<{
     Style: BoxStyle;
     Props: BaseProps;
 }> {
+    protected static override identity = LAYOUT_ELEMENT;
+
     constructor() {
         super();
     }
@@ -255,6 +258,8 @@ export class LayoutElement extends FocusManager<{
 }
 
 export class LayoutNode extends AbstractBoxElement {
+    protected static override identity = LAYOUT_NODE;
+
     constructor() {
         super();
         this.focusNode.becomeCheckpoint(false);

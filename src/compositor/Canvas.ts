@@ -9,7 +9,7 @@ import type {
 } from "../Types.js";
 import { Pen } from "./Pen.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
-import { TextElement } from "../dom/TextElement.js";
+import { TEXT_ELEMENT } from "../Symbols.js";
 
 /**
  * The Canvas contains a reference to the 2d Grid that is drawn to as well as
@@ -145,12 +145,9 @@ export class Canvas {
 
     public createChildCanvas(child: DomElement): SubCanvas {
         const canvasWidth = child.node.getComputedWidth();
-        // @ts-ignore
-        // const canvasHeight = child.textHeight || child.node.getComputedHeight();
-        const canvasHeight =
-            child instanceof TextElement
-                ? child.textHeight
-                : child.node.getComputedHeight();
+        const canvasHeight = child.is(TEXT_ELEMENT)
+            ? child.textHeight
+            : child.node.getComputedHeight();
 
         // Child corner depends on parent corner.
         const childCorner: Canvas["corner"] = {

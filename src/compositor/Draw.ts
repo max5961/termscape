@@ -4,12 +4,17 @@ import type { BaseShadowStyle } from "../style/Style.js";
 import type { BoxLike } from "./types.js";
 import type { Canvas } from "./Canvas.js";
 import { getAlignedRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
-import { TEXT_PADDING } from "../Symbols.js";
+import {
+    BOOK_ELEMENT,
+    BOX_ELEMENT,
+    CANVAS_ELEMENT,
+    LAYOUT_ELEMENT,
+    LAYOUT_NODE,
+    LIST_ELEMENT,
+    TEXT_ELEMENT,
+    TEXT_PADDING,
+} from "../Symbols.js";
 import { Borders, createBox, TitleBorders } from "../shared/Borders.js";
-import { BoxElement } from "../dom/BoxElement.js";
-import { BookElement } from "../dom/BookElement.js";
-import { ListElement } from "../dom/ListElement.js";
-import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { Pen } from "./Pen.js";
@@ -44,20 +49,20 @@ export class Draw {
     public compose(elem: DomElement, canvas: Canvas): void {
         if (this.isBoxLike(elem)) {
             this.box.compose(elem, canvas);
-        } else if (elem instanceof TextElement) {
+        } else if (elem.is(TEXT_ELEMENT)) {
             this.text.compose(elem, canvas);
-        } else if (elem instanceof CanvasElement) {
+        } else if (elem.is(CANVAS_ELEMENT)) {
             this.canvasElement.compose(elem, canvas);
         }
     }
 
     private isBoxLike(elem: DomElement) {
         return (
-            elem instanceof BoxElement ||
-            elem instanceof BookElement ||
-            elem instanceof ListElement ||
-            elem instanceof LayoutElement ||
-            elem instanceof LayoutNode
+            elem.is(BOX_ELEMENT) ||
+            elem.is(BOOK_ELEMENT) ||
+            elem.is(LIST_ELEMENT) ||
+            elem.is(LAYOUT_ELEMENT) ||
+            elem.is(LAYOUT_NODE)
         );
     }
 }

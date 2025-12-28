@@ -4,12 +4,15 @@ import type { VisualNodeMap } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusManager } from "./DomElement.js";
 import { TagNameEnum } from "../Constants.js";
+import { LIST_ELEMENT } from "../Symbols.js";
 
 export class ListElement extends FocusManager<{
     Style: BoxStyle;
     ShadowStyle: ShadowBoxStyle;
     Props: FocusManagerProps;
 }> {
+    protected static override identity = LIST_ELEMENT;
+
     constructor() {
         super();
     }

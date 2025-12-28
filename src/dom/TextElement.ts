@@ -10,11 +10,14 @@ import type { TextStyle } from "../style/Style.js";
 import type { BaseProps, Props } from "../Props.js";
 import { Render } from "./util/decorators.js";
 import type { TagNameEnum } from "../Constants.js";
+import { TEXT_ELEMENT } from "../Symbols.js";
 
 export class TextElement extends DomElement<{
     Style: TextStyle;
     Props: Props.Text;
 }> {
+    protected static override identity = TEXT_ELEMENT;
+
     private _textContent: string;
     public textHeight!: number;
     /** @internal */

@@ -2,6 +2,7 @@ import type { TagNameEnum } from "../Constants.js";
 import type { BaseProps } from "../Props.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
 import type { BaseStyle } from "../style/Style.js";
+import { BOOK_ELEMENT } from "../Symbols.js";
 import { DomElement } from "./DomElement.js";
 
 /**
@@ -18,6 +19,8 @@ export class BookElement extends DomElement<{
     Style: BaseStyle;
     Props: BaseProps;
 }> {
+    protected static override identity = BOOK_ELEMENT;
+
     private pages: DomElement[];
     private pagesSet: Set<DomElement>;
 
@@ -25,17 +28,6 @@ export class BookElement extends DomElement<{
         super();
         this.pages = [];
         this.pagesSet = new Set();
-    }
-
-    /*
-     * BookElement has only 1 real child at a time.  The rest are detached from
-     * tree but privately stored.
-     * */
-    override get children(): readonly DomElement<{
-        Style: BaseStyle;
-        Props: BaseProps;
-    }>[] {
-        return this.pages;
     }
 
     public override get tagName(): typeof TagNameEnum.Book {
@@ -47,6 +39,17 @@ export class BookElement extends DomElement<{
     }
     protected override get defaultProps(): BaseProps {
         return {};
+    }
+
+    /*
+     * BookElement has only 1 real child at a time.  The rest are detached from
+     * tree but privately stored.
+     * */
+    override get children(): readonly DomElement<{
+        Style: BaseStyle;
+        Props: BaseProps;
+    }>[] {
+        return this.pages;
     }
 
     private get pageIdx(): number {

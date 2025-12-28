@@ -1,4 +1,6 @@
 import Yoga from "yoga-wasm-web/auto";
+import { DOM_ELEMENT, TagNameIdentityMap, type ElementIdentityMap } from "../Symbols.js";
+import type { Root } from "./Root.js";
 import { type Action } from "term-keymap";
 import type {
     MouseEvent,
@@ -13,12 +15,11 @@ import type {
 } from "../Types.js";
 import type { BaseStyle, BaseShadowStyle } from "../style/Style.js";
 import type { BaseProps, FocusManagerProps, Scrollbar, Title } from "../Props.js";
-import type { Root } from "./Root.js";
+import { type Canvas, type Rect } from "../compositor/Canvas.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
 import { ElementMetaData } from "./ElementMetadata.js";
-import { type Canvas, type Rect } from "../compositor/Canvas.js";
 import { Focus } from "./FocusContext.js";
 import { throwError } from "../shared/ThrowError.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
@@ -30,6 +31,8 @@ export abstract class DomElement<
         Props: BaseProps;
     } = { Style: BaseStyle; Props: BaseProps },
 > {
+    protected static identity = DOM_ELEMENT;
+
     public node: YogaNode;
     public parentElement: null | DomElement;
     public contentRange: ReturnType<DomElement["initContentRange"]>;
@@ -63,10 +66,13 @@ export abstract class DomElement<
     protected readonly metadata: ElementMetaData;
     protected readonly baseDefaultStyles: BaseStyle;
     protected lastOffsetChangeWasFocus: boolean;
+    private identities: Set<symbol>;
 
     constructor() {
         this.node = Yoga.Node.create();
         this.parentElement = null;
+        this.identities = new Set();
+        this.collectIdentities();
         this.contentRange = this.initContentRange();
 
         /** Privately using the `children` getter conflicts with the `BookElement` implementation */
@@ -110,6 +116,29 @@ export abstract class DomElement<
 
         this.applyDefaultProps();
         this.applyDefaultStyles();
+    }
+
+    private collectIdentities() {
+        let ctor: any = this.constructor;
+
+        while (ctor) {
+            if (typeof ctor.identity === "symbol") {
+                this.identities.add(ctor.identity);
+            }
+            ctor = Object.getPrototypeOf(ctor);
+        }
+    }
+
+    /** @internal */
+    public is<T extends keyof ElementIdentityMap>(sym: T): this is ElementIdentityMap[T] {
+        return this.identities.has(sym);
+    }
+
+    public instanceOf<T extends keyof typeof TagNameIdentityMap>(
+        tag: T,
+    ): this is ElementIdentityMap[(typeof TagNameIdentityMap)[T]] {
+        const identity = TagNameIdentityMap[tag];
+        return this.identities.has(identity);
     }
 
     public abstract get tagName(): TagName;

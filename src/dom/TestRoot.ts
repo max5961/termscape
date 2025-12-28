@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { Root } from "./Root.js";
 import type { RuntimeConfig } from "../Types.js";
 import type { Canvas } from "../compositor/Canvas.js";
+import { TEST_ROOT_ELEMENT } from "../Symbols.js";
 
 export class MockStdout {
     private _rows: number;
@@ -115,6 +116,8 @@ type TestRootRuntimeConfig = Omit<RuntimeConfig, "stdout" | "stdin"> & {
 };
 
 export class TestRoot extends Root {
+    protected static override identity = TEST_ROOT_ELEMENT;
+
     private lastFrame: string;
     private frames: string[];
     private maxFrames: number;

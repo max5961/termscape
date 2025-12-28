@@ -2,11 +2,14 @@ import type { Props } from "../Props.js";
 import type { CanvasStyle } from "../style/Style.js";
 import { DomElement } from "./DomElement.js";
 import { TagNameEnum } from "../Constants.js";
+import { CANVAS_ELEMENT } from "../Symbols.js";
 
 export class CanvasElement extends DomElement<{
     Style: CanvasStyle;
     Props: Props.Canvas;
 }> {
+    protected static override identity = CANVAS_ELEMENT;
+
     constructor() {
         super();
     }

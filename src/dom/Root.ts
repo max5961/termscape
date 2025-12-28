@@ -1,7 +1,6 @@
 import Yoga from "yoga-wasm-web/auto";
 import EventEmitter from "events";
 import { type Action } from "term-keymap";
-import { RenderHooksManager } from "../render/RenderHooks.js";
 import { DomElement } from "./DomElement.js";
 import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
@@ -12,9 +11,11 @@ import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import type { BaseProps } from "../Props.js";
 import type { TagNameEnum } from "../Constants.js";
 import { HooksManager } from "../render/Hooks.js";
+import { ROOT_ELEMENT } from "../Symbols.js";
 
 export class Root extends DomElement {
-    // public hooks: RenderHooksManager;
+    protected static override identity = ROOT_ELEMENT;
+
     public runtime: Runtime["api"];
     public hooks: HooksManager;
 

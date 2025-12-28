@@ -12,7 +12,6 @@ import type { BaseStyle } from "./style/Style.js";
 import type { DomElement } from "./Types.js";
 
 export const TEXT_PADDING = Symbol.for("termscape.padding_text");
-
 export const DOM_ELEMENT = Symbol.for("termscape.dom_element");
 export const BOX_ELEMENT = Symbol.for("termscape.box_element");
 export const TEXT_ELEMENT = Symbol.for("termscape.text_element");
@@ -25,7 +24,7 @@ export const FOCUS_MANAGER = Symbol.for("termscape.focus_manager");
 export const ROOT_ELEMENT = Symbol.for("termscape.root_element");
 export const TEST_ROOT_ELEMENT = Symbol.for("termscape.test_root_element");
 
-export type ElementIdentityMap = {
+export type ElementTypeMap = {
     [DOM_ELEMENT]: DomElement;
     [BOX_ELEMENT]: BoxElement;
     [TEXT_ELEMENT]: TextElement;
@@ -38,15 +37,3 @@ export type ElementIdentityMap = {
     [ROOT_ELEMENT]: Root;
     [TEST_ROOT_ELEMENT]: TestRoot;
 };
-
-export const TagNameIdentityMap = {
-    box: BOX_ELEMENT,
-    text: TEXT_ELEMENT,
-    book: BOOK_ELEMENT,
-    canvas: CANVAS_ELEMENT,
-    layout: LAYOUT_ELEMENT,
-    ["layout-node"]: LAYOUT_NODE,
-    list: LIST_ELEMENT,
-    ["focus-manager"]: FOCUS_MANAGER,
-    root: ROOT_ELEMENT,
-} as const;
