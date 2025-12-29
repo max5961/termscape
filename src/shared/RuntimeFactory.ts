@@ -2,6 +2,7 @@ import {
     ActionStore,
     InputState,
     configureStdin,
+    parseBuffer,
     setKittyProtocol,
     setMouse,
     type Action,
@@ -10,6 +11,7 @@ import type { Root } from "../dom/Root.js";
 import type { Scheduler } from "./Scheduler.js";
 import type { EventEmitter } from "stream";
 import type { EventEmitterMap, RuntimeConfig } from "../Types.js";
+import type { InputElement } from "../dom/InputElement.js";
 import { Ansi } from "./Ansi.js";
 import { Capture } from "log-goblin";
 import { MouseState } from "./MouseState.js";
@@ -78,6 +80,7 @@ export function createRuntime(deps: RuntimeDependencies) {
     let isListening = false;
     let isDefaultScreen = true;
     let requestedListening = false;
+    let inputStreamOwner = null as null | InputElement;
 
     let exitResolvers = [] as (() => void)[];
     const capture = new Capture();
@@ -106,9 +109,12 @@ export function createRuntime(deps: RuntimeDependencies) {
 
         handleStdinBuffer: (buf: Buffer) => {
             scheduler.execWhenFree(() => {
+                if (inputStreamOwner) {
+                    return inputStreamOwner.handleData(buf);
+                }
+
                 const domActions = logic.getDomActions();
                 const actions = actionStore.getCombinedActions(domActions);
-
                 const { data } = inputState.process(buf, actions);
                 mouseState.process(data);
             });
@@ -254,6 +260,17 @@ export function createRuntime(deps: RuntimeDependencies) {
             return new Promise<void>((res) => {
                 exitResolvers.push(() => res());
             });
+        },
+
+        setInputStreamOwner: (owner: InputElement | null) => {
+            inputStreamOwner = owner;
+            if (inputStreamOwner) {
+                logic.resumeStdin();
+            }
+        },
+
+        get inputStreamOwner() {
+            return inputStreamOwner;
         },
 
         get isStarted() {
