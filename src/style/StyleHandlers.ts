@@ -1,4 +1,4 @@
-import Yoga from "yoga-wasm-web/auto";
+import { Yg } from "../Constants.js";
 import type { YogaNode, DomElement } from "../Types.js";
 import type { BaseShadowStyle, BaseStyle } from "./Style.js";
 import type { FocusManagerProps } from "../Props.js";
@@ -24,7 +24,7 @@ import { parseDimensions } from "./util/parseDimensions.js";
  *          aggregates have consumers that can only be set if they are
  *          undefined.
  * 3) **YogaHandlers**
- *        - Applies styles to the Yoga node
+ *        - Applies styles to the Yg node
  */
 
 // =============================================================================
@@ -45,8 +45,8 @@ export const SanitizerHandlers: {
             return nextVal ?? 0;
         }
     },
-    // Pruning out "auto" here even though there aren't any corresponding Yoga
-    // styles to give it.  The Yoga Handler for alignSelf will interpret
+    // Pruning out "auto" here even though there aren't any corresponding Yg
+    // styles to give it.  The Yg Handler for alignSelf will interpret
     // undefined as auto.
     alignSelf(nextVal) {
         if (nextVal === "auto") {
@@ -166,7 +166,7 @@ export const YogaHandlers: {
     ) => void;
 } = {
     display(next, node) {
-        node.setDisplay(next === "flex" ? Yoga.DISPLAY_FLEX : Yoga.DISPLAY_NONE);
+        node.setDisplay(next === "flex" ? Yg.DISPLAY_FLEX : Yg.DISPLAY_NONE);
     },
     height(next, node) {
         if (typeof next === "number") {
@@ -201,126 +201,126 @@ export const YogaHandlers: {
         }
     },
     marginTop(next, node) {
-        node.setMargin(Yoga.EDGE_TOP, next ?? 0);
+        node.setMargin(Yg.EDGE_TOP, next ?? 0);
     },
     marginRight(next, node) {
-        node.setMargin(Yoga.EDGE_RIGHT, next ?? 0);
+        node.setMargin(Yg.EDGE_RIGHT, next ?? 0);
     },
     marginBottom(next, node) {
-        node.setMargin(Yoga.EDGE_BOTTOM, next ?? 0);
+        node.setMargin(Yg.EDGE_BOTTOM, next ?? 0);
     },
     marginLeft(next, node) {
-        node.setMargin(Yoga.EDGE_LEFT, next ?? 0);
+        node.setMargin(Yg.EDGE_LEFT, next ?? 0);
     },
     paddingTop(next, node, target) {
         node.setPadding(
-            Yoga.EDGE_TOP,
+            Yg.EDGE_TOP,
             Math.max(next ?? 0, target.scrollbarPaddingTop ?? 0),
         );
     },
     paddingBottom(next, node, target) {
         node.setPadding(
-            Yoga.EDGE_BOTTOM,
+            Yg.EDGE_BOTTOM,
             Math.max(next ?? 0, target.scrollbarPaddingBottom ?? 0),
         );
     },
     paddingLeft(next, node, target) {
         node.setPadding(
-            Yoga.EDGE_LEFT,
+            Yg.EDGE_LEFT,
             Math.max(next ?? 0, target.scrollbarPaddingLeft ?? 0),
         );
     },
     paddingRight(next, node, target) {
         node.setPadding(
-            Yoga.EDGE_RIGHT,
+            Yg.EDGE_RIGHT,
             Math.max(next ?? 0, target.scrollbarPaddingRight ?? 0),
         );
     },
     scrollbarPaddingTop(next, node, target) {
         // prettier-ignore
         node.setPadding(
-            Yoga.EDGE_TOP,
+            Yg.EDGE_TOP,
             Math.max(next ?? 0, target.paddingTop ?? 0),
         );
     },
     scrollbarPaddingBottom(next, node, target) {
         // prettier-ignore
         node.setPadding(
-            Yoga.EDGE_BOTTOM,
+            Yg.EDGE_BOTTOM,
             Math.max(next ?? 0, target.paddingBottom ?? 0),
         );
     },
     scrollbarPaddingLeft(next, node, target) {
         // prettier-ignore
         node.setPadding(
-            Yoga.EDGE_LEFT,
+            Yg.EDGE_LEFT,
             Math.max(next ?? 0, target.paddingLeft ?? 0),
         );
     },
     scrollbarPaddingRight(next, node, target) {
         // prettier-ignore
         node.setPadding(
-            Yoga.EDGE_RIGHT,
+            Yg.EDGE_RIGHT,
             Math.max(next ?? 0, target.paddingRight ?? 0),
         );
     },
     borderTop(next, node, target) {
         node.setBorder(
-            Yoga.EDGE_TOP,
+            Yg.EDGE_TOP,
             Math.max(next ? 1 : 0, target.scrollbarBorderTop ?? 0),
         );
     },
     borderBottom(next, node, target) {
         node.setBorder(
-            Yoga.EDGE_BOTTOM,
+            Yg.EDGE_BOTTOM,
             Math.max(next ? 1 : 0, target.scrollbarBorderBottom ?? 0),
         );
     },
     borderLeft(next, node, target) {
         node.setBorder(
-            Yoga.EDGE_LEFT,
+            Yg.EDGE_LEFT,
             Math.max(next ? 1 : 0, target.scrollbarBorderLeft ?? 0),
         );
     },
     borderRight(next, node, target) {
         node.setBorder(
-            Yoga.EDGE_RIGHT,
+            Yg.EDGE_RIGHT,
             Math.max(next ? 1 : 0, target.scrollbarBorderRight ?? 0),
         );
     },
     scrollbarBorderTop(next, node, target) {
         // prettier-ignore
         node.setBorder(
-            Yoga.EDGE_TOP,
+            Yg.EDGE_TOP,
             Math.max(next ?? 0, target.borderTop ? 1 : 0),
         );
     },
     scrollbarBorderBottom(next, node, target) {
         // prettier-ignore
         node.setBorder(
-            Yoga.EDGE_BOTTOM,
+            Yg.EDGE_BOTTOM,
             Math.max(next ?? 0, target.borderBottom ? 1 : 0),
         );
     },
     scrollbarBorderRight(next, node, target) {
         // prettier-ignore
         node.setBorder(
-            Yoga.EDGE_RIGHT,
+            Yg.EDGE_RIGHT,
             Math.max(next ?? 0, target.borderRight ? 1 : 0),
         );
     },
     scrollbarBorderLeft(next, node, target) {
         // prettier-ignore
         node.setBorder(
-            Yoga.EDGE_LEFT,
+            Yg.EDGE_LEFT,
             Math.max(next ?? 0, target.borderLeft ? 1 : 0),
         );
     },
     columnGap(next, node) {
-        node.setGap(Yoga.GUTTER_COLUMN, next ?? 0);
+        node.setGap(Yg.GUTTER_COLUMN, next ?? 0);
     },
     rowGap(next, node) {
-        node.setGap(Yoga.GUTTER_ROW, next ?? 0);
+        node.setGap(Yg.GUTTER_ROW, next ?? 0);
     },
     flexGrow(next, node) {
         node.setFlexGrow(next ?? 0);
@@ -330,23 +330,23 @@ export const YogaHandlers: {
     },
     flexWrap(next, node) {
         if (next === "wrap") {
-            node.setFlexWrap(Yoga.WRAP_WRAP);
+            node.setFlexWrap(Yg.WRAP_WRAP);
         } else if (next === "nowrap") {
-            node.setFlexWrap(Yoga.WRAP_NO_WRAP);
+            node.setFlexWrap(Yg.WRAP_NO_WRAP);
         } else if (next === "wrap-reverse") {
-            node.setFlexWrap(Yoga.WRAP_WRAP_REVERSE);
+            node.setFlexWrap(Yg.WRAP_WRAP_REVERSE);
         }
     },
     // prettier-ignore
     flexDirection(next, node) {
         if (next === "row") {
-            node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
+            node.setFlexDirection(Yg.FLEX_DIRECTION_ROW);
         } else if (next === "row-reverse") {
-            node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW_REVERSE);
+            node.setFlexDirection(Yg.FLEX_DIRECTION_ROW_REVERSE);
         } else if (next === "column") {
-            node.setFlexDirection(Yoga.FLEX_DIRECTION_COLUMN);
+            node.setFlexDirection(Yg.FLEX_DIRECTION_COLUMN);
         } else if (next === "column-reverse") {
-            node.setFlexDirection(Yoga.FLEX_DIRECTION_COLUMN_REVERSE);
+            node.setFlexDirection(Yg.FLEX_DIRECTION_COLUMN_REVERSE);
         }
     },
     flexBasis(next, node) {
@@ -360,39 +360,39 @@ export const YogaHandlers: {
     },
     alignItems(next, node) {
         if (next === "stretch" || !next) {
-            node.setAlignItems(Yoga.ALIGN_STRETCH);
+            node.setAlignItems(Yg.ALIGN_STRETCH);
         } else if (next === "flex-start") {
-            node.setAlignItems(Yoga.ALIGN_FLEX_START);
+            node.setAlignItems(Yg.ALIGN_FLEX_START);
         } else if (next === "center") {
-            node.setAlignItems(Yoga.ALIGN_CENTER);
+            node.setAlignItems(Yg.ALIGN_CENTER);
         } else if (next === "flex-end") {
-            node.setAlignItems(Yoga.ALIGN_FLEX_END);
+            node.setAlignItems(Yg.ALIGN_FLEX_END);
         }
     },
     alignSelf(next, node) {
         if (!next) {
-            node.setAlignSelf(Yoga.ALIGN_AUTO);
+            node.setAlignSelf(Yg.ALIGN_AUTO);
         } else if (next === "flex-start") {
-            node.setAlignSelf(Yoga.ALIGN_FLEX_START);
+            node.setAlignSelf(Yg.ALIGN_FLEX_START);
         } else if (next === "flex-end") {
-            node.setAlignSelf(Yoga.ALIGN_FLEX_END);
+            node.setAlignSelf(Yg.ALIGN_FLEX_END);
         } else if (next === "center") {
-            node.setAlignSelf(Yoga.ALIGN_CENTER);
+            node.setAlignSelf(Yg.ALIGN_CENTER);
         }
     },
     justifyContent(next, node) {
         if (next === "flex-start" || !next) {
-            node.setJustifyContent(Yoga.JUSTIFY_FLEX_START);
+            node.setJustifyContent(Yg.JUSTIFY_FLEX_START);
         } else if (next === "flex-end") {
-            node.setJustifyContent(Yoga.JUSTIFY_FLEX_END);
+            node.setJustifyContent(Yg.JUSTIFY_FLEX_END);
         } else if (next === "center") {
-            node.setJustifyContent(Yoga.JUSTIFY_CENTER);
+            node.setJustifyContent(Yg.JUSTIFY_CENTER);
         } else if (next === "space-between") {
-            node.setJustifyContent(Yoga.JUSTIFY_SPACE_BETWEEN);
+            node.setJustifyContent(Yg.JUSTIFY_SPACE_BETWEEN);
         } else if (next === "space-around") {
-            node.setJustifyContent(Yoga.JUSTIFY_SPACE_AROUND);
+            node.setJustifyContent(Yg.JUSTIFY_SPACE_AROUND);
         } else if (next === "space-evenly") {
-            node.setJustifyContent(Yoga.JUSTIFY_SPACE_EVENLY);
+            node.setJustifyContent(Yg.JUSTIFY_SPACE_EVENLY);
         }
     },
 } as const;

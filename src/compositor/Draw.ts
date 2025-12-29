@@ -1,10 +1,5 @@
-import Yoga from "yoga-wasm-web/auto";
-import type { Color, DomElement } from "../Types.js";
-import type { BaseShadowStyle } from "../style/Style.js";
-import type { BoxLike } from "./types.js";
-import type { Canvas } from "./Canvas.js";
-import { getAlignedRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
 import {
+    Yg,
     BOOK_ELEMENT,
     BOX_ELEMENT,
     CANVAS_ELEMENT,
@@ -13,8 +8,18 @@ import {
     LIST_ELEMENT,
     TEXT_ELEMENT,
     TEXT_PADDING,
-} from "../Symbols.js";
-import { Borders, createBox, TitleBorders } from "../shared/Borders.js";
+} from "../Constants.js";
+import type { DomElement } from "../Types.js";
+import type { BaseShadowStyle } from "../style/Style.js";
+import type { BoxLike } from "./types.js";
+import type { Canvas } from "./Canvas.js";
+import { getAlignedRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
+import {
+    createBox,
+    BackgroundCharacters,
+    Borders,
+    TitleBorders,
+} from "../shared/Boxes.js";
 import { TextElement } from "../dom/TextElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { Pen } from "./Pen.js";
@@ -110,21 +115,12 @@ class DrawBox extends DrawContract<BoxLike> {
 
     private fillBg(canvas: Canvas, elem: BoxLike) {
         const pen = canvas.getPen();
+        const char = BackgroundCharacters[elem.style.backgroundStyle ?? "default"];
 
-        let char = " ";
-        if (elem.style.backgroundStyle === "dashed") {
-            char = "╱";
-        } else if (elem.style.backgroundStyle === "dotted") {
-            char = ".";
+        pen.set("backgroundColor", elem.style.backgroundColor);
+        if (char !== " ") {
+            pen.set("color", elem.style.backgroundStyleColor);
         }
-
-        if (char === " ") {
-            pen.set("color", elem.style.backgroundColor);
-        } else {
-            pen.set("backgroundColor", elem.style.backgroundColor);
-        }
-
-        pen.set("color", elem.style.backgroundStyleColor);
 
         for (let y = 0; y < canvas.canvasHeight; ++y) {
             pen.moveTo(0, y);
@@ -307,8 +303,8 @@ class DrawBox extends DrawContract<BoxLike> {
             const textWidth =
                 config.left.length + config.right.length + title.textContent.length;
             const rect = elem.unclippedRect;
-            const borderLeft = elem.node.getComputedBorder(Yoga.EDGE_LEFT);
-            const borderRight = elem.node.getComputedBorder(Yoga.EDGE_RIGHT);
+            const borderLeft = elem.node.getComputedBorder(Yg.EDGE_LEFT);
+            const borderRight = elem.node.getComputedBorder(Yg.EDGE_RIGHT);
             const contentWidth = rect.width - borderLeft - borderRight;
 
             const canDraw = () => {
@@ -382,9 +378,8 @@ class DrawBox extends DrawContract<BoxLike> {
             left: hashedConfig.left ?? "",
             right: hashedConfig.right ?? "",
 
-            // TODO - these need to be able to handle borderTop/borderBottom specific colors
-            leftColor: elem.shadowStyle.borderColor,
-            rightColor: elem.shadowStyle.borderColor,
+            leftColor: elem.shadowStyle.borderLeftColor ?? elem.shadowStyle.borderColor,
+            rightColor: elem.shadowStyle.borderRightColor ?? elem.shadowStyle.borderColor,
         };
     }
 }

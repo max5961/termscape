@@ -1,4 +1,4 @@
-import Yoga from "yoga-wasm-web/auto";
+import { TextStyleSet, Yg } from "../Constants.js";
 import type { DomElement, Point } from "../Types.js";
 import type { TextStyle } from "../style/Style.js";
 import type { Canvas, Grid } from "./Canvas.js";
@@ -11,24 +11,6 @@ type PenDeps = {
     grid: Grid;
     canvas: Canvas;
 };
-
-const styleSet = new Set<keyof TextStyle>([
-    "color",
-    "backgroundColor",
-    "italic",
-    "bold",
-    "dimColor",
-    "underline",
-    "imagePositive",
-    "imageNegative",
-    "fontDefault",
-    "font1",
-    "font2",
-    "font3",
-    "font4",
-    "font5",
-    "font6",
-]);
 
 export class Pen {
     private readonly grid: Grid;
@@ -65,7 +47,7 @@ export class Pen {
     }
 
     public setStyle(config: TextStyle) {
-        for (const style of styleSet) {
+        for (const style of TextStyleSet) {
             // @ts-expect-error typescript can't infer that an two objs with the same shape using the same key have the same value types
             this.glyph.style[style] = config[style];
         }
@@ -120,13 +102,13 @@ export class Pen {
         side: "inner" | "outer",
     ): Pen => {
         const border = {
-            left: this.elem.node.getComputedBorder(Yoga.EDGE_LEFT),
-            right: this.elem.node.getComputedBorder(Yoga.EDGE_RIGHT),
+            left: this.elem.node.getComputedBorder(Yg.EDGE_LEFT),
+            right: this.elem.node.getComputedBorder(Yg.EDGE_RIGHT),
         };
 
         const padding = {
-            left: this.elem.node.getComputedPadding(Yoga.EDGE_LEFT),
-            right: this.elem.node.getComputedPadding(Yoga.EDGE_RIGHT),
+            left: this.elem.node.getComputedPadding(Yg.EDGE_LEFT),
+            right: this.elem.node.getComputedPadding(Yg.EDGE_RIGHT),
         };
 
         const rect = this.elem.unclippedRect;
@@ -191,13 +173,13 @@ export class Pen {
         side: "inner" | "outer",
     ): Pen => {
         const border = {
-            top: this.elem.node.getComputedBorder(Yoga.EDGE_TOP),
-            bottom: this.elem.node.getComputedBorder(Yoga.EDGE_BOTTOM),
+            top: this.elem.node.getComputedBorder(Yg.EDGE_TOP),
+            bottom: this.elem.node.getComputedBorder(Yg.EDGE_BOTTOM),
         };
 
         const padding = {
-            top: this.elem.node.getComputedPadding(Yoga.EDGE_TOP),
-            bottom: this.elem.node.getComputedPadding(Yoga.EDGE_BOTTOM),
+            top: this.elem.node.getComputedPadding(Yg.EDGE_TOP),
+            bottom: this.elem.node.getComputedPadding(Yg.EDGE_BOTTOM),
         };
 
         const rect = this.elem.unclippedRect;
@@ -260,9 +242,9 @@ export class Pen {
         let dy = 0;
 
         if (dir === "u") dy = -1;
-        if (dir === "d") dy = 1;
-        if (dir === "l") dx = -1;
-        if (dir === "r") dx = 1;
+        else if (dir === "d") dy = 1;
+        else if (dir === "l") dx = -1;
+        else if (dir === "r") dx = 1;
 
         let { x, y } = this.pos;
 

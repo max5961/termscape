@@ -1,9 +1,8 @@
-import type { TagNameEnum } from "../Constants.js";
-import type { BaseProps } from "../Props.js";
-import { ErrorMessages } from "../shared/ErrorMessages.js";
-import type { BaseStyle } from "../style/Style.js";
-import { BOOK_ELEMENT } from "../Symbols.js";
 import { DomElement } from "./DomElement.js";
+import { TagNameEnum, BOOK_ELEMENT } from "../Constants.js";
+import type { BaseProps } from "../Props.js";
+import type { BaseStyle } from "../style/Style.js";
+import { ErrorMessages } from "../shared/ErrorMessages.js";
 
 /**
  * The `BookElement` does not manage focus like `ListElement` and `PageElement`,

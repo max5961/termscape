@@ -1,8 +1,60 @@
-import { type BgColor } from "ansi-escape-sequences";
-import { type Color, type TextEffect } from "./Types.js";
+import type { BookElement } from "./dom/BookElement.js";
+import type { BoxElement } from "./dom/BoxElement.js";
+import type { CanvasElement } from "./dom/CanvasElement.js";
+import type { FocusManager } from "./dom/DomElement.js";
+import type { LayoutElement, LayoutNode } from "./dom/LayoutElement.js";
+import type { ListElement } from "./dom/ListElement.js";
+import type { Root } from "./dom/Root.js";
+import type { TestRoot } from "./dom/TestRoot.js";
+import type { TextElement } from "./dom/TextElement.js";
+import type { DomElement } from "./Types.js";
+import type { BgColor } from "ansi-escape-sequences";
+import type { Color, TextEffect } from "./Types.js";
+import type { TextStyle } from "./style/Style.js";
 import Yoga from "yoga-wasm-web/auto";
 
 export const Yg = Yoga;
+
+export const TEXT_PADDING = Symbol.for("termscape.padding_text");
+export const WIDE_CHAR_TRAIL = Symbol.for("termscape.wide_char_trail");
+
+export const DOM_ELEMENT = Symbol.for("termscape.dom_element");
+export const BOX_ELEMENT = Symbol.for("termscape.box_element");
+export const TEXT_ELEMENT = Symbol.for("termscape.text_element");
+export const BOOK_ELEMENT = Symbol.for("termscape.book_element");
+export const CANVAS_ELEMENT = Symbol.for("termscape.canvas_element");
+export const LAYOUT_ELEMENT = Symbol.for("termscape.layout_element");
+export const LAYOUT_NODE = Symbol.for("termscape.layout_node");
+export const LIST_ELEMENT = Symbol.for("termscape.list_element");
+export const FOCUS_MANAGER = Symbol.for("termscape.focus_manager");
+export const ROOT_ELEMENT = Symbol.for("termscape.root_element");
+export const TEST_ROOT_ELEMENT = Symbol.for("termscape.test_root_element");
+
+export const TagNameIdentityMap = {
+    root: ROOT_ELEMENT,
+    box: BOX_ELEMENT,
+    text: TEXT_ELEMENT,
+    book: BOOK_ELEMENT,
+    canvas: CANVAS_ELEMENT,
+    layout: LAYOUT_ELEMENT,
+    list: LIST_ELEMENT,
+    ["layout-node"]: LAYOUT_NODE,
+    ["focus-manager"]: FOCUS_MANAGER,
+} as const;
+
+export type ElementIdentityMap = {
+    [DOM_ELEMENT]: DomElement;
+    [BOX_ELEMENT]: BoxElement;
+    [TEXT_ELEMENT]: TextElement;
+    [BOOK_ELEMENT]: BookElement;
+    [CANVAS_ELEMENT]: CanvasElement;
+    [LAYOUT_ELEMENT]: LayoutElement;
+    [LAYOUT_NODE]: LayoutNode;
+    [LIST_ELEMENT]: ListElement;
+    [FOCUS_MANAGER]: FocusManager;
+    [ROOT_ELEMENT]: Root;
+    [TEST_ROOT_ELEMENT]: TestRoot;
+};
 
 export const TagNameEnum = {
     Box: "box",
@@ -68,4 +120,22 @@ export const BgColorSet = new Set<BgColor>([
     "bg-brightMagenta",
     "bg-brightCyan",
     "bg-brightWhite",
+]);
+
+export const TextStyleSet = new Set<keyof TextStyle>([
+    "color",
+    "backgroundColor",
+    "italic",
+    "bold",
+    "dimColor",
+    "underline",
+    "imagePositive",
+    "imageNegative",
+    "fontDefault",
+    "font1",
+    "font2",
+    "font3",
+    "font4",
+    "font5",
+    "font6",
 ]);

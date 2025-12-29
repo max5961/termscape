@@ -5,7 +5,7 @@ import type { BaseStyle } from "./style/Style.js";
 export type { DomElement } from "./dom/DomElement.js";
 
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
-export type { Node as YogaNode } from "yoga-wasm-web/auto";
+export type { Node as YogaNode, Edge } from "yoga-wasm-web/auto";
 
 export type ExtractUnion<T, U extends T> = U extends T ? U : never;
 

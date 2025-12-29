@@ -1,21 +1,17 @@
-import { DomElement, FocusManager } from "../dom/DomElement.js";
+import type { DomElement, FocusManager } from "../dom/DomElement.js";
+import type { Root } from "../dom/Root.js";
+import { FOCUS_MANAGER, ROOT_ELEMENT } from "../Constants.js";
 import { Canvas, type SubCanvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
-import { Root } from "../dom/Root.js";
-import type { FocusManagerBaseProps } from "../Props.js";
-import type { BaseStyle } from "../style/Style.js";
 
 export class Compositor {
     public canvas: Canvas;
     public ops: Operations;
     public rects: DomRects;
     public draw: Draw;
-    public focusManagers: FocusManager<{
-        Style: BaseStyle;
-        Props: FocusManagerBaseProps;
-    }>[];
+    public focusManagers: FocusManager[];
     public scrollManagers: DomElement[];
     private postLayout: (() => unknown)[];
     public afterLayoutHandlers: (() => unknown)[];
@@ -44,7 +40,6 @@ export class Compositor {
         const zIndex = style.zIndex ?? 0;
 
         this.draw.updateLowestLayer(zIndex);
-        this.rects.setRect(elem, canvas);
 
         if (elem.afterLayoutHandlers.size) {
             this.afterLayoutHandlers.push(...elem.afterLayoutHandlers.values());
@@ -53,7 +48,7 @@ export class Compositor {
         if (canvas.canDraw()) {
             this.rects.storeElementPosition(zIndex, elem);
             this.ops.defer(zIndex, () => this.draw.compose(elem, canvas));
-            if (elem instanceof FocusManager) {
+            if (elem.is(FOCUS_MANAGER)) {
                 if (layoutChange) {
                     this.postLayoutDefer(() => {
                         elem.refreshVisualMap();
@@ -73,7 +68,7 @@ export class Compositor {
             parentScrollManagers.push(elem);
         }
 
-        for (const child of elem.__children__) {
+        for (const child of elem._children) {
             child.canvas = this.getRefreshedChildCanvas(child, canvas, layoutChange);
 
             if (layoutChange) {
@@ -105,7 +100,7 @@ export class Compositor {
             ]);
         }
 
-        if (elem instanceof Root) {
+        if (elem.is(ROOT_ELEMENT)) {
             this.ops.performAll();
             this.postLayout.forEach((cb) => cb());
         }

@@ -32,13 +32,22 @@ export class DomRects {
         this.layers = {};
     }
 
-    public setRect(elem: DomElement, canvas: Canvas) {
-        elem.rect = canvas.getDomRect();
+    public static InitRect() {
+        return {
+            x: -1,
+            y: -1,
+            top: -1,
+            bottom: -1,
+            right: -1,
+            left: -1,
+            width: -1,
+            height: -1,
+        };
     }
 
     public storeElementPosition(zIndex: number, elem: DomElement) {
-        const x = elem.rect.x;
-        const y = elem.rect.y;
+        const x = elem.visibleRect.corner.x;
+        const y = elem.visibleRect.corner.y;
 
         this.layers[zIndex] = this.layers[zIndex] ?? {
             x: {},

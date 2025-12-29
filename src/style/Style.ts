@@ -1,4 +1,4 @@
-import { Borders, type BorderMap } from "../shared/Borders.js";
+import { Borders, type BorderMap } from "../shared/Boxes.js";
 import type { Color } from "../Types.js";
 
 export type BorderStyle = keyof typeof Borders;
@@ -156,6 +156,6 @@ export type ShadowBoxStyle = Shadow<BoxStyle>;
 // TextStyle already defined
 export type ShadowTextStyle = Shadow<TextStyle>;
 
-// CanvaStyle
+// CanvasStyle
 export type CanvasStyle = YogaStyle.DimensionStyle & YogaStyle.MarginStyle;
 export type ShadowCanvasStyle = Shadow<CanvasStyle>;

@@ -1,6 +1,6 @@
-import { Canvas } from "../compositor/Canvas.js";
-import { Cursor } from "./Cursor.js";
 import { Writer } from "./Writer.js";
+import type { Cursor } from "./Cursor.js";
+import type { Canvas } from "../compositor/Canvas.js";
 import type { GridToken } from "../Types.js";
 import type { Root } from "../dom/Root.js";
 

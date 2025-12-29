@@ -1,4 +1,4 @@
-import Yoga, { type Edge } from "yoga-wasm-web/auto";
+import { Yg } from "../Constants.js";
 import type {
     DOMRect,
     GridToken,
@@ -6,15 +6,16 @@ import type {
     Stdout,
     DomElement,
     YogaNode,
+    Edge,
 } from "../Types.js";
 import { Pen } from "./Pen.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
-import { TEXT_ELEMENT } from "../Symbols.js";
+import { TEXT_ELEMENT } from "../Constants.js";
 
 /**
  * The Canvas contains a reference to the 2d Grid that is drawn to as well as
  * metadata used by DomElement's in order to draw to the Grid. The metadata
- * includes the the corner of the DomElement as calculated by Yoga and the min/max
+ * includes the the corner of the DomElement as calculated by Yg and the min/max
  * `x` and `y` values which are derived from the overflow style values.  Canvases
  * can create SubCanvases which decide their extrema based on the parent.
  *
@@ -222,10 +223,10 @@ export class Canvas {
             );
         };
 
-        leftOff += getOffset(Yoga.EDGE_LEFT);
-        rightOff += getOffset(Yoga.EDGE_RIGHT);
-        bottomOff += getOffset(Yoga.EDGE_BOTTOM);
-        topOff += getOffset(Yoga.EDGE_TOP);
+        leftOff += getOffset(Yg.EDGE_LEFT);
+        rightOff += getOffset(Yg.EDGE_RIGHT);
+        bottomOff += getOffset(Yg.EDGE_BOTTOM);
+        topOff += getOffset(Yg.EDGE_TOP);
 
         const offsetCorner: Point = {
             x: corner.x + leftOff,
@@ -266,7 +267,7 @@ export class Canvas {
     }
 
     public getDomRect(): DOMRect {
-        const vis = this.getClippedRect(this.unclippedRect, this.limits);
+        const vis = this.visibleRect;
 
         return {
             x: vis.corner.x,

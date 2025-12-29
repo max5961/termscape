@@ -5,7 +5,7 @@ import type { BoxStyle } from "../style/Style.js";
 import { objectKeys } from "../Util.js";
 import type { BaseProps, FocusManagerProps } from "../Props.js";
 import { TagNameEnum } from "../Constants.js";
-import { LAYOUT_ELEMENT, LAYOUT_NODE } from "../Symbols.js";
+import { LAYOUT_ELEMENT, LAYOUT_NODE } from "../Constants.js";
 
 export class LayoutElement extends FocusManager<{
     Style: BoxStyle;
@@ -77,7 +77,7 @@ export class LayoutElement extends FocusManager<{
                 child.children.forEach((child) => dfs(child));
             }
         };
-        this.__children__.forEach((child) => dfs(child));
+        this._children.forEach((child) => dfs(child));
 
         return nodes;
     }

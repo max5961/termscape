@@ -2,11 +2,11 @@ import type { DomElement } from "./DomElement.js";
 
 type Status = { focus: boolean; shallowFocus: boolean };
 
-export class Focus {
-    public children: Set<Focus>;
+export class FocusNode {
+    public children: Set<FocusNode>;
     public nearestCheckpoint: CheckPoint | null;
     private checkpoint: CheckPoint | null;
-    protected parent: Focus | null;
+    protected parent: FocusNode | null;
     private elem: DomElement;
 
     constructor(elem: DomElement) {
@@ -17,13 +17,13 @@ export class Focus {
         this.parent = null;
     }
 
-    public appendChild(focus: Focus) {
+    public appendChild(focus: FocusNode) {
         focus.parent = this;
         focus.nearestCheckpoint = this.nearestCheckpoint;
         this.children.add(focus);
     }
 
-    public removeChild(focus: Focus) {
+    public removeChild(focus: FocusNode) {
         this.children.delete(focus);
         focus.parent = null;
         this.nearestCheckpoint = null;
@@ -88,7 +88,7 @@ export class Focus {
         this.children.forEach((child) => this.rewireHelper(child, nearest));
     }
 
-    private rewireHelper = (focus: Focus, nearest: CheckPoint | null) => {
+    private rewireHelper = (focus: FocusNode, nearest: CheckPoint | null) => {
         if (focus.checkpoint) return;
         focus.nearestCheckpoint = nearest;
 

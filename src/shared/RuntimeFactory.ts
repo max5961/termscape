@@ -1,20 +1,19 @@
 import {
     ActionStore,
-    configureStdin,
     InputState,
+    configureStdin,
     setKittyProtocol,
     setMouse,
     type Action,
 } from "term-keymap";
-import type { EventEmitterMap, RuntimeConfig } from "../Types.js";
-import { Ansi } from "./Ansi.js";
-import { Capture } from "log-goblin";
 import type { Root } from "../dom/Root.js";
 import type { Scheduler } from "./Scheduler.js";
 import type { EventEmitter } from "stream";
-import { handleError } from "./ThrowError.js";
+import type { EventEmitterMap, RuntimeConfig } from "../Types.js";
+import { Ansi } from "./Ansi.js";
+import { Capture } from "log-goblin";
 import { MouseState } from "./MouseState.js";
-import { logger } from "./Logger.js";
+import { handleError } from "./ThrowError.js";
 
 type Config = Required<RuntimeConfig>;
 export type RuntimeDependencies = {
@@ -129,7 +128,7 @@ export function createRuntime(deps: RuntimeDependencies) {
             isStarted = true;
 
             // Listening was requested while runtime not started
-            if (requestedListening) {
+            if (requestedListening || wasListening) {
                 logic.resumeStdin();
             }
 
@@ -158,10 +157,6 @@ export function createRuntime(deps: RuntimeDependencies) {
             api.exitOnCtrlC = config.exitOnCtrlC;
             api.altScreen = config.altScreen;
             api.debounceMs = config.debounceMs;
-
-            if (wasListening) {
-                this.resumeStdin();
-            }
         },
 
         endRuntime(error?: Error, isBeforeExit?: boolean) {
@@ -199,10 +194,9 @@ export function createRuntime(deps: RuntimeDependencies) {
             isListening = true;
 
             try {
-                // This fn is just a utility to check for raw mode and enable
-                // kitty protocol support, but it will write to the stdout, and
-                // therefore pollute any mock stdout. If using a mock stdin,
-                // kitty keycodes can still be sent and parsed.
+                // This fn is a utility to check for raw mode and write to stdout
+                // to enable and check for kitty protocol support.  This is
+                // unnecessary during testing and pollutes any mock stdout.
                 if (config.stdin === process.stdin) {
                     configureStdin(config);
                 }

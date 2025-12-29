@@ -1,14 +1,13 @@
 import type { FocusManagerProps } from "../Props.js";
-import type { BoxStyle, ShadowBoxStyle } from "../style/Style.js";
+import type { BoxStyle } from "../style/Style.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
 import { FocusManager } from "./DomElement.js";
 import { TagNameEnum } from "../Constants.js";
-import { LIST_ELEMENT } from "../Symbols.js";
+import { LIST_ELEMENT } from "../Constants.js";
 
 export class ListElement extends FocusManager<{
     Style: BoxStyle;
-    ShadowStyle: ShadowBoxStyle;
     Props: FocusManagerProps;
 }> {
     protected static override identity = LIST_ELEMENT;
@@ -68,12 +67,12 @@ export class ListElement extends FocusManager<{
     }
 
     protected override getNavigableChildren(): DomElement[] {
-        return this.__children__.slice();
+        return this._children.slice();
     }
 
     protected override handleAppendChild(child: DomElement): void {
         child.focusNode.becomeCheckpoint(false);
-        if (this.__children__.length === 1) {
+        if (this._children.length === 1) {
             child.focusNode.updateCheckpoint(true);
             this.focused = child;
         }
@@ -216,7 +215,7 @@ export class BigList<T> extends ListElement {
         // This is where FocusManager is 'picking' an index to focus and running
         // focusChild automatically, see 'FocusManager.removeChild' which checks to
         // see if the child being removed is focused, if it is then it shifts focus
-        [...this.__children__].forEach((child) => this.removeChild(child));
+        [...this._children].forEach((child) => this.removeChild(child));
         this.generatedItems.forEach((child) => this.appendChild(child));
 
         // The real issue with this design is that once you remove or add a child

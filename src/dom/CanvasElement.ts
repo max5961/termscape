@@ -1,8 +1,7 @@
+import { DomElement } from "./DomElement.js";
+import { TagNameEnum, CANVAS_ELEMENT } from "../Constants.js";
 import type { Props } from "../Props.js";
 import type { CanvasStyle } from "../style/Style.js";
-import { DomElement } from "./DomElement.js";
-import { TagNameEnum } from "../Constants.js";
-import { CANVAS_ELEMENT } from "../Symbols.js";
 
 export class CanvasElement extends DomElement<{
     Style: CanvasStyle;

@@ -1,7 +1,6 @@
-import Yoga from "yoga-wasm-web/auto";
-import { DOM_ELEMENT, TagNameIdentityMap, type ElementIdentityMap } from "../Symbols.js";
+import { Yg } from "../Constants.js";
 import type { Root } from "./Root.js";
-import { type Action } from "term-keymap";
+import type { Action } from "term-keymap";
 import type {
     MouseEvent,
     MouseEventType,
@@ -15,14 +14,20 @@ import type {
 } from "../Types.js";
 import type { BaseStyle, BaseShadowStyle } from "../style/Style.js";
 import type { BaseProps, FocusManagerProps, Scrollbar, Title } from "../Props.js";
-import { type Canvas, type Rect } from "../compositor/Canvas.js";
+import type { Canvas, Rect } from "../compositor/Canvas.js";
+import {
+    DOM_ELEMENT,
+    FOCUS_MANAGER,
+    TagNameIdentityMap,
+    type ElementIdentityMap,
+} from "../Constants.js";
 import { Render, RequestInput } from "./util/decorators.js";
+import { ElementMetaData } from "./ElementMetadata.js";
+import { FocusNode } from "./FocusNode.js";
+import { ErrorMessages } from "../shared/ErrorMessages.js";
 import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
-import { ElementMetaData } from "./ElementMetadata.js";
-import { Focus } from "./FocusContext.js";
 import { throwError } from "../shared/ThrowError.js";
-import { ErrorMessages } from "../shared/ErrorMessages.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
 
 export abstract class DomElement<
@@ -31,14 +36,27 @@ export abstract class DomElement<
         Props: BaseProps;
     } = { Style: BaseStyle; Props: BaseProps },
 > {
-    protected static identity = DOM_ELEMENT;
+    protected static readonly identity = DOM_ELEMENT;
 
-    public node: YogaNode;
+    private static readonly DefaultStyles = {
+        display: "flex",
+        zIndex: "auto",
+        overflow: "visible",
+        flexDirection: "row",
+        flexGrow: 0,
+        flexShrink: 1,
+    };
+
+    public readonly node: YogaNode;
     public parentElement: null | DomElement;
     public contentRange: ReturnType<DomElement["initContentRange"]>;
+    private identities: Set<symbol>;
 
-    /** @internal */
-    public rect: DOMRect;
+    /**
+     * @internal
+     * Privately using the `children` getter conflicts with the `BookElement` implementation
+     * */
+    public _children: DomElement[];
     /** @internal */
     public virtualStyle!: Schema["Style"];
     /** @internal */
@@ -48,9 +66,7 @@ export abstract class DomElement<
     /** @internal */
     public canvas: Canvas | null;
     /** @internal */
-    public __children__: DomElement[];
-    /** @internal */
-    public focusNode: Focus;
+    public focusNode: FocusNode;
     /** @internal */
     public styleHandler: StyleHandler<Schema["Style"]> | null;
     /** @internal */
@@ -58,64 +74,85 @@ export abstract class DomElement<
     /** @internal */
     public afterLayoutHandlers: Set<() => unknown>;
 
+    protected readonly childrenSet: Set<DomElement>;
     protected readonly rootRef: { root: Root | null };
-    protected eventListeners: Record<MouseEventType, Set<MouseEventHandler>>;
-    protected requiresStdin: boolean;
-    protected removeKeyListeners: (() => void)[];
-    protected childrenSet: Set<DomElement>;
     protected readonly metadata: ElementMetaData;
-    protected readonly baseDefaultStyles: BaseStyle;
+    protected readonly eventListeners: Map<MouseEventType, Set<MouseEventHandler>>;
+    protected requiresStdin: boolean;
     protected lastOffsetChangeWasFocus: boolean;
-    private identities: Set<symbol>;
 
     constructor() {
-        this.node = Yoga.Node.create();
-        this.parentElement = null;
         this.identities = new Set();
         this.collectIdentities();
-        this.contentRange = this.initContentRange();
-
-        /** Privately using the `children` getter conflicts with the `BookElement` implementation */
-        this.__children__ = [];
-        this.childrenSet = new Set();
-
+        this.node = Yg.Node.create();
         this.rootRef = { root: null };
-        this.rect = this.initRect();
-        this.canvas = null;
-        this.scrollOffset = { x: 0, y: 0 };
+        this.parentElement = null;
+        this._children = [];
         this.props = new Map();
-        this.eventListeners = this.initEventListeners();
-        this.requiresStdin = false;
+        this.eventListeners = new Map();
         this.metadata = new ElementMetaData(this);
-        this.lastOffsetChangeWasFocus = false;
+        this.focusNode = new FocusNode(this);
+        this.contentRange = this.initContentRange();
+        this.scrollOffset = { x: 0, y: 0 };
+        this.canvas = null;
+        this.childrenSet = new Set();
         this.afterLayoutHandlers = new Set();
 
-        const { virtualStyle, shadowStyle } = createVirtualStyleProxy<Schema["Style"]>(
-            this,
-            this.rootRef,
-            this.metadata,
-        );
+        // Mutable flags
+        this.requiresStdin = false;
+        this.lastOffsetChangeWasFocus = false;
 
-        this.virtualStyle = virtualStyle;
-        this.shadowStyle = shadowStyle;
-
-        this.removeKeyListeners = [];
-
-        // DEFAULT STYLES
-        this.baseDefaultStyles = {
-            display: "flex",
-            zIndex: "auto",
-            overflow: "visible",
-            flexDirection: "row",
-            flexGrow: 0,
-            flexShrink: 1,
-        };
-
+        const proxy = createVirtualStyleProxy(this, this.rootRef, this.metadata);
+        this.virtualStyle = proxy.virtualStyle;
+        this.shadowStyle = proxy.shadowStyle;
         this.styleHandler = null;
-        this.focusNode = new Focus(this);
 
         this.applyDefaultProps();
         this.applyDefaultStyles();
+    }
+
+    public abstract get tagName(): TagName;
+    protected abstract get defaultProps(): Schema["Props"];
+    protected abstract get defaultStyles(): Schema["Style"];
+
+    private applyDefaultProps() {
+        for (const [k, v] of objectEntries(this.defaultProps)) {
+            this.setProp(k, v);
+        }
+    }
+
+    private applyDefaultStyles() {
+        this.style = { ...DomElement.DefaultStyles, ...this.defaultStyles };
+    }
+
+    set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
+        if (typeof stylesheet === "function") {
+            this.styleHandler = stylesheet;
+        } else {
+            this.styleHandler = null;
+        }
+
+        let styles = stylesheet;
+        if (this.styleHandler) {
+            const { focus, shallowFocus } = this.focusNode.getStatus();
+            styles = this.styleHandler({ focus, shallowFocus });
+        }
+
+        const withDefault = {
+            ...DomElement.DefaultStyles,
+            ...this.defaultStyles,
+            ...styles,
+        } as Schema["Style"];
+
+        const keys = [...objectKeys(withDefault), ...objectKeys(this.style)];
+
+        for (const key of keys) {
+            this.style[key] = withDefault[key];
+        }
+    }
+
+    get style(): Schema["Style"] {
+        return this.virtualStyle;
     }
 
     private collectIdentities() {
@@ -141,10 +178,19 @@ export abstract class DomElement<
         return this.identities.has(identity);
     }
 
-    public abstract get tagName(): TagName;
-
     get children(): Readonly<DomElement[]> {
-        return this.__children__;
+        return this._children;
+    }
+
+    public getProp<T extends keyof Schema["Props"]>(
+        key: T,
+    ): Schema["Props"][T] | undefined {
+        return this.props.get(key as string) as Schema["Props"][T] | undefined;
+    }
+
+    /** @internal for better internal types */
+    public getBaseProp<T extends keyof BaseProps>(key: T): BaseProps[T] | undefined {
+        return this.props.get(key) as BaseProps[T] | undefined;
     }
 
     @Render()
@@ -162,7 +208,11 @@ export abstract class DomElement<
     }
 
     private initializeScrollbar(scrollbar: Scrollbar) {
-        scrollbar.edge ??= "right";
+        if (this.shadowStyle.flexDirection?.includes("row")) {
+            scrollbar.edge ??= "bottom";
+        } else {
+            scrollbar.edge ??= "right";
+        }
         scrollbar.mode ??= "always";
         scrollbar.placement ??= "padding-outer";
         scrollbar.barChar = scrollbar.barChar ? scrollbar.barChar[0] : " ";
@@ -190,40 +240,11 @@ export abstract class DomElement<
     }
 
     /** @internal */
-    public getBaseProp<T extends keyof BaseProps>(key: T): BaseProps[T] | undefined {
-        return this.props.get(key) as BaseProps[T] | undefined;
-    }
-
-    public getProp<T extends keyof Schema["Props"]>(
-        key: T,
-    ): Schema["Props"][T] | undefined {
-        return this.props.get(key as string) as Schema["Props"][T] | undefined;
-    }
-
-    private applyDefaultProps() {
-        for (const [k, v] of objectEntries(this.defaultProps)) {
-            this.setProp(k, v);
-        }
-    }
-
-    private applyDefaultStyles() {
-        this.style = { ...this.baseDefaultStyles, ...this.defaultStyles };
-    }
-
-    protected abstract get defaultProps(): Schema["Props"];
-    protected abstract get defaultStyles(): Schema["Style"];
-
-    /** @internal */
     public throwError(errorMsg: string) {
         return throwError(this.getRoot(), errorMsg);
     }
 
-    /**
-     * @internal
-     *
-     * Returns the initial values for deepest child nodes content.  Used in constructor
-     * and during compositing
-     * */
+    /** @internal */
     public initContentRange() {
         return {
             high: Infinity,
@@ -277,40 +298,6 @@ export abstract class DomElement<
     }
 
     // ========================================================================
-    // Auto Render Proxy
-    // ========================================================================
-
-    set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
-        if (typeof stylesheet === "function") {
-            this.styleHandler = stylesheet;
-        } else {
-            this.styleHandler = null;
-        }
-
-        let styles = stylesheet;
-        if (this.styleHandler) {
-            const { focus, shallowFocus } = this.focusNode.getStatus();
-            styles = this.styleHandler({ focus, shallowFocus });
-        }
-
-        const withDefault = {
-            ...this.baseDefaultStyles,
-            ...this.defaultStyles,
-            ...styles,
-        } as Schema["Style"];
-
-        const keys = [...objectKeys(withDefault), ...objectKeys(this.style)];
-
-        for (const key of keys) {
-            this.style[key] = withDefault[key];
-        }
-    }
-
-    get style(): Schema["Style"] {
-        return this.virtualStyle;
-    }
-
-    // ========================================================================
     // Tree Manipulation
     // ========================================================================
 
@@ -321,7 +308,7 @@ export abstract class DomElement<
         this.dfs(this, (elem) => {
             elem.setRoot(root);
 
-            root.bridgeDomElement(elem.metadata, { attached: true });
+            root.handleAttachmentChange(elem.metadata, { attached: true });
 
             if (elem.requiresStdin) {
                 root.requestInputStream();
@@ -336,7 +323,7 @@ export abstract class DomElement<
             elem.setRoot(null);
 
             if (root) {
-                root.bridgeDomElement(elem.metadata, { attached: false });
+                root.handleAttachmentChange(elem.metadata, { attached: false });
             }
         });
     }
@@ -348,7 +335,7 @@ export abstract class DomElement<
         this.focusNode.children.add(child.focusNode);
 
         this.node.insertChild(child.node, this.node.getChildCount());
-        this.__children__.push(child);
+        this._children.push(child);
         child.parentElement = this;
         const root = this.getRoot();
         child.setRoot(root);
@@ -367,20 +354,20 @@ export abstract class DomElement<
         const nextChildren = [] as DomElement[];
         let foundBeforeChild = false;
         let childIdx = 0;
-        for (let i = 0; i < this.__children__.length; ++i) {
-            if (this.__children__[i] === beforeChild) {
+        for (let i = 0; i < this._children.length; ++i) {
+            if (this._children[i] === beforeChild) {
                 nextChildren.push(child);
                 foundBeforeChild = true;
                 childIdx = i;
             }
-            nextChildren.push(this.__children__[i]);
+            nextChildren.push(this._children[i]);
         }
 
         if (!foundBeforeChild) {
             this.throwError(ErrorMessages.insertBefore);
         }
 
-        this.__children__ = nextChildren;
+        this._children = nextChildren;
         this.node.insertChild(child.node, childIdx);
         child.parentElement = this;
         const root = this.getRoot();
@@ -391,7 +378,7 @@ export abstract class DomElement<
 
     @Render({ layoutChange: true })
     public removeChild(child: DomElement, freeRecursive?: boolean) {
-        const idx = this.__children__.findIndex((el) => el === child);
+        const idx = this._children.findIndex((el) => el === child);
 
         if (idx === -1 || !this.childrenSet.has(child)) {
             this.throwError(ErrorMessages.removeChild);
@@ -402,7 +389,7 @@ export abstract class DomElement<
 
         child.beforeDetaching();
 
-        this.__children__.splice(idx, 1);
+        this._children.splice(idx, 1);
         this.node.removeChild(child.node);
 
         // If React removes a child, it should be gc'd.  If removing w/o React,
@@ -427,12 +414,12 @@ export abstract class DomElement<
 
     @Render({ layoutChange: true })
     public hide(): void {
-        this.node.setDisplay(Yoga.DISPLAY_NONE);
+        this.node.setDisplay(Yg.DISPLAY_NONE);
     }
 
     @Render({ layoutChange: true })
     public unhide(): void {
-        this.node.setDisplay(Yoga.DISPLAY_FLEX);
+        this.node.setDisplay(Yg.DISPLAY_FLEX);
     }
 
     public getYogaChildren(): YogaNode[] {
@@ -478,23 +465,6 @@ export abstract class DomElement<
     // DOMRects
     // ========================================================================
 
-    private initRect() {
-        return {
-            x: -1,
-            y: -1,
-            top: -1,
-            bottom: -1,
-            right: -1,
-            left: -1,
-            width: -1,
-            height: -1,
-        };
-    }
-
-    public getBoundingClientRect(): DOMRect {
-        return this.rect;
-    }
-
     private getDefaultRect(): Rect {
         return {
             corner: { x: 0, y: 0 },
@@ -519,11 +489,27 @@ export abstract class DomElement<
         return this.canvas?.visibleContentRect ?? this.getDefaultRect();
     }
 
+    public getBoundingClientRect(): DOMRect {
+        const vis = this.visibleRect;
+        return {
+            x: vis.corner.x,
+            y: vis.corner.y,
+            top: vis.corner.y,
+            left: vis.corner.x,
+            right: vis.corner.x + vis.width,
+            bottom: vis.corner.y + vis.height,
+            height: vis.height,
+            width: vis.width,
+        };
+    }
+
     public containsPoint(x: number, y: number): boolean {
-        if (x < this.rect.x) return false;
-        if (y < this.rect.y) return false;
-        if (x >= this.rect.right) return false;
-        if (y >= this.rect.bottom) return false;
+        const visibleRect = this.visibleRect;
+
+        if (x < visibleRect.corner.x) return false;
+        if (y < visibleRect.corner.y) return false;
+        if (x >= visibleRect.corner.x + visibleRect.width) return false;
+        if (y >= visibleRect.corner.y + visibleRect.height) return false;
         return true;
     }
 
@@ -531,45 +517,17 @@ export abstract class DomElement<
     // Mouse Events
     // ========================================================================
 
-    private initEventListeners<
-        T = DomElement["eventListeners"][keyof DomElement["eventListeners"]],
-    >() {
-        return {
-            // LEFT BTN
-            click: new Set<T>(),
-            dblclick: new Set<T>(),
-            mousedown: new Set<T>(),
-            mouseup: new Set<T>(),
-
-            // RIGHT BTN
-            rightclick: new Set<T>(),
-            rightdblclick: new Set<T>(),
-            rightmousedown: new Set<T>(),
-            rightmouseup: new Set<T>(),
-
-            // SCROLL WHEEL
-            scrollup: new Set<T>(),
-            scrolldown: new Set<T>(),
-            scrollclick: new Set<T>(),
-            scrolldblclick: new Set<T>(),
-            scrollbtndown: new Set<T>(),
-            scrollbtnup: new Set<T>(),
-
-            // MOVEMENT
-            mousemove: new Set<T>(),
-            drag: new Set<T>(),
-            dragstart: new Set<T>(),
-            dragend: new Set<T>(),
-        };
-    }
-
     @RequestInput()
     public addEventListener(event: MouseEventType, handler: MouseEventHandler): void {
-        this.eventListeners[event].add(handler);
+        if (!this.eventListeners.get(event)) {
+            this.eventListeners.set(event, new Set());
+        }
+        this.eventListeners.get(event)!.add(handler);
     }
 
     public removeEventListener(event: MouseEventType, handler: MouseEventHandler): void {
-        this.eventListeners[event].delete(handler);
+        if (!this.eventListeners.get(event)) return;
+        this.eventListeners.get(event)!.delete(handler);
     }
 
     protected propagateMouseEvent(
@@ -582,8 +540,8 @@ export abstract class DomElement<
         let canImmediatePropagate = true;
 
         const propagate = (curr: DomElement, target: DomElement) => {
-            if (curr && curr.eventListeners[type].size) {
-                const handlers = curr.eventListeners[type];
+            if (curr && curr.eventListeners.get(type)?.size) {
+                const handlers = curr.eventListeners.get(type)!;
 
                 const event: MouseEvent = {
                     type,
@@ -704,7 +662,7 @@ export abstract class DomElement<
 
     /**
      * A negative dy scrolls *down* by "pulling" content *up*.
-     * A negative dx scrolls *left* by "pulling" content *left*
+     * A negative dx scrolls *right* by "pulling" content *left*
      * */
     private requestScroll(dx: number, dy: number): number {
         if (!this.canvas) return 0;
@@ -791,23 +749,25 @@ export abstract class DomElement<
             const leftestRect = rect.corner.x;
             const rightestRect = rect.corner.x + rect.width;
 
-            if (
-                (highestRect > highest && deepestRect > deepest) ||
-                (deepestRect < deepest && highestRect < highest)
-            ) {
-                const displacement = this.requestScroll(0, Infinity);
-                this.applyCornerOffsetWithoutRender(0, displacement);
-                return true;
+            let dy = 0;
+            let dx = 0;
+            if (highest > highestRect) {
+                dy = -1 * (highest - highestRect);
+            }
+            if (deepest < deepestRect) {
+                dy = deepestRect - deepest;
+            }
+            if (mostLeft > leftestRect) {
+                dx = -1 * (mostLeft - leftestRect);
+            }
+            if (mostRight < rightestRect) {
+                dx = mostRight - rightestRect;
             }
 
-            if (
-                (leftestRect > mostLeft && mostRight > mostRight) ||
-                (rightestRect < mostRight && leftestRect < mostLeft)
-            ) {
-                const displacement = this.requestScroll(0, -Infinity);
-                this.applyCornerOffsetWithoutRender(0, displacement);
-                return true;
-            }
+            if (!dx && !dy) return false;
+
+            this.applyCornerOffsetWithoutRender(dx, dy);
+            return true;
         }
 
         return false;
@@ -861,7 +821,7 @@ export abstract class DomElement<
 
     protected dfs(elem: DomElement, cb: (elem: DomElement) => void) {
         cb(elem);
-        elem.__children__.forEach((child) => {
+        elem._children.forEach((child) => {
             this.dfs(child, cb);
         });
     }
@@ -888,8 +848,10 @@ export abstract class FocusManager<
     Schema extends {
         Style: BaseStyle;
         Props: FocusManagerProps;
-    },
+    } = { Style: BaseStyle; Props: FocusManagerProps },
 > extends DomElement<Schema> {
+    protected static override identity = FOCUS_MANAGER;
+
     private vmap: VisualNodeMap;
     private _focused: DomElement | undefined;
 
@@ -950,7 +912,7 @@ export abstract class FocusManager<
         // If `blockChildrenShrink` is true, style handlers will set `flexShrink`
         // to `0`
         if (key === "blockChildrenShrink") {
-            this.__children__.forEach((child) => {
+            this._children.forEach((child) => {
                 recalculateStyle(child, "flexShrink");
             });
         }

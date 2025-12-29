@@ -1,8 +1,7 @@
 import { DomElement } from "./DomElement.js";
+import { TagNameEnum, BOX_ELEMENT } from "../Constants.js";
 import type { BoxStyle } from "../style/Style.js";
 import type { Props } from "../Props.js";
-import { TagNameEnum } from "../Constants.js";
-import { BOX_ELEMENT } from "../Symbols.js";
 
 export abstract class AbstractBoxElement extends DomElement<{
     Style: BoxStyle;

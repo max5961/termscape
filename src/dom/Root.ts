@@ -1,4 +1,3 @@
-import Yoga from "yoga-wasm-web/auto";
 import EventEmitter from "events";
 import { type Action } from "term-keymap";
 import { DomElement } from "./DomElement.js";
@@ -9,68 +8,52 @@ import type { EventEmitterMap, RuntimeConfig, WriteOpts } from "../Types.js";
 import type { BaseStyle } from "../style/Style.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import type { BaseProps } from "../Props.js";
-import type { TagNameEnum } from "../Constants.js";
+import { Yg, type TagNameEnum } from "../Constants.js";
 import { HooksManager, type Hook, type HookHandler } from "../render/Hooks.js";
-import { ROOT_ELEMENT, TEST_ROOT_ELEMENT } from "../Symbols.js";
+import { ROOT_ELEMENT, TEST_ROOT_ELEMENT } from "../Constants.js";
 
 export class Root extends DomElement {
     protected static override identity = ROOT_ELEMENT;
 
+    protected override readonly rootRef: { readonly root: Root };
+    private hasRendered: boolean;
     public runtime: Runtime["api"];
     public hooks: HooksManager;
-
-    protected override readonly rootRef: { readonly root: Root };
-
-    private hasRendered: boolean;
     private scheduler: Scheduler;
     private renderer: Renderer;
     private runtimeCtl: Runtime["logic"];
-    private Emitter: EventEmitter<EventEmitterMap>;
+    private emitter: EventEmitter<EventEmitterMap>;
     private attached: {
         actions: Map<DomElement, Set<Action>>;
         viewportEls: Set<DomElement>;
     };
 
-    // Handle work that can only be done once the Yoga layout is known
-    // private postLayoutOps: (() => unknown)[];
-
     constructor(config: RuntimeConfig) {
         super();
         this.rootRef = { root: this };
-        this.hasRendered = false;
+        this.attached = { actions: new Map(), viewportEls: new Set() };
         this.hooks = new HooksManager();
-        // this.postLayoutOps = [];
-
-        this.node.setFlexWrap(Yoga.WRAP_NO_WRAP);
-        this.node.setFlexDirection(Yoga.FLEX_DIRECTION_ROW);
-        this.node.setFlexGrow(0);
-        this.node.setFlexShrink(1);
-
         this.renderer = new Renderer(this);
         this.scheduler = new Scheduler({ isTestRoot: this.is(TEST_ROOT_ELEMENT) });
+        this.emitter = new EventEmitter();
+        this.emitter.on("MouseEvent", this.handleMouseEvent);
+        this.hasRendered = false;
 
-        this.Emitter = new EventEmitter();
-        this.Emitter.on("MouseEvent", this.handleMouseEvent);
-
-        this.attached = {
-            actions: new Map(),
-            viewportEls: new Set(),
-        };
-
-        // Root element is considered attached to itself.
-        this.afterAttached();
+        this.afterAttached(); // attach Root to itself
+        this.setDefaultYogaStyles();
 
         const { api, logic } = createRuntime({
             config: config,
             root: this,
             scheduler: this.scheduler,
-            emitter: this.Emitter,
+            emitter: this.emitter,
             attached: this.attached,
         });
 
         this.runtime = api;
         this.runtimeCtl = logic;
-        if (config.startOnCreate ?? true) {
+
+        if (config.startOnCreate !== false) {
             this.runtimeCtl.startRuntime();
         }
     }
@@ -85,6 +68,20 @@ export class Root extends DomElement {
     protected override get defaultProps(): BaseProps {
         return {};
     }
+    /** No op - Root cannot set styles */
+    override set style(_stylesheet: BaseStyle) {}
+
+    /** Return empty object - Root cannot set styles */
+    override get style(): BaseStyle {
+        return {};
+    }
+
+    private setDefaultYogaStyles() {
+        this.node.setFlexWrap(Yg.WRAP_NO_WRAP);
+        this.node.setFlexDirection(Yg.FLEX_DIRECTION_ROW);
+        this.node.setFlexGrow(0);
+        this.node.setFlexShrink(1);
+    }
 
     public addHook<T extends Hook>(hook: T, cb: HookHandler<T>) {
         this.hooks.addHook(hook, cb);
@@ -98,15 +95,15 @@ export class Root extends DomElement {
      * @internal
      *
      * This is called post attach and pre detach in DomElement.
-     * ON ATTACH:
+     * - on attach
      * It connects the `actions` Set<Action> in DomElement to this Root.
      * It passes the `viewportEls` Set<DomElement> set to the DomElement.  In
      * DomElement, viewportStyles are added through a helper function which updates
      * the Root's viewportEls set as well as the DomElements viewportStyles set.
-     * ON DETACH:
+     * - on detach
      * These references are removed.
      * */
-    public bridgeDomElement(
+    public handleAttachmentChange(
         metadata: DomElement["metadata"],
         { attached }: { attached: boolean },
     ) {
@@ -114,10 +111,10 @@ export class Root extends DomElement {
         const { actions, viewportStyles } = metadata;
 
         if (attached) {
-            viewportStyles.forEach((style) => recalculateStyle(metadata.ref, style));
             this.attached.actions.set(elem, actions);
-            metadata.viewportEls = this.attached.viewportEls;
 
+            metadata.viewportEls = this.attached.viewportEls;
+            viewportStyles.forEach((style) => recalculateStyle(metadata.ref, style));
             if (viewportStyles.size) {
                 metadata.viewportEls.add(elem);
             }
@@ -157,7 +154,7 @@ export class Root extends DomElement {
             this.node.calculateLayout(
                 this.runtime.stdout.columns,
                 undefined,
-                Yoga.DIRECTION_LTR,
+                Yg.DIRECTION_LTR,
             );
         }
 

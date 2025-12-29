@@ -1,5 +1,5 @@
 import type { Pen } from "./compositor/Pen.js";
-import type { TitleBorders } from "./shared/Borders.js";
+import type { TitleBorders } from "./shared/Boxes.js";
 import type { Color } from "./Types.js";
 
 export type BaseProps = {
@@ -15,23 +15,48 @@ export type BaseProps = {
 };
 
 export type Scrollbar = {
-    /** TODO */
+    /** TODO - default is 'always' */
     mode?: "auto" | "always" | "hidden";
+    /** @default
+     * - "right" if flexDirection is column or column-reverse
+     * - "left" if flexDirection is row or row-reverse
+     *   */
     edge?: "right" | "left" | "top" | "bottom";
+    /**
+     * @default "padding-outer"
+     * */
     placement?: "border" | "padding-inner" | "padding-outer";
+    /**
+     * Provide an optional character to draw the bar with.  Ignores characters
+     * other than the first in the string.
+     * */
     barChar?: string;
+    /**
+     * Colors the bar
+     * */
     barColor?: Color;
+    /**
+     * Provide an optional character to draw the track portion of the scrollbar.
+     * Ignores characters other than the first in the string.
+     * */
     trackChar?: string;
+    /**
+     * Colors the track portion of the scrollbar
+     * */
     trackColor?: Color;
 };
 
 export type Title = {
+    /**
+     *
+     * */
     textContent: string;
     color?: Color;
     style?: TitleStyleConfig | keyof typeof TitleBorders;
 };
 
 export type TitleStyleConfig = {
+    /** Styles the Title with a character to the left of the text content */
     left: string;
     right: string;
     leftColor?: Color;

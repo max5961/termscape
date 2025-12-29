@@ -1,4 +1,4 @@
-import { TEXT_PADDING } from "../Symbols.js";
+import { TEXT_PADDING } from "../Constants.js";
 import type { TextStyle } from "../style/Style.js";
 
 export function getRows(

@@ -5,7 +5,7 @@ import { WriterRefresh } from "./WriterRefresh.js";
 import { WriterPrecise } from "./WriterPrecise.js";
 import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../shared/Ansi.js";
-import { Root } from "../dom/Root.js";
+import type { Root } from "../dom/Root.js";
 import type { WriteOpts } from "../Types.js";
 
 export class Renderer {

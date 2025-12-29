@@ -117,3 +117,9 @@ export const TitleBorders = {
         "-": { left: "]", right: "[" },
     },
 };
+
+export const BackgroundCharacters = {
+    default: " ",
+    dashed: "╱",
+    dotted: ".",
+};
