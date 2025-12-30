@@ -51,7 +51,7 @@ type TagMap = {
         return: LayoutNode;
     };
     book: {
-        config: OptionalConfig<BoxStyle, Props.Pages>;
+        config: OptionalConfig<BoxStyle, Props.Book>;
         return: BookElement;
     };
     canvas: {

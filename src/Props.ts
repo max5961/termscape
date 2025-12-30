@@ -1,3 +1,4 @@
+import type { Action } from "term-keymap";
 import type { Pen } from "./compositor/Pen.js";
 import type { TitleBorders } from "./shared/Boxes.js";
 import type { Color } from "./Types.js";
@@ -5,6 +6,9 @@ import type { Color } from "./Types.js";
 export type BaseProps = {
     id?: string;
     className?: string;
+};
+
+export type BoxLikeProps = {
     scrollbar?: Scrollbar;
     titleTopLeft?: Title;
     titleTopCenter?: Title;
@@ -63,6 +67,18 @@ export type TitleStyleConfig = {
     rightColor?: Color;
 };
 
+export type InputElementProps = {
+    enter: Action["keymap"];
+    exit: Action["keymap"];
+    nextWord?: Action["keymap"];
+    prevWord?: Action["keymap"];
+    deleteWord?: Action["keymap"];
+    cursorRight?: Action["keymap"];
+    cursorLeft?: Action["keymap"];
+    undoPrev?: Action["keymap"];
+    redoPrev?: Action["keymap"];
+};
+
 export type FocusManagerScrollProps = {
     fallthrough?: boolean;
     scrollOff?: number;
@@ -92,12 +108,27 @@ export type FocusManagerProps =
     FocusManagerScrollProps;
 
 export namespace Props {
-    export type Box = BaseProps;
-    export type Text = Omit<BaseProps, "scrollbar">;
-    export type Layout = BaseProps & FocusManagerBaseProps;
-    export type LayoutNode = BaseProps;
-    export type List = BaseProps & FocusManagerProps;
-    export type Pages = BaseProps;
+    export type BoxLike = BaseProps & BoxLikeProps;
+    export type Box = BoxLike;
+    export type Text = BaseProps;
+    export type FocusManager = FocusManagerProps;
+    export type List = BoxLike & FocusManager;
+    export type Layout = BoxLike & FocusManager;
+    export type LayoutNode = BoxLike;
+    export type Book = BoxLike;
     export type Root = BaseProps;
-    export type Canvas = BaseProps & { draw: (pen: Pen) => unknown };
+    export type Canvas = BoxLike & { draw: (pen: Pen) => unknown };
+    export type Input = BoxLike & InputElementProps;
+
+    export type All = BoxLike &
+        Box &
+        Text &
+        FocusManager &
+        List &
+        Layout &
+        LayoutNode &
+        Book &
+        Root &
+        Canvas &
+        Input;
 }

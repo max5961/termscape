@@ -1,4 +1,10 @@
-import type { FocusManagerProps } from "../Props.js";
+import type {
+    BaseProps,
+    BoxLikeProps,
+    FocusManagerProps,
+    FocusManagerScrollProps,
+    Props,
+} from "../Props.js";
 import type { BoxStyle } from "../style/Style.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
@@ -8,7 +14,7 @@ import { LIST_ELEMENT } from "../Constants.js";
 
 export class ListElement extends FocusManager<{
     Style: BoxStyle;
-    Props: FocusManagerProps;
+    Props: Props.List;
 }> {
     protected static override identity = LIST_ELEMENT;
 

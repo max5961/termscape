@@ -3,13 +3,19 @@ import type { DomElement, VisualNodeMap } from "../Types.js";
 import { AbstractBoxElement } from "./BoxElement.js";
 import type { BoxStyle } from "../style/Style.js";
 import { objectKeys } from "../Util.js";
-import type { BaseProps, FocusManagerProps } from "../Props.js";
+import type {
+    BaseProps,
+    BoxLikeProps,
+    FocusManagerProps,
+    FocusManagerScrollProps,
+    Props,
+} from "../Props.js";
 import { TagNameEnum } from "../Constants.js";
 import { LAYOUT_ELEMENT, LAYOUT_NODE } from "../Constants.js";
 
 export class LayoutElement extends FocusManager<{
     Style: BoxStyle;
-    Props: BaseProps;
+    Props: Props.Layout;
 }> {
     protected static override identity = LAYOUT_ELEMENT;
 

@@ -11,6 +11,7 @@ import type { DomElement } from "./Types.js";
 import type { BgColor } from "ansi-escape-sequences";
 import type { Color, TextEffect } from "./Types.js";
 import type { TextStyle } from "./style/Style.js";
+import type { InputElement } from "./dom/InputElement.js";
 import Yoga from "yoga-wasm-web/auto";
 
 export const Yg = Yoga;
@@ -29,6 +30,7 @@ export const LIST_ELEMENT = Symbol.for("termscape.list_element");
 export const FOCUS_MANAGER = Symbol.for("termscape.focus_manager");
 export const ROOT_ELEMENT = Symbol.for("termscape.root_element");
 export const TEST_ROOT_ELEMENT = Symbol.for("termscape.test_root_element");
+export const INPUT_ELEMENT = Symbol.for("termscape.input_element");
 
 export const TagNameIdentityMap = {
     root: ROOT_ELEMENT,
@@ -38,6 +40,7 @@ export const TagNameIdentityMap = {
     canvas: CANVAS_ELEMENT,
     layout: LAYOUT_ELEMENT,
     list: LIST_ELEMENT,
+    input: INPUT_ELEMENT,
     ["layout-node"]: LAYOUT_NODE,
     ["focus-manager"]: FOCUS_MANAGER,
 } as const;
@@ -54,6 +57,7 @@ export type ElementIdentityMap = {
     [FOCUS_MANAGER]: FocusManager;
     [ROOT_ELEMENT]: Root;
     [TEST_ROOT_ELEMENT]: TestRoot;
+    [INPUT_ELEMENT]: InputElement;
 };
 
 export const TagNameEnum = {
@@ -65,6 +69,7 @@ export const TagNameEnum = {
     LayoutNode: "layout-node",
     Book: "book",
     Canvas: "canvas",
+    Input: "input",
 } as const;
 
 export const TextEffectSet = new Set<TextEffect>([

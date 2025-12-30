@@ -1,16 +1,23 @@
 import EventEmitter from "events";
-import { type Action } from "term-keymap";
+import { Yg, type TagNameEnum } from "../Constants.js";
+import type { Action } from "term-keymap";
+import type { InputElement } from "./InputElement.js";
+import type {
+    EventEmitterMap,
+    MouseEventType,
+    RuntimeConfig,
+    WriteOpts,
+} from "../Types.js";
+import type { BaseStyle } from "../style/Style.js";
+import type { BaseProps } from "../Props.js";
 import { DomElement } from "./DomElement.js";
 import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "../shared/RuntimeFactory.js";
-import type { EventEmitterMap, RuntimeConfig, WriteOpts } from "../Types.js";
-import type { BaseStyle } from "../style/Style.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
-import type { BaseProps } from "../Props.js";
-import { Yg, type TagNameEnum } from "../Constants.js";
 import { HooksManager, type Hook, type HookHandler } from "../render/Hooks.js";
 import { ROOT_ELEMENT, TEST_ROOT_ELEMENT } from "../Constants.js";
+import { logger } from "../shared/Logger.js";
 
 export class Root extends DomElement {
     protected static override identity = ROOT_ELEMENT;
@@ -68,6 +75,7 @@ export class Root extends DomElement {
     protected override get defaultProps(): BaseProps {
         return {};
     }
+
     /** No op - Root cannot set styles */
     override set style(_stylesheet: BaseStyle) {}
 
@@ -173,10 +181,6 @@ export class Root extends DomElement {
         }
     }
 
-    public requestInputStream() {
-        this.runtimeCtl.resumeStdin();
-    }
-
     private handleMouseEvent: (...args: EventEmitterMap["MouseEvent"]) => unknown = (
         x,
         y,
@@ -187,4 +191,22 @@ export class Root extends DomElement {
 
         this.propagateMouseEvent(x, y, type, element);
     };
+
+    /** @internal */
+    public requestInputStream() {
+        this.runtimeCtl.resumeStdin();
+    }
+
+    /** @internal */
+    public requestInputStreamOwnership(elem: InputElement) {
+        if (this.runtimeCtl.inputStreamOwner) return;
+        this.runtimeCtl.setInputStreamOwner(elem);
+    }
+
+    /** @internal */
+    public forfeitInputStreamOwnership(elem: InputElement) {
+        if (this.runtimeCtl.inputStreamOwner === elem) {
+            this.runtimeCtl.setInputStreamOwner(null);
+        }
+    }
 }

@@ -8,6 +8,7 @@ import {
     LIST_ELEMENT,
     TEXT_ELEMENT,
     TEXT_PADDING,
+    INPUT_ELEMENT,
 } from "../Constants.js";
 import type { DomElement } from "../Types.js";
 import type { BaseShadowStyle } from "../style/Style.js";
@@ -23,7 +24,8 @@ import {
 import { TextElement } from "../dom/TextElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { Pen } from "./Pen.js";
-import type { BaseProps, Scrollbar, Title, TitleStyleConfig } from "../Props.js";
+import type { BaseProps, Props, Scrollbar, Title, TitleStyleConfig } from "../Props.js";
+import { logger } from "../shared/Logger.js";
 
 export class Draw {
     /**
@@ -67,7 +69,8 @@ export class Draw {
             elem.is(BOOK_ELEMENT) ||
             elem.is(LIST_ELEMENT) ||
             elem.is(LAYOUT_ELEMENT) ||
-            elem.is(LAYOUT_NODE)
+            elem.is(LAYOUT_NODE) ||
+            elem.is(INPUT_ELEMENT)
         );
     }
 }
@@ -106,7 +109,7 @@ class DrawBox extends DrawContract<BoxLike> {
             this.renderBorder(elem, style, canvas);
         }
 
-        if (elem.getBaseProp("scrollbar")) {
+        if (elem.getAnyProp("scrollbar")) {
             this.renderScrollbar(elem, canvas);
         }
 
@@ -174,7 +177,7 @@ class DrawBox extends DrawContract<BoxLike> {
         // type casting `Required`, but its possible that trackColor and barColor
         // are undefined.  This doesn't matter though, since setting the Pen
         // color to undefined isn't an issue if there isn't a color set.
-        const scrollbar = elem.getBaseProp("scrollbar") as Required<Scrollbar>;
+        const scrollbar = elem.getAnyProp("scrollbar") as Required<Scrollbar>;
 
         const units = this.getScrollBarUnits(elem, scrollbar.edge);
         const direction =
@@ -277,7 +280,7 @@ class DrawBox extends DrawContract<BoxLike> {
         }
     }
 
-    private static TitleProps: (keyof BaseProps)[] = [
+    private static TitleProps: (keyof Props.BoxLike)[] = [
         "titleTopRight",
         "titleBottomRight",
         "titleTopCenter",
@@ -290,7 +293,7 @@ class DrawBox extends DrawContract<BoxLike> {
         const pen = canvas.getPen();
 
         DrawBox.TitleProps.forEach((prop) => {
-            const title = elem.getBaseProp(prop) as Title | undefined;
+            const title = elem.getAnyProp(prop) as Title | undefined;
             if (!title) return;
 
             if (prop.includes("Top")) {
@@ -300,6 +303,9 @@ class DrawBox extends DrawContract<BoxLike> {
             }
 
             const config = this.getTitleStyleConfig(elem, title);
+
+            // TODO - This will throw an error if no border is set
+
             const textWidth =
                 config.left.length + config.right.length + title.textContent.length;
             const rect = elem.unclippedRect;

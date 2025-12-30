@@ -13,7 +13,7 @@ import type {
     TagName,
 } from "../Types.js";
 import type { BaseStyle, BaseShadowStyle } from "../style/Style.js";
-import type { BaseProps, FocusManagerProps, Scrollbar, Title } from "../Props.js";
+import type { BaseProps, FocusManagerProps, Props } from "../Props.js";
 import type { Canvas, Rect } from "../compositor/Canvas.js";
 import {
     DOM_ELEMENT,
@@ -29,6 +29,7 @@ import { createVirtualStyleProxy } from "../style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
+import { SideEffects, type PropEffectHandler } from "./SideEffects.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -51,6 +52,7 @@ export abstract class DomElement<
     public parentElement: null | DomElement;
     public contentRange: ReturnType<DomElement["initContentRange"]>;
     private identities: Set<symbol>;
+    private effects: SideEffects;
 
     /**
      * @internal
@@ -97,6 +99,7 @@ export abstract class DomElement<
         this.canvas = null;
         this.childrenSet = new Set();
         this.afterLayoutHandlers = new Set();
+        this.effects = new SideEffects();
 
         // Mutable flags
         this.requiresStdin = false;
@@ -107,8 +110,16 @@ export abstract class DomElement<
         this.shadowStyle = proxy.shadowStyle;
         this.styleHandler = null;
 
-        this.applyDefaultProps();
         this.applyDefaultStyles();
+        this.applyDefaultProps();
+
+        this.regPropEffectTyped("scrollbar", this.registerScrollbarEffect);
+        this.regPropEffectTyped("titleTopLeft", this.registerTitleEffect);
+        this.regPropEffectTyped("titleTopCenter", this.registerTitleEffect);
+        this.regPropEffectTyped("titleTopRight", this.registerTitleEffect);
+        this.regPropEffectTyped("titleBottomLeft", this.registerTitleEffect);
+        this.regPropEffectTyped("titleBottomCenter", this.registerTitleEffect);
+        this.regPropEffectTyped("titleBottomRight", this.registerTitleEffect);
     }
 
     public abstract get tagName(): TagName;
@@ -122,7 +133,7 @@ export abstract class DomElement<
     }
 
     private applyDefaultStyles() {
-        this.style = { ...DomElement.DefaultStyles, ...this.defaultStyles };
+        this.style = {};
     }
 
     set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
@@ -189,8 +200,8 @@ export abstract class DomElement<
     }
 
     /** @internal for better internal types */
-    public getBaseProp<T extends keyof BaseProps>(key: T): BaseProps[T] | undefined {
-        return this.props.get(key) as BaseProps[T] | undefined;
+    public getAnyProp<T extends keyof Props.All>(key: T): Props.All[T] | undefined {
+        return this.props.get(key) as Props.All[T] | undefined;
     }
 
     @Render()
@@ -198,16 +209,43 @@ export abstract class DomElement<
         key: T,
         value: Schema["Props"][T],
     ): void {
-        if ((key as keyof BaseProps) === "scrollbar" && value) {
-            this.initializeScrollbar(value);
-        } else if ((key as string).includes("title")) {
-            this.initializeTitle(value as Title);
-        }
+        const setProp = (value: unknown) => {
+            this.props.set(key as string, value);
+        };
 
-        this.props.set(key as string, Object.freeze(value));
+        setProp(value);
+        this.effects.dispatchEffect(key as string, value, setProp);
     }
 
-    private initializeScrollbar(scrollbar: Scrollbar) {
+    protected registerPropEffect<T extends keyof Schema["Props"]>(
+        prop: T,
+        cb: PropEffectHandler<Schema["Props"][T]>,
+    ) {
+        this.effects.registerEffect(prop, cb as any);
+    }
+
+    private regPropEffectTyped<T extends keyof Props.All>(
+        prop: T,
+        cb: PropEffectHandler<Props.All[T]>,
+    ) {
+        this.effects.registerEffect(prop, cb as any);
+    }
+
+    private registerScrollbarEffect = (
+        ...[scrollbar, setProp]: Parameters<PropEffectHandler<Props.All["scrollbar"]>>
+    ) => {
+        if (scrollbar === undefined) {
+            this.style.scrollbarBorderTop = 0;
+            this.style.scrollbarBorderBottom = 0;
+            this.style.scrollbarBorderLeft = 0;
+            this.style.scrollbarBorderRight = 0;
+            this.style.scrollbarPaddingTop = 0;
+            this.style.scrollbarPaddingBottom = 0;
+            this.style.scrollbarPaddingLeft = 0;
+            this.style.scrollbarPaddingRight = 0;
+            return setProp(scrollbar);
+        }
+
         if (this.shadowStyle.flexDirection?.includes("row")) {
             scrollbar.edge ??= "bottom";
         } else {
@@ -229,15 +267,23 @@ export abstract class DomElement<
             this.style.scrollbarPaddingLeft = scrollbar.edge === "left" ? 1 : 0;
             this.style.scrollbarPaddingRight = scrollbar.edge === "right" ? 1 : 0;
         }
-    }
+        setProp(scrollbar);
+    };
 
-    private initializeTitle(title: Title) {
+    private registerTitleEffect = (
+        ...[title, setProp]: Parameters<PropEffectHandler<Props.All["titleTopLeft"]>>
+    ) => {
+        if (title === undefined) {
+            return setProp(title);
+        }
+
         title.style ??= "strikethrough";
         if (typeof title.style === "object") {
             title.style.left = title.style.left ?? "";
             title.style.right = title.style.right ?? "";
         }
-    }
+        setProp(title);
+    };
 
     /** @internal */
     public throwError(errorMsg: string) {
@@ -749,13 +795,18 @@ export abstract class DomElement<
             const leftestRect = rect.corner.x;
             const rightestRect = rect.corner.x + rect.width;
 
+            const contentExceedsWidth = mostRight - mostLeft > rect.corner.x + rect.width;
+            const contentExceedsHeight = deepest - highest > rect.corner.y + rect.height;
+
+            // TODO - Need to revisit this logic because it breaks under conditions
+            // where there isn't enough content to scroll
             let dy = 0;
             let dx = 0;
             if (highest > highestRect) {
                 dy = -1 * (highest - highestRect);
             }
-            if (deepest < deepestRect) {
-                dy = deepestRect - deepest;
+            if (deepest < deepestRect && contentExceedsHeight) {
+                dy = Math.max(0, deepestRect - deepest, highest - highestRect);
             }
             if (mostLeft > leftestRect) {
                 dx = -1 * (mostLeft - leftestRect);
@@ -763,6 +814,8 @@ export abstract class DomElement<
             if (mostRight < rightestRect) {
                 dx = mostRight - rightestRect;
             }
+
+            // logger.write({ dx, dy });
 
             if (!dx && !dy) return false;
 
@@ -847,10 +900,14 @@ export abstract class DomElement<
 export abstract class FocusManager<
     Schema extends {
         Style: BaseStyle;
-        Props: FocusManagerProps;
+        Props: Props.FocusManager;
     } = { Style: BaseStyle; Props: FocusManagerProps },
 > extends DomElement<Schema> {
     protected static override identity = FOCUS_MANAGER;
+
+    private static RecalulateFlexShrink = (child: DomElement) => {
+        recalculateStyle(child, "flexShrink");
+    };
 
     private vmap: VisualNodeMap;
     private _focused: DomElement | undefined;
@@ -861,10 +918,6 @@ export abstract class FocusManager<
         this._focused = undefined;
         this.lastOffsetChangeWasFocus = true;
     }
-
-    private static RecalulateFlexShrink = (child: DomElement) => {
-        recalculateStyle(child, "flexShrink");
-    };
 
     protected abstract getNavigableChildren(): DomElement[];
     protected abstract handleAppendChild(child: DomElement): void;

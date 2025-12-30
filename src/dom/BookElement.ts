@@ -1,7 +1,7 @@
 import { DomElement } from "./DomElement.js";
 import { TagNameEnum, BOOK_ELEMENT } from "../Constants.js";
-import type { BaseProps } from "../Props.js";
-import type { BaseStyle } from "../style/Style.js";
+import type { BaseProps, Props } from "../Props.js";
+import type { BaseStyle, BoxStyle } from "../style/Style.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
 
 /**
@@ -15,8 +15,8 @@ import { ErrorMessages } from "../shared/ErrorMessages.js";
  */
 
 export class BookElement extends DomElement<{
-    Style: BaseStyle;
-    Props: BaseProps;
+    Style: BoxStyle;
+    Props: Props.Book;
 }> {
     protected static override identity = BOOK_ELEMENT;
 
@@ -36,6 +36,7 @@ export class BookElement extends DomElement<{
     protected override get defaultStyles(): BaseStyle {
         return {};
     }
+
     protected override get defaultProps(): BaseProps {
         return {};
     }
