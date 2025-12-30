@@ -30,6 +30,7 @@ import { objectEntries, objectKeys } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import { SideEffects, type PropEffectHandler } from "./SideEffects.js";
+import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -767,7 +768,7 @@ export abstract class DomElement<
      * @internal
      *
      * Applies the corner offset without triggering a render change.  This is
-     * necessary during rendering and prevents the cascade of a new render.
+     * necessary during rendering itself and prevents the cascade of a new render.
      * */
     public applyCornerOffsetWithoutRender(dx: number, dy: number) {
         this.scrollOffset.x += dx;
@@ -783,39 +784,40 @@ export abstract class DomElement<
      * */
     public adjustScrollToFillContainer(): boolean {
         const highest = this.contentRange.high;
-        const deepest = this.contentRange.low;
-        const mostLeft = this.contentRange.left;
-        const mostRight = this.contentRange.right;
+        const lowest = this.contentRange.low;
+        const leftest = this.contentRange.left;
+        const rightest = this.contentRange.right;
 
         const rect = this.unclippedContentRect;
 
         if (rect) {
-            const deepestRect = rect.corner.y + rect.height;
-            const highestRect = rect.corner.y;
-            const leftestRect = rect.corner.x;
-            const rightestRect = rect.corner.x + rect.width;
+            const lowestVis = rect.corner.y + rect.height;
+            const highestVis = rect.corner.y;
+            const leftestVis = rect.corner.x;
+            const rightestVis = rect.corner.x + rect.width;
 
-            const contentExceedsWidth = mostRight - mostLeft > rect.corner.x + rect.width;
-            const contentExceedsHeight = deepest - highest > rect.corner.y + rect.height;
+            const fitsHeight = lowest - highest <= rect.height;
+            const fitsWidth = rightest - leftest <= rect.width;
 
-            // TODO - Need to revisit this logic because it breaks under conditions
-            // where there isn't enough content to scroll
             let dy = 0;
             let dx = 0;
-            if (highest > highestRect) {
-                dy = -1 * (highest - highestRect);
-            }
-            if (deepest < deepestRect && contentExceedsHeight) {
-                dy = Math.max(0, deepestRect - deepest, highest - highestRect);
-            }
-            if (mostLeft > leftestRect) {
-                dx = -1 * (mostLeft - leftestRect);
-            }
-            if (mostRight < rightestRect) {
-                dx = mostRight - rightestRect;
-            }
 
-            // logger.write({ dx, dy });
+            if (!fitsHeight) {
+                if (highest > highestVis) {
+                    // need to scroll DOWN (-dy)
+                    dy = highestVis - highest;
+                } else if (lowest < lowestVis) {
+                    // need to scroll UP (+dy)
+                    dy = lowestVis - lowest;
+                }
+            }
+            if (!fitsWidth) {
+                if (leftest > leftestVis) {
+                    dx = leftestVis - leftest;
+                } else if (rightest < rightestVis) {
+                    dx = rightestVis - rightest;
+                }
+            }
 
             if (!dx && !dy) return false;
 
