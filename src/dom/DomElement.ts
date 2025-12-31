@@ -30,7 +30,6 @@ import { objectEntries, objectKeys } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
 import { recalculateStyle } from "../style/util/recalculateStyle.js";
 import { SideEffects, type PropEffectHandler } from "./SideEffects.js";
-import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -76,6 +75,8 @@ export abstract class DomElement<
     public props: Map<string, unknown>;
     /** @internal */
     public afterLayoutHandlers: Set<() => unknown>;
+    /** @internal*/
+    public forceRecompositeHandlers: Set<() => boolean>;
 
     protected readonly childrenSet: Set<DomElement>;
     protected readonly rootRef: { root: Root | null };
@@ -100,6 +101,7 @@ export abstract class DomElement<
         this.canvas = null;
         this.childrenSet = new Set();
         this.afterLayoutHandlers = new Set();
+        this.forceRecompositeHandlers = new Set();
         this.effects = new SideEffects();
 
         // Mutable flags
@@ -342,6 +344,23 @@ export abstract class DomElement<
             this.afterLayoutHandlers.add(removeSelf);
             setTimeout(removeSelf, timeoutFallbackOrSubscriber ?? 500);
         });
+    }
+
+    /**
+     * This runs once everything has composited, but before anything is rendered.
+     * If returning true, then a recomposite will occur BEFORE writing output.
+     *
+     * In the current implementation this does NOT recalculate the yoga layout,
+     * so maybe recomposeIfMutOffset should be a wider scope and just always
+     * recalc the yoga layout...
+     * */
+    public forceRecomposite(cb: () => boolean) {
+        const removeSelf = () => {
+            this.forceRecompositeHandlers.delete(removeSelf);
+            return cb();
+        };
+
+        this.forceRecompositeHandlers.add(removeSelf);
     }
 
     // ========================================================================

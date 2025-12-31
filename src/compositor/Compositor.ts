@@ -7,14 +7,15 @@ import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
 
 export class Compositor {
+    private postLayout: (() => unknown)[];
     public canvas: Canvas;
     public ops: Operations;
     public rects: DomRects;
     public draw: Draw;
     public focusManagers: FocusManager[];
     public scrollManagers: DomElement[];
-    private postLayout: (() => unknown)[];
     public afterLayoutHandlers: (() => unknown)[];
+    public forceRecompositeHandlers: (() => boolean)[];
 
     constructor(root: Root) {
         this.canvas = new Canvas({ stdout: root.runtime.stdout, el: root });
@@ -22,6 +23,7 @@ export class Compositor {
         this.ops = new Operations();
         this.rects = new DomRects();
         this.draw = new Draw();
+        this.forceRecompositeHandlers = [];
         this.postLayout = [];
         this.focusManagers = [];
         this.scrollManagers = [];
@@ -43,6 +45,10 @@ export class Compositor {
 
         if (elem.afterLayoutHandlers.size) {
             this.afterLayoutHandlers.push(...elem.afterLayoutHandlers.values());
+        }
+
+        if (elem.forceRecompositeHandlers.size) {
+            this.forceRecompositeHandlers.push(...elem.forceRecompositeHandlers.values());
         }
 
         if (canvas.canDraw()) {

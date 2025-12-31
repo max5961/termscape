@@ -7,7 +7,6 @@ import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../shared/Ansi.js";
 import type { Root } from "../dom/Root.js";
 import type { WriteOpts } from "../Types.js";
-import { logger } from "../shared/Logger.js";
 
 export class Renderer {
     public lastCanvas: Canvas | null;
@@ -87,6 +86,16 @@ export class Renderer {
             let adjusted = false;
             compositor.focusManagers.forEach((focusManager) => {
                 if (focusManager.adjustOffsetToFocus()) {
+                    adjusted = true;
+                }
+            });
+            if (adjusted) reassignCompositor();
+        }
+
+        if (compositor.forceRecompositeHandlers.length) {
+            let adjusted = false;
+            compositor.forceRecompositeHandlers.forEach((handler) => {
+                if (handler()) {
                     adjusted = true;
                 }
             });
