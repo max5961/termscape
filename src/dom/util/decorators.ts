@@ -1,6 +1,5 @@
 import { DomElement } from "../DomElement.js";
 import type { WriteOpts } from "../../Types.js";
-import { recalculateStyle } from "../../style/util/recalculateStyle.js";
 
 function createDecorator<T extends DomElement, U>(cb: {
     (this: T, ...injected: U[]): unknown;
@@ -22,6 +21,6 @@ export const Render = createDecorator(function (this, opts: WriteOpts) {
 });
 
 export const RequestInput = createDecorator(function (this) {
-    this.requiresStdin = true;
+    this._requiresStdin = true;
     this.getRoot()?.requestInputStream();
 });

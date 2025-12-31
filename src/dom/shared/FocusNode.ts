@@ -1,8 +1,10 @@
-import type { DomElement } from "./DomElement.js";
+import type { DomElement } from "../DomElement.js";
 
 type Status = { focus: boolean; shallowFocus: boolean };
 
 export class FocusNode {
+    /** This should be named something else, such as childNodes, to prevent naming
+     * conflicts with the DomElement.children getter */
     public children: Set<FocusNode>;
     public nearestCheckpoint: CheckPoint | null;
     private checkpoint: CheckPoint | null;
@@ -73,13 +75,13 @@ export class FocusNode {
     }
 
     private reapplyStyles = (elem: DomElement) => {
-        const styleHandler = elem.styleHandler;
+        const styleHandler = elem._styleHandler;
 
         if (styleHandler) {
             elem.style = styleHandler;
         }
 
-        elem.children.forEach((child) => {
+        elem._children.forEach((child) => {
             this.reapplyStyles(child);
         });
     };
@@ -92,7 +94,7 @@ export class FocusNode {
         if (focus.checkpoint) return;
         focus.nearestCheckpoint = nearest;
 
-        const styleHandler = focus.elem.styleHandler;
+        const styleHandler = focus.elem._styleHandler;
         if (styleHandler) {
             focus.elem.style = styleHandler;
         }

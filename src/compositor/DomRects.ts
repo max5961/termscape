@@ -1,4 +1,3 @@
-import type { Canvas } from "./Canvas.js";
 import type { DomElement } from "../dom/DomElement.js";
 
 export type DomRectLayer = {

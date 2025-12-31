@@ -1,13 +1,6 @@
 import { Yg } from "../Constants.js";
-import type {
-    DOMRect,
-    GridToken,
-    Point,
-    Stdout,
-    DomElement,
-    YogaNode,
-    Edge,
-} from "../Types.js";
+import type { DomElement } from "../dom/DomElement.js";
+import type { DOMRect, GridToken, Point, Stdout, YogaNode, Edge } from "../Types.js";
 import { Pen } from "./Pen.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
 import { TEXT_ELEMENT } from "../Constants.js";
@@ -105,7 +98,7 @@ export class Canvas {
     }
 
     /**
-     * Represents the dimensions of the node without any mutations arising from
+     * Represents the dimensions of the _node without any mutations arising from
      * overflow settings in the overall layout.
      */
     public get unclippedRect(): Rect {
@@ -113,18 +106,18 @@ export class Canvas {
     }
 
     /**
-     * Represents the *content* dimensions of a given node.
+     * Represents the *content* dimensions of a given _node.
      *
-     * In other words, drawable dimensions a child node would given should this
-     * node restrict its overflow, which takes into account borders, padding,
-     * scrollbars set on this node.
+     * In other words, drawable dimensions a child _node would given should this
+     * _node restrict its overflow, which takes into account borders, padding,
+     * scrollbars set on this _node.
      * */
     public get unclippedContentRect(): Rect {
         return this._unclippedContentRect;
     }
 
     /**
-     * Represents the *visible* dimensions of a given node, which takes into
+     * Represents the *visible* dimensions of a given _node, which takes into
      * account the overflow settings in the overall layout.
      * */
     public get visibleRect(): Rect {
@@ -134,7 +127,7 @@ export class Canvas {
     /**
      * @see `unclippedContentRect` and `visibleRect`
      *
-     * Represents the *content* dimensions of the *visible* portion of the node.
+     * Represents the *content* dimensions of the *visible* portion of the _node.
      * */
     public get visibleContentRect(): Rect {
         // visibleContentRect is created *on demand*
@@ -145,21 +138,21 @@ export class Canvas {
     }
 
     public createChildCanvas(child: DomElement): SubCanvas {
-        const canvasHeight = child.is(TEXT_ELEMENT)
+        const canvasHeight = child._is(TEXT_ELEMENT)
             ? child.textHeight
-            : child.node.getComputedHeight();
+            : child._node.getComputedHeight();
 
         const canvasWidth =
             // There needs to be more checks here as well as account for wide
             // chars and breaking chars, but this is okay in devel for until then.
-            child.is(TEXT_ELEMENT) && child.style.wrap === "overflow"
-                ? Math.max(child.textContent.length, child.node.getComputedWidth())
-                : child.node.getComputedWidth();
+            child._is(TEXT_ELEMENT) && child.style.wrap === "overflow"
+                ? Math.max(child.textContent.length, child._node.getComputedWidth())
+                : child._node.getComputedWidth();
 
         // Child corner depends on parent corner.
         const childCorner: Canvas["corner"] = {
-            x: this.corner.x + child.node.getComputedLeft() + this.el.scrollOffset.x,
-            y: this.corner.y + child.node.getComputedTop() + this.el.scrollOffset.y,
+            x: this.corner.x + child._node.getComputedLeft() + this.el._scrollOffset.x,
+            y: this.corner.y + child._node.getComputedTop() + this.el._scrollOffset.y,
         };
 
         const unclippedChild = this.getUnclippedRect(
@@ -171,7 +164,7 @@ export class Canvas {
             childCorner,
             canvasWidth,
             canvasHeight,
-            child.node,
+            child._node,
         );
 
         // SubCanvas limits are inherited from the parent and are only clamped
@@ -224,14 +217,14 @@ export class Canvas {
         corner: Point,
         canvasWidth: number,
         canvasHeight: number,
-        node: YogaNode,
+        _node: YogaNode,
     ): Rect {
         let leftOff, rightOff, bottomOff, topOff;
         leftOff = rightOff = bottomOff = topOff = 0;
 
         const getOffset = (edge: Edge) => {
             return Math.floor(
-                node.getComputedBorder(edge) + node.getComputedPadding(edge),
+                _node.getComputedBorder(edge) + _node.getComputedPadding(edge),
             );
         };
 
@@ -299,15 +292,15 @@ export class Canvas {
 
     protected xOverflowIsHidden() {
         return (
-            this.el.shadowStyle.overflowX === "hidden" ||
-            this.el.shadowStyle.overflowX === "scroll"
+            this.el._shadowStyle.overflowX === "hidden" ||
+            this.el._shadowStyle.overflowX === "scroll"
         );
     }
 
     protected yOverflowIsHidden() {
         return (
-            this.el.shadowStyle.overflowY === "hidden" ||
-            this.el.shadowStyle.overflowY === "scroll"
+            this.el._shadowStyle.overflowY === "hidden" ||
+            this.el._shadowStyle.overflowY === "scroll"
         );
     }
 
@@ -340,11 +333,11 @@ export class Canvas {
     }
 
     /**
-     * Determines if drawing this node will actually perform any operations, or
+     * Determines if drawing this _node will actually perform any operations, or
      * if it will always try to draw past its limits.
      *
      * If the `unclippedRect` bleeds into the limits box, then it can be drawn.
-     * Otherwise it cannot.  This doesn't stop children of the node from having
+     * Otherwise it cannot.  This doesn't stop children of the _node from having
      * unclipped rects that bleed into the limits though.  For rendering purposes,
      * elements will never draw past their unclipped rect dimensions.
      * */

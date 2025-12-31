@@ -1,5 +1,5 @@
 import { logger } from "../shared/Logger.js";
-import type { Root } from "../dom/Root.js";
+import type { Root } from "../dom/RootElement.js";
 import { Ansi } from "../shared/Ansi.js";
 
 export class Cursor {

@@ -1,9 +1,10 @@
 import { throwError } from "./ThrowError.js";
 import { objectKeys } from "../Util.js";
-import type { DomElement, RuntimeConfig, StyleHandler } from "../Types.js";
-import type { BaseProps, Props } from "../Props.js";
-import type { BoxStyle, BaseStyle, TextStyle, CanvasStyle } from "../style/Style.js";
-import { Root } from "../dom/Root.js";
+import type { RuntimeConfig, StyleHandler } from "../Types.js";
+import type { Props } from "../dom/props/Props.js";
+import type { Style } from "../dom/style/Style.js";
+import type { DomElement } from "../dom/DomElement.js";
+import { Root } from "../dom/RootElement.js";
 import { BoxElement } from "../dom/BoxElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { ListElement } from "../dom/ListElement.js";
@@ -11,13 +12,13 @@ import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import { BookElement } from "../dom/BookElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 
-type RequiredConfig<Style extends BaseStyle, Props extends BaseProps> = {
+type RequiredConfig<Style extends Style.All, Props extends Props.All> = {
     style?: Style | StyleHandler<Style>;
     children?: DomElement[];
     props: Props;
 };
 
-type OptionalConfig<Style extends BaseStyle, Props extends BaseProps> =
+type OptionalConfig<Style extends Style.All, Props extends Props.All> =
     | undefined
     | {
           style?: Style | StyleHandler<Style>;
@@ -31,31 +32,31 @@ type TagMap = {
         return: Root;
     };
     box: {
-        config: OptionalConfig<BoxStyle, Props.Box>;
+        config: OptionalConfig<Style.Box, Props.Box>;
         return: BoxElement;
     };
     text: {
-        config: OptionalConfig<TextStyle, Props.Text> & { textContent?: string };
+        config: OptionalConfig<Style.Text, Props.Text> & { textContent?: string };
         return: TextElement;
     };
     list: {
-        config: OptionalConfig<BoxStyle, Props.List>;
+        config: OptionalConfig<Style.List, Props.List>;
         return: ListElement;
     };
     layout: {
-        config: OptionalConfig<BoxStyle, Props.Layout>;
+        config: OptionalConfig<Style.Layout, Props.Layout>;
         return: LayoutElement;
     };
     layoutNode: {
-        config: OptionalConfig<BoxStyle, Props.LayoutNode>;
+        config: OptionalConfig<Style.LayoutNode, Props.LayoutNode>;
         return: LayoutNode;
     };
     book: {
-        config: OptionalConfig<BoxStyle, Props.Book>;
+        config: OptionalConfig<Style.Book, Props.Book>;
         return: BookElement;
     };
     canvas: {
-        config: OptionalConfig<CanvasStyle, Props.Canvas>;
+        config: OptionalConfig<Style.Canvas, Props.Canvas>;
         return: CanvasElement;
     };
 };
@@ -66,7 +67,7 @@ type RequiredTagMap = {
     [P in keyof TagMap]: ExtendsUndef<TagMap[P]["config"]> extends never ? P : never;
 }[keyof TagMap];
 
-type ConfigHelper<Style extends BaseStyle, Props extends BaseProps> = {
+type ConfigHelper<Style extends Style.All, Props extends Props.All> = {
     style?: Style | StyleHandler<Style>;
     children?: DomElement[];
     props?: Props;
@@ -75,7 +76,7 @@ type ConfigHelper<Style extends BaseStyle, Props extends BaseProps> = {
 type Tags = keyof TagMap;
 type Config<T extends Tags> = TagMap[T]["config"];
 type Return<T extends Tags> = TagMap[T]["return"];
-type DefaultConfig = ConfigHelper<BaseStyle, BaseProps>;
+type DefaultConfig = ConfigHelper<Style.All, Props.All>;
 
 export function createElement<T extends Tags>(
     tag: T,

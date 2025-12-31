@@ -1,10 +1,10 @@
 import { DomElement } from "./DomElement.js";
 import { TagNameEnum, BOX_ELEMENT } from "../Constants.js";
-import type { BoxStyle } from "../style/Style.js";
-import type { Props } from "../Props.js";
+import type { Props } from "./props/Props.js";
+import type { Style } from "./style/Style.js";
 
 export abstract class AbstractBoxElement extends DomElement<{
-    Style: BoxStyle;
+    Style: Style.Box;
     Props: Props.Box;
 }> {
     protected static override identity = BOX_ELEMENT;
@@ -14,7 +14,7 @@ export abstract class AbstractBoxElement extends DomElement<{
         this.style = this.defaultStyles;
     }
 
-    protected override get defaultStyles(): BoxStyle {
+    protected override get defaultStyles(): Style.Box {
         return {
             flexWrap: "nowrap",
             flexDirection: "row",

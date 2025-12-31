@@ -1,5 +1,3 @@
-import { logger } from "../shared/Logger.js";
-
 /**
  * Mutating the reference will not actually set the prop.  setProp must be used
  * once all changes are made.

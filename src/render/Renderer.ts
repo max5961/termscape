@@ -1,11 +1,11 @@
 import { Compositor } from "../compositor/Compositor.js";
 import { Cursor, DebugCursor } from "./Cursor.js";
 import { Canvas } from "../compositor/Canvas.js";
-import { WriterRefresh } from "./WriterRefresh.js";
-import { WriterPrecise } from "./WriterPrecise.js";
+import { WriterRefresh } from "./writer/WriterRefresh.js";
+import { WriterPrecise } from "./writer/WriterPrecise.js";
 import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../shared/Ansi.js";
-import type { Root } from "../dom/Root.js";
+import type { Root } from "../dom/RootElement.js";
 import type { WriteOpts } from "../Types.js";
 
 export class Renderer {

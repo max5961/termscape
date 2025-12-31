@@ -1,10 +1,10 @@
 import { Ansi } from "../shared/Ansi.js";
 import type { AnsiStyle } from "../Types.js";
-import type { TextStyle } from "../style/Style.js";
+import type { Style } from "../dom/style/Style.js";
 import { TextEffectSet } from "../Constants.js";
 
 export class Glyph {
-    public style: TextStyle;
+    public style: Style.Text;
 
     constructor() {
         this.style = {};

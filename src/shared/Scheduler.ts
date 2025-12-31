@@ -1,4 +1,4 @@
-import type { Root } from "../dom/Root.js";
+import type { Root } from "../dom/RootElement.js";
 import type { WriteOpts } from "../Types.js";
 import { objectKeys } from "../Util.js";
 

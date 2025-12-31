@@ -1,16 +1,16 @@
 import type { BookElement } from "./dom/BookElement.js";
 import type { BoxElement } from "./dom/BoxElement.js";
 import type { CanvasElement } from "./dom/CanvasElement.js";
-import type { FocusManager } from "./dom/DomElement.js";
+import type { FocusManager } from "./dom/FocusManager.js";
 import type { LayoutElement, LayoutNode } from "./dom/LayoutElement.js";
 import type { ListElement } from "./dom/ListElement.js";
-import type { Root } from "./dom/Root.js";
+import type { Root } from "./dom/RootElement.js";
 import type { TestRoot } from "./dom/TestRoot.js";
 import type { TextElement } from "./dom/TextElement.js";
-import type { DomElement } from "./Types.js";
+import type { DomElement } from "./dom/DomElement.js";
 import type { BgColor } from "ansi-escape-sequences";
 import type { Color, TextEffect } from "./Types.js";
-import type { TextStyle } from "./style/Style.js";
+import type { Style } from "./dom/style/Style.js";
 import type { InputElement } from "./dom/InputElement.js";
 import Yoga from "yoga-wasm-web/auto";
 
@@ -127,7 +127,7 @@ export const BgColorSet = new Set<BgColor>([
     "bg-brightWhite",
 ]);
 
-export const TextStyleSet = new Set<keyof TextStyle>([
+export const TextStyleSet = new Set<keyof Style.Text>([
     "color",
     "backgroundColor",
     "italic",

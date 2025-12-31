@@ -1,5 +1,6 @@
-import type { DomElement, FocusManager } from "../dom/DomElement.js";
-import type { Root } from "../dom/Root.js";
+import type { DomElement } from "../dom/DomElement.js";
+import type { FocusManager } from "../dom/FocusManager.js";
+import type { Root } from "../dom/RootElement.js";
 import { FOCUS_MANAGER, ROOT_ELEMENT } from "../Constants.js";
 import { Canvas, type SubCanvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
@@ -19,7 +20,7 @@ export class Compositor {
 
     constructor(root: Root) {
         this.canvas = new Canvas({ stdout: root.runtime.stdout, el: root });
-        root.canvas = this.canvas;
+        root._canvas = this.canvas;
         this.ops = new Operations();
         this.rects = new DomRects();
         this.draw = new Draw();
@@ -38,23 +39,25 @@ export class Compositor {
     ) {
         if (elem.style.display === "none") return;
 
-        const style = elem.shadowStyle;
+        const style = elem._shadowStyle;
         const zIndex = style.zIndex ?? 0;
 
         this.draw.updateLowestLayer(zIndex);
 
-        if (elem.afterLayoutHandlers.size) {
-            this.afterLayoutHandlers.push(...elem.afterLayoutHandlers.values());
+        if (elem._afterLayoutHandlers.size) {
+            this.afterLayoutHandlers.push(...elem._afterLayoutHandlers.values());
         }
 
-        if (elem.forceRecompositeHandlers.size) {
-            this.forceRecompositeHandlers.push(...elem.forceRecompositeHandlers.values());
+        if (elem._forceRecompositeHandlers.size) {
+            this.forceRecompositeHandlers.push(
+                ...elem._forceRecompositeHandlers.values(),
+            );
         }
 
         if (canvas.canDraw()) {
             this.rects.storeElementPosition(zIndex, elem);
             this.ops.defer(zIndex, () => this.draw.compose(elem, canvas));
-            if (elem.is(FOCUS_MANAGER)) {
+            if (elem._is(FOCUS_MANAGER)) {
                 if (layoutChange) {
                     this.postLayoutDefer(() => {
                         elem.refreshVisualMap();
@@ -66,7 +69,7 @@ export class Compositor {
         }
 
         if (layoutChange) {
-            elem.contentRange = elem.initContentRange();
+            elem._contentRange = elem._initContentRange();
         }
 
         if (elem.style.overflow === "scroll") {
@@ -75,26 +78,26 @@ export class Compositor {
         }
 
         for (const child of elem._children) {
-            child.canvas = this.getRefreshedChildCanvas(child, canvas, layoutChange);
+            child._canvas = this.getRefreshedChildCanvas(child, canvas, layoutChange);
 
             if (layoutChange) {
                 parentScrollManagers.forEach((scroller) => {
                     const unclippedChild = child.unclippedRect;
                     if (unclippedChild) {
-                        scroller.contentRange.high = Math.min(
-                            scroller.contentRange.high,
+                        scroller._contentRange.high = Math.min(
+                            scroller._contentRange.high,
                             unclippedChild.corner.y,
                         );
-                        scroller.contentRange.low = Math.max(
-                            scroller.contentRange.low,
+                        scroller._contentRange.low = Math.max(
+                            scroller._contentRange.low,
                             unclippedChild.corner.y + unclippedChild.height,
                         );
-                        scroller.contentRange.left = Math.min(
-                            scroller.contentRange.left,
+                        scroller._contentRange.left = Math.min(
+                            scroller._contentRange.left,
                             unclippedChild.corner.x,
                         );
-                        scroller.contentRange.right = Math.max(
-                            scroller.contentRange.right,
+                        scroller._contentRange.right = Math.max(
+                            scroller._contentRange.right,
                             unclippedChild.corner.x + unclippedChild.width,
                         );
                     }
@@ -109,16 +112,16 @@ export class Compositor {
             // children breaks scrolling.  You can have nested scrolling, but
             // each scroll needs their own truth.
             if (
-                child.shadowStyle.overflow === "scroll" ||
-                child.shadowStyle.overflow === "hidden"
+                child._shadowStyle.overflow === "scroll" ||
+                child._shadowStyle.overflow === "hidden"
             ) {
                 nextPSM.delete(elem);
             }
 
-            this.buildLayout(child, layoutChange, child.canvas, nextPSM);
+            this.buildLayout(child, layoutChange, child._canvas, nextPSM);
         }
 
-        if (elem.is(ROOT_ELEMENT)) {
+        if (elem._is(ROOT_ELEMENT)) {
             this.ops.performAll();
             this.postLayout.forEach((cb) => cb());
         }
@@ -129,11 +132,11 @@ export class Compositor {
         canvas: Canvas,
         layoutChange: boolean,
     ): Canvas {
-        if (layoutChange || !child.canvas) {
-            child.canvas = canvas.createChildCanvas(child);
+        if (layoutChange || !child._canvas) {
+            child._canvas = canvas.createChildCanvas(child);
         }
-        (child.canvas as SubCanvas).bindGrid(this.canvas.grid);
-        return child.canvas;
+        (child._canvas as SubCanvas).bindGrid(this.canvas.grid);
+        return child._canvas;
     }
 
     private postLayoutDefer(cb: () => unknown): void {

@@ -2,27 +2,24 @@ import EventEmitter from "events";
 import { Yg, type TagNameEnum } from "../Constants.js";
 import type { Action } from "term-keymap";
 import type { InputElement } from "./InputElement.js";
-import type {
-    EventEmitterMap,
-    MouseEventType,
-    RuntimeConfig,
-    WriteOpts,
-} from "../Types.js";
-import type { BaseStyle } from "../style/Style.js";
-import type { BaseProps } from "../Props.js";
+import type { EventEmitterMap, RuntimeConfig, WriteOpts } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "../shared/RuntimeFactory.js";
-import { recalculateStyle } from "../style/util/recalculateStyle.js";
+import { recalculateStyle } from "./util/recalculateStyle.js";
 import { HooksManager, type Hook, type HookHandler } from "../render/Hooks.js";
 import { ROOT_ELEMENT, TEST_ROOT_ELEMENT } from "../Constants.js";
-import { logger } from "../shared/Logger.js";
+import type { Style } from "./style/Style.js";
+import type { Props } from "./props/Props.js";
 
-export class Root extends DomElement {
+export class Root extends DomElement<{
+    Style: Style.Root;
+    Props: Props.Root;
+}> {
     protected static override identity = ROOT_ELEMENT;
 
-    protected override readonly rootRef: { readonly root: Root };
+    protected override readonly _rootRef: { readonly root: Root };
     private hasRendered: boolean;
     public runtime: Runtime["api"];
     public hooks: HooksManager;
@@ -37,11 +34,11 @@ export class Root extends DomElement {
 
     constructor(config: RuntimeConfig) {
         super();
-        this.rootRef = { root: this };
+        this._rootRef = { root: this };
         this.attached = { actions: new Map(), viewportEls: new Set() };
         this.hooks = new HooksManager();
         this.renderer = new Renderer(this);
-        this.scheduler = new Scheduler({ isTestRoot: this.is(TEST_ROOT_ELEMENT) });
+        this.scheduler = new Scheduler({ isTestRoot: this._is(TEST_ROOT_ELEMENT) });
         this.emitter = new EventEmitter();
         this.emitter.on("MouseEvent", this.handleMouseEvent);
         this.hasRendered = false;
@@ -69,26 +66,26 @@ export class Root extends DomElement {
         return "root";
     }
 
-    protected override get defaultStyles(): BaseStyle {
+    protected override get defaultStyles(): Style.Root {
         return {};
     }
-    protected override get defaultProps(): BaseProps {
+    protected override get defaultProps(): Props.Root {
         return {};
     }
 
     /** No op - Root cannot set styles */
-    override set style(_stylesheet: BaseStyle) {}
+    override set style(_stylesheet: Style.Root) {}
 
     /** Return empty object - Root cannot set styles */
-    override get style(): BaseStyle {
+    override get style(): Style.Root {
         return {};
     }
 
     private setDefaultYogaStyles() {
-        this.node.setFlexWrap(Yg.WRAP_NO_WRAP);
-        this.node.setFlexDirection(Yg.FLEX_DIRECTION_ROW);
-        this.node.setFlexGrow(0);
-        this.node.setFlexShrink(1);
+        this._node.setFlexWrap(Yg.WRAP_NO_WRAP);
+        this._node.setFlexDirection(Yg.FLEX_DIRECTION_ROW);
+        this._node.setFlexGrow(0);
+        this._node.setFlexShrink(1);
     }
 
     public addHook<T extends Hook>(hook: T, cb: HookHandler<T>) {
@@ -112,7 +109,7 @@ export class Root extends DomElement {
      * These references are removed.
      * */
     public handleAttachmentChange(
-        metadata: DomElement["metadata"],
+        metadata: DomElement["_metadata"],
         { attached }: { attached: boolean },
     ) {
         const elem = metadata.ref;
@@ -159,7 +156,7 @@ export class Root extends DomElement {
         }
 
         if (opts.layoutChange || !this.hasRendered) {
-            this.node.calculateLayout(
+            this._node.calculateLayout(
                 this.runtime.stdout.columns,
                 undefined,
                 Yg.DIRECTION_LTR,

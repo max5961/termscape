@@ -1,20 +1,15 @@
-import { FocusManager } from "./DomElement.js";
-import type { DomElement, VisualNodeMap } from "../Types.js";
+import { FocusManager } from "./FocusManager.js";
+import type { DomElement } from "./DomElement.js";
+import type { VisualNodeMap } from "../Types.js";
 import { AbstractBoxElement } from "./BoxElement.js";
-import type { BoxStyle } from "../style/Style.js";
+import type { Style } from "./style/Style.js";
 import { objectKeys } from "../Util.js";
-import type {
-    BaseProps,
-    BoxLikeProps,
-    FocusManagerProps,
-    FocusManagerScrollProps,
-    Props,
-} from "../Props.js";
 import { TagNameEnum } from "../Constants.js";
 import { LAYOUT_ELEMENT, LAYOUT_NODE } from "../Constants.js";
+import type { Props } from "./props/Props.js";
 
 export class LayoutElement extends FocusManager<{
-    Style: BoxStyle;
+    Style: Style.Layout;
     Props: Props.Layout;
 }> {
     protected static override identity = LAYOUT_ELEMENT;
@@ -27,7 +22,7 @@ export class LayoutElement extends FocusManager<{
         return "layout";
     }
 
-    protected override get defaultStyles(): BoxStyle {
+    protected override get defaultStyles(): Style.Layout {
         return {
             flexDirection: "column",
             flexWrap: "nowrap",
@@ -38,7 +33,7 @@ export class LayoutElement extends FocusManager<{
     }
 
     // TODO - only this prop for now
-    protected override get defaultProps(): FocusManagerProps {
+    protected override get defaultProps(): Props.Layout {
         return { blockChildrenShrink: false };
     }
 
@@ -94,7 +89,7 @@ export class LayoutElement extends FocusManager<{
         let found = false;
         this.dfs(child, (child) => {
             if (!found && child instanceof LayoutNode) {
-                child.focusNode.updateCheckpoint(true);
+                child._focusNode.updateCheckpoint(true);
                 this.focused = child;
                 found = true;
             }
@@ -108,7 +103,7 @@ export class LayoutElement extends FocusManager<{
         let found = false;
         this.dfs(child, (child) => {
             if (!found && child instanceof LayoutNode) {
-                child.focusNode.becomeNormal(freeRecursive);
+                child._focusNode.becomeNormal(freeRecursive);
                 found = true;
             }
         });
@@ -268,7 +263,7 @@ export class LayoutNode extends AbstractBoxElement {
 
     constructor() {
         super();
-        this.focusNode.becomeCheckpoint(false);
+        this._focusNode.becomeCheckpoint(false);
     }
 
     override get tagName(): typeof TagNameEnum.LayoutNode {

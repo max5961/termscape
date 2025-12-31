@@ -6,15 +6,14 @@ import {
     getRows,
     shouldTreatAsBreak,
 } from "../shared/TextWrap.js";
-import type { TextStyle } from "../style/Style.js";
-import type { BaseProps, Props } from "../Props.js";
+import type { Style } from "./style/Style.js";
+import type { BaseProps, Props } from "./style/Props.js";
 import { Render } from "./util/decorators.js";
 import type { TagNameEnum } from "../Constants.js";
 import { TEXT_ELEMENT } from "../Constants.js";
-import { logger } from "../shared/Logger.js";
 
 export class TextElement extends DomElement<{
-    Style: TextStyle;
+    Style: Style.Text;
     Props: Props.Text;
 }> {
     protected static override identity = TEXT_ELEMENT;
@@ -30,6 +29,7 @@ export class TextElement extends DomElement<{
     /** @internal */
     public requestedDepth!: number;
     /**
+     * TODO
      * @internal
      *
      * Implicit wrap style exists because if a style of 'overflow' is set, but
@@ -45,7 +45,7 @@ export class TextElement extends DomElement<{
         this.style = this.defaultStyles;
         this.initBuffer();
         this.implicitWrapStyle = "overflow";
-        this.node.setMeasureFunc(this.getMeasureFunc());
+        this._node.setMeasureFunc(this.getMeasureFunc());
     }
 
     private initBuffer() {
@@ -55,7 +55,6 @@ export class TextElement extends DomElement<{
         this.bufferIdx = 0;
         this.requestedDepth = 2000;
     }
-
     /** @internal */
     public static LargeTextRows = 2000;
 
@@ -88,14 +87,14 @@ export class TextElement extends DomElement<{
     @Render({ layoutChange: true })
     private setTextContentWithRender(val: string): void {
         this._textContent = val;
-        this.node.markDirty(); // Yoga will not run the measureFunc otherwise
+        this._node.markDirty(); // Yoga will not run the measureFunc otherwise
         this.initBuffer();
     }
 
     private getMeasureFunc(): MeasureFunction {
         return (width: number) => {
             this.rows = getRows(this.textContent, width);
-            this.alignedRows = alignRows(this.rows, width, this.shadowStyle.align);
+            this.alignedRows = alignRows(this.rows, width, this._shadowStyle.align);
 
             if (this.style.wrap !== "wrap" || this.textContent.length <= width) {
                 this.textHeight = 1;
@@ -118,7 +117,7 @@ export class TextElement extends DomElement<{
 
         const nextBufStop = { idx: 0 };
         const nextRows = getRows(nextText, width, nextBufStop, stopRows);
-        const nextAlignedRows = alignRows(nextRows, width, this.shadowStyle.align);
+        const nextAlignedRows = alignRows(nextRows, width, this._shadowStyle.align);
 
         this.alignedRows = [...this.alignedRows, ...nextAlignedRows];
         this.bufferIdx += nextBufStop.idx;

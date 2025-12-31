@@ -1,6 +1,6 @@
-import type { Root } from "../dom/Root.js";
-import type { Cursor } from "./Cursor.js";
-import type { Canvas } from "../compositor/Canvas.js";
+import type { Root } from "../../dom/RootElement.js";
+import type { Cursor } from "./../Cursor.js";
+import type { Canvas } from "../../compositor/Canvas.js";
 import { Writer } from "./Writer.js";
 
 export class WriterRefresh extends Writer {

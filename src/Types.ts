@@ -1,13 +1,16 @@
 import { configureStdin } from "term-keymap";
 import { TagNameEnum } from "./Constants.js";
 import type { DomElement } from "./dom/DomElement.js";
-import type { BaseStyle } from "./style/Style.js";
-export type { DomElement } from "./dom/DomElement.js";
+import type { Style } from "./dom/style/Style.js";
 
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
 export type { Node as YogaNode, Edge } from "yoga-wasm-web/auto";
 
 export type ExtractUnion<T, U extends T> = U extends T ? U : never;
+
+export type ReqProps<T extends object, U extends keyof T> = T & {
+    [P in U]-?: T[P];
+};
 
 export type Hex = `#${string}`;
 
@@ -106,11 +109,11 @@ export type WriteOpts = {
 };
 
 export type ViewportStyle = keyof Pick<
-    BaseStyle,
+    Style.All,
     "height" | "width" | "minHeight" | "minWidth"
 >;
 
-export type StyleHandler<T extends BaseStyle> = ({
+export type StyleHandler<T extends Style.All> = ({
     focus,
     shallowFocus,
 }: {

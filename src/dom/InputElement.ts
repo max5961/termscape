@@ -1,39 +1,39 @@
 import { ActionStore, InputState, type Action } from "term-keymap";
 import { INPUT_ELEMENT, type TagNameEnum } from "../Constants.js";
-import type { InputElementProps, Props } from "../Props.js";
-import type { BaseStyle } from "../style/Style.js";
 import { DomElement } from "./DomElement.js";
 import { TextElement } from "./TextElement.js";
+import type { Style } from "./style/Style.js";
+import type { Props } from "./props/Props.js";
 
 export class InputElement extends DomElement<{
-    Style: BaseStyle; // includes TextStyle & BoxStyle
+    Style: Style.Input; // includes TextStyle & BoxStyle
     Props: Props.Input;
 }> {
     protected static override identity = INPUT_ELEMENT;
 
-    /** @internal */
-    public textElement: TextElement;
-    /** @internal */
-    public cursorIdx: number;
-    /** @internal */
     public hasClaimedStdin: boolean;
+    /** @internal */
+    public _textEl: TextElement;
+    /** @internal */
+    public _cursorIdx: number;
+    /** @internal */
     private _textContent: string;
-    private inputState: InputState | null;
-    private actionStore: ActionStore;
-    private actionsMap: Map<keyof Props.Input, Action[]>;
+    private _inputState: InputState | null;
+    private _actionStore: ActionStore;
+    private _actionsMap: Map<keyof Props.Input, Action[]>;
 
     constructor() {
         super();
         this.hasClaimedStdin = false;
-        this.inputState = null;
-        this.actionStore = new ActionStore();
-        this.actionsMap = new Map();
-        this.cursorIdx = 0;
+        this._inputState = null;
+        this._actionStore = new ActionStore();
+        this._actionsMap = new Map();
+        this._cursorIdx = 0;
         this._textContent = "";
-        this.textElement = new TextElement();
-        this.textElement.style.wrap = "overflow";
-        this.textElement.textContent = this.getRenderedText();
-        this.appendChild(this.textElement);
+        this._textEl = new TextElement();
+        this._textEl.style.wrap = "overflow";
+        this._textEl.textContent = this.getRenderedText();
+        this.appendChild(this._textEl);
         this.registerProp("enter", this.handleEnter);
         this.registerProp("exit", this.handleExit);
         this.registerProp("cursorLeft", this.handleCursorLeft);
@@ -48,22 +48,22 @@ export class InputElement extends DomElement<{
         // this.registerProp("undoPrev", this.handleUndoPrev);
         // this.registerProp("redoPrev", this.handleRedoPrev);
 
-        this.actionStore.subscribe({
+        this._actionStore.subscribe({
             keymap: { key: "backspace" },
             callback: this.handleBackspace,
         });
 
-        this.actionStore.subscribe({
+        this._actionStore.subscribe({
             keymap: { key: "left" },
             callback: this.handleCursorLeft,
         });
 
-        this.actionStore.subscribe({
+        this._actionStore.subscribe({
             keymap: { key: "right" },
             callback: this.handleCursorRight,
         });
 
-        this.actionStore.subscribe({
+        this._actionStore.subscribe({
             keymap: { key: "tab" },
             name: "tab",
         });
@@ -73,7 +73,7 @@ export class InputElement extends DomElement<{
         return "input";
     }
 
-    protected override get defaultStyles(): BaseStyle {
+    protected override get defaultStyles(): Style.Input {
         return {
             width: "100",
             height: 1,
@@ -97,20 +97,20 @@ export class InputElement extends DomElement<{
     }
 
     private registerProp(
-        prop: Exclude<keyof InputElementProps, "enterOnFocus" | "tabWidth">,
+        prop: Exclude<keyof Props.Input, "enterOnFocus" | "tabWidth">,
         cb: () => unknown,
     ) {
         this.registerPropEffect(prop, (value) => {
-            const prev = this.actionsMap.get(prop);
+            const prev = this._actionsMap.get(prop);
             if (prev) {
                 if (prop === "enter") {
                     prev.forEach((action) => this.removeKeyListener(action));
                 } else {
-                    this.actionStore.unsubscribe(...prev);
+                    this._actionStore.unsubscribe(...prev);
                 }
             }
 
-            this.actionsMap.delete(prop);
+            this._actionsMap.delete(prop);
             if (!value) return;
             const actions: Action[] = value.map((keymap) => {
                 return {
@@ -122,7 +122,7 @@ export class InputElement extends DomElement<{
             if (prop === "enter") {
                 actions.forEach((action) => this.addKeyListener(action));
             } else {
-                this.actionStore.subscribe(...actions);
+                this._actionStore.subscribe(...actions);
             }
         });
     }
@@ -138,12 +138,12 @@ export class InputElement extends DomElement<{
 
     /** @internal */
     public handleData(buf: Buffer) {
-        if (!this.inputState) {
+        if (!this._inputState) {
             return;
         }
 
-        const actions = this.actionStore.getActions();
-        const { keymap, data } = this.inputState.process(buf, actions);
+        const actions = this._actionStore.getActions();
+        const { keymap, data } = this._inputState.process(buf, actions);
 
         const isTab = data.key.has("tab");
         if (keymap) return;
@@ -152,8 +152,8 @@ export class InputElement extends DomElement<{
         const utf = isTab ? " ".repeat(this.getProp("tabWidth") ?? 4) : data.raw.utf;
         const prevText = this.textContent;
         const nextText =
-            prevText.slice(0, this.cursorIdx) + utf + prevText.slice(this.cursorIdx);
-        this.cursorIdx += utf.length;
+            prevText.slice(0, this._cursorIdx) + utf + prevText.slice(this._cursorIdx);
+        this._cursorIdx += utf.length;
 
         this.textContent = nextText;
         this.adjustOffsetToCursor();
@@ -169,25 +169,25 @@ export class InputElement extends DomElement<{
 
     private set textContent(value: string) {
         this._textContent = value;
-        this.textElement.textContent = this.getRenderedText();
+        this._textEl.textContent = this.getRenderedText();
     }
 
     private cursorLeft(units: number) {
-        const prev = this.cursorIdx;
-        const next = Math.max(0, this.cursorIdx - units);
+        const prev = this._cursorIdx;
+        const next = Math.max(0, this._cursorIdx - units);
         if (prev !== next) {
-            this.cursorIdx = next;
+            this._cursorIdx = next;
             this.getRoot()?.scheduleRender();
             this.adjustOffsetToCursor();
         }
     }
 
     private cursorRight(units: number) {
-        const prevCursor = this.cursorIdx;
-        const nextCursor = Math.min(this.textContent.length, this.cursorIdx + units);
+        const prevCursor = this._cursorIdx;
+        const nextCursor = Math.min(this.textContent.length, this._cursorIdx + units);
 
         if (prevCursor !== nextCursor) {
-            this.cursorIdx = nextCursor;
+            this._cursorIdx = nextCursor;
             this.getRoot()?.scheduleRender();
             this.adjustOffsetToCursor();
         }
@@ -198,22 +198,22 @@ export class InputElement extends DomElement<{
      * */
     private adjustOffsetToCursor() {
         this.forceRecomposite(() => {
-            const offX = this.scrollOffset.x;
+            const offX = this._scrollOffset.x;
             const maxWidth = this.unclippedContentRect.width;
-            const cursorIdx = this.cursorIdx;
+            const _cursorIdx = this._cursorIdx;
 
             if (!offX) {
-                if (cursorIdx >= maxWidth) {
-                    this.scrollRight(cursorIdx - maxWidth + 1);
+                if (_cursorIdx >= maxWidth) {
+                    this.scrollRight(_cursorIdx - maxWidth + 1);
                 }
             } else if (offX < 0) {
-                const adjCursorIdx = cursorIdx + offX;
+                const adjCursorIdx = _cursorIdx + offX;
                 if (adjCursorIdx >= maxWidth) {
                     this.scrollRight(adjCursorIdx - maxWidth + 1);
                 } else if (adjCursorIdx < 0) {
                     this.scrollLeft(-adjCursorIdx);
-                } else if (cursorIdx + offX < maxWidth - 1) {
-                    this.scrollRight(maxWidth - cursorIdx - 1 + offX);
+                } else if (_cursorIdx + offX < maxWidth - 1) {
+                    this.scrollRight(maxWidth - _cursorIdx - 1 + offX);
                 }
             }
             return true;
@@ -224,7 +224,7 @@ export class InputElement extends DomElement<{
         if (this.getRoot()?.requestInputStreamOwnership(this)) {
             this.getRoot()?.scheduleRender();
             this.hasClaimedStdin = true;
-            this.inputState = new InputState();
+            this._inputState = new InputState();
             this.cursorRight(Infinity); // go to end of text when entering
         }
     };
@@ -246,7 +246,7 @@ export class InputElement extends DomElement<{
 
     private handlePrevWord = () => {
         const tc = this.textContent;
-        const prev = this.cursorIdx;
+        const prev = this._cursorIdx;
 
         let curr = prev;
         let inws = tc[curr] === " " || tc[curr - 1] === " ";
@@ -265,7 +265,7 @@ export class InputElement extends DomElement<{
 
     private handleNextWord = () => {
         const tc = this.textContent;
-        const prev = this.cursorIdx;
+        const prev = this._cursorIdx;
 
         let curr = prev;
         let inword = tc[curr] !== " ";
@@ -284,7 +284,7 @@ export class InputElement extends DomElement<{
 
     private handleDeleteWord = () => {
         const tc = this.textContent;
-        const curr = this.cursorIdx;
+        const curr = this._cursorIdx;
 
         if (tc[curr] === " ") return; // in ws
 
@@ -301,7 +301,7 @@ export class InputElement extends DomElement<{
 
     private handleBackspace = () => {
         const tc = this.textContent;
-        const curr = this.cursorIdx;
+        const curr = this._cursorIdx;
         if (curr === 0) return;
 
         const nextTc = tc.slice(0, curr - 1) + tc.slice(curr);

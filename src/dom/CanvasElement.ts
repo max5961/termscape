@@ -1,10 +1,10 @@
 import { DomElement } from "./DomElement.js";
 import { TagNameEnum, CANVAS_ELEMENT } from "../Constants.js";
-import type { Props } from "../Props.js";
-import type { CanvasStyle } from "../style/Style.js";
+import type { Props } from "./props/Props.js";
+import type { Style } from "./style/Style.js";
 
 export class CanvasElement extends DomElement<{
-    Style: CanvasStyle;
+    Style: Style.Canvas;
     Props: Props.Canvas;
 }> {
     protected static override identity = CANVAS_ELEMENT;
@@ -21,7 +21,7 @@ export class CanvasElement extends DomElement<{
         return { draw: (_pen) => {} };
     }
 
-    protected override get defaultStyles(): CanvasStyle {
+    protected override get defaultStyles(): Style.Canvas {
         return {};
     }
 }

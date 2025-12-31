@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { Root } from "./Root.js";
+import { Root } from "./RootElement.js";
 import { TEST_ROOT_ELEMENT } from "../Constants.js";
 import type { RuntimeConfig } from "../Types.js";
 import type { Canvas } from "../compositor/Canvas.js";

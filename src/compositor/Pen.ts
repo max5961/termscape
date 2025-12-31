@@ -1,6 +1,7 @@
 import { TextStyleSet, Yg } from "../Constants.js";
-import type { DomElement, Point } from "../Types.js";
-import type { TextStyle } from "../style/Style.js";
+import type { DomElement } from "../dom/DomElement.js";
+import type { Point } from "../Types.js";
+import type { Style } from "../dom/style/Style.js";
 import type { Canvas, Grid } from "./Canvas.js";
 import { Glyph } from "./Glyph.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
@@ -41,12 +42,12 @@ export class Pen {
         this.glyph = new Glyph();
     }
 
-    public set<T extends keyof TextStyle>(prop: T, value?: TextStyle[T]) {
+    public set<T extends keyof Style.Text>(prop: T, value?: Style.Text[T]) {
         this.glyph.style[prop] = value;
         return this;
     }
 
-    public setStyle(config: TextStyle) {
+    public setStyle(config: Style.Text) {
         for (const style of TextStyleSet) {
             // @ts-expect-error typescript can't infer that an two objs with the same shape using the same key have the same value types
             this.glyph.style[style] = config[style];
@@ -102,13 +103,13 @@ export class Pen {
         side: "inner" | "outer",
     ): Pen => {
         const border = {
-            left: this.elem.node.getComputedBorder(Yg.EDGE_LEFT),
-            right: this.elem.node.getComputedBorder(Yg.EDGE_RIGHT),
+            left: this.elem._node.getComputedBorder(Yg.EDGE_LEFT),
+            right: this.elem._node.getComputedBorder(Yg.EDGE_RIGHT),
         };
 
         const padding = {
-            left: this.elem.node.getComputedPadding(Yg.EDGE_LEFT),
-            right: this.elem.node.getComputedPadding(Yg.EDGE_RIGHT),
+            left: this.elem._node.getComputedPadding(Yg.EDGE_LEFT),
+            right: this.elem._node.getComputedPadding(Yg.EDGE_RIGHT),
         };
 
         const rect = this.elem.unclippedRect;
@@ -173,13 +174,13 @@ export class Pen {
         side: "inner" | "outer",
     ): Pen => {
         const border = {
-            top: this.elem.node.getComputedBorder(Yg.EDGE_TOP),
-            bottom: this.elem.node.getComputedBorder(Yg.EDGE_BOTTOM),
+            top: this.elem._node.getComputedBorder(Yg.EDGE_TOP),
+            bottom: this.elem._node.getComputedBorder(Yg.EDGE_BOTTOM),
         };
 
         const padding = {
-            top: this.elem.node.getComputedPadding(Yg.EDGE_TOP),
-            bottom: this.elem.node.getComputedPadding(Yg.EDGE_BOTTOM),
+            top: this.elem._node.getComputedPadding(Yg.EDGE_TOP),
+            bottom: this.elem._node.getComputedPadding(Yg.EDGE_BOTTOM),
         };
 
         const rect = this.elem.unclippedRect;
@@ -233,7 +234,7 @@ export class Pen {
     public draw = (char: string, dir: Direction, units: number): Pen => {
         if (char === "") return this;
         if (char === undefined) {
-            this.elem.throwError(ErrorMessages.drawUndefinedError);
+            this.elem._throwError(ErrorMessages.drawUndefinedError);
         }
 
         const ansi = this.glyph.open();

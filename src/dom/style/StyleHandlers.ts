@@ -1,14 +1,14 @@
-import { Yg } from "../Constants.js";
-import type { YogaNode, DomElement } from "../Types.js";
-import type { BaseShadowStyle, BaseStyle } from "./Style.js";
-import type { FocusManagerProps } from "../Props.js";
-import type { FocusManager } from "../dom/DomElement.js";
-import { decodeShorthand } from "./util/decodeShorthand.js";
-import { ifUndef } from "../Util.js";
-import { parseDimensions } from "./util/parseDimensions.js";
+import { Yg } from "../../Constants.js";
+import type { YogaNode } from "../../Types.js";
+import type { DomElement } from "../DomElement.js";
+import type { Shadow, Style } from "./Style.js";
+import type { FocusManager } from "../FocusManager.js";
+import { decodeShorthand } from "../util/decodeShorthand.js";
+import { ifUndef } from "../../Util.js";
+import { parseDimensions } from "../util/parseDimensions.js";
 
 /**
- * The set handler in the Proxy for BaseShadowStyle passes the `prop` and `newValue` through
+ * The set handler in the Proxy for Shadow<Style.All> passes the `prop` and `newValue` through
  * a series of hashable objects defined here.  This aims to allow rendering to focus
  * more on using data rather than interpreting it.
  *
@@ -32,11 +32,11 @@ import { parseDimensions } from "./util/parseDimensions.js";
 // =============================================================================
 
 export const SanitizerHandlers: {
-    [P in keyof BaseStyle]: (
-        nextVal: BaseStyle[P],
+    [P in keyof Style.All]: (
+        nextVal: Style.All[P],
         stdout: NodeJS.WriteStream,
         elem: DomElement,
-    ) => BaseShadowStyle[P];
+    ) => Shadow<Style.All>[P];
 } = {
     zIndex(nextVal) {
         if (typeof nextVal === "string") {
@@ -94,10 +94,10 @@ export const SanitizerHandlers: {
 // =============================================================================
 
 export const AggregateHandlers: {
-    [P in keyof BaseShadowStyle]: (
-        next: BaseShadowStyle[P],
-        target: BaseShadowStyle,
-        virtual: BaseStyle,
+    [P in keyof Shadow<Style.All>]: (
+        next: Shadow<Style.All>[P],
+        target: Shadow<Style.All>,
+        virtual: Style.All,
     ) => void;
 } = {
     borderStyle(next, target, _virtual) {
@@ -155,11 +155,11 @@ export const AggregateHandlers: {
 // =============================================================================
 
 export const YogaHandlers: {
-    [P in keyof BaseShadowStyle]: (
-        next: BaseShadowStyle[P],
+    [P in keyof Shadow<Style.All>]: (
+        next: Shadow<Style.All>[P],
         node: YogaNode,
-        target: BaseShadowStyle,
-        virtual: BaseStyle,
+        target: Shadow<Style.All>,
+        virtual: Style.All,
     ) => void;
 } = {
     display(next, node) {
@@ -212,49 +212,49 @@ export const YogaHandlers: {
     paddingTop(next, node, target) {
         node.setPadding(
             Yg.EDGE_TOP,
-            Math.max(next ?? 0, target.scrollbarPaddingTop ?? 0),
+            Math.max(next ?? 0, target._scrollbarPaddingTop ?? 0),
         );
     },
     paddingBottom(next, node, target) {
         node.setPadding(
             Yg.EDGE_BOTTOM,
-            Math.max(next ?? 0, target.scrollbarPaddingBottom ?? 0),
+            Math.max(next ?? 0, target._scrollbarPaddingBottom ?? 0),
         );
     },
     paddingLeft(next, node, target) {
         node.setPadding(
             Yg.EDGE_LEFT,
-            Math.max(next ?? 0, target.scrollbarPaddingLeft ?? 0),
+            Math.max(next ?? 0, target._scrollbarPaddingLeft ?? 0),
         );
     },
     paddingRight(next, node, target) {
         node.setPadding(
             Yg.EDGE_RIGHT,
-            Math.max(next ?? 0, target.scrollbarPaddingRight ?? 0),
+            Math.max(next ?? 0, target._scrollbarPaddingRight ?? 0),
         );
     },
-    scrollbarPaddingTop(next, node, target) {
+    _scrollbarPaddingTop(next, node, target) {
         // prettier-ignore
         node.setPadding(
             Yg.EDGE_TOP,
             Math.max(next ?? 0, target.paddingTop ?? 0),
         );
     },
-    scrollbarPaddingBottom(next, node, target) {
+    _scrollbarPaddingBottom(next, node, target) {
         // prettier-ignore
         node.setPadding(
             Yg.EDGE_BOTTOM,
             Math.max(next ?? 0, target.paddingBottom ?? 0),
         );
     },
-    scrollbarPaddingLeft(next, node, target) {
+    _scrollbarPaddingLeft(next, node, target) {
         // prettier-ignore
         node.setPadding(
             Yg.EDGE_LEFT,
             Math.max(next ?? 0, target.paddingLeft ?? 0),
         );
     },
-    scrollbarPaddingRight(next, node, target) {
+    _scrollbarPaddingRight(next, node, target) {
         // prettier-ignore
         node.setPadding(
             Yg.EDGE_RIGHT,
@@ -264,49 +264,49 @@ export const YogaHandlers: {
     borderTop(next, node, target) {
         node.setBorder(
             Yg.EDGE_TOP,
-            Math.max(next ? 1 : 0, target.scrollbarBorderTop ?? 0),
+            Math.max(next ? 1 : 0, target._scrollbarBorderTop ?? 0),
         );
     },
     borderBottom(next, node, target) {
         node.setBorder(
             Yg.EDGE_BOTTOM,
-            Math.max(next ? 1 : 0, target.scrollbarBorderBottom ?? 0),
+            Math.max(next ? 1 : 0, target._scrollbarBorderBottom ?? 0),
         );
     },
     borderLeft(next, node, target) {
         node.setBorder(
             Yg.EDGE_LEFT,
-            Math.max(next ? 1 : 0, target.scrollbarBorderLeft ?? 0),
+            Math.max(next ? 1 : 0, target._scrollbarBorderLeft ?? 0),
         );
     },
     borderRight(next, node, target) {
         node.setBorder(
             Yg.EDGE_RIGHT,
-            Math.max(next ? 1 : 0, target.scrollbarBorderRight ?? 0),
+            Math.max(next ? 1 : 0, target._scrollbarBorderRight ?? 0),
         );
     },
-    scrollbarBorderTop(next, node, target) {
+    _scrollbarBorderTop(next, node, target) {
         // prettier-ignore
         node.setBorder(
             Yg.EDGE_TOP,
             Math.max(next ?? 0, target.borderTop ? 1 : 0),
         );
     },
-    scrollbarBorderBottom(next, node, target) {
+    _scrollbarBorderBottom(next, node, target) {
         // prettier-ignore
         node.setBorder(
             Yg.EDGE_BOTTOM,
             Math.max(next ?? 0, target.borderBottom ? 1 : 0),
         );
     },
-    scrollbarBorderRight(next, node, target) {
+    _scrollbarBorderRight(next, node, target) {
         // prettier-ignore
         node.setBorder(
             Yg.EDGE_RIGHT,
             Math.max(next ?? 0, target.borderRight ? 1 : 0),
         );
     },
-    scrollbarBorderLeft(next, node, target) {
+    _scrollbarBorderLeft(next, node, target) {
         // prettier-ignore
         node.setBorder(
             Yg.EDGE_LEFT,

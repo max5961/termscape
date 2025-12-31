@@ -1,20 +1,20 @@
-import type { YogaNode, ViewportStyle } from "../Types.js";
+import type { YogaNode, ViewportStyle } from "../../Types.js";
 import { AggregateHandlers, SanitizerHandlers, YogaHandlers } from "./StyleHandlers.js";
-import type { DomElement } from "../dom/DomElement.js";
-import { checkIfViewportDimensions } from "./util/checkIfViewportDimensions.js";
-import { shouldAlwaysRecalc } from "./util/recalculateStyle.js";
-import type { BaseShadowStyle, BaseStyle } from "./Style.js";
+import type { DomElement } from "../DomElement.js";
+import { checkIfViewportDimensions } from "../util/checkIfViewportDimensions.js";
+import { shouldAlwaysRecalc } from "../util/recalculateStyle.js";
+import type { Style, Shadow } from "./Style.js";
 
-export function createVirtualStyleProxy<T extends BaseStyle = BaseStyle>(
+export function createVirtualStyleProxy<T extends Style.All = Style.All>(
     elem: DomElement,
-    rootRef: DomElement["rootRef"],
-    metadata: DomElement["metadata"],
+    rootRef: DomElement["_rootRef"],
+    metadata: DomElement["_metadata"],
 ) {
     const virtualStyle = new Proxy<T>({} as T, {
-        get(target: T, prop: keyof BaseStyle) {
+        get(target: T, prop: keyof Style.All) {
             return target[prop];
         },
-        set(target: T, prop: keyof BaseStyle, newValue: any) {
+        set(target: T, prop: keyof Style.All, newValue: any) {
             const viewportProp = checkIfViewportDimensions(prop, newValue);
             const alwaysRecalc = shouldAlwaysRecalc(prop);
 
@@ -44,21 +44,21 @@ export function createVirtualStyleProxy<T extends BaseStyle = BaseStyle>(
             return true;
         },
     });
-    const shadowStyle = createShadowStyleProxy(elem.node, rootRef, virtualStyle);
+    const shadowStyle = createShadowStyleProxy(elem._node, rootRef, virtualStyle);
 
     return { shadowStyle, virtualStyle };
 }
 
-function createShadowStyleProxy<T extends BaseShadowStyle = BaseShadowStyle>(
+function createShadowStyleProxy<T extends Shadow<Style.All> = Shadow<Style.All>>(
     node: YogaNode,
-    rootRef: DomElement["rootRef"],
-    virtualStyle: BaseStyle,
+    rootRef: DomElement["_rootRef"],
+    virtualStyle: Style.All,
 ) {
     const shadowStyle = new Proxy<T>({} as T, {
-        get(target: T, prop: keyof BaseShadowStyle) {
+        get(target: T, prop: keyof Shadow<Style.All>) {
             return target[prop];
         },
-        set(target: T, prop: keyof BaseShadowStyle, newValue: any) {
+        set(target: T, prop: keyof Shadow<Style.All>, newValue: any) {
             if (target[prop] !== newValue) {
                 target[prop] = newValue;
 

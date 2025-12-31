@@ -1,5 +1,5 @@
 import { TEXT_PADDING } from "../Constants.js";
-import type { TextStyle } from "../style/Style.js";
+import type { Style } from "../dom/style/Style.js";
 
 export function getRows(
     text: string,
@@ -64,7 +64,7 @@ export function getRows(
 export function alignRows(
     rows: string[],
     width: number,
-    align: TextStyle["align"],
+    align: Style.Text["align"],
 ): (string | symbol)[][] {
     if (align === "right") {
         return rows.map((row) => {
@@ -107,7 +107,7 @@ export function alignRows(
     return rows.map((row) => row.split(""));
 }
 
-export function getAlignedRows(text: string, width: number, align: TextStyle["align"]) {
+export function getAlignedRows(text: string, width: number, align: Style.Text["align"]) {
     const rows = getRows(text, width);
     return alignRows(rows, width, align);
 }

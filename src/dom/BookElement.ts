@@ -1,8 +1,8 @@
 import { DomElement } from "./DomElement.js";
 import { TagNameEnum, BOOK_ELEMENT } from "../Constants.js";
-import type { BaseProps, Props } from "../Props.js";
-import type { BaseStyle, BoxStyle } from "../style/Style.js";
+import type { Style } from "./style/Style.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
+import type { Props } from "./props/Props.js";
 
 /**
  * The `BookElement` does not manage focus like `ListElement` and `PageElement`,
@@ -15,7 +15,7 @@ import { ErrorMessages } from "../shared/ErrorMessages.js";
  */
 
 export class BookElement extends DomElement<{
-    Style: BoxStyle;
+    Style: Style.Book;
     Props: Props.Book;
 }> {
     protected static override identity = BOOK_ELEMENT;
@@ -33,11 +33,11 @@ export class BookElement extends DomElement<{
         return "book";
     }
 
-    protected override get defaultStyles(): BaseStyle {
+    protected override get defaultStyles(): Style.Book {
         return {};
     }
 
-    protected override get defaultProps(): BaseProps {
+    protected override get defaultProps(): Props.Book {
         return {};
     }
 
@@ -45,10 +45,7 @@ export class BookElement extends DomElement<{
      * BookElement has only 1 real child at a time.  The rest are detached from
      * tree but privately stored.
      * */
-    override get children(): readonly DomElement<{
-        Style: BaseStyle;
-        Props: BaseProps;
-    }>[] {
+    override get children(): readonly DomElement[] {
         return this.pages;
     }
 
@@ -80,7 +77,7 @@ export class BookElement extends DomElement<{
         this.pagesSet.add(child);
 
         if (!beforeChildExists) {
-            this.throwError(ErrorMessages.insertBefore);
+            this._throwError(ErrorMessages.insertBefore);
         }
     }
 
@@ -105,7 +102,7 @@ export class BookElement extends DomElement<{
         // Handle the 'virtual' pages array that only exists in this class.
         const idx = this.pages.findIndex((page) => page === child);
         if (idx < 0) {
-            this.throwError(ErrorMessages.removeChild);
+            this._throwError(ErrorMessages.removeChild);
         }
 
         this.pages.splice(idx, 1);

@@ -2,12 +2,11 @@ import {
     ActionStore,
     InputState,
     configureStdin,
-    parseBuffer,
     setKittyProtocol,
     setMouse,
     type Action,
 } from "term-keymap";
-import type { Root } from "../dom/Root.js";
+import type { Root } from "../dom/RootElement.js";
 import type { Scheduler } from "./Scheduler.js";
 import type { EventEmitter } from "stream";
 import type { EventEmitterMap, RuntimeConfig } from "../Types.js";

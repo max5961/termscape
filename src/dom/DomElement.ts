@@ -1,5 +1,5 @@
 import { Yg } from "../Constants.js";
-import type { Root } from "./Root.js";
+import type { Root } from "./RootElement.js";
 import type { Action } from "term-keymap";
 import type {
     MouseEvent,
@@ -9,36 +9,34 @@ import type {
     YogaNode,
     Point,
     StyleHandler,
-    VisualNodeMap,
     TagName,
 } from "../Types.js";
-import type { BaseStyle, BaseShadowStyle } from "../style/Style.js";
-import type { BaseProps, FocusManagerProps, Props } from "../Props.js";
+import type { Shadow, Style } from "./style/Style.js";
 import type { Canvas, Rect } from "../compositor/Canvas.js";
 import {
     DOM_ELEMENT,
-    FOCUS_MANAGER,
     TagNameIdentityMap,
     type ElementIdentityMap,
 } from "../Constants.js";
 import { Render, RequestInput } from "./util/decorators.js";
-import { ElementMetaData } from "./ElementMetadata.js";
-import { FocusNode } from "./FocusNode.js";
+import { ElementMetaData } from "./shared/ElementMetadata.js";
+import { FocusNode } from "./shared/FocusNode.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
-import { createVirtualStyleProxy } from "../style/StyleProxy.js";
+import { createVirtualStyleProxy } from "./style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
-import { recalculateStyle } from "../style/util/recalculateStyle.js";
-import { SideEffects, type PropEffectHandler } from "./SideEffects.js";
+import { SideEffects, type PropEffectHandler } from "./shared/SideEffects.js";
+import type { Props } from "./props/Props.js";
 
 export abstract class DomElement<
     Schema extends {
-        Style: BaseStyle;
-        Props: BaseProps;
-    } = { Style: BaseStyle; Props: BaseProps },
+        Style: Style.All;
+        Props: Props.All;
+    } = { Style: Style.All; Props: Props.All },
 > {
     protected static readonly identity = DOM_ELEMENT;
 
+    // Should come from DefaultStyles.ts
     private static readonly DefaultStyles = {
         display: "flex",
         zIndex: "auto",
@@ -48,70 +46,72 @@ export abstract class DomElement<
         flexShrink: 1,
     };
 
-    public readonly node: YogaNode;
-    public parentElement: null | DomElement;
-    public contentRange: ReturnType<DomElement["initContentRange"]>;
-    private identities: Set<symbol>;
-    private effects: SideEffects;
+    protected readonly _identities: Set<symbol>;
+    protected readonly _childSet: Set<DomElement>;
+    protected readonly _rootRef: { root: Root | null };
+    protected readonly _effects: SideEffects;
+    protected readonly _metadata: ElementMetaData;
+    protected readonly _eventListeners: Map<MouseEventType, Set<MouseEventHandler>>;
+    protected _requiresStdin: boolean;
+    protected _lastOffsetChangeWasFocus: boolean;
 
-    /**
-     * @internal
-     * Privately using the `children` getter conflicts with the `BookElement` implementation
-     * */
+    /** @internal */
+    public readonly _node: YogaNode;
+    /** @internal Privately using the `children` getter conflicts with the `BookElement` implementation */
     public _children: DomElement[];
     /** @internal */
-    public virtualStyle!: Schema["Style"];
+    public readonly _focusNode: FocusNode;
     /** @internal */
-    public shadowStyle!: BaseShadowStyle;
+    public readonly _props: Map<string, unknown>;
     /** @internal */
-    public scrollOffset: Point;
+    public readonly _virStyle!: Schema["Style"];
     /** @internal */
-    public canvas: Canvas | null;
+    public readonly _shadowStyle!: Shadow<Style.All>;
     /** @internal */
-    public focusNode: FocusNode;
+    public readonly _scrollOffset: Point;
     /** @internal */
-    public styleHandler: StyleHandler<Schema["Style"]> | null;
+    public _canvas: Canvas | null;
     /** @internal */
-    public props: Map<string, unknown>;
+    public _styleHandler: StyleHandler<Schema["Style"]> | null;
     /** @internal */
-    public afterLayoutHandlers: Set<() => unknown>;
+    public _afterLayoutHandlers: Set<() => unknown>;
     /** @internal*/
-    public forceRecompositeHandlers: Set<() => boolean>;
+    public _forceRecompositeHandlers: Set<() => boolean>;
+    /** @internal */
+    public _contentRange: ReturnType<DomElement["_initContentRange"]>;
 
-    protected readonly childrenSet: Set<DomElement>;
-    protected readonly rootRef: { root: Root | null };
-    protected readonly metadata: ElementMetaData;
-    protected readonly eventListeners: Map<MouseEventType, Set<MouseEventHandler>>;
-    protected requiresStdin: boolean;
-    protected lastOffsetChangeWasFocus: boolean;
+    public parentElement: null | DomElement;
 
     constructor() {
-        this.identities = new Set();
+        this._identities = new Set();
         this.collectIdentities();
-        this.node = Yg.Node.create();
-        this.rootRef = { root: null };
-        this.parentElement = null;
+
+        this._node = Yg.Node.create();
+        this._effects = new SideEffects();
+        this._childSet = new Set();
+        this._focusNode = new FocusNode(this);
+        this._props = new Map();
+
+        this._rootRef = { root: null };
         this._children = [];
-        this.props = new Map();
-        this.eventListeners = new Map();
-        this.metadata = new ElementMetaData(this);
-        this.focusNode = new FocusNode(this);
-        this.contentRange = this.initContentRange();
-        this.scrollOffset = { x: 0, y: 0 };
-        this.canvas = null;
-        this.childrenSet = new Set();
-        this.afterLayoutHandlers = new Set();
-        this.forceRecompositeHandlers = new Set();
-        this.effects = new SideEffects();
+        this._eventListeners = new Map();
+        this._metadata = new ElementMetaData(this);
+        this._scrollOffset = { x: 0, y: 0 };
+        this._canvas = null;
+        this._afterLayoutHandlers = new Set();
+        this._forceRecompositeHandlers = new Set();
+
+        this._contentRange = this._initContentRange();
+        this.parentElement = null;
 
         // Mutable flags
-        this.requiresStdin = false;
-        this.lastOffsetChangeWasFocus = false;
+        this._requiresStdin = false;
+        this._lastOffsetChangeWasFocus = false;
 
-        const proxy = createVirtualStyleProxy(this, this.rootRef, this.metadata);
-        this.virtualStyle = proxy.virtualStyle;
-        this.shadowStyle = proxy.shadowStyle;
-        this.styleHandler = null;
+        const proxy = createVirtualStyleProxy(this, this._rootRef, this._metadata);
+        this._virStyle = proxy.virtualStyle;
+        this._shadowStyle = proxy.shadowStyle;
+        this._styleHandler = null;
 
         this.applyDefaultStyles();
         this.applyDefaultProps();
@@ -141,15 +141,15 @@ export abstract class DomElement<
 
     set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
         if (typeof stylesheet === "function") {
-            this.styleHandler = stylesheet;
+            this._styleHandler = stylesheet;
         } else {
-            this.styleHandler = null;
+            this._styleHandler = null;
         }
 
         let styles = stylesheet;
-        if (this.styleHandler) {
-            const { focus, shallowFocus } = this.focusNode.getStatus();
-            styles = this.styleHandler({ focus, shallowFocus });
+        if (this._styleHandler) {
+            const { focus, shallowFocus } = this._focusNode.getStatus();
+            styles = this._styleHandler({ focus, shallowFocus });
         }
 
         const withDefault = {
@@ -166,7 +166,7 @@ export abstract class DomElement<
     }
 
     get style(): Schema["Style"] {
-        return this.virtualStyle;
+        return this._virStyle;
     }
 
     private collectIdentities() {
@@ -174,22 +174,24 @@ export abstract class DomElement<
 
         while (ctor) {
             if (typeof ctor.identity === "symbol") {
-                this.identities.add(ctor.identity);
+                this._identities.add(ctor.identity);
             }
             ctor = Object.getPrototypeOf(ctor);
         }
     }
 
     /** @internal */
-    public is<T extends keyof ElementIdentityMap>(sym: T): this is ElementIdentityMap[T] {
-        return this.identities.has(sym);
+    public _is<T extends keyof ElementIdentityMap>(
+        sym: T,
+    ): this is ElementIdentityMap[T] {
+        return this._identities.has(sym);
     }
 
     public instanceOf<T extends keyof typeof TagNameIdentityMap>(
         tag: T,
     ): this is ElementIdentityMap[(typeof TagNameIdentityMap)[T]] {
         const identity = TagNameIdentityMap[tag];
-        return this.identities.has(identity);
+        return this._identities.has(identity);
     }
 
     get children(): Readonly<DomElement[]> {
@@ -199,12 +201,12 @@ export abstract class DomElement<
     public getProp<T extends keyof Schema["Props"]>(
         key: T,
     ): Schema["Props"][T] | undefined {
-        return this.props.get(key as string) as Schema["Props"][T] | undefined;
+        return this._props.get(key as string) as Schema["Props"][T] | undefined;
     }
 
     /** @internal for better internal types */
-    public getAnyProp<T extends keyof Props.All>(key: T): Props.All[T] | undefined {
-        return this.props.get(key) as Props.All[T] | undefined;
+    public _getAnyProp<T extends keyof Props.All>(key: T): Props.All[T] | undefined {
+        return this._props.get(key) as Props.All[T] | undefined;
     }
 
     @Render()
@@ -213,43 +215,43 @@ export abstract class DomElement<
         value: Schema["Props"][T],
     ): void {
         const setProp = (value: unknown) => {
-            this.props.set(key as string, value);
+            this._props.set(key as string, value);
         };
 
         setProp(value);
-        this.effects.dispatchEffect(key as string, value, setProp);
+        this._effects.dispatchEffect(key as string, value, setProp);
     }
 
     protected registerPropEffect<T extends keyof Schema["Props"]>(
         prop: T,
         cb: PropEffectHandler<Schema["Props"][T]>,
     ) {
-        this.effects.registerEffect(prop, cb as any);
+        this._effects.registerEffect(prop, cb as any);
     }
 
     private regPropEffectTyped<T extends keyof Props.All>(
         prop: T,
         cb: PropEffectHandler<Props.All[T]>,
     ) {
-        this.effects.registerEffect(prop, cb as any);
+        this._effects.registerEffect(prop, cb as any);
     }
 
     private registerScrollbarEffect = (
         ...[scrollbar, setProp]: Parameters<PropEffectHandler<Props.All["scrollbar"]>>
     ) => {
         if (scrollbar === undefined) {
-            this.style.scrollbarBorderTop = 0;
-            this.style.scrollbarBorderBottom = 0;
-            this.style.scrollbarBorderLeft = 0;
-            this.style.scrollbarBorderRight = 0;
-            this.style.scrollbarPaddingTop = 0;
-            this.style.scrollbarPaddingBottom = 0;
-            this.style.scrollbarPaddingLeft = 0;
-            this.style.scrollbarPaddingRight = 0;
+            this.style._scrollbarBorderTop = 0;
+            this.style._scrollbarBorderBottom = 0;
+            this.style._scrollbarBorderLeft = 0;
+            this.style._scrollbarBorderRight = 0;
+            this.style._scrollbarPaddingTop = 0;
+            this.style._scrollbarPaddingBottom = 0;
+            this.style._scrollbarPaddingLeft = 0;
+            this.style._scrollbarPaddingRight = 0;
             return setProp(scrollbar);
         }
 
-        if (this.shadowStyle.flexDirection?.includes("row")) {
+        if (this._shadowStyle.flexDirection?.includes("row")) {
             scrollbar.edge ??= "bottom";
         } else {
             scrollbar.edge ??= "right";
@@ -260,15 +262,15 @@ export abstract class DomElement<
         scrollbar.trackChar = scrollbar.trackChar ? scrollbar.trackChar[0] : " ";
 
         if (scrollbar.placement === "border") {
-            this.style.scrollbarBorderTop = scrollbar.edge === "top" ? 1 : 0;
-            this.style.scrollbarBorderBottom = scrollbar.edge === "bottom" ? 1 : 0;
-            this.style.scrollbarBorderLeft = scrollbar.edge === "left" ? 1 : 0;
-            this.style.scrollbarBorderRight = scrollbar.edge === "right" ? 1 : 0;
+            this.style._scrollbarBorderTop = scrollbar.edge === "top" ? 1 : 0;
+            this.style._scrollbarBorderBottom = scrollbar.edge === "bottom" ? 1 : 0;
+            this.style._scrollbarBorderLeft = scrollbar.edge === "left" ? 1 : 0;
+            this.style._scrollbarBorderRight = scrollbar.edge === "right" ? 1 : 0;
         } else {
-            this.style.scrollbarPaddingTop = scrollbar.edge === "top" ? 1 : 0;
-            this.style.scrollbarPaddingBottom = scrollbar.edge === "bottom" ? 1 : 0;
-            this.style.scrollbarPaddingLeft = scrollbar.edge === "left" ? 1 : 0;
-            this.style.scrollbarPaddingRight = scrollbar.edge === "right" ? 1 : 0;
+            this.style._scrollbarPaddingTop = scrollbar.edge === "top" ? 1 : 0;
+            this.style._scrollbarPaddingBottom = scrollbar.edge === "bottom" ? 1 : 0;
+            this.style._scrollbarPaddingLeft = scrollbar.edge === "left" ? 1 : 0;
+            this.style._scrollbarPaddingRight = scrollbar.edge === "right" ? 1 : 0;
         }
         setProp(scrollbar);
     };
@@ -289,12 +291,12 @@ export abstract class DomElement<
     };
 
     /** @internal */
-    public throwError(errorMsg: string) {
+    public _throwError(errorMsg: string) {
         return throwError(this.getRoot(), errorMsg);
     }
 
     /** @internal */
-    public initContentRange() {
+    public _initContentRange() {
         return {
             high: Infinity,
             low: -Infinity,
@@ -331,17 +333,17 @@ export abstract class DomElement<
         timeoutFallbackOrSubscriber?: number | (() => unknown),
     ): (() => void) | Promise<void> {
         if (typeof timeoutFallbackOrSubscriber === "function") {
-            this.afterLayoutHandlers.add(timeoutFallbackOrSubscriber);
-            return () => this.afterLayoutHandlers.delete(timeoutFallbackOrSubscriber);
+            this._afterLayoutHandlers.add(timeoutFallbackOrSubscriber);
+            return () => this._afterLayoutHandlers.delete(timeoutFallbackOrSubscriber);
         }
 
         return new Promise<void>((res) => {
             const removeSelf = () => {
-                this.afterLayoutHandlers.delete(removeSelf);
+                this._afterLayoutHandlers.delete(removeSelf);
                 res();
             };
 
-            this.afterLayoutHandlers.add(removeSelf);
+            this._afterLayoutHandlers.add(removeSelf);
             setTimeout(removeSelf, timeoutFallbackOrSubscriber ?? 500);
         });
     }
@@ -356,11 +358,11 @@ export abstract class DomElement<
      * */
     public forceRecomposite(cb: () => boolean) {
         const removeSelf = () => {
-            this.forceRecompositeHandlers.delete(removeSelf);
+            this._forceRecompositeHandlers.delete(removeSelf);
             return cb();
         };
 
-        this.forceRecompositeHandlers.add(removeSelf);
+        this._forceRecompositeHandlers.add(removeSelf);
     }
 
     // ========================================================================
@@ -374,9 +376,9 @@ export abstract class DomElement<
         this.dfs(this, (elem) => {
             elem.setRoot(root);
 
-            root.handleAttachmentChange(elem.metadata, { attached: true });
+            root.handleAttachmentChange(elem._metadata, { attached: true });
 
-            if (elem.requiresStdin) {
+            if (elem._requiresStdin) {
                 root.requestInputStream();
             }
         });
@@ -389,18 +391,18 @@ export abstract class DomElement<
             elem.setRoot(null);
 
             if (root) {
-                root.handleAttachmentChange(elem.metadata, { attached: false });
+                root.handleAttachmentChange(elem._metadata, { attached: false });
             }
         });
     }
 
     @Render({ layoutChange: true })
     public appendChild(child: DomElement): void {
-        if (this.childrenSet.has(child)) return;
-        this.childrenSet.add(child);
-        this.focusNode.children.add(child.focusNode);
+        if (this._childSet.has(child)) return;
+        this._childSet.add(child);
+        this._focusNode.children.add(child._focusNode);
 
-        this.node.insertChild(child.node, this.node.getChildCount());
+        this._node.insertChild(child._node, this._node.getChildCount());
         this._children.push(child);
         child.parentElement = this;
         const root = this.getRoot();
@@ -410,12 +412,12 @@ export abstract class DomElement<
 
     @Render({ layoutChange: true })
     public insertBefore(child: DomElement, beforeChild: DomElement): void {
-        if (this.childrenSet.has(child)) {
+        if (this._childSet.has(child)) {
             this.removeChild(child);
         }
 
-        this.childrenSet.add(child);
-        this.focusNode.children.add(child.focusNode);
+        this._childSet.add(child);
+        this._focusNode.children.add(child._focusNode);
 
         const nextChildren = [] as DomElement[];
         let foundBeforeChild = false;
@@ -430,11 +432,11 @@ export abstract class DomElement<
         }
 
         if (!foundBeforeChild) {
-            this.throwError(ErrorMessages.insertBefore);
+            this._throwError(ErrorMessages.insertBefore);
         }
 
         this._children = nextChildren;
-        this.node.insertChild(child.node, childIdx);
+        this._node.insertChild(child._node, childIdx);
         child.parentElement = this;
         const root = this.getRoot();
         child.setRoot(root);
@@ -446,23 +448,23 @@ export abstract class DomElement<
     public removeChild(child: DomElement, freeRecursive?: boolean) {
         const idx = this._children.findIndex((el) => el === child);
 
-        if (idx === -1 || !this.childrenSet.has(child)) {
-            this.throwError(ErrorMessages.removeChild);
+        if (idx === -1 || !this._childSet.has(child)) {
+            this._throwError(ErrorMessages.removeChild);
         }
 
-        this.childrenSet.delete(child);
-        this.focusNode.removeChild(child.focusNode);
+        this._childSet.delete(child);
+        this._focusNode.removeChild(child._focusNode);
 
         child.beforeDetaching();
 
         this._children.splice(idx, 1);
-        this.node.removeChild(child.node);
+        this._node.removeChild(child._node);
 
         // If React removes a child, it should be gc'd.  If removing w/o React,
         // its possible that the child and its children may be used later, so
         // freeRecursive should be optional.
         if (freeRecursive) {
-            child.node.freeRecursive();
+            child._node.freeRecursive();
         }
 
         child.parentElement = null;
@@ -480,19 +482,19 @@ export abstract class DomElement<
 
     @Render({ layoutChange: true })
     public hide(): void {
-        this.node.setDisplay(Yg.DISPLAY_NONE);
+        this._node.setDisplay(Yg.DISPLAY_NONE);
     }
 
     @Render({ layoutChange: true })
     public unhide(): void {
-        this.node.setDisplay(Yg.DISPLAY_FLEX);
+        this._node.setDisplay(Yg.DISPLAY_FLEX);
     }
 
     public getYogaChildren(): YogaNode[] {
-        const count = this.node.getChildCount();
+        const count = this._node.getChildCount();
         const yogaNodes = [] as YogaNode[];
         for (let i = 0; i < count; ++i) {
-            yogaNodes.push(this.node.getChild(i));
+            yogaNodes.push(this._node.getChild(i));
         }
         return yogaNodes;
     }
@@ -502,29 +504,29 @@ export abstract class DomElement<
     // =========================================================================
 
     public getFocus(): boolean {
-        return this.focusNode.getStatus().focus;
+        return this._focusNode.getStatus().focus;
     }
 
     public getShallowFocus(): boolean {
-        return this.focusNode.getStatus().shallowFocus;
+        return this._focusNode.getStatus().shallowFocus;
     }
 
     public focus() {
-        if (this.focusNode.nearestCheckpoint) {
-            this.focusNode.nearestCheckpoint.focused = true;
+        if (this._focusNode.nearestCheckpoint) {
+            this._focusNode.nearestCheckpoint.focused = true;
         }
     }
 
     protected becomeCheckpoint(focused: boolean) {
-        this.focusNode.becomeCheckpoint(focused);
+        this._focusNode.becomeCheckpoint(focused);
     }
 
     protected becomeNormal() {
-        this.focusNode.becomeNormal();
+        this._focusNode.becomeNormal();
     }
 
     protected toggleFocus(focused: boolean) {
-        this.focusNode.updateCheckpoint(focused);
+        this._focusNode.updateCheckpoint(focused);
     }
 
     // ========================================================================
@@ -540,19 +542,19 @@ export abstract class DomElement<
     }
 
     public get unclippedRect(): Rect {
-        return this.canvas?.unclippedRect ?? this.getDefaultRect();
+        return this._canvas?.unclippedRect ?? this.getDefaultRect();
     }
 
     public get unclippedContentRect(): Rect {
-        return this.canvas?.unclippedContentRect ?? this.getDefaultRect();
+        return this._canvas?.unclippedContentRect ?? this.getDefaultRect();
     }
 
     public get visibleRect(): Rect {
-        return this.canvas?.visibleRect ?? this.getDefaultRect();
+        return this._canvas?.visibleRect ?? this.getDefaultRect();
     }
 
     public get visibleContentRect(): Rect {
-        return this.canvas?.visibleContentRect ?? this.getDefaultRect();
+        return this._canvas?.visibleContentRect ?? this.getDefaultRect();
     }
 
     public getBoundingClientRect(): DOMRect {
@@ -585,15 +587,15 @@ export abstract class DomElement<
 
     @RequestInput()
     public addEventListener(event: MouseEventType, handler: MouseEventHandler): void {
-        if (!this.eventListeners.get(event)) {
-            this.eventListeners.set(event, new Set());
+        if (!this._eventListeners.get(event)) {
+            this._eventListeners.set(event, new Set());
         }
-        this.eventListeners.get(event)!.add(handler);
+        this._eventListeners.get(event)!.add(handler);
     }
 
     public removeEventListener(event: MouseEventType, handler: MouseEventHandler): void {
-        if (!this.eventListeners.get(event)) return;
-        this.eventListeners.get(event)!.delete(handler);
+        if (!this._eventListeners.get(event)) return;
+        this._eventListeners.get(event)!.delete(handler);
     }
 
     protected propagateMouseEvent(
@@ -606,8 +608,8 @@ export abstract class DomElement<
         let canImmediatePropagate = true;
 
         const propagate = (curr: DomElement, target: DomElement) => {
-            if (curr && curr.eventListeners.get(type)?.size) {
-                const handlers = curr.eventListeners.get(type)!;
+            if (curr && curr._eventListeners.get(type)?.size) {
+                const handlers = curr._eventListeners.get(type)!;
 
                 const event: MouseEvent = {
                     type,
@@ -645,14 +647,14 @@ export abstract class DomElement<
 
     @RequestInput()
     public addKeyListener(action: Action): () => void {
-        this.metadata.actions.add(action);
+        this._metadata.actions.add(action);
         return () => {
             this.removeKeyListener(action);
         };
     }
 
     public removeKeyListener(action: Action): void {
-        this.metadata.actions.delete(action);
+        this._metadata.actions.delete(action);
     }
 
     // =========================================================================
@@ -660,52 +662,52 @@ export abstract class DomElement<
     // =========================================================================
 
     public scrollDown(units = 1) {
-        this.lastOffsetChangeWasFocus = false;
+        this._lastOffsetChangeWasFocus = false;
         this.applyScroll(0, -units);
     }
 
     public scrollUp(units = 1) {
-        this.lastOffsetChangeWasFocus = false;
+        this._lastOffsetChangeWasFocus = false;
         this.applyScroll(0, units);
     }
 
     public scrollLeft(units = 1) {
-        this.lastOffsetChangeWasFocus = false;
+        this._lastOffsetChangeWasFocus = false;
         this.applyScroll(units, 0);
     }
 
     public scrollRight(units = 1) {
-        this.lastOffsetChangeWasFocus = false;
+        this._lastOffsetChangeWasFocus = false;
         this.applyScroll(-units, 0);
     }
 
     /** @internal */
     public scrollDownWithFocus(units: number, triggerRender: boolean) {
-        this.lastOffsetChangeWasFocus = true;
+        this._lastOffsetChangeWasFocus = true;
         this.applyScroll(0, -units, triggerRender);
     }
 
     /** @internal */
     public scrollUpWithFocus(units: number, triggerRender: boolean) {
-        this.lastOffsetChangeWasFocus = true;
+        this._lastOffsetChangeWasFocus = true;
         this.applyScroll(0, units, triggerRender);
     }
 
     /** @internal */
     public scrollLeftWithFocus(units: number, triggerRender: boolean) {
-        this.lastOffsetChangeWasFocus = true;
+        this._lastOffsetChangeWasFocus = true;
         this.applyScroll(units, 0, triggerRender);
     }
 
     /** @internal */
     public scrollRightWithFocus(units: number, triggerRender: boolean) {
-        this.lastOffsetChangeWasFocus = true;
+        this._lastOffsetChangeWasFocus = true;
         this.applyScroll(-units, 0, triggerRender);
     }
 
     private applyScroll(dx: number, dy: number, triggerRender = true) {
         if (this.style.overflow !== "scroll") {
-            this.throwError(ErrorMessages.invalidOverflowStyleForScroll);
+            this._throwError(ErrorMessages.invalidOverflowStyleForScroll);
         }
 
         const allowedUnits = this.requestScroll(dx, dy);
@@ -731,7 +733,7 @@ export abstract class DomElement<
      * A negative dx scrolls *right* by "pulling" content *left*
      * */
     private requestScroll(dx: number, dy: number): number {
-        if (!this.canvas) return 0;
+        if (!this._canvas) return 0;
 
         // Corner offsets **MUST** be whole numbers.  When drawing to the Canvas,
         // if the computed rects are floats, then nothing will be drawn since
@@ -739,13 +741,13 @@ export abstract class DomElement<
         dx = dx > 0 ? Math.floor(dx) : Math.ceil(dx);
         dy = dy > 0 ? Math.floor(dy) : Math.ceil(dy);
 
-        const contentRect = this.canvas.unclippedContentRect;
+        const contentRect = this._canvas.unclippedContentRect;
         const contentDepth = contentRect.corner.y + contentRect.height;
         const contentWidth = contentRect.corner.x + contentRect.width;
 
         if (dy) {
-            const lowest = this.contentRange.low;
-            const highest = this.contentRange.high;
+            const lowest = this._contentRange.low;
+            const highest = this._contentRange.high;
 
             // Pulling content up - scrolling down
             if (dy < 0) {
@@ -760,8 +762,8 @@ export abstract class DomElement<
         }
 
         if (dx) {
-            const mostRight = this.contentRange.right;
-            const mostLeft = this.contentRange.left;
+            const mostRight = this._contentRange.right;
+            const mostLeft = this._contentRange.left;
 
             // Pulling content left - scrolling right
             if (dx < 0) {
@@ -790,8 +792,8 @@ export abstract class DomElement<
      * necessary during rendering itself and prevents the cascade of a new render.
      * */
     public applyCornerOffsetWithoutRender(dx: number, dy: number) {
-        this.scrollOffset.x += dx;
-        this.scrollOffset.y += dy;
+        this._scrollOffset.x += dx;
+        this._scrollOffset.y += dy;
     }
 
     /**
@@ -802,10 +804,10 @@ export abstract class DomElement<
      * @returns `true` if any adjustments were made
      * */
     public adjustScrollToFillContainer(): boolean {
-        const highest = this.contentRange.high;
-        const lowest = this.contentRange.low;
-        const leftest = this.contentRange.left;
-        const rightest = this.contentRange.right;
+        const highest = this._contentRange.high;
+        const lowest = this._contentRange.low;
+        const leftest = this._contentRange.left;
+        const rightest = this._contentRange.right;
 
         const rect = this.unclippedContentRect;
 
@@ -852,8 +854,8 @@ export abstract class DomElement<
         const result = { x: 0, y: 0 };
         if (!rect) return result;
 
-        const lowest = this.contentRange.low;
-        const highest = this.contentRange.high;
+        const lowest = this._contentRange.low;
+        const highest = this._contentRange.high;
         const currentY = rect.corner.y - highest;
         const possibleY = Math.abs(this.requestScroll(0, -Infinity));
 
@@ -865,8 +867,8 @@ export abstract class DomElement<
             result.y = Math.floor((currentY / (currentY + possibleY)) * 100);
         }
 
-        const mostLeft = this.contentRange.left;
-        const mostRight = this.contentRange.right;
+        const mostLeft = this._contentRange.left;
+        const mostRight = this._contentRange.right;
         const currentX = rect.corner.x - mostLeft;
         const possibleX = Math.abs(this.requestScroll(-Infinity, 0));
 
@@ -886,11 +888,11 @@ export abstract class DomElement<
     // =========================================================================
 
     public getRoot(): Root | null {
-        return this.rootRef.root;
+        return this._rootRef.root;
     }
 
     protected setRoot(root: Root | null): void {
-        this.rootRef.root = root;
+        this._rootRef.root = root;
     }
 
     protected dfs(elem: DomElement, cb: (elem: DomElement) => void) {
@@ -915,461 +917,5 @@ export abstract class DomElement<
         const result = cb(elem, stop);
 
         return broken ? result : this.reverseDfs(elem.parentElement, cb);
-    }
-}
-
-export abstract class FocusManager<
-    Schema extends {
-        Style: BaseStyle;
-        Props: Props.FocusManager;
-    } = { Style: BaseStyle; Props: FocusManagerProps },
-> extends DomElement<Schema> {
-    protected static override identity = FOCUS_MANAGER;
-
-    private static RecalulateFlexShrink = (child: DomElement) => {
-        recalculateStyle(child, "flexShrink");
-    };
-
-    private vmap: VisualNodeMap;
-    private _focused: DomElement | undefined;
-
-    constructor() {
-        super();
-        this.vmap = new Map();
-        this._focused = undefined;
-        this.lastOffsetChangeWasFocus = true;
-    }
-
-    protected abstract getNavigableChildren(): DomElement[];
-    protected abstract handleAppendChild(child: DomElement): void;
-    // prettier-ignore
-    protected abstract handleRemoveChild(child: DomElement, freeRecursive?: boolean): void;
-    protected abstract buildVisualMap(children: DomElement[], vmap: VisualNodeMap): void;
-
-    public override appendChild(child: DomElement): void {
-        super.appendChild(child);
-        this.handleAppendChild(child);
-
-        FocusManager.RecalulateFlexShrink(child);
-    }
-
-    public override insertBefore(child: DomElement, beforeChild: DomElement): void {
-        super.insertBefore(child, beforeChild);
-        this.handleAppendChild(child);
-
-        FocusManager.RecalulateFlexShrink(child);
-    }
-
-    public override removeChild(child: DomElement, freeRecursive?: boolean): void {
-        this.handleRemoveChild(child, freeRecursive);
-        super.removeChild(child, freeRecursive);
-
-        if (this.focused === child) {
-            const data = this.getFocusedData();
-            const next = data?.up || data?.down || data?.left || data?.right;
-            this.focusChild(next);
-        }
-
-        FocusManager.RecalulateFlexShrink(child);
-    }
-
-    /*
-     * This needs to be overridden to ensure that `flexShrink` styles for children
-     * are recalculated if `blockChildrenShrink` is set
-     * */
-    public override setProp<T extends keyof Schema["Props"]>(
-        key: T,
-        value: Schema["Props"][T],
-    ): void {
-        super.setProp(key, value);
-
-        // If `blockChildrenShrink` is true, style handlers will set `flexShrink`
-        // to `0`
-        if (key === "blockChildrenShrink") {
-            this._children.forEach((child) => {
-                recalculateStyle(child, "flexShrink");
-            });
-        }
-    }
-
-    public get focused() {
-        return this._focused;
-    }
-
-    protected set focused(val: DomElement | undefined) {
-        this._focused = val;
-    }
-
-    protected get visualMap(): Readonly<VisualNodeMap> {
-        return this.vmap;
-    }
-
-    private getFMProp<T extends keyof FocusManagerProps>(prop: T): FocusManagerProps[T] {
-        return this.getProp(prop);
-    }
-
-    public focusChild(child: DomElement | undefined): DomElement | undefined {
-        if (!child || this.focused === child) return;
-        if (!this.vmap.has(child)) return;
-
-        const prev = this.focused ? this.vmap.get(this.focused) : undefined;
-        const next = this.vmap.get(child);
-
-        this.focused?.focusNode.updateCheckpoint(false);
-        this.focused = child;
-        this.focused.focusNode.updateCheckpoint(true);
-
-        const prevX = prev?.xIdx ?? 0;
-        const prevY = prev?.yIdx ?? 0;
-        const nextX = next?.xIdx ?? 0;
-        const nextY = next?.yIdx ?? 0;
-        const dx = nextX - prevX;
-        const dy = nextY - prevY;
-
-        this.normalizeScrollToFocus(
-            dx < 0 ? "left" : dx > 0 ? "right" : dy < 0 ? "up" : "down",
-        );
-
-        return this.focused;
-    }
-
-    /**
-     * @internal
-     *
-     * Handle layout changes or first renders that have pushed the focused item
-     * out of visibility, and subsequently adjust the corner offset **without**
-     * causing a re-render since this will be handled during compositing.
-     *
-     * @returns `true` if the corner offset was adjusted
-     * */
-    public adjustOffsetToFocus(): boolean {
-        // Allow for non-focus scrolling to occur and obscure the focused child
-        if (!this.lastOffsetChangeWasFocus) return false;
-
-        // If undefined, this means that no layout has been generated yet
-        const visibility = this.focusedChildVisibilityStatus();
-        if (!visibility) return false;
-
-        const { itemBelowWin, itemAboveWin, itemRightWin, itemLeftWin } = visibility;
-
-        // Focused item is visible - no need to adjust corner offset
-        if (!itemBelowWin && !itemAboveWin && !itemRightWin && !itemLeftWin) {
-            return false;
-        }
-
-        if (itemBelowWin || itemAboveWin) {
-            this.normalizeScrollToFocus("up", false);
-        }
-        if (itemRightWin || itemLeftWin) {
-            this.normalizeScrollToFocus("left", false);
-        }
-
-        return true;
-    }
-
-    /**
-     * ----IMPORTANT-TODO----
-     * THIS IS NOT PERFECT FOR CHECKING ITEM LEFT OR RIGHT OF WIN.  OFF BY ONE
-     * ERROR
-     * */
-    private focusedChildVisibilityStatus() {
-        const fRect = this.focused?.unclippedRect;
-        const wRect = this.unclippedContentRect;
-
-        if (!fRect || !wRect) return;
-
-        const wTop = wRect.corner.y;
-        const fTop = fRect.corner.y;
-        const wBot = wRect.corner.y + wRect.height;
-        const fBot = fRect.corner.y + fRect.height;
-
-        const fLeft = fRect.corner.x;
-        const wLeft = wRect.corner.x;
-        const fRight = fRect.corner.x + fRect.width;
-        const wRight = wRect.corner.x + wRect.width;
-
-        let scrollOff = this.getFMProp("keepFocusedCenter")
-            ? Math.floor(wRect.height / 2)
-            : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
-
-        if (this.style.flexDirection?.includes("row")) {
-            scrollOff = this.getFMProp("keepFocusedCenter")
-                ? Math.floor(wRect.width / 2)
-                : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
-        }
-
-        const itemBelowWin = fBot > wBot - scrollOff;
-        const itemAboveWin = fTop <= wTop + scrollOff;
-
-        const itemRightWin = fRight > wRight - scrollOff;
-        const itemLeftWin = fLeft <= wLeft + scrollOff;
-
-        return {
-            itemBelowWin,
-            itemAboveWin,
-            itemRightWin,
-            itemLeftWin,
-        };
-    }
-
-    /**
-     * @internal
-     *
-     * Adjust the `scrollOffset` in order to keep the focused element in view
-     */
-    public normalizeScrollToFocus(
-        direction: "up" | "down" | "left" | "right",
-        triggerRender = true,
-    ) {
-        if (!this.focused) return;
-        if (!this.getFMProp("keepFocusedVisible")) return;
-
-        const isScrollNegative = direction === "down" || direction === "left";
-        const isLTR = direction === "left" || direction === "right";
-
-        // Scroll Window Rect & Focus Item Rect
-        const fRect = this.focused.unclippedRect;
-        const wRect = this.canvas?.unclippedContentRect;
-        if (!fRect || !wRect) return;
-
-        if (!isLTR) {
-            const wTop = wRect.corner.y;
-            const fTop = fRect.corner.y;
-            const wBot = wRect.corner.y + wRect.height;
-            const fBot = fRect.corner.y + fRect.height;
-
-            const scrollOff = this.getFMProp("keepFocusedCenter")
-                ? Math.floor(wRect.height / 2)
-                : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
-
-            // If focus item is as large or larger than window, pin to top.
-            if (fRect.height >= wRect.height) {
-                const toScroll = fTop - wTop;
-                if (toScroll > 0) {
-                    this.scrollDownWithFocus(toScroll, triggerRender);
-                } else {
-                    this.scrollUpWithFocus(Math.abs(toScroll), triggerRender);
-                }
-                return;
-            }
-
-            const itemBelowWin = fBot > wBot - scrollOff;
-            const itemAboveWin = fTop <= wTop + scrollOff;
-
-            const scroll = () => {
-                return isScrollNegative || this.getFMProp("keepFocusedCenter")
-                    ? this.scrollDownWithFocus(fBot - wBot + scrollOff, triggerRender)
-                    : this.scrollUpWithFocus(wTop + scrollOff - fTop, triggerRender);
-            };
-
-            if (itemBelowWin || itemAboveWin) {
-                return scroll();
-            }
-
-            // `scroll` fn explanation
-            // If `scrollOff` is greater than half the dimension of the window, then
-            // the direction by which we are scrolling becomes important because the
-            // scrollOff will cause the above/below variables to oscillate.  Checking
-            // the direction forces the same behavior regardless.  In most other
-            // cases the above/below variables align with `isScrollDown`.  If they
-            // don't, such as when non-focus scroll is involved, either fn still
-            // brings the focused item into the window.
-        } else {
-            const fLeft = fRect.corner.x;
-            const wLeft = wRect.corner.x;
-            const fRight = fRect.corner.x + fRect.width;
-            const wRight = wRect.corner.x + wRect.width;
-
-            if (fRect.width >= wRect.width) {
-                const toScroll = fRight - wRight;
-                if (toScroll > 0) {
-                    this.scrollRightWithFocus(toScroll, triggerRender);
-                } else {
-                    this.scrollLeftWithFocus(Math.abs(toScroll), triggerRender);
-                }
-            }
-
-            const scrollOff = this.getFMProp("keepFocusedCenter")
-                ? Math.floor(wRect.width / 2)
-                : Math.min(this.getFMProp("scrollOff") ?? 0, wRight);
-
-            const itemRightWin = fRight > wRight - scrollOff;
-            const itemLeftWin = fLeft <= wLeft + scrollOff;
-
-            const scroll = () => {
-                return isScrollNegative || this.getFMProp("keepFocusedCenter")
-                    ? this.scrollRightWithFocus(
-                          fRight - wRight + scrollOff,
-                          triggerRender,
-                      )
-                    : this.scrollLeftWithFocus(wLeft + scrollOff - fLeft, triggerRender);
-            };
-
-            if (itemRightWin || itemLeftWin) {
-                return scroll();
-            }
-        }
-    }
-
-    public refreshVisualMap() {
-        const children = this.getNavigableChildren();
-        this.vmap = new Map();
-        this.buildVisualMap(children, this.vmap);
-    }
-
-    protected getFocusedData() {
-        if (!this.focused) return;
-        return this.vmap.get(this.focused);
-    }
-
-    private getYArr() {
-        return this.getFocusedData()?.yArr;
-    }
-
-    private getXArr() {
-        return this.getFocusedData()?.xArr;
-    }
-
-    private displaceFocus(dx: number, dy: number): DomElement | undefined {
-        const data = this.getFocusedData();
-        if (!data) return;
-        if (!dx && !dy) return;
-
-        const applyDisplacement = (d: number, idx?: number, arr?: DomElement[]) => {
-            if (!arr || idx === undefined) return;
-
-            let next = idx + d;
-
-            if (this.getFMProp("fallthrough")) {
-                if (next < 0) {
-                    next = arr.length - 1;
-                } else if (next > arr.length - 1) {
-                    next = 0;
-                }
-            }
-
-            if (d < 0) {
-                next = Math.max(0, next);
-            } else {
-                next = Math.min(arr.length - 1, next);
-            }
-
-            this.focusChild(arr[next]);
-            return arr[next];
-        };
-
-        const result = dx
-            ? applyDisplacement(dx, data.xIdx, data.xArr)
-            : applyDisplacement(dy, data.yIdx, data.yArr);
-
-        return result;
-    }
-
-    protected focusDown(): DomElement | undefined {
-        const data = this.getFocusedData();
-        if (!data) return;
-        if (data.down) {
-            return this.focusChild(data.down);
-        }
-    }
-
-    protected focusUp(): DomElement | undefined {
-        const data = this.getFocusedData();
-        if (!data) return;
-        if (data.up) {
-            return this.focusChild(data.up);
-        }
-    }
-
-    protected focusLeft(): DomElement | undefined {
-        const data = this.getFocusedData();
-        if (!data) return;
-        if (data.left) {
-            return this.focusChild(data.left);
-        }
-    }
-
-    protected focusRight(): DomElement | undefined {
-        const data = this.getFocusedData();
-        if (!data) return;
-        if (data.right) {
-            return this.focusChild(data.right);
-        }
-    }
-
-    protected displaceDown(n = 1): DomElement | undefined {
-        const data = this.getFocusedData();
-        if (!data) return;
-
-        return this.displaceFocus(0, Math.abs(n));
-    }
-
-    protected displaceUp(n = 1): DomElement | undefined {
-        const data = this.getFocusedData();
-        if (!data) return;
-
-        return this.displaceFocus(0, -Math.abs(n));
-    }
-
-    protected displaceLeft(n = 1): DomElement | undefined {
-        const data = this.getFocusedData();
-        if (!data) return;
-
-        return this.displaceFocus(-Math.abs(n), 0);
-    }
-
-    protected displaceRight(n = 1): DomElement | undefined {
-        const data = this.getFocusedData();
-        if (!data) return;
-
-        return this.displaceFocus(Math.abs(n), 0);
-    }
-
-    protected focusXIdx(nextIdx: number): DomElement | undefined {
-        const xArr = this.getXArr();
-        if (!xArr || !xArr[nextIdx]) return;
-
-        const prevIdx = this.getFocusedData()?.xIdx ?? 0;
-        const displacement = nextIdx - prevIdx;
-
-        return this.displaceFocus(displacement, 0);
-    }
-
-    protected focusYIdx(nextIdx: number): DomElement | undefined {
-        const yArr = this.getYArr();
-        if (!yArr || !yArr[nextIdx]) return;
-
-        const prevIdx = this.getFocusedData()?.yIdx ?? 0;
-        const displacement = nextIdx - prevIdx;
-
-        return this.displaceFocus(0, displacement);
-    }
-
-    protected focusFirstX(): DomElement | undefined {
-        const xArr = this.getXArr();
-        if (!xArr || !xArr[0]) return;
-
-        return this.focusChild(xArr[0]);
-    }
-
-    protected focusFirstY(): DomElement | undefined {
-        const yArr = this.getYArr();
-        if (!yArr || !yArr[0]) return;
-
-        return this.focusChild(yArr[0]);
-    }
-
-    protected focusLastX(): DomElement | undefined {
-        const xArr = this.getXArr();
-        if (!xArr || !xArr.length) return;
-
-        return this.focusChild(xArr[xArr.length - 1]);
-    }
-
-    protected focusLastY(): DomElement | undefined {
-        const yArr = this.getYArr();
-        if (!yArr || !yArr.length) return;
-
-        return this.focusChild(yArr[yArr.length - 1]);
     }
 }

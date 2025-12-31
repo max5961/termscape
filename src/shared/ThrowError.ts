@@ -1,5 +1,5 @@
 import { setMouse } from "term-keymap";
-import type { Root } from "../dom/Root.js";
+import type { Root } from "../dom/RootElement.js";
 import { Ansi } from "./Ansi.js";
 
 export class TermscapeError extends Error {

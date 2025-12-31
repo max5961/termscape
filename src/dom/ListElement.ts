@@ -1,19 +1,13 @@
-import type {
-    BaseProps,
-    BoxLikeProps,
-    FocusManagerProps,
-    FocusManagerScrollProps,
-    Props,
-} from "../Props.js";
-import type { BoxStyle } from "../style/Style.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { DomElement } from "./DomElement.js";
-import { FocusManager } from "./DomElement.js";
+import { FocusManager } from "./FocusManager.js";
 import { TagNameEnum } from "../Constants.js";
 import { LIST_ELEMENT } from "../Constants.js";
+import type { Style } from "./style/Style.js";
+import type { Props } from "./props/Props.js";
 
 export class ListElement extends FocusManager<{
-    Style: BoxStyle;
+    Style: Style.List;
     Props: Props.List;
 }> {
     protected static override identity = LIST_ELEMENT;
@@ -26,7 +20,7 @@ export class ListElement extends FocusManager<{
         return "list";
     }
 
-    protected override get defaultStyles(): BoxStyle {
+    protected override get defaultStyles(): Style.List {
         return {
             flexDirection: "column",
             flexWrap: "nowrap",
@@ -36,7 +30,7 @@ export class ListElement extends FocusManager<{
         };
     }
 
-    protected override get defaultProps(): FocusManagerProps {
+    protected override get defaultProps(): Props.List {
         return {
             blockChildrenShrink: true,
             fallthrough: false,
@@ -77,9 +71,9 @@ export class ListElement extends FocusManager<{
     }
 
     protected override handleAppendChild(child: DomElement): void {
-        child.focusNode.becomeCheckpoint(false);
+        child._focusNode.becomeCheckpoint(false);
         if (this._children.length === 1) {
-            child.focusNode.updateCheckpoint(true);
+            child._focusNode.updateCheckpoint(true);
             this.focused = child;
         }
     }
@@ -88,7 +82,7 @@ export class ListElement extends FocusManager<{
         child: DomElement,
         freeRecursive?: boolean,
     ): void {
-        child.focusNode.becomeNormal(freeRecursive);
+        child._focusNode.becomeNormal(freeRecursive);
     }
 
     protected override buildVisualMap(children: DomElement[], vmap: VisualNodeMap): void {

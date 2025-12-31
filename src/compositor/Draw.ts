@@ -10,8 +10,8 @@ import {
     TEXT_PADDING,
     INPUT_ELEMENT,
 } from "../Constants.js";
-import type { DomElement } from "../Types.js";
-import type { BaseShadowStyle } from "../style/Style.js";
+import type { DomElement } from "../dom/DomElement.js";
+import type { Style } from "../dom/style/Style.js";
 import type { BoxLike } from "./types.js";
 import type { Canvas } from "./Canvas.js";
 import { getAlignedRows, shouldTreatAsBreak } from "../shared/TextWrap.js";
@@ -24,7 +24,8 @@ import {
 import { TextElement } from "../dom/TextElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { Pen } from "./Pen.js";
-import type { Props, Scrollbar, Title, TitleStyleConfig } from "../Props.js";
+import type { Shadow } from "../dom/style/Style.js";
+import type { Props, Scrollbar, Title, TitleStyleConfig } from "../dom/props/Props.js";
 import type { InputElement } from "../dom/InputElement.js";
 
 export class Draw {
@@ -56,21 +57,21 @@ export class Draw {
     public compose(elem: DomElement, canvas: Canvas): void {
         if (this.isBoxLike(elem)) {
             this.box.compose(elem, canvas);
-        } else if (elem.is(TEXT_ELEMENT)) {
+        } else if (elem._is(TEXT_ELEMENT)) {
             this.text.compose(elem, canvas);
-        } else if (elem.is(CANVAS_ELEMENT)) {
+        } else if (elem._is(CANVAS_ELEMENT)) {
             this.canvasElement.compose(elem, canvas);
         }
     }
 
     private isBoxLike(elem: DomElement) {
         return (
-            elem.is(BOX_ELEMENT) ||
-            elem.is(BOOK_ELEMENT) ||
-            elem.is(LIST_ELEMENT) ||
-            elem.is(LAYOUT_ELEMENT) ||
-            elem.is(LAYOUT_NODE) ||
-            elem.is(INPUT_ELEMENT)
+            elem._is(BOX_ELEMENT) ||
+            elem._is(BOOK_ELEMENT) ||
+            elem._is(LIST_ELEMENT) ||
+            elem._is(LAYOUT_ELEMENT) ||
+            elem._is(LAYOUT_NODE) ||
+            elem._is(INPUT_ELEMENT)
         );
     }
 }
@@ -95,7 +96,7 @@ class DrawBox extends DrawContract<BoxLike> {
     }
 
     public override compose(elem: BoxLike, canvas: Canvas): void {
-        const style = elem.shadowStyle;
+        const style = elem._shadowStyle;
 
         if (
             (style.zIndex ?? 0) > this.lowestLayer ||
@@ -109,7 +110,7 @@ class DrawBox extends DrawContract<BoxLike> {
             this.renderBorder(elem, style, canvas);
         }
 
-        if (elem.getAnyProp("scrollbar")) {
+        if (elem._getAnyProp("scrollbar")) {
             this.renderScrollbar(elem, canvas);
         }
 
@@ -120,7 +121,7 @@ class DrawBox extends DrawContract<BoxLike> {
         const pen = canvas.getPen();
         const char = BackgroundCharacters[elem.style.backgroundStyle ?? "default"];
 
-        pen.set("backgroundColor", elem.style.backgroundColor);
+        pen.set("backgroundColor", elem._shadowStyle.backgroundColor);
         if (char !== " ") {
             pen.set("color", elem.style.backgroundStyleColor);
         }
@@ -131,9 +132,9 @@ class DrawBox extends DrawContract<BoxLike> {
         }
     }
 
-    private renderBorder(elem: BoxLike, style: BaseShadowStyle, canvas: Canvas) {
-        const width = elem.node.getComputedWidth();
-        const height = elem.node.getComputedHeight();
+    private renderBorder(elem: BoxLike, style: Shadow<Style.All>, canvas: Canvas) {
+        const width = elem._node.getComputedWidth();
+        const height = elem._node.getComputedHeight();
 
         const pen = canvas.getPen();
         const map = this.getBorders(elem);
@@ -177,7 +178,7 @@ class DrawBox extends DrawContract<BoxLike> {
         // type casting `Required`, but its possible that trackColor and barColor
         // are undefined.  This doesn't matter though, since setting the Pen
         // color to undefined isn't an issue if there isn't a color set.
-        const scrollbar = elem.getAnyProp("scrollbar") as Required<Scrollbar>;
+        const scrollbar = elem._getAnyProp("scrollbar") as Required<Scrollbar>;
 
         const units = this.getScrollBarUnits(elem, scrollbar.edge);
         const direction =
@@ -231,11 +232,11 @@ class DrawBox extends DrawContract<BoxLike> {
         let pctScrolled: number;
         if (side === "left" || side === "right") {
             contentUnits = elem.unclippedContentRect.height;
-            unclippedContentUnits = elem.contentRange.low - elem.contentRange.high;
+            unclippedContentUnits = elem._contentRange.low - elem._contentRange.high;
             pctScrolled = elem.getScrollData().y;
         } else {
             contentUnits = elem.unclippedContentRect.width;
-            unclippedContentUnits = elem.contentRange.right - elem.contentRange.left;
+            unclippedContentUnits = elem._contentRange.right - elem._contentRange.left;
             pctScrolled = elem.getScrollData().x;
         }
 
@@ -293,7 +294,7 @@ class DrawBox extends DrawContract<BoxLike> {
         const pen = canvas.getPen();
 
         DrawBox.TitleProps.forEach((prop) => {
-            const title = elem.getAnyProp(prop) as Title | undefined;
+            const title = elem._getAnyProp(prop) as Title | undefined;
             if (!title) return;
 
             if (prop.includes("Top")) {
@@ -309,8 +310,8 @@ class DrawBox extends DrawContract<BoxLike> {
             const textWidth =
                 config.left.length + config.right.length + title.textContent.length;
             const rect = elem.unclippedRect;
-            const borderLeft = elem.node.getComputedBorder(Yg.EDGE_LEFT);
-            const borderRight = elem.node.getComputedBorder(Yg.EDGE_RIGHT);
+            const borderLeft = elem._node.getComputedBorder(Yg.EDGE_LEFT);
+            const borderRight = elem._node.getComputedBorder(Yg.EDGE_RIGHT);
             const contentWidth = rect.width - borderLeft - borderRight;
 
             const canDraw = () => {
@@ -384,8 +385,9 @@ class DrawBox extends DrawContract<BoxLike> {
             left: hashedConfig.left ?? "",
             right: hashedConfig.right ?? "",
 
-            leftColor: elem.shadowStyle.borderLeftColor ?? elem.shadowStyle.borderColor,
-            rightColor: elem.shadowStyle.borderRightColor ?? elem.shadowStyle.borderColor,
+            leftColor: elem._shadowStyle.borderLeftColor ?? elem._shadowStyle.borderColor,
+            rightColor:
+                elem._shadowStyle.borderRightColor ?? elem._shadowStyle.borderColor,
         };
     }
 }
@@ -396,12 +398,12 @@ class DrawText extends DrawContract<TextElement> {
     }
 
     public override compose(elem: TextElement, canvas: Canvas): void {
-        if (elem.parentElement?.is(INPUT_ELEMENT)) {
+        if (elem.parentElement?._is(INPUT_ELEMENT)) {
             return this.renderInputText(elem, canvas);
         }
 
         if (
-            elem.shadowStyle.wrap === "overflow" ||
+            elem._shadowStyle.wrap === "overflow" ||
             elem.textContent.length <= canvas.canvasWidth
         ) {
             return this.composeTextOverflow(elem, canvas);
@@ -413,7 +415,7 @@ class DrawText extends DrawContract<TextElement> {
     private composeTextOverflow(elem: TextElement, canvas: Canvas) {
         const textContent = elem.textContent;
         const pen = canvas.getPen();
-        pen.setStyle(elem.shadowStyle);
+        pen.setStyle(elem._shadowStyle);
 
         for (let i = 0; i < textContent.length; ++i) {
             const char = textContent[i];
@@ -426,7 +428,7 @@ class DrawText extends DrawContract<TextElement> {
     private composeTextWrap(elem: TextElement, canvas: Canvas) {
         const pen = canvas.getPen();
 
-        pen.setStyle(elem.shadowStyle);
+        pen.setStyle(elem._shadowStyle);
 
         const rows = elem.alignedRows;
         const slice = this.getTextRowSlice(elem, rows);
@@ -474,9 +476,9 @@ class DrawText extends DrawContract<TextElement> {
     private renderInputText(elem: TextElement, canvas: Canvas) {
         const pen = canvas.getPen();
         const inputEl = elem.parentElement! as InputElement;
-        const cursorIdx = inputEl.cursorIdx;
+        const cursorIdx = inputEl._cursorIdx;
 
-        pen.set("color", inputEl.style.color);
+        pen.set("color", inputEl._shadowStyle.color);
         for (let i = 0; i < elem.textContent.length; ++i) {
             if (inputEl.hasClaimedStdin && cursorIdx === i) {
                 pen.set("backgroundColor", "gray"); // for now before cursorIdx style

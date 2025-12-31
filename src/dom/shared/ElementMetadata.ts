@@ -1,6 +1,6 @@
 import type { Action } from "term-keymap";
-import type { ViewportStyle } from "../Types.js";
-import type { DomElement } from "./DomElement.js";
+import type { ViewportStyle } from "../../Types.js";
+import type { DomElement } from "../DomElement.js";
 
 export class ElementMetaData {
     public readonly ref: DomElement;

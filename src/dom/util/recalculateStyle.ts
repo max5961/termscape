@@ -1,12 +1,12 @@
-import type { DomElement } from "../../Types.js";
+import type { DomElement } from "../DomElement.js";
+import type { Style } from "../style/Style.js";
 import { stringEnum } from "../../Util.js";
-import type { BaseStyle } from "../Style.js";
 
 const AlwaysRecalc = stringEnum("flexShrink", "height", "width", "minHeight", "minWidth");
 
 type AlwaysRecalcStyle = keyof typeof AlwaysRecalc;
 
-export function shouldAlwaysRecalc(prop: keyof BaseStyle) {
+export function shouldAlwaysRecalc(prop: keyof Style.All) {
     return prop in AlwaysRecalc;
 }
 
