@@ -197,24 +197,6 @@ export class InputElement extends DomElement<{
      * If the cursor is no longer visible, we need to adjust the offset
      * */
     private adjustOffsetToCursor() {
-        // this.afterLayout().then(() => {
-        //     const offX = this.scrollOffset.x;
-        //     const maxWidth = this.unclippedContentRect.width;
-        //     const cursorIdx = this.cursorIdx;
-        //
-        //     if (!offX) {
-        //         if (cursorIdx >= maxWidth) {
-        //             this.scrollRight(cursorIdx - maxWidth + 1);
-        //         }
-        //     } else if (offX < 0) {
-        //         const adjCursorIdx = cursorIdx + offX;
-        //         if (adjCursorIdx >= maxWidth) {
-        //             this.scrollRight(adjCursorIdx - maxWidth + 1);
-        //         } else if (adjCursorIdx < 0) {
-        //             this.scrollLeft(-adjCursorIdx);
-        //         }
-        //     }
-        // });
         this.forceRecomposite(() => {
             const offX = this.scrollOffset.x;
             const maxWidth = this.unclippedContentRect.width;
@@ -230,6 +212,8 @@ export class InputElement extends DomElement<{
                     this.scrollRight(adjCursorIdx - maxWidth + 1);
                 } else if (adjCursorIdx < 0) {
                     this.scrollLeft(-adjCursorIdx);
+                } else if (cursorIdx + offX < maxWidth - 1) {
+                    this.scrollRight(maxWidth - cursorIdx - 1 + offX);
                 }
             }
             return true;
