@@ -198,9 +198,13 @@ export class Root extends DomElement {
     }
 
     /** @internal */
-    public requestInputStreamOwnership(elem: InputElement) {
-        if (this.runtimeCtl.inputStreamOwner) return;
+    public requestInputStreamOwnership(elem: InputElement): boolean {
+        if (this.runtimeCtl.inputStreamOwner) {
+            return false;
+        }
+
         this.runtimeCtl.setInputStreamOwner(elem);
+        return true;
     }
 
     /** @internal */

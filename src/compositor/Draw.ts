@@ -24,8 +24,8 @@ import {
 import { TextElement } from "../dom/TextElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import type { Pen } from "./Pen.js";
-import type { BaseProps, Props, Scrollbar, Title, TitleStyleConfig } from "../Props.js";
-import { logger } from "../shared/Logger.js";
+import type { Props, Scrollbar, Title, TitleStyleConfig } from "../Props.js";
+import type { InputElement } from "../dom/InputElement.js";
 
 export class Draw {
     /**
@@ -396,6 +396,10 @@ class DrawText extends DrawContract<TextElement> {
     }
 
     public override compose(elem: TextElement, canvas: Canvas): void {
+        if (elem.parentElement?.is(INPUT_ELEMENT)) {
+            return this.renderInputText(elem, canvas);
+        }
+
         if (
             elem.shadowStyle.wrap === "overflow" ||
             elem.textContent.length <= canvas.canvasWidth
@@ -465,6 +469,22 @@ class DrawText extends DrawContract<TextElement> {
         slice.end = Math.min(slice.end, rows.length);
 
         return slice;
+    }
+
+    private renderInputText(elem: TextElement, canvas: Canvas) {
+        const pen = canvas.getPen();
+        const inputEl = elem.parentElement! as InputElement;
+        const cursorIdx = inputEl.cursorIdx;
+
+        pen.set("color", inputEl.style.color);
+        for (let i = 0; i < elem.textContent.length; ++i) {
+            if (inputEl.hasClaimedStdin && cursorIdx === i) {
+                pen.set("backgroundColor", "gray"); // for now before cursorIdx style
+            } else {
+                pen.set("backgroundColor", undefined);
+            }
+            pen.draw(elem.textContent[i], "r", 1);
+        }
     }
 }
 

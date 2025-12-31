@@ -68,15 +68,19 @@ export type TitleStyleConfig = {
 };
 
 export type InputElementProps = {
-    enter: Action["keymap"];
-    exit: Action["keymap"];
-    nextWord?: Action["keymap"];
-    prevWord?: Action["keymap"];
-    deleteWord?: Action["keymap"];
-    cursorRight?: Action["keymap"];
-    cursorLeft?: Action["keymap"];
-    undoPrev?: Action["keymap"];
-    redoPrev?: Action["keymap"];
+    enter: Action["keymap"][];
+    exit: Action["keymap"][];
+    nextWord?: Action["keymap"][];
+    prevWord?: Action["keymap"][];
+    deleteWord?: Action["keymap"][];
+    cursorRight?: Action["keymap"][];
+    cursorLeft?: Action["keymap"][];
+    startOfLine?: Action["keymap"][];
+    endOfLine?: Action["keymap"][];
+    undoPrev?: Action["keymap"][];
+    redoPrev?: Action["keymap"][];
+    enterOnFocus?: boolean; // in order for this to work we need to be able to subscribe to focus change
+    tabWidth?: number;
 };
 
 export type FocusManagerScrollProps = {

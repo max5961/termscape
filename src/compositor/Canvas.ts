@@ -11,6 +11,7 @@ import type {
 import { Pen } from "./Pen.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
 import { TEXT_ELEMENT } from "../Constants.js";
+import { logger } from "../shared/Logger.js";
 
 /**
  * The Canvas contains a reference to the 2d Grid that is drawn to as well as
@@ -145,10 +146,16 @@ export class Canvas {
     }
 
     public createChildCanvas(child: DomElement): SubCanvas {
-        const canvasWidth = child.node.getComputedWidth();
         const canvasHeight = child.is(TEXT_ELEMENT)
             ? child.textHeight
             : child.node.getComputedHeight();
+        // const canvasWidth = child.node.getComputedWidth();
+        const canvasWidth =
+            // There needs to be more checks here as well as account for wide
+            // chars and breaking chars, but this is okay in devel for until then.
+            child.is(TEXT_ELEMENT) && child.style.wrap === "overflow"
+                ? Math.max(child.textContent.length, child.node.getComputedWidth())
+                : child.node.getComputedWidth();
 
         // Child corner depends on parent corner.
         const childCorner: Canvas["corner"] = {
@@ -158,13 +165,14 @@ export class Canvas {
 
         const unclippedChild = this.getUnclippedRect(
             childCorner,
-            child.node,
+            canvasWidth,
             canvasHeight,
         );
         const unclippedChildContent = this.getUnclippedContentRect(
             childCorner,
-            child.node,
+            canvasWidth,
             canvasHeight,
+            child.node,
         );
 
         // SubCanvas limits are inherited from the parent and are only clamped
@@ -201,18 +209,23 @@ export class Canvas {
         });
     }
 
-    private getUnclippedRect(corner: Point, node: YogaNode, canvasHeight?: number): Rect {
+    private getUnclippedRect(
+        corner: Point,
+        canvasWidth: number,
+        canvasHeight: number,
+    ): Rect {
         return {
             corner: corner,
-            height: canvasHeight ?? node.getComputedHeight(),
-            width: node.getComputedWidth(),
+            height: canvasHeight,
+            width: canvasWidth,
         };
     }
 
     private getUnclippedContentRect(
         corner: Point,
+        canvasWidth: number,
+        canvasHeight: number,
         node: YogaNode,
-        canvasHeight?: number,
     ): Rect {
         let leftOff, rightOff, bottomOff, topOff;
         leftOff = rightOff = bottomOff = topOff = 0;
@@ -235,8 +248,8 @@ export class Canvas {
 
         return {
             corner: offsetCorner,
-            height: (canvasHeight ?? node.getComputedHeight()) - bottomOff - topOff,
-            width: node.getComputedWidth() - leftOff - rightOff,
+            height: canvasHeight - bottomOff - topOff,
+            width: canvasWidth - leftOff - rightOff,
         };
     }
 

@@ -7,6 +7,7 @@ import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../shared/Ansi.js";
 import type { Root } from "../dom/Root.js";
 import type { WriteOpts } from "../Types.js";
+import { logger } from "../shared/Logger.js";
 
 export class Renderer {
     public lastCanvas: Canvas | null;

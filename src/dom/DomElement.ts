@@ -724,6 +724,15 @@ export abstract class DomElement<
         const contentDepth = contentRect.corner.y + contentRect.height;
         const contentWidth = contentRect.corner.x + contentRect.width;
 
+        // if (contentWidth < 100) {
+        //     logger.write({
+        //         contentRect,
+        //         contentDepth,
+        //         contentWidth,
+        //         range: this.contentRange,
+        //     });
+        // }
+
         if (dy) {
             const lowest = this.contentRange.low;
             const highest = this.contentRange.high;
@@ -741,8 +750,8 @@ export abstract class DomElement<
         }
 
         if (dx) {
-            const mostRight = this.contentRange.left;
-            const mostLeft = this.contentRange.right;
+            const mostRight = this.contentRange.right;
+            const mostLeft = this.contentRange.left;
 
             // Pulling content left - scrolling right
             if (dx < 0) {
@@ -1048,6 +1057,11 @@ export abstract class FocusManager<
         return true;
     }
 
+    /**
+     * ----IMPORTANT-TODO----
+     * THIS IS NOT PERFECT FOR CHECKING ITEM LEFT OR RIGHT OF WIN.  OFF BY ONE
+     * ERROR
+     * */
     private focusedChildVisibilityStatus() {
         const fRect = this.focused?.unclippedRect;
         const wRect = this.unclippedContentRect;
