@@ -724,15 +724,6 @@ export abstract class DomElement<
         const contentDepth = contentRect.corner.y + contentRect.height;
         const contentWidth = contentRect.corner.x + contentRect.width;
 
-        // if (contentWidth < 100) {
-        //     logger.write({
-        //         contentRect,
-        //         contentDepth,
-        //         contentWidth,
-        //         range: this.contentRange,
-        //     });
-        // }
-
         if (dy) {
             const lowest = this.contentRange.low;
             const highest = this.contentRange.high;

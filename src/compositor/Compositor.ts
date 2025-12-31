@@ -32,7 +32,7 @@ export class Compositor {
         elem: DomElement,
         layoutChange: boolean,
         canvas: Canvas = this.canvas,
-        parentScrollManagers: DomElement[] = [],
+        parentScrollManagers: Set<DomElement> = new Set(),
     ) {
         if (elem.style.display === "none") return;
 
@@ -65,7 +65,7 @@ export class Compositor {
 
         if (elem.style.overflow === "scroll") {
             this.scrollManagers.push(elem);
-            parentScrollManagers.push(elem);
+            parentScrollManagers.add(elem);
         }
 
         for (const child of elem._children) {
@@ -95,9 +95,21 @@ export class Compositor {
                 });
             }
 
-            this.buildLayout(child, layoutChange, child.canvas, [
-                ...parentScrollManagers,
-            ]);
+            const nextPSM = new Set(parentScrollManagers);
+
+            // The contentRange of a child that controls overflow is no longer
+            // relevant to any parent scroll managers.  Only the rect of the child
+            // itself is relevant letting the contentRange bubble to the child's
+            // children breaks scrolling.  You can have nested scrolling, but
+            // each scroll needs their own truth.
+            if (
+                child.shadowStyle.overflow === "scroll" ||
+                child.shadowStyle.overflow === "hidden"
+            ) {
+                nextPSM.delete(elem);
+            }
+
+            this.buildLayout(child, layoutChange, child.canvas, nextPSM);
         }
 
         if (elem.is(ROOT_ELEMENT)) {

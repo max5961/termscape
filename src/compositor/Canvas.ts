@@ -11,7 +11,6 @@ import type {
 import { Pen } from "./Pen.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
 import { TEXT_ELEMENT } from "../Constants.js";
-import { logger } from "../shared/Logger.js";
 
 /**
  * The Canvas contains a reference to the 2d Grid that is drawn to as well as
@@ -149,7 +148,7 @@ export class Canvas {
         const canvasHeight = child.is(TEXT_ELEMENT)
             ? child.textHeight
             : child.node.getComputedHeight();
-        // const canvasWidth = child.node.getComputedWidth();
+
         const canvasWidth =
             // There needs to be more checks here as well as account for wide
             // chars and breaking chars, but this is okay in devel for until then.
