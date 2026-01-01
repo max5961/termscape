@@ -1,6 +1,6 @@
 import { Yg } from "../Constants.js";
 import type { Root } from "./RootElement.js";
-import type { Action } from "term-keymap";
+import type { Action, KeyMap } from "term-keymap";
 import type {
     MouseEvent,
     MouseEventType,
@@ -27,6 +27,7 @@ import { createVirtualStyleProxy } from "./style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
 import { SideEffects, type PropEffectHandler } from "./shared/SideEffects.js";
+import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -645,12 +646,32 @@ export abstract class DomElement<
     // Keymap Events
     // ========================================================================
 
+    public addKeyListener(keymap: Action["keymap"], cb: () => unknown): () => void;
+    public addKeyListener(action: Action, cb?: undefined): () => void;
+    public addKeyListener(
+        actionOrKeymap: Action | Action["keymap"],
+        cb?: () => unknown,
+    ): () => void {
+        return this.addKeyListenerHelper(actionOrKeymap, cb);
+    }
+
+    /** Cannot use a decorator on an overloaded function */
     @RequestInput()
-    public addKeyListener(action: Action): () => void {
+    private addKeyListenerHelper(
+        actionOrKeymap: Action | Action["keymap"],
+        cb?: () => unknown,
+    ): () => void {
+        let action = actionOrKeymap as Action;
+
+        if (typeof action !== "object" || !Object.hasOwn(action, "keymap")) {
+            action = {
+                keymap: action as KeyMap,
+                callback: cb,
+            };
+        }
+
         this._metadata.actions.add(action);
-        return () => {
-            this.removeKeyListener(action);
-        };
+        return () => this.removeKeyListener(action);
     }
 
     public removeKeyListener(action: Action): void {
@@ -682,25 +703,25 @@ export abstract class DomElement<
     }
 
     /** @internal */
-    public scrollDownWithFocus(units: number, triggerRender: boolean) {
+    public _scrollDownWithFocus(units: number, triggerRender: boolean) {
         this._lastOffsetChangeWasFocus = true;
         this.applyScroll(0, -units, triggerRender);
     }
 
     /** @internal */
-    public scrollUpWithFocus(units: number, triggerRender: boolean) {
+    public _scrollUpWithFocus(units: number, triggerRender: boolean) {
         this._lastOffsetChangeWasFocus = true;
         this.applyScroll(0, units, triggerRender);
     }
 
     /** @internal */
-    public scrollLeftWithFocus(units: number, triggerRender: boolean) {
+    public _scrollLeftWithFocus(units: number, triggerRender: boolean) {
         this._lastOffsetChangeWasFocus = true;
         this.applyScroll(units, 0, triggerRender);
     }
 
     /** @internal */
-    public scrollRightWithFocus(units: number, triggerRender: boolean) {
+    public _scrollRightWithFocus(units: number, triggerRender: boolean) {
         this._lastOffsetChangeWasFocus = true;
         this.applyScroll(-units, 0, triggerRender);
     }
@@ -717,13 +738,13 @@ export abstract class DomElement<
             if (dy) {
                 return triggerRender
                     ? this.applyCornerOffset(0, allowedUnits)
-                    : this.applyCornerOffsetWithoutRender(0, allowedUnits);
+                    : this._applyCornerOffsetWithoutRender(0, allowedUnits);
             }
             // scroll left/right
             if (dx) {
                 return triggerRender
                     ? this.applyCornerOffset(allowedUnits, 0)
-                    : this.applyCornerOffsetWithoutRender(allowedUnits, 0);
+                    : this._applyCornerOffsetWithoutRender(allowedUnits, 0);
             }
         }
     }
@@ -782,7 +803,7 @@ export abstract class DomElement<
 
     @Render({ layoutChange: true })
     private applyCornerOffset(dx: number, dy: number) {
-        this.applyCornerOffsetWithoutRender(dx, dy);
+        this._applyCornerOffsetWithoutRender(dx, dy);
     }
 
     /**
@@ -791,7 +812,7 @@ export abstract class DomElement<
      * Applies the corner offset without triggering a render change.  This is
      * necessary during rendering itself and prevents the cascade of a new render.
      * */
-    public applyCornerOffsetWithoutRender(dx: number, dy: number) {
+    public _applyCornerOffsetWithoutRender(dx: number, dy: number) {
         this._scrollOffset.x += dx;
         this._scrollOffset.y += dy;
     }
@@ -803,7 +824,7 @@ export abstract class DomElement<
      *
      * @returns `true` if any adjustments were made
      * */
-    public adjustScrollToFillContainer(): boolean {
+    public _adjustScrollToFillContainer(): boolean {
         const highest = this._contentRange.high;
         const lowest = this._contentRange.low;
         const leftest = this._contentRange.left;
@@ -842,7 +863,7 @@ export abstract class DomElement<
 
             if (!dx && !dy) return false;
 
-            this.applyCornerOffsetWithoutRender(dx, dy);
+            this._applyCornerOffsetWithoutRender(dx, dy);
             return true;
         }
 

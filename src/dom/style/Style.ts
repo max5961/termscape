@@ -133,9 +133,9 @@ export namespace Style {
     };
 
     // prettier-ignore
-    export type All = 
+    type BoxLike = 
         Dimension &
-        MinDimension & 
+        MinDimension &
         Margin &
         Padding &
         Flex &
@@ -143,14 +143,12 @@ export namespace Style {
         Background &
         Overflow &
         Edge &
-        Scrollbar &
-        TextNode;
+        Scrollbar;
 
-    type RemoveIntersection<T, U> = Omit<T, keyof U> & {
-        backgroundColor?: Background["backgroundColor"];
-    };
-    type BoxLike = RemoveIntersection<All, TextNode>;
+    type TextLike = TextNode;
 
+    // prettier-ignore
+    export type All = BoxLike & TextLike;
     export type Box = BoxLike;
     export type Book = BoxLike;
     export type LayoutNode = BoxLike;
@@ -158,7 +156,7 @@ export namespace Style {
     export type Layout = BoxLike;
     export type List = BoxLike;
     export type Input = All; // because it sets text styles as well
-    export type Text = TextNode;
+    export type Text = TextLike;
     export type Canvas = Dimension & Margin;
     // prettier-ignore
     export type Root = 

@@ -119,7 +119,7 @@ export abstract class FocusManager<
      *
      * @returns `true` if the corner offset was adjusted
      * */
-    public adjustOffsetToFocus(): boolean {
+    public _adjustOffsetToFocus(): boolean {
         // Allow for non-focus scrolling to occur and obscure the focused child
         if (!this._lastOffsetChangeWasFocus) return false;
 
@@ -223,9 +223,9 @@ export abstract class FocusManager<
             if (fRect.height >= wRect.height) {
                 const toScroll = fTop - wTop;
                 if (toScroll > 0) {
-                    this.scrollDownWithFocus(toScroll, triggerRender);
+                    this._scrollDownWithFocus(toScroll, triggerRender);
                 } else {
-                    this.scrollUpWithFocus(Math.abs(toScroll), triggerRender);
+                    this._scrollUpWithFocus(Math.abs(toScroll), triggerRender);
                 }
                 return;
             }
@@ -235,8 +235,8 @@ export abstract class FocusManager<
 
             const scroll = () => {
                 return isScrollNegative || this.getFMProp("keepFocusedCenter")
-                    ? this.scrollDownWithFocus(fBot - wBot + scrollOff, triggerRender)
-                    : this.scrollUpWithFocus(wTop + scrollOff - fTop, triggerRender);
+                    ? this._scrollDownWithFocus(fBot - wBot + scrollOff, triggerRender)
+                    : this._scrollUpWithFocus(wTop + scrollOff - fTop, triggerRender);
             };
 
             if (itemBelowWin || itemAboveWin) {
@@ -260,9 +260,9 @@ export abstract class FocusManager<
             if (fRect.width >= wRect.width) {
                 const toScroll = fRight - wRight;
                 if (toScroll > 0) {
-                    this.scrollRightWithFocus(toScroll, triggerRender);
+                    this._scrollRightWithFocus(toScroll, triggerRender);
                 } else {
-                    this.scrollLeftWithFocus(Math.abs(toScroll), triggerRender);
+                    this._scrollLeftWithFocus(Math.abs(toScroll), triggerRender);
                 }
             }
 
@@ -275,11 +275,11 @@ export abstract class FocusManager<
 
             const scroll = () => {
                 return isScrollNegative || this.getFMProp("keepFocusedCenter")
-                    ? this.scrollRightWithFocus(
+                    ? this._scrollRightWithFocus(
                           fRight - wRight + scrollOff,
                           triggerRender,
                       )
-                    : this.scrollLeftWithFocus(wLeft + scrollOff - fLeft, triggerRender);
+                    : this._scrollLeftWithFocus(wLeft + scrollOff - fLeft, triggerRender);
             };
 
             if (itemRightWin || itemLeftWin) {

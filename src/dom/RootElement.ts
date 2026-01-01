@@ -8,7 +8,7 @@ import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "../shared/RuntimeFactory.js";
 import { recalculateStyle } from "./util/recalculateStyle.js";
-import { HooksManager, type Hook, type HookHandler } from "../render/Hooks.js";
+import { HooksManager, type Hook, type HookHandler } from "../render/hooks/Hooks.js";
 import { ROOT_ELEMENT, TEST_ROOT_ELEMENT } from "../Constants.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";

@@ -75,7 +75,7 @@ export class Renderer {
         if (compositor.scrollManagers.length) {
             let adjusted = false;
             compositor.scrollManagers.forEach((elem) => {
-                if (elem.adjustScrollToFillContainer()) {
+                if (elem._adjustScrollToFillContainer()) {
                     adjusted = true;
                 }
             });
@@ -85,7 +85,7 @@ export class Renderer {
         if (compositor.focusManagers.length) {
             let adjusted = false;
             compositor.focusManagers.forEach((focusManager) => {
-                if (focusManager.adjustOffsetToFocus()) {
+                if (focusManager._adjustOffsetToFocus()) {
                     adjusted = true;
                 }
             });

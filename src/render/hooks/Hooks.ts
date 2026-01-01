@@ -1,4 +1,4 @@
-import type { Canvas } from "../compositor/Canvas.js";
+import type { Canvas } from "../../compositor/Canvas.js";
 
 export type PerformanceData = {
     layoutMs: number;
