@@ -97,7 +97,7 @@ export class InputElement extends DomElement<{
     }
 
     private registerProp(
-        prop: Exclude<keyof Props.Input, "enterOnFocus" | "tabWidth">,
+        prop: Exclude<keyof Props.TextInput, "enterOnFocus" | "tabWidth">,
         cb: () => unknown,
     ) {
         this.registerPropEffect(prop, (value) => {

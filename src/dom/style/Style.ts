@@ -146,7 +146,9 @@ export namespace Style {
         Scrollbar &
         TextNode;
 
-    type RemoveIntersection<T, U> = Omit<T, keyof U>;
+    type RemoveIntersection<T, U> = Omit<T, keyof U> & {
+        backgroundColor?: Background["backgroundColor"];
+    };
     type BoxLike = RemoveIntersection<All, TextNode>;
 
     export type Box = BoxLike;

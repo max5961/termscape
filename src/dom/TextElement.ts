@@ -7,7 +7,7 @@ import {
     shouldTreatAsBreak,
 } from "../shared/TextWrap.js";
 import type { Style } from "./style/Style.js";
-import type { BaseProps, Props } from "./style/Props.js";
+import type { Props } from "./props/Props.js";
 import { Render } from "./util/decorators.js";
 import type { TagNameEnum } from "../Constants.js";
 import { TEXT_ELEMENT } from "../Constants.js";
@@ -62,10 +62,10 @@ export class TextElement extends DomElement<{
         return "text";
     }
 
-    protected override get defaultStyles(): TextStyle {
+    protected override get defaultStyles(): Style.Text {
         return { wrap: "wrap" };
     }
-    protected override get defaultProps(): BaseProps {
+    protected override get defaultProps(): Props.Text {
         return {};
     }
 

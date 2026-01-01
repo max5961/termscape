@@ -12,6 +12,7 @@ import type {
     TagName,
 } from "../Types.js";
 import type { Shadow, Style } from "./style/Style.js";
+import type { Props } from "./props/Props.js";
 import type { Canvas, Rect } from "../compositor/Canvas.js";
 import {
     DOM_ELEMENT,
@@ -26,7 +27,6 @@ import { createVirtualStyleProxy } from "./style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
 import { SideEffects, type PropEffectHandler } from "./shared/SideEffects.js";
-import type { Props } from "./props/Props.js";
 
 export abstract class DomElement<
     Schema extends {

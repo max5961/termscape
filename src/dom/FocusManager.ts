@@ -1,9 +1,18 @@
 import { FOCUS_MANAGER } from "../Constants.js";
+import type { Style } from "./style/Style.js";
 import { recalculateStyle } from "./util/recalculateStyle.js";
 import type { VisualNodeMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
+import type { Props } from "./props/Props.js";
 
-export abstract class FocusManager extends DomElement {
+type FMSchema = {
+    Style: Style.FocusManager;
+    Props: Props.FocusManager;
+};
+
+export abstract class FocusManager<
+    Schema extends FMSchema = FMSchema,
+> extends DomElement<Schema> {
     protected static override identity = FOCUS_MANAGER;
 
     private static RecalulateFlexShrink = (child: DomElement) => {
@@ -18,6 +27,11 @@ export abstract class FocusManager extends DomElement {
         this.vmap = new Map();
         this._focused = undefined;
         this._lastOffsetChangeWasFocus = true;
+        this.registerPropEffect("blockChildrenShrink", () => {
+            this._children.forEach((child) => {
+                recalculateStyle(child, "flexShrink");
+            });
+        });
     }
 
     protected abstract getNavigableChildren(): DomElement[];
@@ -53,25 +67,6 @@ export abstract class FocusManager extends DomElement {
         FocusManager.RecalulateFlexShrink(child);
     }
 
-    /*
-     * -----TODO-----
-     *  THIS NEEDS TO BE REGISTERED AS A SIDE EFFECT
-     *
-     * This needs to be overridden to ensure that `flexShrink` styles for children
-     * are recalculated if `blockChildrenShrink` is set
-     * */
-    public override setProp(key: string, value: any): void {
-        super.setProp(key as any, value);
-
-        // If `blockChildrenShrink` is true, style handlers will set `flexShrink`
-        // to `0`
-        if (key === "blockChildrenShrink") {
-            this._children.forEach((child) => {
-                recalculateStyle(child, "flexShrink");
-            });
-        }
-    }
-
     public get focused() {
         return this._focused;
     }
@@ -84,7 +79,9 @@ export abstract class FocusManager extends DomElement {
         return this.vmap;
     }
 
-    private getFMProp<T extends keyof FocusManagerProps>(prop: T): FocusManagerProps[T] {
+    private getFMProp<T extends keyof Props.FocusManager>(
+        prop: T,
+    ): Props.FocusManager[T] {
         return this.getProp(prop);
     }
 

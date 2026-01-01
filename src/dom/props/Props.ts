@@ -1,6 +1,6 @@
 import type { Action } from "term-keymap";
 import type { TitleBorders } from "../../shared/Boxes.js";
-import type { Color, ReqProps } from "../../Types.js";
+import type { Color } from "../../Types.js";
 import type { Pen } from "../../compositor/Pen.js";
 
 export type Scrollbar = {
@@ -48,7 +48,7 @@ export namespace Props {
         titleBottomRight?: Title;
     };
 
-    type TextInput = {
+    export type TextInput = {
         enter?: Action["keymap"][];
         exit?: Action["keymap"][];
         nextWord?: Action["keymap"][];
@@ -105,10 +105,10 @@ export namespace Props {
     export type Text = Base;
     export type Box = BoxLike;
     export type Book = BoxLike;
-    export type FocusManager = BoxLike & FocusManagerBase;
+    export type FocusManager = BoxLike & FocusManagerBase & FocusManagerScroll;
     export type List = FocusManager & FocusManagerScroll;
     export type Layout = FocusManager;
     export type LayoutNode = BoxLike;
     export type Canvas = Base & CanvasProps;
-    export type Input = ReqProps<BoxLike & TextInput, "enter" | "exit">;
+    export type Input = BoxLike & TextInput;
 }
