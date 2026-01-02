@@ -36,8 +36,7 @@ export abstract class DomElement<
 > {
     protected static readonly identity = DOM_ELEMENT;
 
-    // Should come from DefaultStyles.ts
-    private static readonly DefaultStyles = {
+    private static DefaultStyle = {
         display: "flex",
         zIndex: "auto",
         overflow: "visible",
@@ -151,7 +150,7 @@ export abstract class DomElement<
         }
 
         const withDefault = {
-            ...DomElement.DefaultStyles,
+            ...DomElement.DefaultStyle,
             ...this.defaultStyles,
             ...styles,
         } as Schema["Style"];

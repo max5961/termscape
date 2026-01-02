@@ -27,6 +27,7 @@ import type { Pen } from "./Pen.js";
 import type { Shadow } from "../dom/style/Style.js";
 import type { Props, Scrollbar, Title, TitleStyleConfig } from "../dom/props/Props.js";
 import type { InputElement } from "../dom/InputElement.js";
+import { logger } from "../shared/Logger.js";
 
 export class Draw {
     /**
@@ -138,6 +139,9 @@ class DrawBox extends DrawContract<BoxLike> {
 
         const pen = canvas.getPen();
         const map = this.getBorders(elem);
+        if (!map) {
+            return logger.write("Warning: could not get border characters");
+        }
 
         // prettier-ignore
         pen
@@ -168,10 +172,12 @@ class DrawBox extends DrawContract<BoxLike> {
             .draw(map.left, "u", height - 2)
     }
 
-    private getBorders(elem: BoxLike): ReturnType<typeof createBox> {
-        return Array.isArray(elem.style.borderStyle)
-            ? createBox(elem.style.borderStyle)
-            : Borders[elem.style.borderStyle!];
+    private getBorders(elem: BoxLike): ReturnType<typeof createBox> | undefined {
+        if (elem.style.borderStyle) {
+            return Array.isArray(elem.style.borderStyle)
+                ? createBox(elem.style.borderStyle)
+                : Borders[elem.style.borderStyle!];
+        }
     }
 
     private renderScrollbar(elem: BoxLike, canvas: Canvas) {
@@ -305,8 +311,6 @@ class DrawBox extends DrawContract<BoxLike> {
 
             const config = this.getTitleStyleConfig(elem, title);
 
-            // TODO - This will throw an error if no border is set
-
             const textWidth =
                 config.left.length + config.right.length + title.textContent.length;
             const rect = elem.unclippedRect;
@@ -376,15 +380,20 @@ class DrawBox extends DrawContract<BoxLike> {
             return { left: "", right: "" };
         }
 
+        let left = "";
+        let right = "";
         const borders = this.getBorders(elem);
-        const hashedConfig = TitleBorders[title.style][
-            borders.top as keyof (typeof TitleBorders)["capped"]
-        ] ?? { left: "", right: "" };
+        if (borders) {
+            const hashedConfig = TitleBorders[title.style][
+                borders.top as keyof (typeof TitleBorders)["capped"]
+            ] ?? { left: "", right: "" };
+            left = hashedConfig.left ?? "";
+            right = hashedConfig.right ?? "";
+        }
 
         return {
-            left: hashedConfig.left ?? "",
-            right: hashedConfig.right ?? "",
-
+            left,
+            right,
             leftColor: elem._shadowStyle.borderLeftColor ?? elem._shadowStyle.borderColor,
             rightColor:
                 elem._shadowStyle.borderRightColor ?? elem._shadowStyle.borderColor,

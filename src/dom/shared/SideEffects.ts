@@ -1,6 +1,6 @@
 /**
  * Mutating the reference will not actually set the prop.  setProp must be used
- * once all changes are made.
+ * once if any prop changes are made during the effect
  * */
 export type PropEffectHandler<Value> = (
     value: Value,

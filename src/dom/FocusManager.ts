@@ -145,11 +145,6 @@ export abstract class FocusManager<
         return true;
     }
 
-    /**
-     * ----IMPORTANT-TODO----
-     * THIS IS NOT PERFECT FOR CHECKING ITEM LEFT OR RIGHT OF WIN.  OFF BY ONE
-     * ERROR
-     * */
     private focusedChildVisibilityStatus() {
         const fRect = this.focused?.unclippedRect;
         const wRect = this.unclippedContentRect;

@@ -211,9 +211,9 @@ export class Pen {
         else if (edge === "bottom") {
             if (box === "border") {
                 if (side === "outer") {
-                    y = rect.corner.x + rect.height - 1;
+                    y = rect.corner.y + rect.height - 1;
                 } else {
-                    y = rect.corner.x + rect.height - 1 - Math.max(1, border.bottom) + 1;
+                    y = rect.corner.y + rect.height - 1 - Math.max(1, border.bottom) + 1;
                 }
             } else if (box === "padding") {
                 if (side === "outer") {
