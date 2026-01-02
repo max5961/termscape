@@ -27,6 +27,7 @@ export abstract class FocusManager<
         this.vmap = new Map();
         this._focused = undefined;
         this._lastOffsetChangeWasFocus = true;
+
         this.registerPropEffect("blockChildrenShrink", () => {
             this._children.forEach((child) => {
                 recalculateStyle(child, "flexShrink");

@@ -88,7 +88,7 @@ export class TextElement extends DomElement<{
     private setTextContentWithRender(val: string): void {
         this._textContent = val;
         this._node.markDirty(); // Yoga will not run the measureFunc otherwise
-        this.initBuffer();
+        // this.initBuffer(); // When buffering is incorporated
     }
 
     private getMeasureFunc(): MeasureFunction {

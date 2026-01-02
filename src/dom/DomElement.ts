@@ -27,7 +27,6 @@ import { createVirtualStyleProxy } from "./style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
 import { SideEffects, type PropEffectHandler } from "./shared/SideEffects.js";
-import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -54,7 +53,8 @@ export abstract class DomElement<
     protected readonly _metadata: ElementMetaData;
     protected readonly _eventListeners: Map<MouseEventType, Set<MouseEventHandler>>;
     protected _requiresStdin: boolean;
-    protected _lastOffsetChangeWasFocus: boolean;
+    /** @internal */
+    public _lastOffsetChangeWasFocus: boolean;
 
     /** @internal */
     public readonly _node: YogaNode;
@@ -75,9 +75,7 @@ export abstract class DomElement<
     /** @internal */
     public _styleHandler: StyleHandler<Schema["Style"]> | null;
     /** @internal */
-    public _afterLayoutHandlers: Set<() => unknown>;
-    /** @internal*/
-    public _forceRecompositeHandlers: Set<() => boolean>;
+    public _afterLayoutHandlers: Set<() => boolean>;
     /** @internal */
     public _contentRange: ReturnType<DomElement["_initContentRange"]>;
 
@@ -100,7 +98,6 @@ export abstract class DomElement<
         this._scrollOffset = { x: 0, y: 0 };
         this._canvas = null;
         this._afterLayoutHandlers = new Set();
-        this._forceRecompositeHandlers = new Set();
 
         this._contentRange = this._initContentRange();
         this.parentElement = null;
@@ -307,63 +304,29 @@ export abstract class DomElement<
     }
 
     /**
-     * Schedules work to run after the next layout is finished calculating. This
-     * is intended for cases where layout-dependent data is needed after an
-     * expected state change. If your use case doesn't involve inspecting scroll
-     * data or the rect of a node or its children, then it may be the wrong
-     * function to use.
+     * The handler is ran after the post-compositor phase.  If it returns true, it
+     * signals a possible change to the visual layout which triggers a fresh
+     * recomposite without relying on the next render cycle.
      *
-     * This method supports two usage patterns:
-     * 1) Single use
-     * When called with no arguments (or a timeout value), a Promise is returned
-     * that resolves after the next layout completes. An optional timeout value
-     * resolves the Promise in case a render never occurs.  This is to prevent
-     * rare cases where the app hangs up due to a render never occuring again.
-     *
-     * 2) Subscription
-     * When called with a callback argument, the callback is executed after
-     * every layout pass.
-     *
-     * @returns
-     * - `Promise<void>` in 'single use' mode
-     * - An unsubscribe function in 'subscription' mode.
+     * If subscribe is true, the handler will be queued to run in every
+     * post-compositor phase until it is unsubscribed, which can be done with the
+     * returned unsubscribe function.
      * */
-    public afterLayout(timeoutFallback?: number): Promise<void>;
-    public afterLayout(subscriber: () => unknown): () => void;
-    public afterLayout(
-        timeoutFallbackOrSubscriber?: number | (() => unknown),
-    ): (() => void) | Promise<void> {
-        if (typeof timeoutFallbackOrSubscriber === "function") {
-            this._afterLayoutHandlers.add(timeoutFallbackOrSubscriber);
-            return () => this._afterLayoutHandlers.delete(timeoutFallbackOrSubscriber);
-        }
-
-        return new Promise<void>((res) => {
-            const removeSelf = () => {
-                this._afterLayoutHandlers.delete(removeSelf);
-                res();
-            };
-
-            this._afterLayoutHandlers.add(removeSelf);
-            setTimeout(removeSelf, timeoutFallbackOrSubscriber ?? 500);
-        });
-    }
-
-    /**
-     * This runs once everything has composited, but before anything is rendered.
-     * If returning true, then a recomposite will occur BEFORE writing output.
-     *
-     * In the current implementation this does NOT recalculate the yoga layout,
-     * so maybe recomposeIfMutOffset should be a wider scope and just always
-     * recalc the yoga layout...
-     * */
-    public forceRecomposite(cb: () => boolean) {
-        const removeSelf = () => {
-            this._forceRecompositeHandlers.delete(removeSelf);
-            return cb();
+    public afterLayout({
+        subscribe,
+        handler,
+    }: {
+        subscribe: boolean;
+        handler: () => boolean;
+    }): () => void {
+        const wrapped = () => {
+            if (!subscribe) {
+                this._afterLayoutHandlers.delete(wrapped);
+            }
+            return handler();
         };
-
-        this._forceRecompositeHandlers.add(removeSelf);
+        this._afterLayoutHandlers.add(wrapped);
+        return () => this._afterLayoutHandlers.delete(wrapped);
     }
 
     // ========================================================================

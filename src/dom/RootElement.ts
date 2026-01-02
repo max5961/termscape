@@ -156,11 +156,7 @@ export class Root extends DomElement<{
         }
 
         if (opts.layoutChange || !this.hasRendered) {
-            this._node.calculateLayout(
-                this.runtime.stdout.columns,
-                undefined,
-                Yg.DIRECTION_LTR,
-            );
+            this._calculateYogaLayout();
         }
 
         if (this.hasRendered) {
@@ -170,6 +166,15 @@ export class Root extends DomElement<{
         }
 
         this.hasRendered = true;
+    };
+
+    /** @internal */
+    public _calculateYogaLayout = () => {
+        this._node.calculateLayout(
+            this.runtime.stdout.columns,
+            undefined,
+            Yg.DIRECTION_LTR,
+        );
     };
 
     public scheduleRender(opts: WriteOpts = {}) {

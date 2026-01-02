@@ -127,15 +127,6 @@ export class InputElement extends DomElement<{
         });
     }
 
-    // We are getting double renders and its because of the afterLayout function
-    // to adjust the scroll to fit the cursor.
-    //
-    // We could make a special function just for InputElement, OR we could
-    // give an option for afterLayout to ALWAYS force a recomposite without
-    // going through the render process on the next tick.  For example, instead of
-    // returning a Promise, it returns a boolean.  If true, then recomposite during
-    // that cycle before rendering, if false then disregard.
-
     /** @internal */
     public handleData(buf: Buffer) {
         if (!this._inputState) {
@@ -197,26 +188,21 @@ export class InputElement extends DomElement<{
      * If the cursor is no longer visible, we need to adjust the offset
      * */
     private adjustOffsetToCursor() {
-        this.forceRecomposite(() => {
-            const offX = this._scrollOffset.x;
-            const maxWidth = this.unclippedContentRect.width;
-            const _cursorIdx = this._cursorIdx;
-
-            if (!offX) {
-                if (_cursorIdx >= maxWidth) {
-                    this.scrollRight(_cursorIdx - maxWidth + 1);
+        this.afterLayout({
+            subscribe: false,
+            handler: () => {
+                // Adjust the idx to its position relative to the content window
+                const idx = this._cursorIdx + this._scrollOffset.x;
+                const max = this.unclippedContentRect.width - 1;
+                if (idx > max) {
+                    this.scrollRight(idx - max);
+                    return true;
+                } else if (idx < 0) {
+                    this.scrollLeft(Math.abs(idx));
+                    return true;
                 }
-            } else if (offX < 0) {
-                const adjCursorIdx = _cursorIdx + offX;
-                if (adjCursorIdx >= maxWidth) {
-                    this.scrollRight(adjCursorIdx - maxWidth + 1);
-                } else if (adjCursorIdx < 0) {
-                    this.scrollLeft(-adjCursorIdx);
-                } else if (_cursorIdx + offX < maxWidth - 1) {
-                    this.scrollRight(maxWidth - _cursorIdx - 1 + offX);
-                }
-            }
-            return true;
+                return false;
+            },
         });
     }
 

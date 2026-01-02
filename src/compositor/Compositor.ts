@@ -1,11 +1,11 @@
 import type { DomElement } from "../dom/DomElement.js";
-import type { FocusManager } from "../dom/FocusManager.js";
 import type { Root } from "../dom/RootElement.js";
 import { FOCUS_MANAGER, ROOT_ELEMENT } from "../Constants.js";
 import { Canvas, type SubCanvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./Draw.js";
+import { PostLayoutManager } from "./PostLayoutManager.js";
 
 export class Compositor {
     private postLayout: (() => unknown)[];
@@ -13,10 +13,7 @@ export class Compositor {
     public ops: Operations;
     public rects: DomRects;
     public draw: Draw;
-    public focusManagers: FocusManager[];
-    public scrollManagers: DomElement[];
-    public afterLayoutHandlers: (() => unknown)[];
-    public forceRecompositeHandlers: (() => boolean)[];
+    public PLM: PostLayoutManager;
 
     constructor(root: Root) {
         this.canvas = new Canvas({ stdout: root.runtime.stdout, el: root });
@@ -24,18 +21,16 @@ export class Compositor {
         this.ops = new Operations();
         this.rects = new DomRects();
         this.draw = new Draw();
-        this.forceRecompositeHandlers = [];
+        this.PLM = new PostLayoutManager();
         this.postLayout = [];
-        this.focusManagers = [];
-        this.scrollManagers = [];
-        this.afterLayoutHandlers = [];
     }
 
     public buildLayout(
         elem: DomElement,
         layoutChange: boolean,
         canvas: Canvas = this.canvas,
-        parentScrollManagers: Set<DomElement> = new Set(),
+        rangeContext: DomElement | undefined = undefined,
+        level = 0,
     ) {
         if (elem.style.display === "none") return;
 
@@ -43,15 +38,10 @@ export class Compositor {
         const zIndex = style.zIndex ?? 0;
 
         this.draw.updateLowestLayer(zIndex);
+        this.PLM.handleElement(elem, level);
 
-        if (elem._afterLayoutHandlers.size) {
-            this.afterLayoutHandlers.push(...elem._afterLayoutHandlers.values());
-        }
-
-        if (elem._forceRecompositeHandlers.size) {
-            this.forceRecompositeHandlers.push(
-                ...elem._forceRecompositeHandlers.values(),
-            );
+        if (layoutChange) {
+            elem._contentRange = elem._initContentRange();
         }
 
         if (canvas.canDraw()) {
@@ -63,62 +53,24 @@ export class Compositor {
                         elem.refreshVisualMap();
                     });
                 }
-
-                this.focusManagers.push(elem);
             }
-        }
-
-        if (layoutChange) {
-            elem._contentRange = elem._initContentRange();
-        }
-
-        if (elem.style.overflow === "scroll") {
-            this.scrollManagers.push(elem);
-            parentScrollManagers.add(elem);
         }
 
         for (const child of elem._children) {
             child._canvas = this.getRefreshedChildCanvas(child, canvas, layoutChange);
 
             if (layoutChange) {
-                parentScrollManagers.forEach((scroller) => {
-                    const unclippedChild = child.unclippedRect;
-                    if (unclippedChild) {
-                        scroller._contentRange.high = Math.min(
-                            scroller._contentRange.high,
-                            unclippedChild.corner.y,
-                        );
-                        scroller._contentRange.low = Math.max(
-                            scroller._contentRange.low,
-                            unclippedChild.corner.y + unclippedChild.height,
-                        );
-                        scroller._contentRange.left = Math.min(
-                            scroller._contentRange.left,
-                            unclippedChild.corner.x,
-                        );
-                        scroller._contentRange.right = Math.max(
-                            scroller._contentRange.right,
-                            unclippedChild.corner.x + unclippedChild.width,
-                        );
-                    }
-                });
+                this.updateContentRange(child, rangeContext);
             }
-
-            const nextPSM = new Set(parentScrollManagers);
 
             // The contentRange of a child that controls overflow is no longer
-            // relevant to any parent scroll managers.  Only the rect of the child
-            // itself is relevant letting the contentRange bubble to the child's
-            // children breaks scrolling.  You can have nested scrolling, but
-            // each scroll needs their own truth.
-            if (
-                child._shadowStyle.overflow === "scroll" ||
-                child._shadowStyle.overflow === "hidden"
-            ) {
-                nextPSM.delete(elem);
-            }
+            // relevant to any parents who also control overflow, so child now
+            // owns the context of its children.
+            const chstyle = child._shadowStyle.overflow;
+            const overflowMgr = chstyle === "scroll" || chstyle === "hidden";
+            const nextRangeCtx = overflowMgr ? child : rangeContext;
 
-            this.buildLayout(child, layoutChange, child._canvas, nextPSM);
+            this.buildLayout(child, layoutChange, child._canvas, nextRangeCtx, ++level);
         }
 
         if (elem._is(ROOT_ELEMENT)) {
@@ -137,6 +89,30 @@ export class Compositor {
         }
         (child._canvas as SubCanvas).bindGrid(this.canvas.grid);
         return child._canvas;
+    }
+
+    private updateContentRange(child: DomElement, scroller: DomElement | undefined) {
+        if (!scroller) return;
+
+        const unclippedChild = child.unclippedRect;
+        if (unclippedChild) {
+            scroller._contentRange.high = Math.min(
+                scroller._contentRange.high,
+                unclippedChild.corner.y,
+            );
+            scroller._contentRange.low = Math.max(
+                scroller._contentRange.low,
+                unclippedChild.corner.y + unclippedChild.height,
+            );
+            scroller._contentRange.left = Math.min(
+                scroller._contentRange.left,
+                unclippedChild.corner.x,
+            );
+            scroller._contentRange.right = Math.max(
+                scroller._contentRange.right,
+                unclippedChild.corner.x + unclippedChild.width,
+            );
+        }
     }
 
     private postLayoutDefer(cb: () => unknown): void {

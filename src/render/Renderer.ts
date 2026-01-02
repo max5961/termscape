@@ -43,12 +43,9 @@ export class Renderer {
 
         this.root.hooks.exec("pre-layout", undefined);
         const preLayoutMs = performance.now();
-        let compositor = this.getComposedLayout(opts);
-        compositor = this.recomposeIfMutOffset(compositor, opts);
+        const compositor = this.getComposedLayout(opts);
         const postLayoutMs = performance.now();
         this.root.hooks.exec("post-layout", compositor.canvas);
-
-        compositor.afterLayoutHandlers.forEach(process.nextTick);
 
         const lastCanvas = this.lastCanvas;
         const nextCanvas = compositor.canvas;
@@ -67,47 +64,43 @@ export class Renderer {
         });
     };
 
-    private recomposeIfMutOffset(compositor: Compositor, opts: WriteOpts): Compositor {
-        const reassignCompositor = () => {
-            compositor = this.getComposedLayout({ ...opts, layoutChange: true });
-        };
+    private getComposedLayout(opts: WriteOpts) {
+        const initialCompositor = this.constructCompositor(opts);
+        const nextCompositor = this.handlePostLayoutSideEffects(initialCompositor);
+        return nextCompositor;
+    }
 
-        if (compositor.scrollManagers.length) {
-            let adjusted = false;
-            compositor.scrollManagers.forEach((elem) => {
-                if (elem._adjustScrollToFillContainer()) {
-                    adjusted = true;
-                }
-            });
-            if (adjusted) reassignCompositor();
-        }
-
-        if (compositor.focusManagers.length) {
-            let adjusted = false;
-            compositor.focusManagers.forEach((focusManager) => {
-                if (focusManager._adjustOffsetToFocus()) {
-                    adjusted = true;
-                }
-            });
-            if (adjusted) reassignCompositor();
-        }
-
-        if (compositor.forceRecompositeHandlers.length) {
-            let adjusted = false;
-            compositor.forceRecompositeHandlers.forEach((handler) => {
-                if (handler()) {
-                    adjusted = true;
-                }
-            });
-            if (adjusted) reassignCompositor();
-        }
-
+    private constructCompositor(opts: WriteOpts) {
+        const compositor = new Compositor(this.root);
+        compositor.buildLayout(this.root, !!opts.layoutChange);
         return compositor;
     }
 
-    private getComposedLayout(opts: WriteOpts): Compositor {
-        const compositor = new Compositor(this.root);
-        compositor.buildLayout(this.root, !!opts.layoutChange);
+    private handlePostLayoutSideEffects(compositor: Compositor): Compositor {
+        const recompose = (cb: () => boolean) => {
+            if (cb()) {
+                compositor = this.constructCompositor({ layoutChange: true });
+            }
+        };
+
+        // Order Matters: CB -> Yoga -> Recompose
+        const withYoga = (cb: () => boolean) => {
+            recompose(() => {
+                const result = cb();
+                if (result) this.root._calculateYogaLayout();
+                return result;
+            });
+        };
+
+        // scrollManagers and focusManagers do nothing more than normalize corner
+        // offsets, so they do not effect Yoga.  afterLayout callbacks are a public
+        // interface, so we recalculate Yoga to be safe.
+
+        const sorted = compositor.PLM.getSorted();
+        sorted.scrollManagers.forEach(recompose);
+        sorted.focusManagers.forEach(recompose);
+        sorted.afterLayout.forEach(withYoga);
+
         return compositor;
     }
 
@@ -152,37 +145,6 @@ export class Renderer {
             this.lastWasResize = 0;
         }
     }
-
-    // =========================================================================
-    // Render Hooks
-    // =========================================================================
-
-    // private preLayoutHooks() {
-    //     this.perf.tracking = !!this.hooks.renderPerf.size;
-    //     this.perf.preLayout();
-    // }
-    //
-    // private postLayoutHooks(compositor: Compositor) {
-    //     this.perf.postLayout();
-    //     this.hooks.postLayout.forEach((cb) => cb(compositor.canvas));
-    // }
-    //
-    // private preWriteHooks() {
-    //     this.perf.preWrite();
-    // }
-    //
-    // private postWriteHooks() {
-    //     this.perf.postWrite();
-    //     if (this.perf.tracking) {
-    //         this.hooks.renderPerf.forEach((cb) => {
-    //             cb(this.perf.getPerf());
-    //         });
-    //     }
-    // }
-
-    // =========================================================================
-    // Util
-    // =========================================================================
 
     private shouldRefreshWrite(opts: WriteOpts) {
         // Refresh option set in runtime opts
