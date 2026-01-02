@@ -41,6 +41,7 @@ export class InputElement extends DomElement<{
         this.registerProp("prevWord", this.handlePrevWord);
         this.registerProp("nextWord", this.handleNextWord);
         this.registerProp("deleteWord", this.handleDeleteWord);
+        this.registerProp("deleteChar", this.handleDeleteChar);
         this.registerProp("startOfLine", this.handleStartOfLine);
         this.registerProp("endOfLine", this.handleEndOfLine);
 
@@ -90,6 +91,7 @@ export class InputElement extends DomElement<{
             prevWord: [{ key: "alt", input: "b" }],
             nextWord: [{ key: "alt", input: "w" }],
             deleteWord: [{ key: "alt", input: "d" }],
+            deleteChar: [{ key: "alt", input: "x" }],
             startOfLine: [{ key: "alt", input: "0" }],
             endOfLine: [{ key: "alt", input: "A" }],
             tabWidth: 4,
@@ -283,6 +285,16 @@ export class InputElement extends DomElement<{
         this.handlePrevWord(); // go to beginning of word pre-delete
         const nextTc = tc.slice(0, left) + tc.slice(right);
         this.textContent = nextTc;
+    };
+
+    private handleDeleteChar = () => {
+        const tc = this.textContent;
+        const curr = this._cursorIdx;
+        const nextTc = tc.slice(0, curr) + tc.slice(curr + 1);
+        this.textContent = nextTc;
+        if (curr >= nextTc.length) {
+            this.cursorLeft(1);
+        }
     };
 
     private handleBackspace = () => {

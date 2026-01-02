@@ -54,7 +54,15 @@ export namespace Props {
         nextWord?: Action["keymap"][];
         prevWord?: Action["keymap"][];
         deleteWord?: Action["keymap"][];
+        /**
+         * Does *not* overwrite the builtin backspace action.  It also behaves
+         * differently in that the cursor stays in the same position after
+         * deletion unless deleting the last character of the input string.
+         * */
+        deleteChar?: Action["keymap"][];
+        /** Does *not* overwrite the builtin right key action */
         cursorRight?: Action["keymap"][];
+        /** Does *not* overwrite the builtin left key action */
         cursorLeft?: Action["keymap"][];
         startOfLine?: Action["keymap"][];
         endOfLine?: Action["keymap"][];
