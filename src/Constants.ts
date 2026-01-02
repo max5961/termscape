@@ -6,7 +6,7 @@ import type { LayoutElement, LayoutNode } from "./dom/LayoutElement.js";
 import type { ListElement } from "./dom/ListElement.js";
 import type { Root } from "./dom/RootElement.js";
 import type { TestRoot } from "./dom/TestRoot.js";
-import type { TextElement } from "./dom/TextElement.js";
+import type { TextElement, TextNode } from "./dom/TextElement.js";
 import type { DomElement } from "./dom/DomElement.js";
 import type { BgColor } from "ansi-escape-sequences";
 import type { Color, TextEffect } from "./Types.js";
@@ -22,6 +22,7 @@ export const WIDE_CHAR_TRAIL = Symbol.for("termscape.wide_char_trail");
 export const DOM_ELEMENT = Symbol.for("termscape.dom_element");
 export const BOX_ELEMENT = Symbol.for("termscape.box_element");
 export const TEXT_ELEMENT = Symbol.for("termscape.text_element");
+export const TEXT_NODE = Symbol.for("termscape.text_node");
 export const BOOK_ELEMENT = Symbol.for("termscape.book_element");
 export const CANVAS_ELEMENT = Symbol.for("termscape.canvas_element");
 export const LAYOUT_ELEMENT = Symbol.for("termscape.layout_element");
@@ -41,6 +42,7 @@ export const TagNameIdentityMap = {
     layout: LAYOUT_ELEMENT,
     list: LIST_ELEMENT,
     input: INPUT_ELEMENT,
+    ["text-node"]: TEXT_NODE,
     ["layout-node"]: LAYOUT_NODE,
     ["focus-manager"]: FOCUS_MANAGER,
 } as const;
@@ -49,6 +51,7 @@ export type ElementIdentityMap = {
     [DOM_ELEMENT]: DomElement;
     [BOX_ELEMENT]: BoxElement;
     [TEXT_ELEMENT]: TextElement;
+    [TEXT_NODE]: TextNode;
     [BOOK_ELEMENT]: BookElement;
     [CANVAS_ELEMENT]: CanvasElement;
     [LAYOUT_ELEMENT]: LayoutElement;

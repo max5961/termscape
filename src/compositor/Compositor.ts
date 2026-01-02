@@ -1,11 +1,12 @@
 import type { DomElement } from "../dom/DomElement.js";
 import type { Root } from "../dom/RootElement.js";
-import { FOCUS_MANAGER, ROOT_ELEMENT } from "../Constants.js";
+import { FOCUS_MANAGER, ROOT_ELEMENT, TEXT_ELEMENT } from "../Constants.js";
 import { Canvas, type SubCanvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
-import { Draw } from "./Draw.js";
+import { Draw } from "./draw/Draw.js";
 import { PostLayoutManager } from "./PostLayoutManager.js";
+import { logger } from "../shared/Logger.js";
 
 export class Compositor {
     private postLayout: (() => unknown)[];

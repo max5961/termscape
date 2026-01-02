@@ -139,7 +139,7 @@ export class Canvas {
 
     public createChildCanvas(child: DomElement): SubCanvas {
         const canvasHeight = child._is(TEXT_ELEMENT)
-            ? child.textHeight
+            ? child._textHeight
             : child._node.getComputedHeight();
 
         const canvasWidth =
