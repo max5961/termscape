@@ -287,6 +287,9 @@ export class InputElement extends DomElement<{
         const tc = this.textContent;
         const curr = this._cursorIdx;
 
+        // This is the virtual cursor and as such, we can't delete anything
+        if (tc[curr] === undefined) return;
+
         const startOfWord = tc[curr - 1] === " ";
         const deletingWs = tc[curr] === " ";
         const isValid = deletingWs
