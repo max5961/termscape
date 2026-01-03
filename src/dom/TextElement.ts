@@ -169,9 +169,12 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
                 this._singleLine = true;
                 this._textHeight = 1;
                 this._rows = [tc];
-                this._alignedRows = alignRows(this._rows, width, style.align);
-                const height = this._textHeight;
-                return { width, height };
+                this._alignedRows = [[tc]];
+
+                return {
+                    width: Math.min(tc.length, width),
+                    height: this._textHeight,
+                };
             }
 
             // Non-Drawable

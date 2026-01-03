@@ -17,6 +17,7 @@ import Yoga from "yoga-wasm-web/auto";
 export const Yg = Yoga;
 
 export const TEXT_PADDING = Symbol.for("termscape.padding_text");
+export const HIDDEN_TRIMMED_WS = Symbol.for("termscape.hidden_trimmed_ws");
 export const WIDE_CHAR_TRAIL = Symbol.for("termscape.wide_char_trail");
 
 export const DOM_ELEMENT = Symbol.for("termscape.dom_element");

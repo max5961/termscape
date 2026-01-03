@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { getRows, alignRows } from "@src/shared/TextWrap.js";
-import { TEXT_PADDING } from "@src/Symbols.js";
+import { HIDDEN_TRIMMED_WS, TEXT_PADDING } from "@src/Constants.js";
 
 describe("Text wrapping", () => {
     test("Empty string", () => {
@@ -83,9 +83,14 @@ describe("Text wrapping", () => {
         expect(rows).toEqual(["foob", "ar ", "bazb", "an"]);
     });
 
-    test("Sigle word longer than width", () => {
+    test("Single word longer than width", () => {
         const rows = getRows("foobarbazban", 5);
         expect(rows).toEqual(["fooba", "rbazb", "an"]);
+    });
+
+    test("Whitespace appends new line and keeps ws", () => {
+        const rows = getRows("foo bar", 4);
+        expect(rows).toEqual(["foo ", "bar"]);
     });
 });
 
@@ -101,8 +106,8 @@ describe("Aligning text", () => {
             const rows = getRows("foo bar baz", 5);
             const aligned = alignRows(rows, 5, "center");
             expect(aligned).toEqual([
-                [TEXT_PADDING, "f", "o", "o", TEXT_PADDING],
-                [TEXT_PADDING, "b", "a", "r", TEXT_PADDING],
+                [TEXT_PADDING, "f", "o", "o", HIDDEN_TRIMMED_WS, TEXT_PADDING],
+                [TEXT_PADDING, "b", "a", "r", HIDDEN_TRIMMED_WS, TEXT_PADDING],
                 [TEXT_PADDING, "b", "a", "z", TEXT_PADDING],
             ]);
         });
@@ -112,9 +117,48 @@ describe("Aligning text", () => {
             const aligned = alignRows(rows, 5, "center");
             expect(aligned).toEqual([
                 ["f", "o", "o", "b", "a"],
-                [TEXT_PADDING, TEXT_PADDING, "r", TEXT_PADDING, TEXT_PADDING],
+                // prettier-ignore
+                [TEXT_PADDING, TEXT_PADDING, "r", HIDDEN_TRIMMED_WS, TEXT_PADDING, TEXT_PADDING],
                 ["b", "a", "z", "b", "a"],
                 [TEXT_PADDING, TEXT_PADDING, "n", TEXT_PADDING, TEXT_PADDING],
+            ]);
+        });
+
+        test("Intentional ws at start", () => {
+            const rows = getRows("  foo", 5);
+            const aligned = alignRows(rows, 5, "center");
+            expect(aligned).toEqual([
+                // prettier-ignore
+                [TEXT_PADDING, HIDDEN_TRIMMED_WS, HIDDEN_TRIMMED_WS, "f", "o", "o", TEXT_PADDING],
+            ]);
+        });
+
+        test("Intentional ws at end", () => {
+            const rows = getRows("foo  ", 5);
+            const aligned = alignRows(rows, 5, "center");
+            expect(aligned).toEqual([
+                // prettier-ignore
+                [TEXT_PADDING, "f", "o", "o", HIDDEN_TRIMMED_WS, HIDDEN_TRIMMED_WS, TEXT_PADDING],
+            ]);
+        });
+
+        test("Intentional ws at start and end", () => {
+            const rows = getRows(" foo ", 5);
+            const aligned = alignRows(rows, 5, "center");
+            expect(aligned).toEqual([
+                // prettier-ignore
+                [TEXT_PADDING, HIDDEN_TRIMMED_WS, "f", "o", "o", HIDDEN_TRIMMED_WS, TEXT_PADDING],
+            ]);
+        });
+
+        test("Intentional ws appends new line (4 intentional ws at end)", () => {
+            const rows = getRows("foo    ", 5);
+            const aligned = alignRows(rows, 5, "center");
+            expect(aligned).toEqual([
+                // prettier-ignore
+                [TEXT_PADDING, "f", "o", "o", HIDDEN_TRIMMED_WS, HIDDEN_TRIMMED_WS, TEXT_PADDING],
+                // prettier-ignore
+                [TEXT_PADDING, TEXT_PADDING, HIDDEN_TRIMMED_WS, HIDDEN_TRIMMED_WS, TEXT_PADDING, TEXT_PADDING, TEXT_PADDING],
             ]);
         });
     });
@@ -124,8 +168,8 @@ describe("Aligning text", () => {
             const rows = getRows("foo bar baz", 5);
             const aligned = alignRows(rows, 5, "right");
             expect(aligned).toEqual([
-                [TEXT_PADDING, TEXT_PADDING, "f", "o", "o"],
-                [TEXT_PADDING, TEXT_PADDING, "b", "a", "r"],
+                [TEXT_PADDING, TEXT_PADDING, "f", "o", "o", HIDDEN_TRIMMED_WS],
+                [TEXT_PADDING, TEXT_PADDING, "b", "a", "r", HIDDEN_TRIMMED_WS],
                 [TEXT_PADDING, TEXT_PADDING, "b", "a", "z"],
             ]);
         });
@@ -135,9 +179,52 @@ describe("Aligning text", () => {
             const aligned = alignRows(rows, 5, "right");
             expect(aligned).toEqual([
                 ["f", "o", "o", "b", "a"],
-                [TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, "r"],
+                // prettier-ignore
+                [TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, "r", HIDDEN_TRIMMED_WS],
                 ["b", "a", "z", "b", "a"],
                 [TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, "n"],
+            ]);
+        });
+
+        test("Intentional ws at end", () => {
+            const rows = getRows("foo  ", 5);
+            const aligned = alignRows(rows, 5, "right");
+            expect(aligned).toEqual([
+                // prettier-ignore
+                [TEXT_PADDING, TEXT_PADDING, "f", "o", "o", HIDDEN_TRIMMED_WS, HIDDEN_TRIMMED_WS],
+            ]);
+        });
+
+        test("Intentional ws at start", () => {
+            const rows = getRows("  foo", 5);
+            const aligned = alignRows(rows, 5, "right");
+            expect(aligned).toEqual([
+                // prettier-ignore
+                [TEXT_PADDING, TEXT_PADDING, HIDDEN_TRIMMED_WS, HIDDEN_TRIMMED_WS, "f", "o", "o"],
+            ]);
+        });
+
+        test("Intentional ws at start and end", () => {
+            const rows = getRows(" foo ", 5);
+            const aligned = alignRows(rows, 5, "right");
+            expect(aligned).toEqual([
+                // prettier-ignore
+                [TEXT_PADDING, TEXT_PADDING, HIDDEN_TRIMMED_WS, "f", "o", "o", HIDDEN_TRIMMED_WS],
+            ]);
+        });
+
+        test("Intentional ws appends new line (4 intentional ws at end)", () => {
+            const rows = getRows("foo    ", 5);
+            const aligned = alignRows(rows, 5, "right");
+            expect(aligned).toEqual([
+                // prettier-ignore
+                [TEXT_PADDING, TEXT_PADDING, "f", "o", "o", HIDDEN_TRIMMED_WS, HIDDEN_TRIMMED_WS],
+                // The order here is sort of arbitrary which is not the best
+                // prettier-ignore
+                [
+                    TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, TEXT_PADDING, TEXT_PADDING,
+                    HIDDEN_TRIMMED_WS, HIDDEN_TRIMMED_WS
+                ],
             ]);
         });
     });

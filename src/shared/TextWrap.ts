@@ -1,4 +1,4 @@
-import { TEXT_PADDING } from "../Constants.js";
+import { TEXT_PADDING, HIDDEN_TRIMMED_WS } from "../Constants.js";
 import type { Style } from "../dom/style/Style.js";
 
 export function getRows(
@@ -68,38 +68,42 @@ export function alignRows(
 ): (string | symbol)[][] {
     if (align === "right") {
         return rows.map((row) => {
+            // If ws only, choose to place all hidden trimmed ws to the right
+            const wsOnly = hasOnlyWs(row);
+
+            const removedLeft = wsOnly ? 0 : row.length - row.trimStart().length;
+            const removedRight = row.length - row.trimEnd().length;
             row = row.trim();
-            const diff = width - row.length;
-            const arrRow = row.split("");
+            const pad = width - row.length;
 
-            if (diff < 0) {
-                return arrRow;
-            }
-
-            const leftWs = Array.from({ length: diff }).fill(TEXT_PADDING);
-
-            return [...leftWs, ...arrRow] as (string | symbol)[];
+            return [
+                ...fillWith(pad, TEXT_PADDING),
+                ...fillWith(removedLeft, HIDDEN_TRIMMED_WS),
+                ...row.split(""),
+                ...fillWith(removedRight, HIDDEN_TRIMMED_WS),
+            ];
         });
     }
 
     if (align === "center") {
         return rows.map((row) => {
+            // If ws only, choose to place hidden trimmed ws on right (will still be left of right padding)
+            const wsOnly = hasOnlyWs(row);
+
+            const removedLeft = wsOnly ? 0 : row.length - row.trimStart().length;
+            const removedRight = row.length - row.trimEnd().length;
             row = row.trim();
+            const pad = width - row.length;
+            const padLeft = Math.floor(pad / 2);
+            const padRight = Math.ceil(pad / 2);
 
-            const diff = width - row.length;
-            const left = Math.floor(diff / 2);
-            const right = diff - left;
-
-            const arrRow = row.split("");
-
-            if (diff < 0) {
-                return arrRow;
-            }
-
-            const leftWs = Array.from({ length: left }).fill(TEXT_PADDING);
-            const rightWs = Array.from({ length: right }).fill(TEXT_PADDING);
-
-            return [...leftWs, ...arrRow, ...rightWs] as (string | symbol)[];
+            return [
+                ...fillWith(padLeft, TEXT_PADDING),
+                ...fillWith(removedLeft, HIDDEN_TRIMMED_WS),
+                ...row.split(""),
+                ...fillWith(removedRight, HIDDEN_TRIMMED_WS),
+                ...fillWith(padRight, TEXT_PADDING),
+            ];
         });
     }
 
@@ -141,4 +145,16 @@ function findBreakIdx(line: string): number {
         }
     }
     return breakIdx;
+}
+
+function fillWith<T extends string | symbol>(
+    length: number,
+    char: T,
+): T extends string ? string[] : symbol[] {
+    if (length <= 0) return [];
+    return Array.from({ length }).fill(char) as T extends string ? string[] : symbol[];
+}
+
+function hasOnlyWs(s: string) {
+    return !s.match(/[^\s]/m);
 }

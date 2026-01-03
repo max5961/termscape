@@ -1,5 +1,5 @@
 import { DrawContract } from "./DrawContract.js";
-import { INPUT_ELEMENT, TEXT_PADDING } from "../../Constants.js";
+import { HIDDEN_TRIMMED_WS, INPUT_ELEMENT, TEXT_PADDING } from "../../Constants.js";
 import type { InputElement } from "../../dom/InputElement.js";
 import type { TextElement } from "../../dom/TextElement.js";
 import type { getAlignedRows } from "../../shared/TextWrap.js";
@@ -7,6 +7,7 @@ import type { Canvas } from "../Canvas.js";
 import type { Pen } from "../Pen.js";
 import type { Draw } from "./Draw.js";
 import type { Style } from "../../dom/style/Style.js";
+import { logger } from "../../shared/Logger.js";
 
 export class DrawText extends DrawContract<TextElement> {
     constructor(draw: Draw) {
@@ -38,32 +39,31 @@ export class DrawText extends DrawContract<TextElement> {
     }
 
     private composeTextWrap(elem: TextElement, canvas: Canvas) {
-        const slices = elem._getSlices();
-        const rows = elem._alignedRows;
-        const rowSlices = this.getTextRowSlice(elem, rows);
-        const rowStart = rowSlices.start;
-        const rowEnd = rowSlices.end;
+        const textNodeSlices = elem._getSlices();
+        const unalignedRows = elem._rows;
+        const alignedRows = elem._alignedRows;
+        const visRows = this.getTextRowSlice(elem, alignedRows);
+        const rowStart = visRows.start;
+        const rowEnd = visRows.end;
         const pen = canvas.getPen();
 
-        let s = -1;
-        let k = rows.slice(0, rowStart).reduce((a, c) => a + c.length, 0);
-        // This breaks styles because rows can have symbols in them and we need
-        // to not count the symbols.  So the solution is to have rows pass off
-        // metadata about how many non TEXT_PADDING chars in the row
-        // for (let i = 0; i < slices.length; ++i) {
-        //     const [_, stop] = slices[i];
-        //     if (stop > k) {
-        //         s = i;
-        //         break;
-        //     }
-        // }
+        let s = 0;
+        let k = unalignedRows.slice(0, rowStart).reduce((a, c) => a + c.length, 0);
 
-        let [nextStyle, nextStop] = slices[++s];
-        pen.setStyle(nextStyle ?? {});
+        for (let i = 0; i < textNodeSlices.length; ++i) {
+            const [_, stop] = textNodeSlices[i];
+            if (stop > k) {
+                s = i;
+                break;
+            }
+        }
+
+        let [nextStyle, nextStop] = textNodeSlices[s] ?? [{}, Infinity];
+        pen.setStyle(nextStyle);
 
         const iteratePen = () => {
-            if (k < nextStop) return;
-            const slice = slices[++s];
+            if (k <= nextStop) return;
+            const slice = textNodeSlices[++s];
             if (slice) {
                 [nextStyle, nextStop] = slice;
                 pen.setStyle(nextStyle);
@@ -72,12 +72,14 @@ export class DrawText extends DrawContract<TextElement> {
 
         for (let i = rowStart; i < rowEnd; ++i) {
             pen.moveTo(0, i);
-            for (let j = 0; j < rows[i].length; ++j) {
-                let char = rows[i][j];
-                k = char === TEXT_PADDING ? k : k + 1;
-                char = this.resolveTextPadding(pen, nextStyle, char);
+            for (let j = 0; j < alignedRows[i].length; ++j) {
+                let char = alignedRows[i][j];
+                if (char !== TEXT_PADDING) ++k;
                 iteratePen();
-                pen.draw(char, "r", 1);
+                if (char !== HIDDEN_TRIMMED_WS) {
+                    char = this.resolveTextPadding(pen, nextStyle, char);
+                    pen.draw(char, "r", 1);
+                }
             }
         }
     }
