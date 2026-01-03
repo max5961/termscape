@@ -4,6 +4,7 @@ import { DomElement } from "./DomElement.js";
 import { TextElement } from "./TextElement.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
+import { logger } from "../shared/Logger.js";
 
 export class InputElement extends DomElement<{
     Style: Style.Input; // includes TextStyle & BoxStyle
@@ -237,13 +238,18 @@ export class InputElement extends DomElement<{
         const prev = this._cursorIdx;
 
         let curr = prev;
-        let inws = tc[curr] === " " || tc[curr - 1] === " ";
-        while (curr-- > 0) {
-            if (inws && tc[curr] !== " ") {
-                inws = false;
-                continue;
+
+        if (tc[curr] === " " || tc[curr] === undefined) {
+            while (--curr >= 0) {
+                if (tc[curr - 1] !== " ") break;
             }
-            if (!inws && tc[curr - 1] === " ") {
+        }
+
+        const testIdx = tc[curr - 1] === " " ? 0 : 1;
+        const isValid = this.getIsValidWordChar(tc[curr - testIdx]);
+
+        while (--curr >= 0) {
+            if (!isValid(tc[curr - 1])) {
                 break;
             }
         }
@@ -256,15 +262,20 @@ export class InputElement extends DomElement<{
         const prev = this._cursorIdx;
 
         let curr = prev;
-        let inword = tc[curr] !== " ";
+
+        const isValid = this.getIsValidWordChar(tc[curr]);
+
+        let exited = false;
         while (curr++ < tc.length) {
-            if (inword && tc[curr] === " ") {
-                inword = false;
-                continue;
+            if (!exited) {
+                if (isValid(tc[curr])) {
+                    continue;
+                } else {
+                    exited = true;
+                }
             }
-            if (!inword && tc[curr] !== " ") {
-                break;
-            }
+
+            if (tc[curr] !== " ") break;
         }
 
         this.cursorRight(curr - prev);
@@ -274,15 +285,27 @@ export class InputElement extends DomElement<{
         const tc = this.textContent;
         const curr = this._cursorIdx;
 
-        if (tc[curr] === " ") return; // in ws
+        const startOfWord = tc[curr - 1] === " ";
+        const deletingWs = tc[curr] === " ";
+        const isValid = deletingWs
+            ? (c: string) => c === " "
+            : this.getIsValidWordChar(tc[curr]);
 
         let left = curr;
         let right = curr;
-        while (tc[left] && tc[left] !== " ") --left;
-        while (tc[right] && tc[right] !== " ") ++right;
+
+        while (tc[left] && isValid(tc[left])) --left;
+        while (tc[right] && isValid(tc[right])) ++right;
+
         left = Math.max(0, left + 1);
 
-        this.handlePrevWord(); // go to beginning of word pre-delete
+        if (deletingWs) {
+            this.cursorLeft(this._cursorIdx - left);
+        }
+        if (!deletingWs && !startOfWord) {
+            this.handlePrevWord();
+        }
+
         const nextTc = tc.slice(0, left) + tc.slice(right);
         this.textContent = nextTc;
     };
@@ -314,4 +337,42 @@ export class InputElement extends DomElement<{
     private handleEndOfLine = () => {
         this.cursorRight(Infinity);
     };
+
+    private partOfWord(c: string): boolean {
+        if (!c) return false;
+        return !!c.match(/[A-Za-z0-9]/);
+    }
+
+    /**
+     * If the cursor does not start in a valid word char, the result is negated.
+     * If the cursor starts in " ", the the decision to negate the result will
+     * occur on the first non " " parsed char.
+     * */
+    private getIsValidWordChar(c: string) {
+        const isValid = (c: string) => this.partOfWord(c);
+
+        let lastValid = isValid(c);
+        let negated = !lastValid;
+        let hasNegated = true;
+
+        // We don't actually know if we can negate yet since " " returns false regardless.
+        if (c === " ") {
+            hasNegated = false;
+        }
+
+        return (c: string) => {
+            if (!c) return false;
+            const valid = isValid(c);
+
+            if (c !== " ") {
+                if (!hasNegated) {
+                    negated = !valid;
+                }
+                lastValid = valid;
+                return negated ? !valid : valid;
+            }
+
+            return false;
+        };
+    }
 }
