@@ -143,7 +143,9 @@ export class InputElement extends DomElement<{
         if (keymap) return;
         if (data.key.size && !isTab) return;
 
-        const utf = isTab ? " ".repeat(this.getProp("tabWidth") ?? 4) : data.raw.utf;
+        const utf = isTab
+            ? " ".repeat(this.getProp("tabWidth") ?? 4)
+            : [...data.input.values()].join("");
         const prevText = this.textContent;
         const nextText =
             prevText.slice(0, this._cursorIdx) + utf + prevText.slice(this._cursorIdx);
