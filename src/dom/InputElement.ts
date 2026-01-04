@@ -4,7 +4,6 @@ import { DomElement } from "./DomElement.js";
 import { TextElement } from "./TextElement.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
-import { logger } from "../shared/Logger.js";
 
 export class InputElement extends DomElement<{
     Style: Style.Input; // includes TextStyle & BoxStyle
@@ -12,6 +11,7 @@ export class InputElement extends DomElement<{
 }> {
     protected static override identity = INPUT_ELEMENT;
 
+    // FLAG - why is this public and not public internal?
     public hasClaimedStdin: boolean;
     /** @internal */
     public _textEl: TextElement;

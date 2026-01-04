@@ -8,10 +8,14 @@ import { Ansi } from "../shared/Ansi.js";
 import type { Root } from "../dom/RootElement.js";
 import type { WriteOpts } from "../Types.js";
 
+// FLAG - could underscore all of these properties and make the publics internal
+
 export class Renderer {
     public lastCanvas: Canvas | null;
     public rects: DomRects;
     private cursor: Cursor;
+    // FLAG - preciseWriter makes more sense as cellWriter (WriterCell)
+    // This is more inline with the direction of wanting to have a rowWriter
     private preciseWriter: WriterPrecise;
     private refreshWriter: WriterRefresh;
     private lastWasResize: number;
@@ -37,6 +41,10 @@ export class Renderer {
             return false;
         }
     }
+
+    // FLAG - this function sucks and is doing too much.  At the same time,
+    // it should be readable and jumping around too much is already a problem in
+    // this class
 
     public writeToStdout = (opts: WriteOpts) => {
         if (this.renderIsBlocked()) return;
@@ -145,6 +153,9 @@ export class Renderer {
             this.lastWasResize = 0;
         }
     }
+
+    // FLAG - this should be revisited.  Perhaps a jsdoc comment instead of
+    // comments in the function body
 
     private shouldRefreshWrite(opts: WriteOpts) {
         // Refresh option set in runtime opts

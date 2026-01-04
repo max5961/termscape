@@ -85,16 +85,15 @@ export abstract class DomElement<
         this.collectIdentities();
 
         this._node = Yg.Node.create();
+        this._children = [];
+        this._rootRef = { root: null };
+        this._scrollOffset = { x: 0, y: 0 };
         this._effects = new SideEffects();
         this._childSet = new Set();
         this._focusNode = new FocusNode(this);
         this._props = new Map();
-
-        this._rootRef = { root: null };
-        this._children = [];
         this._eventListeners = new Map();
         this._metadata = new ElementMetaData(this);
-        this._scrollOffset = { x: 0, y: 0 };
         this._canvas = null;
         this._afterLayoutHandlers = new Set();
 
@@ -113,13 +112,13 @@ export abstract class DomElement<
         this.applyDefaultStyles();
         this.applyDefaultProps();
 
-        this.regPropEffectTyped("scrollbar", this.registerScrollbarEffect);
-        this.regPropEffectTyped("titleTopLeft", this.registerTitleEffect);
-        this.regPropEffectTyped("titleTopCenter", this.registerTitleEffect);
-        this.regPropEffectTyped("titleTopRight", this.registerTitleEffect);
-        this.regPropEffectTyped("titleBottomLeft", this.registerTitleEffect);
-        this.regPropEffectTyped("titleBottomCenter", this.registerTitleEffect);
-        this.regPropEffectTyped("titleBottomRight", this.registerTitleEffect);
+        this.registerPropEffect("scrollbar", this.registerScrollbarEffect);
+        this.registerPropEffect("titleTopLeft", this.registerTitleEffect);
+        this.registerPropEffect("titleTopCenter", this.registerTitleEffect);
+        this.registerPropEffect("titleTopRight", this.registerTitleEffect);
+        this.registerPropEffect("titleBottomLeft", this.registerTitleEffect);
+        this.registerPropEffect("titleBottomCenter", this.registerTitleEffect);
+        this.registerPropEffect("titleBottomRight", this.registerTitleEffect);
     }
 
     public abstract get tagName(): TagName;
@@ -219,14 +218,7 @@ export abstract class DomElement<
         this._effects.dispatchEffect(key as string, value, setProp);
     }
 
-    protected registerPropEffect<T extends keyof Schema["Props"]>(
-        prop: T,
-        cb: PropEffectHandler<Schema["Props"][T]>,
-    ) {
-        this._effects.registerEffect(prop, cb as any);
-    }
-
-    private regPropEffectTyped<T extends keyof Props.All>(
+    protected registerPropEffect<T extends keyof Props.All>(
         prop: T,
         cb: PropEffectHandler<Props.All[T]>,
     ) {
@@ -439,10 +431,6 @@ export abstract class DomElement<
         this.parentElement?.removeChild(this);
     }
 
-    // ========================================================================
-    // Reconciler
-    // ========================================================================
-
     @Render({ layoutChange: true })
     public hide(): void {
         this._node.setDisplay(Yg.DISPLAY_NONE);
@@ -453,7 +441,8 @@ export abstract class DomElement<
         this._node.setDisplay(Yg.DISPLAY_FLEX);
     }
 
-    public getYogaChildren(): YogaNode[] {
+    /** @internal */
+    public _getYogaChildren(): YogaNode[] {
         const count = this._node.getChildCount();
         const yogaNodes = [] as YogaNode[];
         for (let i = 0; i < count; ++i) {
@@ -466,6 +455,8 @@ export abstract class DomElement<
     // Focus
     // =========================================================================
 
+    // FLAG - this entire section
+
     public getFocus(): boolean {
         return this._focusNode.getStatus().focus;
     }
@@ -474,6 +465,8 @@ export abstract class DomElement<
         return this._focusNode.getStatus().shallowFocus;
     }
 
+    // FLAG
+    // Needs to be overridden in FocusManager to do this.focusChild(this)
     public focus() {
         if (this._focusNode.nearestCheckpoint) {
             this._focusNode.nearestCheckpoint.focused = true;
@@ -664,6 +657,8 @@ export abstract class DomElement<
         this.applyScroll(-units, 0);
     }
 
+    // FLAG - should this code be in FocusManager, or streamlined in some other way
+
     /** @internal */
     public _scrollDownWithFocus(units: number, triggerRender: boolean) {
         this._lastOffsetChangeWasFocus = true;
@@ -688,6 +683,9 @@ export abstract class DomElement<
         this.applyScroll(-units, 0, triggerRender);
     }
 
+    // FLAG - triggerRender is difficult to follow/poorly named, but its for applying offsets
+    // during compositing I'm pretty sure.
+
     private applyScroll(dx: number, dy: number, triggerRender = true) {
         if (this.style.overflow !== "scroll") {
             this._throwError(ErrorMessages.invalidOverflowStyleForScroll);
@@ -710,6 +708,9 @@ export abstract class DomElement<
             }
         }
     }
+
+    // Possible FLAG - is it possible to make it so that we only need to remember
+    // that negative offsets scroll up/left only here?
 
     /**
      * A negative dy scrolls *down* by "pulling" content *up*.
@@ -768,6 +769,8 @@ export abstract class DomElement<
         this._applyCornerOffsetWithoutRender(dx, dy);
     }
 
+    // FLAG - this goes along with the triggerRender optional param.  This is poorly named
+
     /**
      * @internal
      *
@@ -778,6 +781,8 @@ export abstract class DomElement<
         this._scrollOffset.x += dx;
         this._scrollOffset.y += dy;
     }
+
+    // FLAG - this may be repeating logic but probably not
 
     /**
      * @internal

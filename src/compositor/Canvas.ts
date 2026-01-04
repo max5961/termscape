@@ -137,6 +137,13 @@ export class Canvas {
         );
     }
 
+    // FLAG - Do we really need all of the rects decided on layout changes? Or
+    // can they ALL be on demand and then become permanent until the next layout
+    // change.
+
+    // FLAG - Can we possibly skip recreating a Canvas and instead do an
+    // 'updateCanvas' on layout changes and initialization?
+
     public createChildCanvas(child: DomElement): SubCanvas {
         const canvasHeight = child._is(TEXT_ELEMENT)
             ? child._textHeight
@@ -371,6 +378,10 @@ export class SubCanvas extends Canvas {
             );
         }
     }
+
+    // FLAG - would we need to bindGrid if we made the Root Canvas grid reference
+    // immutable?  You'd always have a stable [], only clearing rows on new
+    // composite passes instead of resetting the reference.
 
     /**
      * The root canvas is recreated on every cycle, and therefore receives a new
