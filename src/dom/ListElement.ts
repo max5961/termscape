@@ -70,10 +70,14 @@ export class ListElement extends FocusManager<{
         return this._children.slice();
     }
 
+    // CHORE - this always focuses the first appended child.  This might not be
+    // the worst, as a `startingFocus` feature could still work with minimal
+    // refactoring
+
     protected override handleAppendChild(child: DomElement): void {
-        child._focusNode.becomeCheckpoint(false);
+        child._becomeProvider(false);
         if (this._children.length === 1) {
-            child._focusNode.updateCheckpoint(true);
+            child._setOwnProvider(true);
             this.focused = child;
         }
     }
@@ -82,7 +86,7 @@ export class ListElement extends FocusManager<{
         child: DomElement,
         freeRecursive?: boolean,
     ): void {
-        child._focusNode.becomeNormal(freeRecursive);
+        child._focusNode.becomeConsumer(freeRecursive);
     }
 
     protected override buildVisualMap(children: DomElement[], vmap: VisualNodeMap): void {

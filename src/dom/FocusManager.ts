@@ -41,7 +41,7 @@ export abstract class FocusManager<
     protected abstract handleRemoveChild(child: DomElement, freeRecursive?: boolean): void;
     protected abstract buildVisualMap(children: DomElement[], vmap: VisualNodeMap): void;
 
-    // FLAG - We could write a decorator for this
+    // CHORE - We could write a decorator for this
 
     public override appendChild(child: DomElement): void {
         super.appendChild(child);
@@ -74,14 +74,17 @@ export abstract class FocusManager<
         return this._focused;
     }
 
-    // FLAG - this is protected and we aren't doing anything special...there is
-    // no reason to make it a setter instead of just using this._focused = val
+    // CHORE - this is protected and we aren't doing anything special...there is
+    // no reason to make it a setter instead of just using this._focused = val,
+    // or it should private to make sure no concrete classes mishandle it
+
+    // CHORE - this should trigger a render **if** the _focused value changes
 
     protected set focused(val: DomElement | undefined) {
         this._focused = val;
     }
 
-    // FLAG - should be this._vmap and not sure we need a getter.
+    // CHORE - should be this._vmap and not sure we need a getter.
     // Maybe in that it returns a Readonly...but its protected code so we should
     // know not to mut anyways...
 
@@ -89,7 +92,7 @@ export abstract class FocusManager<
         return this.vmap;
     }
 
-    // FLAG - we should have an protected internal _getProp with the full scope
+    // CHORE - we should have an protected internal _getProp with the full scope
     // of Props.All so that we don't need this, nor need to make one for another
     // class
 
@@ -99,7 +102,7 @@ export abstract class FocusManager<
         return this.getProp(prop);
     }
 
-    // FLAG - Can we delegate more responsibility to FocusNode for this?
+    // CHORE - Can we delegate more responsibility to FocusNode for this?
 
     public focusChild(child: DomElement | undefined): DomElement | undefined {
         if (!child || this.focused === child) return;
@@ -108,9 +111,9 @@ export abstract class FocusManager<
         const prev = this.focused ? this.vmap.get(this.focused) : undefined;
         const next = this.vmap.get(child);
 
-        this.focused?._focusNode.updateCheckpoint(false);
+        this.focused?._setOwnProvider(false);
         this.focused = child;
-        this.focused._focusNode.updateCheckpoint(true);
+        this.focused?._setOwnProvider(true);
 
         const prevX = prev?.xIdx ?? 0;
         const prevY = prev?.yIdx ?? 0;
@@ -160,7 +163,7 @@ export abstract class FocusManager<
         return true;
     }
 
-    // FLAG - this function name sucks
+    // CHORE - could be a better name
 
     private focusedChildVisibilityStatus() {
         const fRect = this.focused?.unclippedRect;
@@ -202,7 +205,7 @@ export abstract class FocusManager<
         };
     }
 
-    // FLAG - this function name could be tweaked.  We also need much of the same
+    // CHORE - this function name could be tweaked.  We also need much of the same
     // logic in different parts of the class, so this is a case where we should
     // consider doing some Uncle Bob.
     //
@@ -308,7 +311,7 @@ export abstract class FocusManager<
         }
     }
 
-    // FLAG - should this really be public? If the public API needs this, then
+    // CHORE - should this really be public? If the public API needs this, then
     // that means its broken
 
     public refreshVisualMap() {
@@ -330,7 +333,7 @@ export abstract class FocusManager<
         return this.getFocusedData()?.xArr;
     }
 
-    // FLAG - this code might belong positioned closer to normalizeScrollToFocus
+    // CHORE - this code might belong positioned closer to normalizeScrollToFocus
     // in order for readability/locality
 
     private displaceFocus(dx: number, dy: number): DomElement | undefined {

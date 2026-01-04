@@ -16,7 +16,7 @@ export class Compositor {
     public PLM: PostLayoutManager;
 
     constructor(root: Root) {
-        // FLAG - this name conflicts with Element._canvas...should we possibly
+        // CHORE - this name conflicts with Element._canvas...should we possibly
         // call this.canvas this.root or something else, maybe rootCanvas for
         // better readability
 

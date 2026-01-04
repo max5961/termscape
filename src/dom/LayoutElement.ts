@@ -68,6 +68,10 @@ export class LayoutElement extends FocusManager<{
         }
     }
 
+    // CHORE - this doesn't gaurd against nested LayoutElements.  A LayoutNode
+    // should be able to have a LayoutElement with its own LayoutNodes as children
+    // and there is no check to stop searching branches that are also LayoutElements
+
     protected override getNavigableChildren(): DomElement[] {
         const nodes: LayoutNode[] = [];
 
@@ -83,13 +87,18 @@ export class LayoutElement extends FocusManager<{
         return nodes;
     }
 
+    // CHORE - this will arbitrarily focus the first child every time you add a
+    // new element. So existing child focus state will remain, but we will add
+    // another focused child which breaks the rule of only allowing 1 focused
+    // child
+
     protected override handleAppendChild(child: DomElement): void {
         if (this.focused) return;
 
         let found = false;
         this.dfs(child, (child) => {
             if (!found && child instanceof LayoutNode) {
-                child._focusNode.updateCheckpoint(true);
+                child._setOwnProvider(true);
                 this.focused = child;
                 found = true;
             }
@@ -103,7 +112,7 @@ export class LayoutElement extends FocusManager<{
         let found = false;
         this.dfs(child, (child) => {
             if (!found && child instanceof LayoutNode) {
-                child._focusNode.becomeNormal(freeRecursive);
+                child._becomeConsumer(freeRecursive);
                 found = true;
             }
         });
@@ -263,7 +272,7 @@ export class LayoutNode extends AbstractBoxElement {
 
     constructor() {
         super();
-        this._focusNode.becomeCheckpoint(false);
+        this._becomeProvider(false);
     }
 
     override get tagName(): typeof TagNameEnum.LayoutNode {

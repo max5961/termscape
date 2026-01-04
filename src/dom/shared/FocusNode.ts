@@ -1,77 +1,111 @@
 import type { DomElement } from "../DomElement.js";
 
-type Status = { focus: boolean; shallowFocus: boolean };
+type FocusState = { focus: boolean; shallowFocus: boolean };
 
 export class FocusNode {
-    /** This should be named something else, such as childNodes, to prevent naming
-     * conflicts with the DomElement.children getter */
-    public children: Set<FocusNode>;
-    public nearestCheckpoint: CheckPoint | null;
-    private checkpoint: CheckPoint | null;
-    protected parent: FocusNode | null;
-    private elem: DomElement;
+    private _childNodes: Set<FocusNode>;
+    private _parent: FocusNode | null;
+    private _nearestProvider: Provider | null;
+    private _ownProvider: Provider | null;
+    private _host: DomElement;
 
     constructor(elem: DomElement) {
-        this.elem = elem;
-        this.children = new Set();
-        this.nearestCheckpoint = null;
-        this.checkpoint = null;
-        this.parent = null;
+        this._childNodes = new Set();
+        this._nearestProvider = null;
+        this._ownProvider = null;
+        this._host = elem;
+        this._parent = null;
     }
 
-    public appendChild(focus: FocusNode) {
-        focus.parent = this;
-        focus.nearestCheckpoint = this.nearestCheckpoint;
-        this.children.add(focus);
+    // CHORE - appendChild and removeChild needs tests to ensure Provider chain
+    // is predictable/stable
+
+    public appendChild(node: FocusNode) {
+        node._parent = this;
+        if (!node._nearestProvider) {
+            node._nearestProvider = this._nearestProvider;
+        }
+        this._childNodes.add(node);
     }
 
-    public removeChild(focus: FocusNode) {
-        this.children.delete(focus);
-        focus.parent = null;
-        this.nearestCheckpoint = null;
-        this.rewireChildren(this.checkpoint);
-    }
+    public removeChild(node: FocusNode) {
+        this._childNodes.delete(node);
+        node._parent = null;
 
-    public becomeCheckpoint(focused: boolean) {
-        if (this.checkpoint) return;
-
-        const checkpoint = new CheckPoint(focused);
-
-        const nearest = this.nearestCheckpoint;
-        if (nearest) {
-            checkpoint.parent = nearest;
+        if (node._nearestProvider === this._nearestProvider) {
+            node._nearestProvider = null;
         }
 
-        this.checkpoint = checkpoint;
-        this.nearestCheckpoint = checkpoint;
+        this.rewireChildren(this._ownProvider);
+    }
+
+    public getFocusState(): FocusState {
+        if (this._nearestProvider) {
+            return this._nearestProvider.status;
+        }
+        return { focus: true, shallowFocus: false };
+    }
+
+    public getFocus(): boolean {
+        return this.getFocusState().focus;
+    }
+
+    public getShallowFocus(): boolean {
+        return this.getFocusState().shallowFocus;
+    }
+
+    public focusNearestProvider() {
+        if (this._nearestProvider) {
+            this._nearestProvider.focused = true;
+        }
+    }
+
+    /**
+     * Make this node provide focus context for descendents.
+     * */
+    public becomeProvider(focused: boolean) {
+        if (this._ownProvider) return;
+
+        const provider = new Provider(focused);
+
+        const nearest = this._nearestProvider;
+        if (nearest) {
+            provider.parent = nearest;
+        }
+
+        this._ownProvider = provider;
+        this._nearestProvider = provider;
         this.propagateChanges();
     }
 
-    public becomeNormal(freeRecursive?: boolean) {
-        if (!this.checkpoint) return;
+    /**
+     * If this node is a Provider, then modify the focus context that its
+     * consumers will receive.
+     * */
+    public setOwnProvider(focused: boolean) {
+        if (!this._ownProvider) return;
+        this._ownProvider.focused = focused;
+        this.propagateChanges();
+    }
 
-        this.checkpoint = null;
-        this.nearestCheckpoint = this.parent?.nearestCheckpoint ?? null;
+    /**
+     * Destroy the node's Provider object (if not already null).
+     * @param freeRecursive boolean.  If true, then it is assumed the host DomElement
+     * and its children are being destroyed, so no time is wasted propagating changes.
+     * */
+    public becomeConsumer(freeRecursive?: boolean) {
+        if (!this._ownProvider) return;
+
+        this._ownProvider = null;
+        this._nearestProvider = this._parent?._nearestProvider ?? null;
         if (!freeRecursive) {
             this.propagateChanges();
         }
     }
 
-    public updateCheckpoint(focused: boolean) {
-        if (!this.checkpoint) return;
-        this.checkpoint.focused = focused;
-        this.propagateChanges();
-    }
-
-    public getStatus(): Status {
-        return (
-            this.nearestCheckpoint?.getStatus() ?? { focus: true, shallowFocus: false }
-        );
-    }
-
     private propagateChanges() {
-        this.rewireChildren(this.nearestCheckpoint);
-        this.reapplyStyles(this.elem);
+        this.rewireChildren(this._nearestProvider);
+        this.reapplyStyles(this._host);
     }
 
     private reapplyStyles = (elem: DomElement) => {
@@ -86,25 +120,25 @@ export class FocusNode {
         });
     };
 
-    private rewireChildren(nearest: CheckPoint | null) {
-        this.children.forEach((child) => this.rewireHelper(child, nearest));
+    private rewireChildren(nearest: Provider | null) {
+        this._childNodes.forEach((child) => this.rewireHelper(child, nearest));
     }
 
-    private rewireHelper = (focus: FocusNode, nearest: CheckPoint | null) => {
-        if (focus.checkpoint) return;
-        focus.nearestCheckpoint = nearest;
+    private rewireHelper = (node: FocusNode, nearest: Provider | null) => {
+        if (node._ownProvider) return;
+        node._nearestProvider = nearest;
 
-        const styleHandler = focus.elem._styleHandler;
+        const styleHandler = node._host._styleHandler;
         if (styleHandler) {
-            focus.elem.style = styleHandler;
+            node._host.style = styleHandler;
         }
 
-        focus.children.forEach((child) => this.rewireHelper(child, nearest));
+        node._childNodes.forEach((child) => this.rewireHelper(child, nearest));
     };
 }
 
-export class CheckPoint {
-    public parent: CheckPoint | null;
+export class Provider {
+    public parent: Provider | null;
     public focused: boolean;
 
     constructor(focused: boolean) {
@@ -112,13 +146,13 @@ export class CheckPoint {
         this.parent = null;
     }
 
-    public getStatus(): Status {
+    public get status(): FocusState {
         if (!this.focused) {
             return { focus: false, shallowFocus: false };
         }
 
-        const result: Status = { focus: true, shallowFocus: false };
-        let parent: CheckPoint | null = this.parent;
+        const result: FocusState = { focus: true, shallowFocus: false };
+        let parent: Provider | null = this.parent;
 
         while (parent) {
             if (!parent.focused) {

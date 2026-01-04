@@ -144,7 +144,7 @@ export abstract class DomElement<
 
         let styles = stylesheet;
         if (this._styleHandler) {
-            const { focus, shallowFocus } = this._focusNode.getStatus();
+            const { focus, shallowFocus } = this.getFocusState();
             styles = this._styleHandler({ focus, shallowFocus });
         }
 
@@ -351,11 +351,13 @@ export abstract class DomElement<
         });
     }
 
+    // CHORE - could rework the fn bodies of these tree manip methods
+
     @Render({ layoutChange: true })
     public appendChild(child: DomElement): void {
         if (this._childSet.has(child)) return;
         this._childSet.add(child);
-        this._focusNode.children.add(child._focusNode);
+        this._focusNode.appendChild(child._focusNode);
 
         this._node.insertChild(child._node, this._node.getChildCount());
         this._children.push(child);
@@ -372,7 +374,7 @@ export abstract class DomElement<
         }
 
         this._childSet.add(child);
-        this._focusNode.children.add(child._focusNode);
+        this._focusNode.appendChild(child._focusNode);
 
         const nextChildren = [] as DomElement[];
         let foundBeforeChild = false;
@@ -455,34 +457,43 @@ export abstract class DomElement<
     // Focus
     // =========================================================================
 
-    // FLAG - this entire section
+    // CHORE - this entire section
+
+    // CHORE
+    // Needs to be overridden in FocusManager to do this.focusChild(this)
+    @Render()
+    public focus() {
+        this._focusNode.focusNearestProvider();
+    }
 
     public getFocus(): boolean {
-        return this._focusNode.getStatus().focus;
+        return this._focusNode.getFocus();
     }
 
     public getShallowFocus(): boolean {
-        return this._focusNode.getStatus().shallowFocus;
+        return this._focusNode.getShallowFocus();
     }
 
-    // FLAG
-    // Needs to be overridden in FocusManager to do this.focusChild(this)
-    public focus() {
-        if (this._focusNode.nearestCheckpoint) {
-            this._focusNode.nearestCheckpoint.focused = true;
-        }
+    public getFocusState() {
+        return this._focusNode.getFocusState();
     }
 
-    protected becomeCheckpoint(focused: boolean) {
-        this._focusNode.becomeCheckpoint(focused);
+    // CHORE - Should these be _becomeFocusProvider for example since they are
+    // public APIs for FocusNode?
+
+    /** @internal */
+    public _becomeProvider(focused: boolean) {
+        this._focusNode.becomeProvider(focused);
     }
 
-    protected becomeNormal() {
-        this._focusNode.becomeNormal();
+    /** @internal */
+    public _becomeConsumer(freeRecursive?: boolean) {
+        this._focusNode.becomeConsumer(freeRecursive);
     }
 
-    protected toggleFocus(focused: boolean) {
-        this._focusNode.updateCheckpoint(focused);
+    /** @internal */
+    public _setOwnProvider(focused: boolean) {
+        this._focusNode.setOwnProvider(focused);
     }
 
     // ========================================================================
@@ -657,7 +668,7 @@ export abstract class DomElement<
         this.applyScroll(-units, 0);
     }
 
-    // FLAG - should this code be in FocusManager, or streamlined in some other way
+    // CHORE - should this code be in FocusManager, or streamlined in some other way
 
     /** @internal */
     public _scrollDownWithFocus(units: number, triggerRender: boolean) {
@@ -683,7 +694,7 @@ export abstract class DomElement<
         this.applyScroll(-units, 0, triggerRender);
     }
 
-    // FLAG - triggerRender is difficult to follow/poorly named, but its for applying offsets
+    // CHORE - triggerRender is difficult to follow/poorly named, but its for applying offsets
     // during compositing I'm pretty sure.
 
     private applyScroll(dx: number, dy: number, triggerRender = true) {
@@ -709,7 +720,7 @@ export abstract class DomElement<
         }
     }
 
-    // Possible FLAG - is it possible to make it so that we only need to remember
+    // CHORE (possibly) - is it possible to make it so that we only need to remember
     // that negative offsets scroll up/left only here?
 
     /**
@@ -769,7 +780,7 @@ export abstract class DomElement<
         this._applyCornerOffsetWithoutRender(dx, dy);
     }
 
-    // FLAG - this goes along with the triggerRender optional param.  This is poorly named
+    // CHORE - this goes along with the triggerRender optional param.  This is poorly named
 
     /**
      * @internal
@@ -782,7 +793,7 @@ export abstract class DomElement<
         this._scrollOffset.y += dy;
     }
 
-    // FLAG - this may be repeating logic but probably not
+    // CHORE - this may be repeating logic but probably not
 
     /**
      * @internal

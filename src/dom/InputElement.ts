@@ -11,7 +11,6 @@ export class InputElement extends DomElement<{
 }> {
     protected static override identity = INPUT_ELEMENT;
 
-    // FLAG - why is this public and not public internal?
     public hasClaimedStdin: boolean;
     /** @internal */
     public _textEl: TextElement;
