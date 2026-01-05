@@ -68,6 +68,9 @@ export class Root extends DomElement<{
         return {};
     }
 
+    // CHORE - changed the Style.Root type so this needs to be changed to allow
+    // root to set the allowed styles
+
     /** No op - Root cannot set styles */
     override set style(_stylesheet: Style.Root) {}
 
@@ -90,6 +93,9 @@ export class Root extends DomElement<{
     public removeHook<T extends Hook>(hook: T, cb: HookHandler<T>) {
         this.hooks.removeHook(hook, cb);
     }
+
+    // CHORE - these handle pre/post DomElement attachment to the Root.  The name
+    // is vague given that DomElement is not part of the name
 
     /** @internal */
     public handleAttachment(metadata: MetaData) {
@@ -152,15 +158,12 @@ export class Root extends DomElement<{
         }
     }
 
-    private handleMouseEvent: (...args: EventEmitterMap["MouseEvent"]) => unknown = (
-        x,
-        y,
-        type,
-    ) => {
-        const element = this.renderer.rects.findTargetElement(x, y);
-        if (!element) return;
+    private handleMouseEvent = (...[x, y, type]: EventEmitterMap["MouseEvent"]) => {
+        const target = this.renderer.rects.findTargetElement(x, y);
+        if (!target) return;
 
-        this.propagateMouseEvent(x, y, type, element);
+        const eventmgr = target._events;
+        eventmgr.dispatchMouseEvent(x, y, type);
     };
 
     /** @internal */

@@ -69,7 +69,7 @@ export class MetaData {
         }
     }
 
-    /** Once marked, this cannot be undone */
+    /** Once called, this function permanently marks this node as requiring stdin */
     public requestStdin() {
         this[__hasRequestedStdin] = true;
 

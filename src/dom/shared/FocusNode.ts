@@ -1,6 +1,7 @@
 import type { DomElement } from "../DomElement.js";
 
-type FocusState = { focus: boolean; shallowFocus: boolean };
+// CHORE - move to types
+export type FocusState = { focus: boolean; shallowFocus: boolean };
 
 export class FocusNode {
     private _childNodes: Set<FocusNode>;

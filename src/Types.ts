@@ -2,6 +2,7 @@ import { configureStdin } from "term-keymap";
 import { TagNameEnum } from "./Constants.js";
 import type { DomElement } from "./dom/DomElement.js";
 import type { Style } from "./dom/style/Style.js";
+import type { FocusState } from "./dom/shared/FocusNode.js";
 
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
 export type { Node as YogaNode, Edge } from "yoga-wasm-web/auto";
@@ -59,6 +60,22 @@ export type EventEmitterMap = {
     CursorPosition: [y: number];
 };
 
+export type FocusEvent = "focus" | "blur" | "shallowFocus" | "shallowBlur";
+export type ConsoleEvent = "console";
+
+export type FocusEventHandler = (state: FocusState) => unknown;
+
+export type Event = MouseEventType | FocusEvent | ConsoleEvent;
+
+export type EventHandler<T extends Event> = ({
+    [_ in MouseEventType]: MouseEventHandler;
+} & {
+    [_ in FocusEvent]: FocusEventHandler;
+} & {
+    // CHORE - match this to log-goblin `Data` type
+    [_ in ConsoleEvent]: (stdout: string) => unknown;
+})[T];
+
 export type MouseEventType =
     // LEFT BTN
     | "click"
@@ -82,7 +99,7 @@ export type MouseEventType =
 
     // MOVEMENT
     | "mousemove"
-    | "drag"
+    // | "drag"
     | "dragstart"
     | "dragend";
 

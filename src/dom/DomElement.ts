@@ -1,16 +1,7 @@
 import { Yg } from "../Constants.js";
 import type { Root } from "./RootElement.js";
 import type { Action, KeyMap } from "term-keymap";
-import type {
-    MouseEvent,
-    MouseEventType,
-    MouseEventHandler,
-    DOMRect,
-    YogaNode,
-    Point,
-    StyleHandler,
-    TagName,
-} from "../Types.js";
+import type { DOMRect, YogaNode, Point, StyleHandler, TagName } from "../Types.js";
 import type { Shadow, Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import type { Canvas, Rect } from "../compositor/Canvas.js";
@@ -27,6 +18,8 @@ import { objectEntries, objectKeys } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
 import { SideEffects, type PropEffectHandler } from "./shared/SideEffects.js";
 import { MetaData } from "./shared/MetaData.js";
+import { DomEvents } from "./shared/DomEvents.js";
+import type { Event, EventHandler } from "../Types.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -48,7 +41,8 @@ export abstract class DomElement<
     protected readonly _identities: Set<symbol>;
     protected readonly _childSet: Set<DomElement>;
     protected readonly _effects: SideEffects;
-    protected readonly _eventListeners: Map<MouseEventType, Set<MouseEventHandler>>;
+    // protected readonly _eventListeners: Map<MouseEventType, Set<MouseEventHandler>>;
+    public readonly _events: DomEvents;
     /** @internal */
     public _lastOffsetChangeWasFocus: boolean;
 
@@ -86,14 +80,14 @@ export abstract class DomElement<
         this._node = Yg.Node.create();
         this._children = [];
         this._scrollOffset = { x: 0, y: 0 };
+        this._focusNode = new FocusNode(this);
+        this._events = new DomEvents(this);
+        this._metadata = new MetaData(this);
         this._effects = new SideEffects();
         this._childSet = new Set();
-        this._focusNode = new FocusNode(this);
         this._props = new Map();
-        this._eventListeners = new Map();
-        this._metadata = new MetaData(this);
-        this._canvas = null;
         this._afterLayoutHandlers = new Set();
+        this._canvas = null;
 
         this._contentRange = this._initContentRange();
         this.parentElement = null;
@@ -101,8 +95,6 @@ export abstract class DomElement<
         // Mutable flags
         this._lastOffsetChangeWasFocus = false;
 
-        // No longer need rootRef since metadata can give us the root
-        // const proxy = createVirtualStyleProxy(this, this._rootRef, this._metadata);
         const proxy = createVirtualStyleProxy(this, this._metadata);
         this._virStyle = proxy.virtualStyle;
         this._shadowStyle = proxy.shadowStyle;
@@ -539,59 +531,132 @@ export abstract class DomElement<
     // ========================================================================
 
     @RequestInput()
-    public addEventListener(event: MouseEventType, handler: MouseEventHandler): void {
-        if (!this._eventListeners.get(event)) {
-            this._eventListeners.set(event, new Set());
-        }
-        this._eventListeners.get(event)!.add(handler);
+    public addEventListener<T extends Event>(event: T, handler: EventHandler<T>) {
+        return this._events.addListener(event, handler);
     }
 
-    public removeEventListener(event: MouseEventType, handler: MouseEventHandler): void {
-        if (!this._eventListeners.get(event)) return;
-        this._eventListeners.get(event)!.delete(handler);
+    public removeEventListener<T extends Event>(
+        event: T,
+        handler: EventHandler<T>,
+    ): void {
+        this._events.removeListener(event, handler);
     }
 
-    protected propagateMouseEvent(
-        x: number,
-        y: number,
-        type: MouseEventType,
-        target: DomElement,
-    ) {
-        let canPropagate = true;
-        let canImmediatePropagate = true;
+    @RequestInput()
+    private setSingle(...args: Parameters<DomEvents["setSingle"]>) {
+        return this._events.setSingle(...args);
+    }
 
-        const propagate = (curr: DomElement, target: DomElement) => {
-            if (curr && curr._eventListeners.get(type)?.size) {
-                const handlers = curr._eventListeners.get(type);
+    // LEFT BTN
+    public set onClick(cb: EventHandler<"click"> | undefined) {
+        this.setSingle("click", cb);
+    }
+    public set onDblClick(cb: EventHandler<"dblclick"> | undefined) {
+        this.setSingle("dblclick", cb);
+    }
+    public set onMouseDown(cb: EventHandler<"mousedown"> | undefined) {
+        this.setSingle("mousedown", cb);
+    }
+    public set onMouseUp(cb: EventHandler<"mouseup"> | undefined) {
+        this.setSingle("mouseup", cb);
+    }
+    // RIGHT BTN
+    public set onRightClick(cb: EventHandler<"rightclick"> | undefined) {
+        this.setSingle("rightclick", cb);
+    }
+    public set onRightDblClick(cb: EventHandler<"rightdblclick"> | undefined) {
+        this.setSingle("rightdblclick", cb);
+    }
+    public set onRightMouseDown(cb: EventHandler<"rightmousedown"> | undefined) {
+        this.setSingle("rightmousedown", cb);
+    }
+    public set onRightMouseUp(cb: EventHandler<"rightmouseup"> | undefined) {
+        this.setSingle("rightmouseup", cb);
+    }
+    // SCROLL WHEEL
+    public set onScrollUp(cb: EventHandler<"scrollup"> | undefined) {
+        this.setSingle("scrollup", cb);
+    }
+    public set onScrollDown(cb: EventHandler<"scrolldown"> | undefined) {
+        this.setSingle("scrolldown", cb);
+    }
+    public set onScrollClick(cb: EventHandler<"scrollclick"> | undefined) {
+        this.setSingle("scrollclick", cb);
+    }
+    public set onScrollBtnUp(cb: EventHandler<"scrollbtnup"> | undefined) {
+        this.setSingle("scrollbtnup", cb);
+    }
+    public set onScrollBtnDown(cb: EventHandler<"scrollbtndown"> | undefined) {
+        this.setSingle("scrollbtndown", cb);
+    }
+    public set onScrollDblClick(cb: EventHandler<"scrolldblclick"> | undefined) {
+        this.setSingle("scrolldblclick", cb);
+    }
+    // MOUSE MOVEMENT
+    public set onMouseMove(cb: EventHandler<"mousemove"> | undefined) {
+        this.setSingle("mousemove", cb);
+    }
+    public set onDragEnd(cb: EventHandler<"dragend"> | undefined) {
+        this.setSingle("dragend", cb);
+    }
+    public set onDragStart(cb: EventHandler<"dragstart"> | undefined) {
+        this.setSingle("dragstart", cb);
+    }
 
-                const event: MouseEvent = {
-                    type,
-                    clientX: x,
-                    clientY: y,
-                    target: target,
-                    currentTarget: curr,
-                    stopPropagation: () => {
-                        canPropagate = false;
-                    },
-                    stopImmediatePropagation: () => {
-                        canImmediatePropagate = false;
-                        canPropagate = false;
-                    },
-                };
-
-                handlers?.forEach((h) => {
-                    if (canImmediatePropagate) {
-                        h.call(curr, event);
-                    }
-                });
-            }
-
-            if (canPropagate && curr.parentElement) {
-                propagate(curr.parentElement, target);
-            }
-        };
-
-        propagate(target, target);
+    // LEFT BTN
+    public get onClick() {
+        return this._events.getSingle("click");
+    }
+    public get onDblClick() {
+        return this._events.getSingle("dblclick");
+    }
+    public get onMouseDown() {
+        return this._events.getSingle("mousedown");
+    }
+    public get onMouseUp() {
+        return this._events.getSingle("mouseup");
+    }
+    // RIGHT BTN
+    public get onRightClick() {
+        return this._events.getSingle("rightclick");
+    }
+    public get onRightDblClick() {
+        return this._events.getSingle("rightdblclick");
+    }
+    public get onRightMouseDown() {
+        return this._events.getSingle("rightmousedown");
+    }
+    public get onRightMouseUp() {
+        return this._events.getSingle("rightmouseup");
+    }
+    // SCROLL WHEEL
+    public get onScrollUp() {
+        return this._events.getSingle("scrollup");
+    }
+    public get onScrollDown() {
+        return this._events.getSingle("scrolldown");
+    }
+    public get onScrollClick() {
+        return this._events.getSingle("scrollclick");
+    }
+    public get onScrollBtnUp() {
+        return this._events.getSingle("scrollbtnup");
+    }
+    public get onScrollBtnDown() {
+        return this._events.getSingle("scrollbtndown");
+    }
+    public get onScrollDblClick() {
+        return this._events.getSingle("scrolldblclick");
+    }
+    // MOUSE MOVEMENT
+    public get onMouseMove() {
+        return this._events.getSingle("mousemove");
+    }
+    public get onDragEnd() {
+        return this._events.getSingle("dragend");
+    }
+    public get onDragStart() {
+        return this._events.getSingle("dragstart");
     }
 
     // ========================================================================

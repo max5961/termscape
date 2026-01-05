@@ -100,6 +100,10 @@ export class Scheduler {
         }
     }
 
+    // CHORE - Revisit this...but I think the right idea is to not debounce during
+    // tests so that junk double event handlers aren't ran when rapidly sending
+    // stdin events.
+
     /**
      * Used to have a `debounce` option here.  But, making it default **except**
      * for during testing code.  With debouncing enabled, behavior during slow
