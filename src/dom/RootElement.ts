@@ -1,7 +1,7 @@
 import EventEmitter from "events";
 import { Yg, type TagNameEnum } from "../Constants.js";
 import type { InputElement } from "./InputElement.js";
-import type { EventEmitterMap, RuntimeConfig, WriteOpts } from "../Types.js";
+import type { RuntimeConfig, WriteOpts, EventPayloadMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
@@ -25,7 +25,7 @@ export class Root extends DomElement<{
     private scheduler: Scheduler;
     private renderer: Renderer;
     private runtimeCtl: Runtime["logic"];
-    private emitter: EventEmitter<EventEmitterMap>;
+    private emitter: EventEmitter<EventPayloadMap>;
 
     constructor(config: RuntimeConfig) {
         super();
@@ -158,7 +158,7 @@ export class Root extends DomElement<{
         }
     }
 
-    private handleMouseEvent = (...[x, y, type]: EventEmitterMap["MouseEvent"]) => {
+    private handleMouseEvent = (...[x, y, type]: EventPayloadMap["MouseEvent"]) => {
         const target = this.renderer.rects.findTargetElement(x, y);
         if (!target) return;
 

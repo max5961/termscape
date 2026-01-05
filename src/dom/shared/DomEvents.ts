@@ -1,11 +1,11 @@
 import type {
     MouseEventType,
     MouseEvent,
-    EventEmitterMap,
     EventHandler,
     Event,
     FocusEvent,
     ConsoleEvent,
+    EventPayloadMap,
 } from "../../Types.js";
 import type { DomElement } from "../DomElement.js";
 
@@ -59,7 +59,7 @@ export class DomEvents {
         return result;
     }
 
-    public dispatchMouseEvent(...[x, y, type]: EventEmitterMap["MouseEvent"]) {
+    public dispatchMouseEvent(...[x, y, type]: EventPayloadMap["MouseEvent"]) {
         this.propagateMouseEvent(x, y, type);
     }
 

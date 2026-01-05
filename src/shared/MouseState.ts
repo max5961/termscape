@@ -2,7 +2,7 @@ import { type Data } from "term-keymap";
 import EventEmitter from "events";
 import { Ansi } from "./Ansi.js";
 import type { Root } from "../dom/RootElement.js";
-import type { EventEmitterMap, MouseEventType } from "../Types.js";
+import type { EventPayloadMap, MouseEventType } from "../Types.js";
 
 type MouseData = Exclude<Data["mouse"], undefined>;
 type Button = Extract<MouseEventType, "click" | "rightclick" | "scrollclick">;
@@ -15,9 +15,9 @@ const DblClickEmitter = new EventEmitter<Record<Button, [number, number]>>();
 export class MouseState {
     private prev: MouseData | null;
     private root: Root;
-    private emitter: EventEmitter<EventEmitterMap>;
+    private emitter: EventEmitter<EventPayloadMap>;
 
-    constructor(root: Root, emitter: EventEmitter<EventEmitterMap>) {
+    constructor(root: Root, emitter: EventEmitter<EventPayloadMap>) {
         this.root = root;
         this.prev = null;
         this.emitter = emitter;

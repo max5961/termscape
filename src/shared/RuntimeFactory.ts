@@ -9,7 +9,7 @@ import {
 import type { Root } from "../dom/RootElement.js";
 import type { Scheduler } from "./Scheduler.js";
 import type { EventEmitter } from "stream";
-import type { EventEmitterMap, RuntimeConfig } from "../Types.js";
+import type { EventPayloadMap, RuntimeConfig } from "../Types.js";
 import type { InputElement } from "../dom/InputElement.js";
 import { Ansi } from "./Ansi.js";
 import { Capture } from "log-goblin";
@@ -22,7 +22,7 @@ export type RuntimeDependencies = {
     config: Partial<Config>;
     root: Root;
     scheduler: Scheduler;
-    emitter: EventEmitter<EventEmitterMap>;
+    emitter: EventEmitter<EventPayloadMap>;
     actions: MetaDataRegister["_actions"];
 };
 

@@ -55,26 +55,20 @@ export type RuntimeConfig = {
     startOnCreate?: boolean;
 } & ConfigureStdin;
 
-export type EventEmitterMap = {
+export type EventPayloadMap = {
     MouseEvent: [x: number, y: number, type: MouseEventType];
     CursorPosition: [y: number];
 };
 
-export type FocusEvent = "focus" | "blur" | "shallowFocus" | "shallowBlur";
-export type ConsoleEvent = "console";
-
-export type FocusEventHandler = (state: FocusState) => unknown;
-
-export type Event = MouseEventType | FocusEvent | ConsoleEvent;
-
-export type EventHandler<T extends Event> = ({
-    [_ in MouseEventType]: MouseEventHandler;
-} & {
-    [_ in FocusEvent]: FocusEventHandler;
-} & {
-    // CHORE - match this to log-goblin `Data` type
-    [_ in ConsoleEvent]: (stdout: string) => unknown;
-})[T];
+export type MouseEvent = {
+    type: MouseEventType;
+    clientX: number;
+    clientY: number;
+    target: DomElement;
+    currentTarget: DomElement;
+    stopPropagation: () => void;
+    stopImmediatePropagation: () => void;
+};
 
 export type MouseEventType =
     // LEFT BTN
@@ -102,18 +96,23 @@ export type MouseEventType =
     // | "drag"
     | "dragstart"
     | "dragend";
+export type FocusEvent = "focus" | "blur" | "shallowFocus" | "shallowBlur";
+export type ConsoleEvent = "console";
 
-export type MouseEvent = {
-    type: MouseEventType;
-    clientX: number;
-    clientY: number;
-    target: DomElement;
-    currentTarget: DomElement;
-    stopPropagation: () => void;
-    stopImmediatePropagation: () => void;
-};
+export type Event = MouseEventType | FocusEvent | ConsoleEvent;
 
+export type FocusEventHandler = (state: FocusState) => unknown;
 export type MouseEventHandler = (e: MouseEvent) => unknown;
+/** CHORE - match this to log-goblin `Data` type */
+export type ConsoleEventHandler = (stdout: string) => unknown;
+
+export type EventHandler<T extends Event> = ({
+    [_ in MouseEventType]: MouseEventHandler;
+} & {
+    [_ in FocusEvent]: FocusEventHandler;
+} & {
+    [_ in ConsoleEvent]: ConsoleEventHandler;
+})[T];
 
 export type Stdout = Required<RuntimeConfig>["stdout"];
 export type Stdin = Required<RuntimeConfig>["stdin"];
