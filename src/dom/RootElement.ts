@@ -1,17 +1,16 @@
 import EventEmitter from "events";
 import { Yg, type TagNameEnum } from "../Constants.js";
-import type { Action } from "term-keymap";
 import type { InputElement } from "./InputElement.js";
 import type { EventEmitterMap, RuntimeConfig, WriteOpts } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { createRuntime, type Runtime } from "../shared/RuntimeFactory.js";
-import { recalculateStyle } from "./util/recalculateStyle.js";
 import { HooksManager, type Hook, type HookHandler } from "../render/hooks/Hooks.js";
 import { ROOT_ELEMENT, TEST_ROOT_ELEMENT } from "../Constants.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
+import { MetaData, MetaDataRegister } from "./shared/MetaData.js";
 
 export class Root extends DomElement<{
     Style: Style.Root;
@@ -19,23 +18,18 @@ export class Root extends DomElement<{
 }> {
     protected static override identity = ROOT_ELEMENT;
 
-    protected override readonly _rootRef: { readonly root: Root };
     private hasRendered: boolean;
     public runtime: Runtime["api"];
     public hooks: HooksManager;
+    private _register: MetaDataRegister;
     private scheduler: Scheduler;
     private renderer: Renderer;
     private runtimeCtl: Runtime["logic"];
     private emitter: EventEmitter<EventEmitterMap>;
-    private attached: {
-        actions: Map<DomElement, Set<Action>>;
-        viewportEls: Set<DomElement>;
-    };
 
     constructor(config: RuntimeConfig) {
         super();
-        this._rootRef = { root: this };
-        this.attached = { actions: new Map(), viewportEls: new Set() };
+        this._register = new MetaDataRegister(this);
         this.hooks = new HooksManager();
         this.renderer = new Renderer(this);
         this.scheduler = new Scheduler({ isTestRoot: this._is(TEST_ROOT_ELEMENT) });
@@ -43,7 +37,8 @@ export class Root extends DomElement<{
         this.emitter.on("MouseEvent", this.handleMouseEvent);
         this.hasRendered = false;
 
-        this.afterAttached(); // attach Root to itself
+        // attach root to itself
+        this.afterAttached(this);
         this.setDefaultYogaStyles();
 
         const { api, logic } = createRuntime({
@@ -51,7 +46,7 @@ export class Root extends DomElement<{
             root: this,
             scheduler: this.scheduler,
             emitter: this.emitter,
-            attached: this.attached,
+            actions: this._register.actions,
         });
 
         this.runtime = api;
@@ -96,38 +91,14 @@ export class Root extends DomElement<{
         this.hooks.removeHook(hook, cb);
     }
 
-    /**
-     * @internal
-     *
-     * This is called post attach and pre detach in DomElement.
-     * - on attach
-     * It connects the `actions` Set<Action> in DomElement to this Root.
-     * It passes the `viewportEls` Set<DomElement> set to the DomElement.  In
-     * DomElement, viewportStyles are added through a helper function which updates
-     * the Root's viewportEls set as well as the DomElements viewportStyles set.
-     * - on detach
-     * These references are removed.
-     * */
-    public handleAttachmentChange(
-        metadata: DomElement["_metadata"],
-        { attached }: { attached: boolean },
-    ) {
-        const elem = metadata.ref;
-        const { actions, viewportStyles } = metadata;
+    /** @internal */
+    public handleAttachment(metadata: MetaData) {
+        this._register.attach(metadata);
+    }
 
-        if (attached) {
-            this.attached.actions.set(elem, actions);
-
-            metadata.viewportEls = this.attached.viewportEls;
-            viewportStyles.forEach((style) => recalculateStyle(metadata.ref, style));
-            if (viewportStyles.size) {
-                metadata.viewportEls.add(elem);
-            }
-        } else {
-            this.attached.actions.delete(elem);
-            this.attached.viewportEls.delete(elem);
-            metadata.viewportEls = null;
-        }
+    /** @internal */
+    public handleDetachment(metadata: MetaData) {
+        this._register.detach(metadata);
     }
 
     public exit<T extends Error | undefined>(error?: T): T extends Error ? never : void {
@@ -150,9 +121,7 @@ export class Root extends DomElement<{
 
     public render = (opts: WriteOpts = {}) => {
         if (opts.resize) {
-            this.attached.viewportEls.forEach((elem) => {
-                recalculateStyle(elem, "height", "width", "minHeight", "minWidth");
-            });
+            this._register.recalculateViewports();
         }
 
         if (opts.layoutChange || !this.hasRendered) {

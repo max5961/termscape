@@ -15,6 +15,7 @@ import { Ansi } from "./Ansi.js";
 import { Capture } from "log-goblin";
 import { MouseState } from "./MouseState.js";
 import { handleError } from "./ThrowError.js";
+import type { MetaDataRegister } from "../dom/shared/MetaData.js";
 
 type Config = Required<RuntimeConfig>;
 export type RuntimeDependencies = {
@@ -22,7 +23,7 @@ export type RuntimeDependencies = {
     root: Root;
     scheduler: Scheduler;
     emitter: EventEmitter<EventEmitterMap>;
-    attached: Root["attached"];
+    actions: MetaDataRegister["_actions"];
 };
 
 export type Runtime = ReturnType<typeof createRuntime>;
@@ -60,7 +61,7 @@ export function createRuntime(deps: RuntimeDependencies) {
     const root = deps.root;
     const scheduler = deps.scheduler;
     const config = deps.config as Config;
-    const attached = deps.attached;
+    const actions = deps.actions;
 
     config.debounceMs ??= 16;
     config.altScreen ??= false;
@@ -120,7 +121,7 @@ export function createRuntime(deps: RuntimeDependencies) {
         },
 
         getDomActions: (): Action[] => {
-            return Array.from(attached.actions.entries()).flatMap(([elem, actionSet]) => {
+            return Array.from(actions.entries()).flatMap(([elem, actionSet]) => {
                 if (elem.getFocus()) {
                     return Array.from(actionSet.values());
                 }

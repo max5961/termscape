@@ -21,6 +21,5 @@ export const Render = createDecorator(function (this, opts: WriteOpts) {
 });
 
 export const RequestInput = createDecorator(function (this) {
-    this._requiresStdin = true;
-    this.getRoot()?.requestInputStream();
+    this._metadata.requestStdin();
 });

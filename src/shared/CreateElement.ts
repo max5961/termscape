@@ -127,7 +127,7 @@ export function createElement<T extends Tags>(
         return canvas;
     }
 
-    throwError(null, "Invalid tagname.");
+    throwError(undefined, "Invalid tagname.");
 }
 
 function applyConfig(elem: DomElement, config: DefaultConfig): void {

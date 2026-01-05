@@ -7,18 +7,11 @@ export class TermscapeError extends Error {
         super(msg);
         this.name = Ansi.style.cyan + "TermscapeError" + Ansi.style.reset;
     }
-
-    public static removeChild(root: Root | null) {
-        throwError(
-            root,
-            "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
-        );
-    }
 }
 
-export function throwError(root: Root | null, msg: string): never;
-export function throwError(root: Root | null, error: Error): never;
-export function throwError(root: Root | null, msgOrError: string | Error): never {
+export function throwError(root: Root | undefined, msg: string): never;
+export function throwError(root: Root | undefined, error: Error): never;
+export function throwError(root: Root | undefined, msgOrError: string | Error): never {
     let error = msgOrError as Error;
 
     if (typeof msgOrError === "string") {

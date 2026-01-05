@@ -20,13 +20,13 @@ import {
     type ElementIdentityMap,
 } from "../Constants.js";
 import { Render, RequestInput } from "./util/decorators.js";
-import { ElementMetaData } from "./shared/ElementMetadata.js";
 import { FocusNode } from "./shared/FocusNode.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
 import { createVirtualStyleProxy } from "./style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
 import { SideEffects, type PropEffectHandler } from "./shared/SideEffects.js";
+import { MetaData } from "./shared/MetaData.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -47,14 +47,13 @@ export abstract class DomElement<
 
     protected readonly _identities: Set<symbol>;
     protected readonly _childSet: Set<DomElement>;
-    protected readonly _rootRef: { root: Root | null };
     protected readonly _effects: SideEffects;
-    protected readonly _metadata: ElementMetaData;
     protected readonly _eventListeners: Map<MouseEventType, Set<MouseEventHandler>>;
-    protected _requiresStdin: boolean;
     /** @internal */
     public _lastOffsetChangeWasFocus: boolean;
 
+    /** @internal */
+    public readonly _metadata: MetaData;
     /** @internal */
     public readonly _node: YogaNode;
     /** @internal Privately using the `children` getter conflicts with the `BookElement` implementation */
@@ -86,14 +85,13 @@ export abstract class DomElement<
 
         this._node = Yg.Node.create();
         this._children = [];
-        this._rootRef = { root: null };
         this._scrollOffset = { x: 0, y: 0 };
         this._effects = new SideEffects();
         this._childSet = new Set();
         this._focusNode = new FocusNode(this);
         this._props = new Map();
         this._eventListeners = new Map();
-        this._metadata = new ElementMetaData(this);
+        this._metadata = new MetaData(this);
         this._canvas = null;
         this._afterLayoutHandlers = new Set();
 
@@ -101,10 +99,11 @@ export abstract class DomElement<
         this.parentElement = null;
 
         // Mutable flags
-        this._requiresStdin = false;
         this._lastOffsetChangeWasFocus = false;
 
-        const proxy = createVirtualStyleProxy(this, this._rootRef, this._metadata);
+        // No longer need rootRef since metadata can give us the root
+        // const proxy = createVirtualStyleProxy(this, this._rootRef, this._metadata);
+        const proxy = createVirtualStyleProxy(this, this._metadata);
         this._virStyle = proxy.virtualStyle;
         this._shadowStyle = proxy.shadowStyle;
         this._styleHandler = null;
@@ -324,30 +323,23 @@ export abstract class DomElement<
     // Tree Manipulation
     // ========================================================================
 
-    protected afterAttached(): void {
-        const root = this.getRoot();
+    protected getRoot() {
+        return this._metadata.getRoot();
+    }
+
+    protected afterAttached(root: Root | undefined): void {
         if (!root) return;
 
         this.dfs(this, (elem) => {
-            elem.setRoot(root);
-
-            root.handleAttachmentChange(elem._metadata, { attached: true });
-
-            if (elem._requiresStdin) {
-                root.requestInputStream();
-            }
+            root.handleAttachment(elem._metadata);
         });
     }
 
-    protected beforeDetaching(): void {
-        const root = this.getRoot();
+    protected beforeDetaching(root: Root | undefined): void {
+        if (!root) return;
 
         this.dfs(this, (elem) => {
-            elem.setRoot(null);
-
-            if (root) {
-                root.handleAttachmentChange(elem._metadata, { attached: false });
-            }
+            root.handleDetachment(elem._metadata);
         });
     }
 
@@ -362,9 +354,8 @@ export abstract class DomElement<
         this._node.insertChild(child._node, this._node.getChildCount());
         this._children.push(child);
         child.parentElement = this;
-        const root = this.getRoot();
-        child.setRoot(root);
-        child.afterAttached();
+
+        child.afterAttached(this.getRoot());
     }
 
     @Render({ layoutChange: true })
@@ -395,10 +386,8 @@ export abstract class DomElement<
         this._children = nextChildren;
         this._node.insertChild(child._node, childIdx);
         child.parentElement = this;
-        const root = this.getRoot();
-        child.setRoot(root);
 
-        child.afterAttached();
+        child.afterAttached(this.getRoot());
     }
 
     @Render({ layoutChange: true })
@@ -412,7 +401,7 @@ export abstract class DomElement<
         this._childSet.delete(child);
         this._focusNode.removeChild(child._focusNode);
 
-        child.beforeDetaching();
+        child.beforeDetaching(this.getRoot());
 
         this._children.splice(idx, 1);
         this._node.removeChild(child._node);
@@ -425,7 +414,6 @@ export abstract class DomElement<
         }
 
         child.parentElement = null;
-        child.setRoot(null);
     }
 
     @Render({ layoutChange: true })
@@ -456,8 +444,6 @@ export abstract class DomElement<
     // =========================================================================
     // Focus
     // =========================================================================
-
-    // CHORE - this entire section
 
     // CHORE
     // Needs to be overridden in FocusManager to do this.focusChild(this)
@@ -576,7 +562,7 @@ export abstract class DomElement<
 
         const propagate = (curr: DomElement, target: DomElement) => {
             if (curr && curr._eventListeners.get(type)?.size) {
-                const handlers = curr._eventListeners.get(type)!;
+                const handlers = curr._eventListeners.get(type);
 
                 const event: MouseEvent = {
                     type,
@@ -593,7 +579,7 @@ export abstract class DomElement<
                     },
                 };
 
-                handlers.forEach((h) => {
+                handlers?.forEach((h) => {
                     if (canImmediatePropagate) {
                         h.call(curr, event);
                     }
@@ -636,12 +622,11 @@ export abstract class DomElement<
             };
         }
 
-        this._metadata.actions.add(action);
-        return () => this.removeKeyListener(action);
+        return this._metadata.addAction(action);
     }
 
     public removeKeyListener(action: Action): void {
-        this._metadata.actions.delete(action);
+        this._metadata.removeAction(action);
     }
 
     // =========================================================================
@@ -885,14 +870,6 @@ export abstract class DomElement<
     // =========================================================================
     // Util
     // =========================================================================
-
-    public getRoot(): Root | null {
-        return this._rootRef.root;
-    }
-
-    protected setRoot(root: Root | null): void {
-        this._rootRef.root = root;
-    }
 
     protected dfs(elem: DomElement, cb: (elem: DomElement) => void) {
         cb(elem);

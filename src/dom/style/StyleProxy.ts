@@ -7,7 +7,6 @@ import type { Style, Shadow } from "./Style.js";
 
 export function createVirtualStyleProxy<T extends Style.All = Style.All>(
     elem: DomElement,
-    rootRef: DomElement["_rootRef"],
     metadata: DomElement["_metadata"],
 ) {
     const virtualStyle = new Proxy<T>({} as T, {
@@ -23,8 +22,7 @@ export function createVirtualStyleProxy<T extends Style.All = Style.All>(
             }
 
             if (viewportProp) {
-                // Lazy - once a node has a dynamic dimension it stays in the Set for its lifecycle
-                metadata.setViewportStyles(prop as ViewportStyle, true);
+                metadata.markAsViewport(prop as ViewportStyle);
             }
 
             target[prop] = newValue;
@@ -33,7 +31,7 @@ export function createVirtualStyleProxy<T extends Style.All = Style.All>(
             if (SanitizerHandlers[prop]) {
                 sanitized = SanitizerHandlers[prop](
                     sanitized,
-                    rootRef.root?.runtime.stdout ?? process.stdout,
+                    metadata.getRoot()?.runtime.stdout ?? process.stdout,
                     elem,
                 );
             }
@@ -44,14 +42,14 @@ export function createVirtualStyleProxy<T extends Style.All = Style.All>(
             return true;
         },
     });
-    const shadowStyle = createShadowStyleProxy(elem._node, rootRef, virtualStyle);
+    const shadowStyle = createShadowStyleProxy(elem._node, metadata, virtualStyle);
 
     return { shadowStyle, virtualStyle };
 }
 
 function createShadowStyleProxy<T extends Shadow<Style.All> = Shadow<Style.All>>(
     node: YogaNode,
-    rootRef: DomElement["_rootRef"],
+    metadata: DomElement["_metadata"],
     virtualStyle: Style.All,
 ) {
     const shadowStyle = new Proxy<T>({} as T, {
@@ -72,7 +70,7 @@ function createShadowStyleProxy<T extends Shadow<Style.All> = Shadow<Style.All>>
                     prop === "overflowY";
 
                 const writeOpts = layoutChange ? { layoutChange } : undefined;
-                rootRef.root?.scheduleRender(writeOpts);
+                metadata.getRoot()?.scheduleRender(writeOpts);
             }
             return true;
         },
