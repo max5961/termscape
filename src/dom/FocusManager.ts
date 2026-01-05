@@ -4,6 +4,7 @@ import { recalculateStyle } from "./util/recalculateStyle.js";
 import type { VisualNodeMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 import type { Props } from "./props/Props.js";
+import { logger } from "../shared/Logger.js";
 
 type FMSchema = {
     Style: Style.FocusManager;
@@ -148,6 +149,8 @@ export abstract class FocusManager<
 
         const { itemBelowWin, itemAboveWin, itemRightWin, itemLeftWin } = visibility;
 
+        logger.write({ visibility });
+
         // Focused item is visible - no need to adjust corner offset
         if (!itemBelowWin && !itemAboveWin && !itemRightWin && !itemLeftWin) {
             return false;
@@ -164,6 +167,9 @@ export abstract class FocusManager<
     }
 
     // CHORE - could be a better name
+    // IMPORT CHORE - this function is not giving the right information
+    // because it is ALWAYS failing the check that would otherwise return false
+    // in the above function
 
     private focusedChildVisibilityStatus() {
         const fRect = this.focused?.unclippedRect;
@@ -190,6 +196,11 @@ export abstract class FocusManager<
                 ? Math.floor(wRect.width / 2)
                 : Math.min(this.getFMProp("scrollOff") ?? 0, wBot);
         }
+
+        // Off by one here.  The -ge and -le are not accurate, but when just less
+        // or greater than they don't keep focused in the window, so this is an
+        // issue in the adjustOffsetToFocus function and this fn should drop
+        // the 'or equal to'.
 
         const itemBelowWin = fBot > wBot - scrollOff;
         const itemAboveWin = fTop <= wTop + scrollOff;

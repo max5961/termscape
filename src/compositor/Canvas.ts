@@ -40,7 +40,7 @@ export type Grid = (string | GridToken)[][];
 
 export type CanvasDeps = {
     stdout: Stdout;
-    el: DomElement;
+    host: DomElement;
     grid?: Grid;
     corner?: Point;
     canvasHeight?: number;
@@ -57,7 +57,7 @@ export type SubCanvasDeps = Required<CanvasDeps>;
 
 export class Canvas {
     public grid: Grid;
-    public el: DomElement;
+    public host: DomElement;
     public readonly corner: Readonly<Point>;
     public readonly limits: Limits;
     public readonly canvasHeight: number;
@@ -72,7 +72,7 @@ export class Canvas {
 
     constructor(deps: CanvasDeps) {
         this.stdout = deps.stdout;
-        this.el = deps.el;
+        this.host = deps.host;
         this.grid = deps.grid ?? [];
         this.corner = deps.corner ?? { x: 0, y: 0 };
 
@@ -95,6 +95,70 @@ export class Canvas {
         this._unclippedContentRect = deps.unclippedContentRect ?? this._unclippedRect;
         this._visibleRect = deps.visibleRect ?? this._unclippedRect;
         this._visibleContentRect = null;
+    }
+
+    public createChildCanvas(child: DomElement): SubCanvas {
+        const canvasHeight = child._is(TEXT_ELEMENT)
+            ? child._textHeight
+            : child._node.getComputedHeight();
+
+        const canvasWidth =
+            // There needs to be more checks here as well as account for wide
+            // chars and breaking chars, but this is okay in devel for until then.
+            child._is(TEXT_ELEMENT) && child.style.wrap === "overflow"
+                ? Math.max(child.textContent.length, child._node.getComputedWidth())
+                : child._node.getComputedWidth();
+
+        // Child corner depends on parent corner.
+        const childCorner: Canvas["corner"] = {
+            x: this.corner.x + child._node.getComputedLeft() + this.host._scrollOffset.x,
+            y: this.corner.y + child._node.getComputedTop() + this.host._scrollOffset.y,
+        };
+
+        const unclippedChild = this.getUnclippedRect(
+            childCorner,
+            canvasWidth,
+            canvasHeight,
+        );
+        const unclippedChildContent = this.getUnclippedContentRect(
+            childCorner,
+            canvasWidth,
+            canvasHeight,
+            child._node,
+        );
+
+        // SubCanvas limits are inherited from the parent and are only clamped
+        // when the parent restricts overflow.
+        const childLimits = { ...this.limits };
+
+        // Clamp child limits according to parent overflow
+        if (this.overFlowIsHidden()) {
+            const visContent = this.visibleContentRect;
+
+            if (this.xOverflowIsHidden()) {
+                childLimits.minX = visContent.corner.x;
+                childLimits.maxX = visContent.corner.x + visContent.width;
+            }
+            if (this.yOverflowIsHidden()) {
+                childLimits.minY = visContent.corner.y;
+                childLimits.maxY = visContent.corner.y + visContent.height;
+            }
+        }
+
+        const childVisRect = this.getClippedRect(unclippedChild, childLimits);
+
+        return new SubCanvas({
+            canvasHeight,
+            canvasWidth,
+            unclippedRect: unclippedChild,
+            unclippedContentRect: unclippedChildContent,
+            limits: childLimits,
+            visibleRect: childVisRect,
+            corner: childCorner,
+            stdout: this.stdout,
+            grid: this.grid,
+            host: child,
+        });
     }
 
     /**
@@ -143,70 +207,6 @@ export class Canvas {
 
     // CHORE - Can we possibly skip recreating a Canvas and instead do an
     // 'updateCanvas' on layout changes and initialization?
-
-    public createChildCanvas(child: DomElement): SubCanvas {
-        const canvasHeight = child._is(TEXT_ELEMENT)
-            ? child._textHeight
-            : child._node.getComputedHeight();
-
-        const canvasWidth =
-            // There needs to be more checks here as well as account for wide
-            // chars and breaking chars, but this is okay in devel for until then.
-            child._is(TEXT_ELEMENT) && child.style.wrap === "overflow"
-                ? Math.max(child.textContent.length, child._node.getComputedWidth())
-                : child._node.getComputedWidth();
-
-        // Child corner depends on parent corner.
-        const childCorner: Canvas["corner"] = {
-            x: this.corner.x + child._node.getComputedLeft() + this.el._scrollOffset.x,
-            y: this.corner.y + child._node.getComputedTop() + this.el._scrollOffset.y,
-        };
-
-        const unclippedChild = this.getUnclippedRect(
-            childCorner,
-            canvasWidth,
-            canvasHeight,
-        );
-        const unclippedChildContent = this.getUnclippedContentRect(
-            childCorner,
-            canvasWidth,
-            canvasHeight,
-            child._node,
-        );
-
-        // SubCanvas limits are inherited from the parent and are only clamped
-        // when the parent restricts overflow.
-        const childLimits = { ...this.limits };
-
-        // Clamp child limits according to parent overflow
-        if (this.overFlowIsHidden()) {
-            const visContent = this.visibleContentRect;
-
-            if (this.xOverflowIsHidden()) {
-                childLimits.minX = visContent.corner.x;
-                childLimits.maxX = visContent.corner.x + visContent.width;
-            }
-            if (this.yOverflowIsHidden()) {
-                childLimits.minY = visContent.corner.y;
-                childLimits.maxY = visContent.corner.y + visContent.height;
-            }
-        }
-
-        const childVisRect = this.getClippedRect(unclippedChild, childLimits);
-
-        return new SubCanvas({
-            canvasHeight,
-            canvasWidth,
-            unclippedRect: unclippedChild,
-            unclippedContentRect: unclippedChildContent,
-            limits: childLimits,
-            visibleRect: childVisRect,
-            corner: childCorner,
-            stdout: this.stdout,
-            grid: this.grid,
-            el: child,
-        });
-    }
 
     private getUnclippedRect(
         corner: Point,
@@ -299,15 +299,15 @@ export class Canvas {
 
     protected xOverflowIsHidden() {
         return (
-            this.el._shadowStyle.overflowX === "hidden" ||
-            this.el._shadowStyle.overflowX === "scroll"
+            this.host._shadowStyle.overflowX === "hidden" ||
+            this.host._shadowStyle.overflowX === "scroll"
         );
     }
 
     protected yOverflowIsHidden() {
         return (
-            this.el._shadowStyle.overflowY === "hidden" ||
-            this.el._shadowStyle.overflowY === "scroll"
+            this.host._shadowStyle.overflowY === "hidden" ||
+            this.host._shadowStyle.overflowY === "scroll"
         );
     }
 

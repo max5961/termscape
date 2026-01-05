@@ -30,7 +30,7 @@ export class Pen {
         this.grid = deps.grid;
         this.pos = { ...deps.canvas.corner };
         this.corner = { ...deps.canvas.corner };
-        this.elem = deps.canvas.el;
+        this.elem = deps.canvas.host;
 
         this.limits = {
             minX: deps.canvas.limits.minX,

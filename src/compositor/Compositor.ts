@@ -6,6 +6,7 @@ import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./draw/Draw.js";
 import { PostLayoutManager } from "./PostLayoutManager.js";
+import { logger } from "../shared/Logger.js";
 
 export class Compositor {
     private postLayout: (() => unknown)[];
@@ -20,7 +21,7 @@ export class Compositor {
         // call this.canvas this.root or something else, maybe rootCanvas for
         // better readability
 
-        this.canvas = new Canvas({ stdout: root.runtime.stdout, el: root });
+        this.canvas = new Canvas({ stdout: root.runtime.stdout, host: root });
         root._canvas = this.canvas;
         this.ops = new Operations();
         this.rects = new DomRects();
@@ -44,9 +45,9 @@ export class Compositor {
         this.draw.updateLowestLayer(zIndex);
         this.PLM.handleElement(elem, level);
 
-        if (layoutChange) {
-            elem._contentRange = elem._initContentRange();
-        }
+        // if (layoutChange) {
+        elem._contentRange = elem._initContentRange();
+        // }
 
         if (canvas.canDraw()) {
             this.rects.storeElementPosition(zIndex, elem);
@@ -89,6 +90,7 @@ export class Compositor {
         layoutChange: boolean,
     ): Canvas {
         if (layoutChange || !child._canvas) {
+            // logger.write({ layoutChange, notCC: !child._canvas });
             child._canvas = canvas.createChildCanvas(child);
         }
         (child._canvas as SubCanvas).bindGrid(this.canvas.grid);
