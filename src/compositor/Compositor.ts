@@ -1,12 +1,11 @@
 import type { DomElement } from "../dom/DomElement.js";
 import type { Root } from "../dom/RootElement.js";
 import { FOCUS_MANAGER, ROOT_ELEMENT } from "../Constants.js";
-import { Canvas, type SubCanvas } from "./Canvas.js";
+import { type Canvas, RootCanvas, SubCanvas } from "./Canvas.js";
 import { Operations } from "./Operations.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./draw/Draw.js";
 import { PostLayoutManager } from "./PostLayoutManager.js";
-import { logger } from "../shared/Logger.js";
 
 export class Compositor {
     private postLayout: (() => unknown)[];
@@ -21,7 +20,8 @@ export class Compositor {
         // call this.canvas this.root or something else, maybe rootCanvas for
         // better readability
 
-        this.canvas = new Canvas({ stdout: root.runtime.stdout, host: root });
+        // this.canvas = new Canvas({ stdout: root.runtime.stdout, host: root });
+        this.canvas = new RootCanvas(root, root.runtime.stdout);
         root._canvas = this.canvas;
         this.ops = new Operations();
         this.rects = new DomRects();
@@ -45,9 +45,9 @@ export class Compositor {
         this.draw.updateLowestLayer(zIndex);
         this.PLM.handleElement(elem, level);
 
-        // if (layoutChange) {
-        elem._contentRange = elem._initContentRange();
-        // }
+        if (layoutChange) {
+            elem._contentRange = elem._initContentRange();
+        }
 
         if (canvas.canDraw()) {
             this.rects.storeElementPosition(zIndex, elem);
@@ -62,7 +62,7 @@ export class Compositor {
         }
 
         for (const child of elem._children) {
-            child._canvas = this.getRefreshedChildCanvas(child, canvas, layoutChange);
+            this.updateChildCanvas(child, canvas, layoutChange);
 
             if (layoutChange) {
                 this.updateContentRange(child, rangeContext);
@@ -75,7 +75,7 @@ export class Compositor {
             const overflowMgr = chstyle === "scroll" || chstyle === "hidden";
             const nextRangeCtx = overflowMgr ? child : rangeContext;
 
-            this.buildLayout(child, layoutChange, child._canvas, nextRangeCtx, ++level);
+            this.buildLayout(child, layoutChange, child._canvas!, nextRangeCtx, ++level);
         }
 
         if (elem._is(ROOT_ELEMENT)) {
@@ -84,17 +84,14 @@ export class Compositor {
         }
     }
 
-    private getRefreshedChildCanvas(
-        child: DomElement,
-        canvas: Canvas,
-        layoutChange: boolean,
-    ): Canvas {
-        if (layoutChange || !child._canvas) {
-            // logger.write({ layoutChange, notCC: !child._canvas });
-            child._canvas = canvas.createChildCanvas(child);
+    private updateChildCanvas(child: DomElement, parent: Canvas, layoutChange: boolean) {
+        if (!child._canvas) {
+            child._canvas = new SubCanvas(child, parent);
+        } else if (layoutChange) {
+            child._canvas.constrainToLayout(parent);
         }
-        (child._canvas as SubCanvas).bindGrid(this.canvas.grid);
-        return child._canvas;
+
+        child._canvas.bindContext(this.canvas.grid, this.canvas.stdout);
     }
 
     private updateContentRange(child: DomElement, scroller: DomElement | undefined) {

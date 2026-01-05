@@ -495,11 +495,11 @@ export abstract class DomElement<
     }
 
     public get visibleRect(): Rect {
-        return this._canvas?.visibleRect ?? this.getDefaultRect();
+        return this._canvas?.visRect ?? this.getDefaultRect();
     }
 
     public get visibleContentRect(): Rect {
-        return this._canvas?.visibleContentRect ?? this.getDefaultRect();
+        return this._canvas?.visContentRect ?? this.getDefaultRect();
     }
 
     public getBoundingClientRect(): DOMRect {

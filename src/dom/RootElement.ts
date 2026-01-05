@@ -79,6 +79,9 @@ export class Root extends DomElement<{
         return {};
     }
 
+    // CHORE - Need to override appendChild/insertChild to throw when trying to
+    // append another instance of Root
+
     private setDefaultYogaStyles() {
         this._node.setFlexWrap(Yg.WRAP_NO_WRAP);
         this._node.setFlexDirection(Yg.FLEX_DIRECTION_ROW);

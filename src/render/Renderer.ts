@@ -7,7 +7,6 @@ import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../shared/Ansi.js";
 import type { Root } from "../dom/RootElement.js";
 import type { WriteOpts } from "../Types.js";
-import { logger } from "../shared/Logger.js";
 
 export class Renderer {
     // CHORE - could underscore all of these properties and make the publics internal
@@ -73,14 +72,12 @@ export class Renderer {
     };
 
     private getComposedLayout(opts: WriteOpts) {
-        logger.write({ opts });
         const initialCompositor = this.constructCompositor(opts);
         const nextCompositor = this.handlePostLayoutSideEffects(initialCompositor);
         return nextCompositor;
     }
 
     private constructCompositor(opts: WriteOpts) {
-        logger.write("FROM CONSTUCT", { opts });
         const compositor = new Compositor(this.root);
         compositor.buildLayout(this.root, !!opts.layoutChange);
         return compositor;

@@ -149,7 +149,7 @@ export abstract class FocusManager<
 
         const { itemBelowWin, itemAboveWin, itemRightWin, itemLeftWin } = visibility;
 
-        logger.write({ visibility });
+        // logger.write({ visibility });
 
         // Focused item is visible - no need to adjust corner offset
         if (!itemBelowWin && !itemAboveWin && !itemRightWin && !itemLeftWin) {

@@ -9,6 +9,7 @@ import {
     INPUT_ELEMENT,
 } from "../../Constants.js";
 import type { DomElement } from "../../dom/DomElement.js";
+// import type { Canvas } from "../Canvas.js";
 import type { Canvas } from "../Canvas.js";
 import { DrawBox } from "./DrawBox.js";
 import { DrawText } from "./DrawText.js";

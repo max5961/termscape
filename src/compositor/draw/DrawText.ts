@@ -3,11 +3,11 @@ import { HIDDEN_TRIMMED_WS, INPUT_ELEMENT, TEXT_PADDING } from "../../Constants.
 import type { InputElement } from "../../dom/InputElement.js";
 import type { TextElement } from "../../dom/TextElement.js";
 import type { getAlignedRows } from "../../shared/TextWrap.js";
+// import type { Canvas } from "../Canvas.js";
 import type { Canvas } from "../Canvas.js";
 import type { Pen } from "../Pen.js";
 import type { Draw } from "./Draw.js";
 import type { Style } from "../../dom/style/Style.js";
-import { logger } from "../../shared/Logger.js";
 
 export class DrawText extends DrawContract<TextElement> {
     constructor(draw: Draw) {

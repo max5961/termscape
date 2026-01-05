@@ -8,6 +8,7 @@ import {
 } from "../../shared/Boxes.js";
 import type { Props, Scrollbar, Title, TitleStyleConfig } from "../../dom/props/Props.js";
 import type { Shadow, Style } from "../../dom/style/Style.js";
+// import type { Canvas } from "../Canvas.js";
 import type { Canvas } from "../Canvas.js";
 import type { Pen } from "../Pen.js";
 import type { BoxLike } from "../types.js";
@@ -50,9 +51,9 @@ export class DrawBox extends DrawContract<BoxLike> {
             pen.set("color", elem.style.backgroundStyleColor);
         }
 
-        for (let y = 0; y < canvas.canvasHeight; ++y) {
+        for (let y = 0; y < canvas.ygHeight; ++y) {
             pen.moveTo(0, y);
-            pen.draw(char, "r", canvas.canvasWidth);
+            pen.draw(char, "r", canvas.ygWidth);
         }
     }
 
