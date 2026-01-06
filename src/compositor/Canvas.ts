@@ -1,6 +1,7 @@
 import { TEXT_ELEMENT, Yg } from "../Constants.js";
 import type { DomElement } from "../dom/DomElement.js";
 import type { Root } from "../dom/RootElement.js";
+import { logger } from "../shared/Logger.js";
 import { stringifyRowSegment } from "../shared/StringifyGrid.js";
 import type { DOMRect, Edge, GridToken, Point, Stdout } from "../Types.js";
 import { Pen } from "./Pen.js";
@@ -22,6 +23,7 @@ type Limits = {
 
 export abstract class Canvas {
     public abstract readonly host: DomElement;
+    public abstract root: Root | undefined;
     public abstract corner: Point;
     public abstract stdout: Stdout;
     public abstract grid: Grid;
@@ -140,31 +142,40 @@ export abstract class Canvas {
         };
     }
 
-    public getPen() {
+    public setRoot(root: Root | undefined) {
+        this.root = root;
+    }
+
+    public getPen(): Pen {
         return new Pen({
             grid: this.grid,
             canvas: this,
         });
     }
 
-    public stringifyRowSegment(y: number, start?: number, end?: number): string {
-        return stringifyRowSegment(this.grid, y, start, end);
+    public static stringifyRowSegment(
+        grid: Grid,
+        y: number,
+        start?: number,
+        end?: number,
+    ): string {
+        return stringifyRowSegment(grid, y, start, end);
     }
 
-    public stringifyRow(y: number): string {
-        return stringifyRowSegment(this.grid, y);
+    public static stringifyRow(grid: Grid, y: number): string {
+        return stringifyRowSegment(grid, y);
     }
 
-    public stringifyGrid(): { newLines: number; output: string } {
+    public static stringifyGrid(grid: Grid): { newLines: number; output: string } {
         let newLines = 0;
-        const output = this.grid
+        const output = grid
             .map((_row, y) => {
-                const nl = y === this.grid.length - 1 ? "" : "\n";
+                const nl = y === grid.length - 1 ? "" : "\n";
                 if (nl) ++newLines;
 
                 // prettier-ignore
-                return this
-                    .stringifyRowSegment(y)
+                return Canvas
+                    .stringifyRow(grid, y)
                     .trimEnd() + nl;
             })
             .join("");
@@ -271,6 +282,7 @@ export abstract class Canvas {
 
 export class RootCanvas extends Canvas {
     public override host: Root;
+    public override root: Root;
     public override ygHeight: number;
     public override ygWidth: number;
     public override readonly grid: Grid;
@@ -281,16 +293,21 @@ export class RootCanvas extends Canvas {
     constructor(host: Root, stdout: Stdout) {
         super();
         this.host = host;
+        this.root = host;
         this.stdout = stdout;
         this.grid = [];
         this.corner = { x: 0, y: 0 };
-        this.ygHeight = host.runtime.stdout.rows;
-        this.ygWidth = host.runtime.stdout.columns;
+
+        const maxHeight = host.runtime.stdout.rows;
+        const maxWidth = host.runtime.stdout.columns;
+
+        this.ygHeight = maxHeight;
+        this.ygWidth = maxWidth;
         this.limits = {
             minX: 0,
             minY: 0,
-            maxX: this.ygWidth,
-            maxY: this.ygHeight,
+            maxX: maxWidth,
+            maxY: maxHeight,
         };
     }
 }
@@ -305,17 +322,19 @@ export class RootCanvas extends Canvas {
 
 export class SubCanvas extends Canvas {
     public override readonly host: DomElement;
+    public override root: Root | undefined;
     public override grid: Grid;
     public override stdout: Stdout;
-    // set in constrainSelf
+    // set in constrainToLayout
     public override corner!: Point;
     public override limits!: Limits;
     public override ygHeight!: number;
     public override ygWidth!: number;
 
-    constructor(host: DomElement, parent: Canvas) {
+    constructor(host: DomElement, root: Root, parent: Canvas) {
         super();
         this.host = host;
+        this.root = root;
         this.grid = parent.grid;
         this.stdout = parent.stdout;
         this.constrainToLayout(parent);

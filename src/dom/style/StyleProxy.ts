@@ -69,8 +69,10 @@ function createShadowStyleProxy<T extends Shadow<Style.All> = Shadow<Style.All>>
                     prop === "overflowX" ||
                     prop === "overflowY";
 
-                const writeOpts = layoutChange ? { layoutChange } : undefined;
-                metadata.getRoot()?.scheduleRender(writeOpts);
+                const styleChange = !layoutChange && prop !== "zIndex";
+                const opts = layoutChange ? { layoutChange } : { styleChange };
+
+                metadata.getRoot()?.scheduleRender(opts);
             }
             return true;
         },

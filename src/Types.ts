@@ -50,7 +50,7 @@ export type RuntimeConfig = {
     /** Forces process exit after this Root's runtime ends. Skips `waitUntilExit` promises. */
     exitForcesEndProc?: boolean;
     /** Experimental - rewrites only cells that are diffed from prev rendered output. */
-    preciseWrite?: boolean;
+    cellWrite?: boolean;
     /** If this is `false`, runtime can be explictly started at any given time with `Root.startRuntime`. */
     startOnCreate?: boolean;
 } & ConfigureStdin;
@@ -122,6 +122,7 @@ export type WriteOpts = {
     capturedOutput?: string;
     screenChange?: boolean;
     layoutChange?: boolean;
+    styleChange?: boolean;
 };
 
 export type ViewportStyle = keyof Pick<

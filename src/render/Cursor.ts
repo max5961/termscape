@@ -144,6 +144,8 @@ export class DebugCursor extends Cursor {
             if (buf[0] === 3) process.exit();
             if (buf.toString("utf-8") !== "n") return;
 
+            logger.write(this.sequence.length);
+
             const chunk = this.sequence.shift();
             if (chunk !== undefined) {
                 process.stdout.write(chunk);

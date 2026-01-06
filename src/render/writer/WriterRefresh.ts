@@ -1,8 +1,8 @@
 import type { Root } from "../../dom/RootElement.js";
 import type { Cursor } from "./../Cursor.js";
-// import type { Canvas } from "../../compositor/Canvas.js";
-import type { Canvas } from "../../compositor/Canvas.js";
+import { Canvas, type Grid } from "../../compositor/Canvas.js";
 import { Writer } from "./Writer.js";
+import { logger } from "../../shared/Logger.js";
 
 export class WriterRefresh extends Writer {
     private lastOutput: string;
@@ -13,18 +13,18 @@ export class WriterRefresh extends Writer {
     }
 
     public instructCursor(
-        lastCanvas: Canvas | null,
-        nextCanvas: Canvas,
+        lastGrid: Grid | undefined,
+        nextGrid: Grid,
         capturedOutput?: string,
     ): void {
-        const { newLines, output } = nextCanvas.stringifyGrid();
+        const { newLines, output } = Canvas.stringifyGrid(nextGrid);
 
         if (output !== this.lastOutput || capturedOutput) {
-            if (lastCanvas) {
-                this.cursor.clearRowsUp(lastCanvas.grid.length);
+            if (lastGrid) {
+                this.cursor.clearRowsUp(lastGrid.length);
             }
 
-            const fullscreen = this.isFullscreen(nextCanvas);
+            const fullscreen = this.isFullscreen(nextGrid);
 
             // NOT FULLSCREEN => CONSOLE BEFORE OUTPUT
             if (capturedOutput && !fullscreen) {
@@ -46,7 +46,7 @@ export class WriterRefresh extends Writer {
         this.lastOutput = "";
     }
 
-    public isFullscreen(nextCanvas: Canvas) {
-        return nextCanvas.grid.length >= this.root.runtime.stdout.rows;
+    public isFullscreen(grid: Grid) {
+        return grid.length >= this.root.runtime.stdout.rows;
     }
 }

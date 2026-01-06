@@ -125,7 +125,7 @@ export class Root extends DomElement<{
     }
 
     public getLayoutHeight() {
-        return this.renderer.lastCanvas?.grid.length ?? 0;
+        return this.renderer.lastGrid?.length ?? 0;
     }
 
     public render = (opts: WriteOpts = {}) => {
@@ -138,9 +138,9 @@ export class Root extends DomElement<{
         }
 
         if (this.hasRendered) {
-            this.renderer.writeToStdout(opts);
+            this.renderer.renderTree(opts);
         } else {
-            this.renderer.writeToStdout({ ...opts, layoutChange: true });
+            this.renderer.renderTree({ ...opts, layoutChange: true });
         }
 
         this.hasRendered = true;

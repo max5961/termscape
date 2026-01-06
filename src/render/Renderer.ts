@@ -1,92 +1,141 @@
 import { Compositor } from "../compositor/Compositor.js";
 import { Cursor, DebugCursor } from "./Cursor.js";
-import { Canvas } from "../compositor/Canvas.js";
 import { WriterRefresh } from "./writer/WriterRefresh.js";
-import { WriterPrecise } from "./writer/WriterPrecise.js";
-import { DomRects } from "../compositor/DomRects.js";
-import { Ansi } from "../shared/Ansi.js";
+import { WriterCell } from "./writer/WriterCell.js";
 import type { Root } from "../dom/RootElement.js";
 import type { WriteOpts } from "../Types.js";
+import { objectKeys } from "../Util.js";
+import type { Grid } from "../compositor/Canvas.js";
+import { DomRects } from "../compositor/DomRects.js";
+import { Ansi } from "../shared/Ansi.js";
+import { logger } from "../shared/Logger.js";
 
 export class Renderer {
-    // CHORE - could underscore all of these properties and make the publics internal
-    public lastCanvas: Canvas | null;
+    private readonly host: Root;
+    private readonly cursor: Cursor;
+    private readonly cellWriter: WriterCell;
+    private readonly refreshWriter: WriterRefresh;
+    private sinceResize: number;
+    private lastCompositor: Compositor | undefined;
+    public lastGrid: Grid | undefined;
     public rects: DomRects;
-    private cursor: Cursor;
-    // CHORE - preciseWriter makes more sense as cellWriter (WriterCell)
-    // This is more inline with the direction of wanting to have a rowWriter
-    private preciseWriter: WriterPrecise;
-    private refreshWriter: WriterRefresh;
-    private lastWasResize: number;
-    private root: Root;
 
-    constructor(root: Root) {
-        this.root = root;
-        this.lastCanvas = null;
-        this.rects = new DomRects();
+    constructor(host: Root) {
+        this.host = host;
         this.cursor = process.env["RENDER_DEBUG"]
-            ? new DebugCursor(root)
-            : new Cursor(root);
-        this.preciseWriter = new WriterPrecise(this.cursor, this.root);
-        this.refreshWriter = new WriterRefresh(this.cursor, this.root);
-        this.lastWasResize = 0;
+            ? new DebugCursor(host)
+            : new Cursor(host);
+        this.cellWriter = new WriterCell(this.cursor, this.host);
+        this.refreshWriter = new WriterRefresh(this.cursor, this.host);
+        this.lastGrid = undefined;
+        this.lastCompositor = undefined;
+        this.rects = new DomRects();
+        this.sinceResize = 0;
     }
 
-    private renderIsBlocked() {
-        const handlers = this.root.hooks.getHookSet("block-render");
-        if (handlers.size) {
-            return Array.from(handlers).every((handler) => handler(undefined));
-        } else {
-            return false;
-        }
-    }
+    public renderTree(opts: WriteOpts) {
+        if (this.checkIfBlockedRender()) return;
+        this.handleResizeCounter(opts);
 
-    // CHORE - this function sucks and is doing too much.  At the same time,
-    // it should be readable and jumping around too much is already a problem in
-    // this class
+        // Create layout/grid
+        this.host.hooks.exec("pre-layout", undefined);
+        const [layoutMs, compositor] = this.wrapPerf(() => this.getComposedLayout(opts));
+        this.host.hooks.exec("post-layout", compositor.canvas);
 
-    public writeToStdout = (opts: WriteOpts) => {
-        if (this.renderIsBlocked()) return;
+        const lastGrid = this.lastGrid;
+        const nextGrid = compositor.canvas.grid;
+        this.lastCompositor = compositor;
+        this.lastGrid = nextGrid;
+        this.rects = compositor.rects;
 
-        this.root.hooks.exec("pre-layout", undefined);
-        const preLayoutMs = performance.now();
-        const compositor = this.getComposedLayout(opts);
-        const postLayoutMs = performance.now();
-        this.root.hooks.exec("post-layout", compositor.canvas);
+        // Load cursor with operations and execute
+        this.host.hooks.exec("pre-write", undefined);
+        const [diffMs, didRefreshWrite] = this.wrapPerf(() => {
+            return this.prepareCursorOps(opts, lastGrid, nextGrid);
+        });
+        this.executeCursorOps();
+        this.host.hooks.exec("post-write", undefined);
 
-        const lastCanvas = this.lastCanvas;
-        const nextCanvas = compositor.canvas;
-
-        this.root.hooks.exec("pre-write", { lastCanvas, nextCanvas });
-        const preDiffMs = performance.now();
-        const didRefreshWrite = this.deferWrite(compositor, opts);
-        const postDiffMs = performance.now();
-        this.performWrite();
-        this.root.hooks.exec("post-write", { lastCanvas, nextCanvas });
-
-        this.root.hooks.exec("performance", {
-            layoutMs: postLayoutMs - preLayoutMs,
-            diffMs: postDiffMs - preDiffMs,
+        this.host.hooks.exec("performance", {
+            layoutMs,
+            diffMs,
             diffStrategy: didRefreshWrite ? "refresh" : "precise",
         });
-    };
-
-    private getComposedLayout(opts: WriteOpts) {
-        const initialCompositor = this.constructCompositor(opts);
-        const nextCompositor = this.handlePostLayoutSideEffects(initialCompositor);
-        return nextCompositor;
     }
 
-    private constructCompositor(opts: WriteOpts) {
-        const compositor = new Compositor(this.root);
-        compositor.buildLayout(this.root, !!opts.layoutChange);
+    private wrapPerf<T>(cb: () => T): [number, T] {
+        const start = performance.now();
+        const result = cb();
+        const end = performance.now();
+        return [end - start, result];
+    }
+
+    private executeCursorOps() {
+        const stdout = this.host.runtime.stdout;
+        stdout.write(Ansi.beginSynchronizedUpdate);
+        this.cursor.execute();
+        stdout.write(Ansi.endSynchronizedUpdate);
+    }
+
+    private prepareCursorOps(
+        opts: WriteOpts,
+        lastGrid: Grid | undefined,
+        nextGrid: Grid,
+    ) {
+        const shouldRefresh = this.shouldRefreshWrite(opts, nextGrid);
+        if (shouldRefresh || !lastGrid) {
+            this.refreshWriter.instructCursor(lastGrid, nextGrid, opts.capturedOutput);
+        } else {
+            this.cellWriter.instructCursor(lastGrid, nextGrid);
+            this.refreshWriter.resetLastOutput();
+        }
+
+        this.cursor.moveToRow(nextGrid.length - 1);
+        return shouldRefresh;
+    }
+
+    private getComposedLayout(opts: WriteOpts): Compositor {
+        let compositor: Compositor;
+        if (this.onlyStyleChange(opts) && this.lastCompositor) {
+            compositor = this.redrawLastGrid(this.lastCompositor);
+        } else {
+            compositor = this.composeNewLayout(opts);
+        }
+        return this.handlePostLayoutSideEffects(compositor);
+    }
+
+    private composeNewLayout(opts: WriteOpts): Compositor {
+        const compositor = new Compositor(this.host, opts);
+        compositor.buildLayout(this.host);
         return compositor;
+    }
+
+    private redrawLastGrid(compositor: Compositor) {
+        this.lastGrid = compositor.canvas.grid.map((row) => row.slice());
+
+        compositor.canvas.grid.splice(0);
+        this.lastGrid.forEach((row) => {
+            const nextRow = Array.from({ length: row.length }).fill(" ") as string[];
+            compositor.canvas.grid.push(nextRow);
+        });
+
+        compositor.ops.performAll();
+        return compositor;
+    }
+
+    private onlyStyleChange(opts: WriteOpts): boolean {
+        const keys = objectKeys(opts);
+        if (keys.length <= 2 && opts.capturedOutput !== undefined && opts.styleChange) {
+            return true;
+        }
+        return false;
     }
 
     private handlePostLayoutSideEffects(compositor: Compositor): Compositor {
         const recompose = (cb: () => boolean) => {
             if (cb()) {
-                compositor = this.constructCompositor({ layoutChange: true });
+                logger.write("RECOMPOSE");
+                compositor = this.composeNewLayout({ layoutChange: true });
             }
         };
 
@@ -94,7 +143,7 @@ export class Renderer {
         const withYoga = (cb: () => boolean) => {
             recompose(() => {
                 const result = cb();
-                if (result) this.root._calculateYogaLayout();
+                if (result) this.host._calculateYogaLayout();
                 return result;
             });
         };
@@ -102,14 +151,6 @@ export class Renderer {
         // scrollManagers and focusManagers do nothing more than normalize corner
         // offsets, so they do not effect Yoga.  afterLayout callbacks are a public
         // interface, so we recalculate Yoga to be safe.
-
-        // ----IMPORTANT CHORE----
-        // The FM side effects are returning true when they shouldn't and that is
-        // causing a layout change when unnecessary which is impacting perf.  Also,
-        // without these focus is being allowed to go out of range.  So these are
-        // really hoisting the entire scroll system right now when they exist
-        // mainly just to handle edge cases like resizes...
-
         const sorted = compositor.PLM.getSorted();
         sorted.scrollManagers.forEach(recompose);
         sorted.focusManagers.forEach(recompose);
@@ -118,97 +159,46 @@ export class Renderer {
         return compositor;
     }
 
-    private deferWrite(compositor: Compositor, opts: WriteOpts) {
-        let didRefreshWrite = true;
-        if (this.shouldRefreshWrite(opts)) {
-            this.refreshWrite(compositor, opts);
-        } else {
-            didRefreshWrite = false;
-            this.preciseWriter.instructCursor(this.lastCanvas!, compositor.canvas);
-            this.refreshWriter.resetLastOutput();
-        }
-
-        this.cursor.moveToRow(compositor.canvas.grid.length - 1);
-        this.lastCanvas = compositor.canvas;
-        this.rects = compositor.rects;
-        return didRefreshWrite;
-    }
-
-    private performWrite() {
-        this.root.runtime.stdout.write(Ansi.beginSynchronizedUpdate);
-        this.cursor.execute();
-        this.root.runtime.stdout.write(Ansi.endSynchronizedUpdate);
-    }
-
-    private refreshWrite(compositor: Compositor, opts: WriteOpts) {
-        if (opts.resize) {
-            this.cursor.clearRowsBelow();
-        }
-
-        this.refreshWriter.instructCursor(
-            this.lastCanvas,
-            compositor.canvas,
-            opts.capturedOutput,
-        );
-
-        if (opts.resize) {
-            this.lastWasResize = 1;
-        }
-
-        if (this.lastWasResize && ++this.lastWasResize > 3) {
-            this.lastWasResize = 0;
-        }
-    }
-
-    // CHORE - this should be revisited.  Perhaps a jsdoc comment instead of
-    // comments in the function body
-
-    private shouldRefreshWrite(opts: WriteOpts) {
-        // Refresh option set in runtime opts
-        if (!this.root.runtime.preciseWrite) {
-            return true;
-        }
-
-        // First write
-        if (!this.lastCanvas) {
-            return true;
-        }
-
-        // Resize
-        if (opts.resize) {
-            return true;
-        }
-
-        // Enter/Exit alt screen
-        if (opts.screenChange) {
-            return true;
-        }
-
-        // Resizes are messy and make tracking the cursor row difficult, so refresh
-        // write again to make sure the cursor goes where it should.
-        if (this.lastWasResize) {
-            return true;
-        }
-
-        // `console` statements should be printed above output, or overlayed on top of
-        // output if fullscreen
-        if (opts.capturedOutput) {
-            return true;
-        }
-
-        if (!this.termSupportsAnsiCursor()) {
-            return true;
-        }
-
+    private shouldRefreshWrite(opts: WriteOpts, nextGrid: Grid) {
+        if (!this.host.runtime.cellWrite) return true;
+        if (!this.lastCompositor) return true;
+        if (opts.resize) return true;
+        if (opts.screenChange) return true;
+        if (opts.capturedOutput && !this.isFullscreen(nextGrid)) return true;
+        if (this.sinceResize < 2) return true;
+        if (!this.termSupportsAnsiCursor()) return true;
         return false;
+    }
+
+    private isFullscreen(grid: Grid): boolean {
+        const maxRows = this.host.runtime.stdout.rows;
+        return maxRows <= grid.length;
     }
 
     /**
      * Greenlight only terminals that *definitely* support ansi cursor control to
-     * use the `WriterPrecise` strategy.
+     * use the cell write strategy.
      */
     private termSupportsAnsiCursor(): boolean {
         const term = process.env["TERM"];
         return !!term?.match(/xterm|kitty|alacritty|ghostty/);
+    }
+
+    private checkIfBlockedRender(): boolean {
+        const handlers = this.host.hooks.getHookSet("block-render");
+        if (handlers.size) {
+            return Array.from(handlers).every((handler) => handler(undefined));
+        } else {
+            return false;
+        }
+    }
+
+    /** For forcing a refresh write if less than 2 renders after a resize event */
+    private handleResizeCounter(opts: WriteOpts) {
+        if (opts.resize) {
+            this.sinceResize = 0;
+        } else {
+            ++this.sinceResize;
+        }
     }
 }

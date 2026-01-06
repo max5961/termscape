@@ -1,10 +1,10 @@
 import { TextStyleSet, Yg } from "../Constants.js";
+import { Glyph } from "./Glyph.js";
+import { ErrorMessages } from "../shared/ErrorMessages.js";
 import type { DomElement } from "../dom/DomElement.js";
 import type { Point } from "../Types.js";
 import type { Style } from "../dom/style/Style.js";
 import type { Canvas, Grid } from "./Canvas.js";
-import { Glyph } from "./Glyph.js";
-import { ErrorMessages } from "../shared/ErrorMessages.js";
 
 type Direction = "u" | "d" | "l" | "r";
 

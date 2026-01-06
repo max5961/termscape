@@ -72,7 +72,7 @@ export function createRuntime(deps: RuntimeDependencies) {
     config.enableMouse ??= false;
     config.mouseMode ??= 3;
     config.enableKittyProtocol ??= true;
-    config.preciseWrite ??= true;
+    config.cellWrite ??= true;
     config.startOnCreate ??= true; // This has no effect on runtime so its not part of the returned api.
 
     let cleanupHandlers = [] as (() => void)[];
@@ -372,8 +372,8 @@ export function createRuntime(deps: RuntimeDependencies) {
         set exitForcesEndProc(val: Config["exitForcesEndProc"]) {
             config.exitForcesEndProc = val;
         },
-        set preciseWrite(val: Config["preciseWrite"]) {
-            config.preciseWrite = val;
+        set cellWrite(val: Config["cellWrite"]) {
+            config.cellWrite = val;
         },
 
         // GETTERS
@@ -404,8 +404,8 @@ export function createRuntime(deps: RuntimeDependencies) {
         get exitForcesEndProc() {
             return config.exitForcesEndProc;
         },
-        get preciseWrite() {
-            return config.preciseWrite;
+        get cellWrite() {
+            return config.cellWrite;
         },
     };
 

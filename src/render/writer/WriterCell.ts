@@ -1,43 +1,39 @@
 import { Writer } from "./Writer.js";
 import type { Cursor } from "../Cursor.js";
-// import type { Canvas } from "../../compositor/Canvas.js";
-import type { Canvas } from "../../compositor/Canvas.js";
+import { Canvas, type Grid } from "../../compositor/Canvas.js";
 import type { GridToken } from "../../Types.js";
 import type { Root } from "../../dom/RootElement.js";
 
 type Row = Canvas["grid"][number];
 type Slice = { s: number; e: number };
 
-export class WriterPrecise extends Writer {
+export class WriterCell extends Writer {
     constructor(cursor: Cursor, root: Root) {
         super(cursor, root);
     }
 
-    public instructCursor(lastCanvas: Canvas, nextCanvas: Canvas): void {
-        const { grid: last } = lastCanvas;
-        const { grid: next } = nextCanvas;
-
-        this.clearLostRows(last.length, next.length);
+    public instructCursor(lastGrid: Grid, nextGrid: Grid): void {
+        this.clearLostRows(lastGrid.length, nextGrid.length);
 
         /** maps dirty row #s to the index where there is a diff */
         const dirtyRows = [] as [number, { s: number; e: number }[]][];
         const appendedRows = new Set<number>();
 
-        for (let y = next.length - 1; y >= 0; --y) {
-            // `next` has new rows
-            if (last[y] === undefined) {
-                dirtyRows.push([y, [{ s: 0, e: next[y].length }]]);
+        for (let y = nextGrid.length - 1; y >= 0; --y) {
+            // `nextGrid` has new rows
+            if (lastGrid[y] === undefined) {
+                dirtyRows.push([y, [{ s: 0, e: nextGrid[y].length }]]);
                 appendedRows.add(y);
                 continue;
             }
 
-            const slices = this.createRowDiff(last[y], next[y]);
+            const slices = this.createRowDiff(lastGrid[y], nextGrid[y]);
 
             if (slices.length) dirtyRows.push([y, slices]);
         }
 
         if (appendedRows.size) {
-            this.cursor.moveToRow(last.length - 1);
+            this.cursor.moveToRow(lastGrid.length - 1);
             this.cursor.deferOutput("\n".repeat(appendedRows.size), appendedRows.size);
 
             // If the cursor position is 5 rows from the bottom, and we need to
@@ -50,14 +46,19 @@ export class WriterPrecise extends Writer {
             this.cursor.moveToRow(row);
 
             for (const slice of indexes) {
-                const output = nextCanvas.stringifyRowSegment(row, slice.s, slice.e);
+                const output = Canvas.stringifyRowSegment(
+                    nextGrid,
+                    row,
+                    slice.s,
+                    slice.e,
+                );
 
                 this.cursor.moveToCol(slice.s);
                 this.cursor.deferOutput(output, 0);
             }
 
             // If last row is longer than next row, the rest of the row must be cleared.
-            const toClearFrom = nextCanvas.grid[row].length;
+            const toClearFrom = nextGrid[row].length;
             if (toClearFrom < process.stdout.columns) {
                 this.cursor.moveToCol(toClearFrom);
                 this.cursor.clearFromCursor();
@@ -65,8 +66,8 @@ export class WriterPrecise extends Writer {
         });
     }
 
-    // - next is shorter than last =>
-    // - last is shorter than next =>
+    // - nextGrid is shorter than lastGrid =>
+    // - lastGrid is shorter than nextGrid =>
     // - Must clear from end of next row to end of term every time
     // public for testing
     public createRowDiff(prev: Row, next: Row): Slice[] {

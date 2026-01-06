@@ -203,10 +203,12 @@ export abstract class FocusManager<
         // the 'or equal to'.
 
         const itemBelowWin = fBot > wBot - scrollOff;
-        const itemAboveWin = fTop <= wTop + scrollOff;
+        // const itemAboveWin = fTop <= wTop + scrollOff;
+        const itemAboveWin = fTop < wTop + scrollOff;
 
         const itemRightWin = fRight > wRight - scrollOff;
-        const itemLeftWin = fLeft <= wLeft + scrollOff;
+        // const itemLeftWin = fLeft <= wLeft + scrollOff;
+        const itemLeftWin = fLeft < wLeft + scrollOff;
 
         return {
             itemBelowWin,
