@@ -1,8 +1,8 @@
 import fs from "node:fs";
-import { Root } from "./RootElement.js";
 import { TEST_ROOT_ELEMENT } from "../Constants.js";
-import type { RuntimeConfig } from "../Types.js";
+import { Root } from "./RootElement.js";
 import { Canvas } from "../compositor/Canvas.js";
+import type { RuntimeConfig } from "../Types.js";
 
 type MockStdoutConfig = {
     /** @default 25*/
@@ -37,14 +37,14 @@ type TestRootRuntime = TestConfig & RuntimeConfig;
 class MockStdout {
     private _rows: number;
     private _columns: number;
-    private resizeHandlers: Set<() => unknown>;
-    private writeStdout: boolean;
+    private _writeStdout: boolean;
+    private _resizeHandlers: Set<() => unknown>;
 
     constructor({ rows, columns, writeStdout }: Required<MockStdoutConfig>) {
         this._rows = rows;
         this._columns = columns;
-        this.writeStdout = writeStdout;
-        this.resizeHandlers = new Set();
+        this._writeStdout = writeStdout;
+        this._resizeHandlers = new Set();
     }
 
     public get rows() {
@@ -56,17 +56,17 @@ class MockStdout {
     }
 
     public write = (data: string) => {
-        if (this.writeStdout) {
+        if (this._writeStdout) {
             process.stdout.write(data);
         }
     };
 
     public on = (_resize: "resize", cb: () => unknown) => {
-        this.resizeHandlers.add(cb);
+        this._resizeHandlers.add(cb);
     };
 
     public off = (_resize: "resize", cb: () => unknown) => {
-        this.resizeHandlers.delete(cb);
+        this._resizeHandlers.delete(cb);
     };
 
     public dispatchResizeEvent = (
@@ -84,21 +84,21 @@ class MockStdout {
         this._rows = Math.max(0, this._rows);
         this._columns = Math.max(0, this._columns);
 
-        this.resizeHandlers.forEach((handler) => {
+        this._resizeHandlers.forEach((handler) => {
             handler();
         });
     };
 }
 
 class MockStdin {
-    private history: Buffer[];
-    private dataHandlers: Set<(buf: Buffer) => unknown>;
+    private _history: Buffer[];
+    private _dataHandlers: Set<(buf: Buffer) => unknown>;
 
     public isTTY: boolean;
 
     constructor({ stdinSource }: MockStdinConfig) {
-        this.history = [];
-        this.dataHandlers = new Set();
+        this._history = [];
+        this._dataHandlers = new Set();
         this.isTTY = true;
         if (stdinSource === "real") {
             this.initPipe();
@@ -114,11 +114,11 @@ class MockStdin {
     }
 
     public on = (_type: "data", cb: (buf: Buffer) => unknown) => {
-        this.dataHandlers.add(cb);
+        this._dataHandlers.add(cb);
     };
 
     public off = (_type: "data", cb: (buf: Buffer) => unknown) => {
-        this.dataHandlers.delete(cb);
+        this._dataHandlers.delete(cb);
     };
 
     public resume() {}
@@ -130,8 +130,8 @@ class MockStdin {
             chunk = Buffer.from(chunk);
         }
 
-        this.dataHandlers.forEach((handler) => handler(chunk));
-        this.history.push(chunk);
+        this._dataHandlers.forEach((handler) => handler(chunk));
+        this._history.push(chunk);
     }
 }
 
@@ -139,9 +139,9 @@ export class TestRoot extends Root {
     protected static override identity = TEST_ROOT_ELEMENT;
     private static Frame = "$$$$START_FRAME$$$$";
 
-    private lastFrame: string;
-    private frames: string[];
-    private maxFrames: number;
+    private _lastFrame: string;
+    private _frames: string[];
+    private _maxFrames: number;
 
     constructor(runtime: TestRootRuntime) {
         const {
@@ -162,9 +162,9 @@ export class TestRoot extends Root {
             }) as unknown as NodeJS.WriteStream,
         });
 
-        this.maxFrames = maxFrames;
-        this.lastFrame = "";
-        this.frames = [];
+        this._maxFrames = maxFrames;
+        this._lastFrame = "";
+        this._frames = [];
 
         this.addHook("post-layout", this.postLayout);
     }
@@ -172,12 +172,12 @@ export class TestRoot extends Root {
     private postLayout = (canvas: Canvas) => {
         const { output } = Canvas.stringifyGrid(canvas.grid);
 
-        if (this.lastFrame !== output) {
-            this.lastFrame = output;
-            this.frames.push(output);
+        if (this._lastFrame !== output) {
+            this._lastFrame = output;
+            this._frames.push(output);
         }
 
-        if (this.frames.length >= this.maxFrames) {
+        if (this._frames.length >= this._maxFrames) {
             process.nextTick(() => {
                 this.addHook("post-write", () => this.exit());
             });
@@ -185,7 +185,7 @@ export class TestRoot extends Root {
     };
 
     public recordFrames(fpath: string) {
-        const contents = this.frames
+        const contents = this._frames
             .map((frame) => {
                 return TestRoot.Frame + frame;
             })
@@ -193,7 +193,7 @@ export class TestRoot extends Root {
 
         fs.writeFileSync(fpath, contents, "utf8");
 
-        this.frames = [];
+        this._frames = [];
     }
 
     /** TODO - UNFINISHED */

@@ -1,14 +1,14 @@
-import type { Canvas, Grid } from "../../compositor/Canvas.js";
+import type { Grid } from "../../compositor/Canvas.js";
 import type { Root } from "../../dom/RootElement.js";
 import type { Cursor } from "../Cursor.js";
 
 export abstract class Writer {
-    protected cursor: Cursor;
-    protected root: Root;
+    protected _cursor: Cursor;
+    protected _root: Root;
 
     constructor(cursor: Cursor, root: Root) {
-        this.cursor = cursor;
-        this.root = root;
+        this._cursor = cursor;
+        this._root = root;
     }
 
     /**

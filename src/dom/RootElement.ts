@@ -18,9 +18,9 @@ export class Root extends DomElement<{
 }> {
     protected static override identity = ROOT_ELEMENT;
 
-    private hasRendered: boolean;
     public runtime: Runtime["api"];
     public hooks: HooksManager;
+    private hasRendered: boolean;
     private _register: MetaDataRegister;
     private scheduler: Scheduler;
     private renderer: Renderer;

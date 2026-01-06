@@ -20,13 +20,13 @@ export class BookElement extends DomElement<{
 }> {
     protected static override identity = BOOK_ELEMENT;
 
-    private pages: DomElement[];
-    private pagesSet: Set<DomElement>;
+    private _pages: DomElement[];
+    private _pagesSet: Set<DomElement>;
 
     constructor() {
         super();
-        this.pages = [];
-        this.pagesSet = new Set();
+        this._pages = [];
+        this._pagesSet = new Set();
     }
 
     public override get tagName(): typeof TagNameEnum.Book {
@@ -46,16 +46,16 @@ export class BookElement extends DomElement<{
      * tree but privately stored.
      * */
     override get children(): readonly DomElement[] {
-        return this.pages;
+        return this._pages;
     }
 
     private get pageIdx(): number {
-        return this.pages.findIndex((page) => page === this.currentPage);
+        return this._pages.findIndex((page) => page === this.currentPage);
     }
 
     private hasPage(page: DomElement | undefined): boolean {
         if (!page) return false;
-        return this.pagesSet.has(page);
+        return this._pagesSet.has(page);
     }
 
     public get currentPage(): DomElement | undefined {
@@ -65,16 +65,16 @@ export class BookElement extends DomElement<{
     public override insertBefore(child: DomElement, beforeChild: DomElement): void {
         const nextPages: DomElement[] = [];
         let beforeChildExists = false;
-        for (let i = 0; i < this.pages.length; ++i) {
-            if (this.pages[i] === beforeChild) {
+        for (let i = 0; i < this._pages.length; ++i) {
+            if (this._pages[i] === beforeChild) {
                 beforeChildExists = true;
                 nextPages.push(child);
             }
-            nextPages.push(this.pages[i]);
+            nextPages.push(this._pages[i]);
         }
 
-        this.pages = nextPages;
-        this.pagesSet.add(child);
+        this._pages = nextPages;
+        this._pagesSet.add(child);
 
         if (!beforeChildExists) {
             this._throwError(ErrorMessages.insertBefore);
@@ -82,36 +82,35 @@ export class BookElement extends DomElement<{
     }
 
     public override appendChild(child: DomElement): void {
-        this.pages.push(child);
-        this.pagesSet.add(child);
-        if (this.pages.length === 1) {
+        this._pages.push(child);
+        this._pagesSet.add(child);
+        if (this._pages.length === 1) {
             super.appendChild(child);
         }
     }
 
     public override removeChild(child: DomElement, freeRecursive?: boolean): void {
-        this.pagesSet.delete(child);
+        this._pagesSet.delete(child);
 
         // Display an adjacent page if removing currently displayed
         if (child === this.currentPage) {
             const idx = this.pageIdx;
-            const nextPage = this.pages[idx - 1] || this.pages[idx + 1];
+            const nextPage = this._pages[idx - 1] || this._pages[idx + 1];
             this.displayPage(nextPage, freeRecursive, true);
         }
 
         // Handle the 'virtual' pages array that only exists in this class.
-        const idx = this.pages.findIndex((page) => page === child);
+        const idx = this._pages.findIndex((page) => page === child);
         if (idx < 0) {
             this._throwError(ErrorMessages.removeChild);
         }
 
-        this.pages.splice(idx, 1);
+        this._pages.splice(idx, 1);
     }
 
     /*
-     * Most important controller for the class. **Always** removes the
-     * `currentPage` from the DomElement.children array, *then* attempts to
-     * display the requested page
+     * **Always** removes the `currentPage` from the DomElement.children array,
+     * *then* attempts to display the requested page
      * */
     private displayPage(
         page: DomElement | undefined,
@@ -136,19 +135,19 @@ export class BookElement extends DomElement<{
 
     public focusNextPage() {
         const idx = this.pageIdx + 1;
-        this.displayPage(this.pages[idx]);
+        this.displayPage(this._pages[idx]);
     }
 
     public focusPrevPage() {
         const idx = this.pageIdx - 1;
-        this.displayPage(this.pages[idx]);
+        this.displayPage(this._pages[idx]);
     }
 
     public focusPage(page: DomElement): void;
     public focusPage(index: number): void;
     public focusPage(pageOrIndex: DomElement | number): void {
         if (typeof pageOrIndex === "number") {
-            this.displayPage(this.pages[pageOrIndex]);
+            this.displayPage(this._pages[pageOrIndex]);
         } else {
             this.displayPage(pageOrIndex);
         }

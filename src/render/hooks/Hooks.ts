@@ -3,7 +3,7 @@ import type { Canvas } from "../../compositor/Canvas.js";
 export type PerformanceData = {
     layoutMs: number;
     diffMs: number;
-    diffStrategy: "refresh" | "precise";
+    diffStrategy: "refresh" | "cell";
 };
 
 export type Hook =
@@ -29,10 +29,10 @@ export type HookHandler<T extends Hook> = (
 ) => T extends "block-render" ? boolean : unknown;
 
 export class HooksManager {
-    private hooks: Map<Hook, Set<HookHandler<Hook>>>;
+    private _hooks: Map<Hook, Set<HookHandler<Hook>>>;
 
     constructor() {
-        this.hooks = new Map();
+        this._hooks = new Map();
     }
 
     public addHook<T extends Hook>(hook: T, cb: HookHandler<T>) {
@@ -46,7 +46,7 @@ export class HooksManager {
         set.delete(cb);
 
         if (!set.size) {
-            this.hooks.delete(hook);
+            this._hooks.delete(hook);
         }
     }
 
@@ -56,9 +56,9 @@ export class HooksManager {
     }
 
     public getHookSet<T extends Hook>(hook: T): Set<HookHandler<T>> {
-        if (!this.hooks.has(hook)) {
-            this.hooks.set(hook, new Set());
+        if (!this._hooks.has(hook)) {
+            this._hooks.set(hook, new Set());
         }
-        return this.hooks.get(hook)!;
+        return this._hooks.get(hook)!;
     }
 }

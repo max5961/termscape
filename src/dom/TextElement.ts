@@ -19,25 +19,19 @@ export type TextContent = string | TextContentNode[];
 export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Text }> {
     protected static override identity = TEXT_ELEMENT;
 
-    protected _childTextNodes: Set<TextNode>;
-    protected _textNodes: (string | TextNode)[];
+    protected _childTextNodes = new Set<TextNode>();
+    protected _textNodes: (string | TextNode)[] = [];
     /** @internal */
-    public _rows!: ReturnType<typeof getRows>;
+    public _rows: ReturnType<typeof getRows> = [];
     /** @internal */
-    public _alignedRows!: ReturnType<typeof getAlignedRows>;
+    public _alignedRows: ReturnType<typeof getAlignedRows> = [];
     /** @internal */
-    public _textHeight: number;
+    public _textHeight = 0;
     /** @internal */
-    public _singleLine: boolean;
+    public _singleLine = false;
 
     constructor() {
         super();
-        this._childTextNodes = new Set();
-        this._textNodes = [];
-        this._rows = [];
-        this._alignedRows = [];
-        this._textHeight = 0;
-        this._singleLine = false;
         if (!this.isTextNode) {
             this._node.setMeasureFunc(this.getMeasureFunc());
         }

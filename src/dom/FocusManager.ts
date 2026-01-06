@@ -4,7 +4,6 @@ import { recalculateStyle } from "./util/recalculateStyle.js";
 import type { VisualNodeMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 import type { Props } from "./props/Props.js";
-import { logger } from "../shared/Logger.js";
 
 type FMSchema = {
     Style: Style.FocusManager;

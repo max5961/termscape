@@ -33,8 +33,8 @@ export class WriterCell extends Writer {
         }
 
         if (appendedRows.size) {
-            this.cursor.moveToRow(lastGrid.length - 1);
-            this.cursor.deferOutput("\n".repeat(appendedRows.size), appendedRows.size);
+            this._cursor.moveToRow(lastGrid.length - 1);
+            this._cursor.deferOutput("\n".repeat(appendedRows.size), appendedRows.size);
 
             // If the cursor position is 5 rows from the bottom, and we need to
             // write 10 new rows, then we need to tell the terminal to scroll by
@@ -43,7 +43,7 @@ export class WriterCell extends Writer {
         }
 
         dirtyRows.forEach(([row, indexes]) => {
-            this.cursor.moveToRow(row);
+            this._cursor.moveToRow(row);
 
             for (const slice of indexes) {
                 const output = Canvas.stringifyRowSegment(
@@ -53,15 +53,15 @@ export class WriterCell extends Writer {
                     slice.e,
                 );
 
-                this.cursor.moveToCol(slice.s);
-                this.cursor.deferOutput(output, 0);
+                this._cursor.moveToCol(slice.s);
+                this._cursor.deferOutput(output, 0);
             }
 
             // If last row is longer than next row, the rest of the row must be cleared.
             const toClearFrom = nextGrid[row].length;
             if (toClearFrom < process.stdout.columns) {
-                this.cursor.moveToCol(toClearFrom);
-                this.cursor.clearFromCursor();
+                this._cursor.moveToCol(toClearFrom);
+                this._cursor.clearFromCursor();
             }
         });
     }
@@ -114,6 +114,6 @@ export class WriterCell extends Writer {
         const diff = lastRows - nextRows;
         if (diff <= 0) return;
 
-        this.cursor.clearRowsUp(diff);
+        this._cursor.clearRowsUp(diff);
     }
 }

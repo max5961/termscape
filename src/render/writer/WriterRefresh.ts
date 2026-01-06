@@ -2,7 +2,7 @@ import type { Root } from "../../dom/RootElement.js";
 import type { Cursor } from "./../Cursor.js";
 import { Canvas, type Grid } from "../../compositor/Canvas.js";
 import { Writer } from "./Writer.js";
-import { logger } from "../../shared/Logger.js";
+import { isFullscreen } from "../../Util.js";
 
 export class WriterRefresh extends Writer {
     private lastOutput: string;
@@ -19,34 +19,28 @@ export class WriterRefresh extends Writer {
     ): void {
         const { newLines, output } = Canvas.stringifyGrid(nextGrid);
 
-        if (output !== this.lastOutput || capturedOutput) {
-            if (lastGrid) {
-                this.cursor.clearRowsUp(lastGrid.length);
-            }
-
-            const fullscreen = this.isFullscreen(nextGrid);
-
-            // NOT FULLSCREEN => CONSOLE BEFORE OUTPUT
-            if (capturedOutput && !fullscreen) {
-                capturedOutput = capturedOutput.trimEnd() + "\n";
-                if (!process.env["RENDER_DEBUG"]) {
-                    process.stdout.write(capturedOutput);
-                } else {
-                    this.cursor.deferOutput(capturedOutput, 0);
-                }
-            }
-
-            this.cursor.deferOutput(output, newLines);
-        } else {
-            this.cursor.clearOps();
+        if (output === this.lastOutput && !capturedOutput) {
+            return this._cursor.clearOps();
         }
+
+        if (lastGrid) {
+            this._cursor.clearRowsUp(lastGrid.length);
+        }
+
+        // Write console statements before rendered output
+        if (capturedOutput && !isFullscreen(nextGrid, this._root.runtime.stdout)) {
+            capturedOutput = capturedOutput.trimEnd() + "\n";
+            this._cursor.deferOutput(capturedOutput, 0);
+            // if (!process.env["RENDER_DEBUG"]) {
+            //     process.stdout.write(capturedOutput);
+            // } else {
+            //     this._cursor.deferOutput(capturedOutput, 0);
+            // }
+        }
+        this._cursor.deferOutput(output, newLines);
     }
 
     public resetLastOutput() {
         this.lastOutput = "";
-    }
-
-    public isFullscreen(grid: Grid) {
-        return grid.length >= this.root.runtime.stdout.rows;
     }
 }

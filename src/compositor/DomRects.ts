@@ -21,14 +21,14 @@ export type DomRectLayer = {
  *   in the layer.  This would be 0, then we would check every DomElement in that
  *   array and see if it contains the point `(5,10)`, returning the one that does.
  *   This works, but if we checked the closest rectangle to the y coordinate, it
- *   would be an immediate match with this simple example.  Therefore, we always
- *   check whichever axis contains more unique values.
+ *   would technically be a faster match with this simple example.  Therefore,
+ *   we always check whichever axis contains more unique values.
  */
 export class DomRects {
-    private layers: Record<number, DomRectLayer>;
+    private _layers: Record<number, DomRectLayer>;
 
     constructor() {
-        this.layers = {};
+        this._layers = {};
     }
 
     public static InitRect() {
@@ -48,25 +48,25 @@ export class DomRects {
         const x = elem.visibleRect.corner.x;
         const y = elem.visibleRect.corner.y;
 
-        this.layers[zIndex] = this.layers[zIndex] ?? {
+        this._layers[zIndex] = this._layers[zIndex] ?? {
             x: {},
             y: {},
         };
 
-        this.layers[zIndex].x[x] = this.layers[zIndex].x[x] ?? [];
-        this.layers[zIndex].y[y] = this.layers[zIndex].y[y] ?? [];
+        this._layers[zIndex].x[x] = this._layers[zIndex].x[x] ?? [];
+        this._layers[zIndex].y[y] = this._layers[zIndex].y[y] ?? [];
 
-        this.layers[zIndex].x[x].push(elem);
-        this.layers[zIndex].y[y].push(elem);
+        this._layers[zIndex].x[x].push(elem);
+        this._layers[zIndex].y[y].push(elem);
     }
 
     public findTargetElement(x: number, y: number): DomElement | undefined {
-        const sortedLayers = Object.keys(this.layers)
+        const sortedLayers = Object.keys(this._layers)
             .sort((a, b) => Number(b) - Number(a))
             .map((s) => Number(s));
 
         for (const layerIdx of sortedLayers) {
-            const layer = this.layers[layerIdx];
+            const layer = this._layers[layerIdx];
             const traverseX = Object.keys(layer.x).length > Object.keys(layer.y).length;
             const map = traverseX ? layer.x : layer.y;
             let i = traverseX ? x : y;

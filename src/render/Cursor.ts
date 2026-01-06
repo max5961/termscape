@@ -1,34 +1,33 @@
-import { logger } from "../shared/Logger.js";
 import type { Root } from "../dom/RootElement.js";
+import { logger } from "../shared/Logger.js";
 import { Ansi } from "../shared/Ansi.js";
 
 export class Cursor {
-    protected root: Root;
-    protected sequence: string[];
-    public currentRow: number;
+    protected _root: Root;
+    protected _sequence: string[];
+    protected _currentRow: number;
 
     constructor(root: Root) {
-        this.root = root;
-        this.sequence = [];
-        this.currentRow = 0;
+        this._root = root;
+        this._sequence = [];
+        this._currentRow = 0;
     }
 
     /** Write the string sequence to stdout */
     public execute(): void {
-        const stdout = this.sequence.join("");
+        const stdout = this._sequence.join("");
         if (stdout) {
-            this.root.runtime.stdout.write(stdout);
+            this._root.runtime.stdout.write(stdout);
         }
         this.clearOps();
     }
 
     /**
-     * Clear the saved operations.  Useful for when last stdout === prev stdout
-     * during a full rewrite.  If we didn't clear the sequences, then next render
-     * we would be writing the previous operations we didn't want.
+     * Clear the saved operations. If not for clearing the sequences after a render,
+     * the next render would include the previous operations.
      * */
     public clearOps(): void {
-        this.sequence = [];
+        this._sequence = [];
     }
 
     /**
@@ -37,7 +36,7 @@ export class Cursor {
      * run to allow for observation.
      * */
     protected deferAnsi(ansi: string): void {
-        this.sequence.push(ansi);
+        this._sequence.push(ansi);
     }
 
     /**
@@ -47,13 +46,13 @@ export class Cursor {
      * we can adjust our `currentRow` accordingly.
      */
     public deferOutput(stdout: string, newlines: number): void {
-        this.currentRow = Math.min(process.stdout.rows - 1, this.currentRow + newlines);
-        this.sequence.push(stdout);
+        this._currentRow = Math.min(process.stdout.rows - 1, this._currentRow + newlines);
+        this._sequence.push(stdout);
     }
 
     /** Move to col 0 of row */
     public moveToRow(row: number): void {
-        const diff = this.currentRow - row;
+        const diff = this._currentRow - row;
         if (diff === 0) {
             this.moveToCol(0);
 
@@ -99,7 +98,7 @@ export class Cursor {
 
     /** Provide a negative number when the current row has moved **UP**. */
     protected updateCurrentRow(displacement: number) {
-        this.currentRow = Math.max(0, this.currentRow + displacement);
+        this._currentRow = Math.max(0, this._currentRow + displacement);
     }
 
     /** Show or hide the cursor */
@@ -144,9 +143,9 @@ export class DebugCursor extends Cursor {
             if (buf[0] === 3) process.exit();
             if (buf.toString("utf-8") !== "n") return;
 
-            logger.write(this.sequence.length);
+            logger.write(this._sequence.length);
 
-            const chunk = this.sequence.shift();
+            const chunk = this._sequence.shift();
             if (chunk !== undefined) {
                 process.stdout.write(chunk);
                 logger.write({ chunk });

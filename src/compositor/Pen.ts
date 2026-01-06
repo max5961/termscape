@@ -14,10 +14,10 @@ type PenDeps = {
 };
 
 export class Pen {
-    private readonly grid: Grid;
-    private readonly pos: Point;
-    private readonly corner: Point;
-    private readonly limits: {
+    private readonly _grid: Grid;
+    private readonly _pos: Point;
+    private readonly _corner: Point;
+    private readonly _limits: {
         minX: number;
         minY: number;
         maxX: number;
@@ -27,12 +27,12 @@ export class Pen {
     private readonly elem: DomElement;
 
     constructor(deps: PenDeps) {
-        this.grid = deps.grid;
-        this.pos = { ...deps.canvas.corner };
-        this.corner = { ...deps.canvas.corner };
+        this._grid = deps.grid;
+        this._pos = { ...deps.canvas.corner };
+        this._corner = { ...deps.canvas.corner };
         this.elem = deps.canvas.host;
 
-        this.limits = {
+        this._limits = {
             minX: deps.canvas.limits.minX,
             minY: deps.canvas.limits.minY,
             maxX: deps.canvas.limits.maxX,
@@ -55,17 +55,17 @@ export class Pen {
     }
 
     public getGlobalPos(): Point {
-        return { ...this.pos };
+        return { ...this._pos };
     }
 
     /**
      * Moves to a position **relative** to the current position.
      * */
     public move = (dir: Direction, units: number): Pen => {
-        if (dir === "u") this.pos.y -= units;
-        if (dir === "d") this.pos.y += units;
-        if (dir === "l") this.pos.x -= units;
-        if (dir === "r") this.pos.x += units;
+        if (dir === "u") this._pos.y -= units;
+        if (dir === "d") this._pos.y += units;
+        if (dir === "l") this._pos.x -= units;
+        if (dir === "r") this._pos.x += units;
         return this;
     };
 
@@ -73,8 +73,8 @@ export class Pen {
      * Moves to a position **relative** to the corner of the canvas.
      * */
     public moveTo = (x: number, y: number): Pen => {
-        this.pos.x = this.corner.x + x;
-        this.pos.y = this.corner.y + y;
+        this._pos.x = this._corner.x + x;
+        this._pos.y = this._corner.y + y;
         return this;
     };
 
@@ -84,8 +84,8 @@ export class Pen {
      * Moves to a position relative to the **root** canvas.
      * */
     public moveToGlobal = (x: number, y: number): Pen => {
-        this.pos.x = x;
-        this.pos.y = y;
+        this._pos.x = x;
+        this._pos.y = y;
         return this;
     };
 
@@ -156,7 +156,7 @@ export class Pen {
             }
         }
 
-        this.pos.x = x;
+        this._pos.x = x;
         return this;
     };
 
@@ -227,7 +227,7 @@ export class Pen {
             }
         }
 
-        this.pos.y = y;
+        this._pos.y = y;
         return this;
     };
 
@@ -247,14 +247,14 @@ export class Pen {
         else if (dir === "l") dx = -1;
         else if (dir === "r") dx = 1;
 
-        let { x, y } = this.pos;
+        let { x, y } = this._pos;
 
         for (let i = 0; i < units; ++i) {
             if (this.isValidCell(x, y)) {
                 if (ansi) {
-                    this.grid[y][x] = { ansi, char, charWidth: 1 };
+                    this._grid[y][x] = { ansi, char, charWidth: 1 };
                 } else {
-                    this.grid[y][x] = char;
+                    this._grid[y][x] = char;
                 }
             }
 
@@ -262,27 +262,27 @@ export class Pen {
             y += dy;
         }
 
-        this.pos.x = x;
-        this.pos.y = y;
+        this._pos.x = x;
+        this._pos.y = y;
 
         return this;
     };
 
     private isValidCell(x: number, y: number) {
-        if (this.grid[y] === undefined || this.grid[y][x] === undefined) {
+        if (this._grid[y] === undefined || this._grid[y][x] === undefined) {
             return false;
         }
 
-        if (x < this.limits.minX) {
+        if (x < this._limits.minX) {
             return false;
         }
-        if (y < this.limits.minY) {
+        if (y < this._limits.minY) {
             return false;
         }
-        if (x >= this.limits.maxX) {
+        if (x >= this._limits.maxX) {
             return false;
         }
-        if (y >= this.limits.maxY) {
+        if (y >= this._limits.maxY) {
             return false;
         }
         return true;

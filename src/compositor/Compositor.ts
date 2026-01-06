@@ -1,43 +1,47 @@
+import { FOCUS_MANAGER, ROOT_ELEMENT } from "../Constants.js";
 import type { DomElement } from "../dom/DomElement.js";
 import type { Root } from "../dom/RootElement.js";
-import { FOCUS_MANAGER, ROOT_ELEMENT } from "../Constants.js";
-import { type Canvas, type Grid, RootCanvas, SubCanvas } from "./Canvas.js";
-import { Operations } from "./Operations.js";
+import type { WriteOpts } from "../Types.js";
+import { type Canvas, RootCanvas, SubCanvas } from "./Canvas.js";
 import { DomRects } from "./DomRects.js";
 import { Draw } from "./draw/Draw.js";
-import { PostLayoutManager } from "./PostLayoutManager.js";
-import type { WriteOpts } from "../Types.js";
-
-// CHORE - Compositor.canvas name conflicts with Element._canvas...should we possibly
-// call this.canvas this.root or something else, maybe rootCanvas for
-// better readability
+import { LayoutReconciler } from "./LayoutReconciler.js";
 
 export class Compositor {
-    private host: Root;
-    private opts: WriteOpts;
-    private postLayout: (() => unknown)[];
-    public canvas: RootCanvas;
-    public ops: Operations;
-    public rects: DomRects;
-    public draw: Draw;
-    public PLM: PostLayoutManager;
+    private _opts: WriteOpts;
+    private _postLayout: (() => unknown)[];
+    private _draw: Draw;
+    private _canvas: RootCanvas;
+    private _rects: DomRects;
+    private _reconciler: LayoutReconciler;
 
-    constructor(root: Root, opts: WriteOpts) {
-        this.host = root;
-        this.opts = opts;
-        this.canvas = new RootCanvas(root, root.runtime.stdout);
-        this.ops = new Operations();
-        this.rects = new DomRects();
-        this.draw = new Draw();
-        this.PLM = new PostLayoutManager();
-        this.postLayout = [];
+    public get canvas(): Canvas {
+        return this._canvas;
+    }
+    public get reconciler(): Readonly<LayoutReconciler> {
+        return this._reconciler;
+    }
+    public get draw(): Readonly<Draw> {
+        return this._draw;
+    }
+    public get rects(): Readonly<DomRects> {
+        return this._rects;
+    }
 
-        root._canvas = this.canvas;
+    constructor(root: Root, _opts: WriteOpts) {
+        this._opts = _opts;
+        this._canvas = new RootCanvas(root, root.runtime.stdout);
+        this._draw = new Draw();
+        this._rects = new DomRects();
+        this._reconciler = new LayoutReconciler();
+        this._postLayout = [];
+
+        root._canvas = this._canvas;
     }
 
     public buildLayout(
         elem: DomElement,
-        canvas: Canvas = this.canvas,
+        canvas: Canvas = this._canvas,
         rangeContext: DomElement | undefined = undefined,
         level = 0,
     ) {
@@ -46,29 +50,28 @@ export class Compositor {
         const style = elem._shadowStyle;
         const zIndex = style.zIndex ?? 0; // CHORE - zIndex needs to be incremental relative to parent
 
-        this.draw.updateLowestLayer(zIndex);
-        this.PLM.handleElement(elem, level);
+        this._draw.updateLowestLayer(zIndex);
+        this._reconciler.handleElement(elem, level);
 
-        if (this.opts.layoutChange) {
+        if (this._opts.layoutChange) {
             elem._contentRange = elem._initContentRange();
         }
 
         if (canvas.canDraw()) {
-            this.rects.storeElementPosition(zIndex, elem);
-            this.ops.defer(zIndex, () => this.draw.compose(elem, canvas));
-            if (elem._is(FOCUS_MANAGER)) {
-                if (this.opts.layoutChange) {
-                    this.postLayoutDefer(() => {
-                        elem.refreshVisualMap();
-                    });
-                }
+            this._rects.storeElementPosition(zIndex, elem);
+            this._draw.enqueue(zIndex, elem, canvas);
+
+            if (elem._is(FOCUS_MANAGER) && this._opts.layoutChange) {
+                this._postLayout.push(() => {
+                    elem.refreshVisualMap();
+                });
             }
         }
 
         for (const child of elem._children) {
             this.updateChildCanvas(child, canvas);
 
-            if (this.opts.layoutChange) {
+            if (this._opts.layoutChange) {
                 this.updateContentRange(child, rangeContext);
             }
 
@@ -83,19 +86,19 @@ export class Compositor {
         }
 
         if (elem._is(ROOT_ELEMENT)) {
-            this.ops.performAll();
-            this.postLayout.forEach((cb) => cb());
+            this._draw.performOps();
+            this._postLayout.forEach((cb) => cb());
         }
     }
 
     private updateChildCanvas(child: DomElement, parent: Canvas) {
         if (!child._canvas) {
-            child._canvas = new SubCanvas(child, this.host, parent);
-        } else if (this.opts.layoutChange) {
+            child._canvas = new SubCanvas(child, parent);
+        } else if (this._opts.layoutChange && child._canvas instanceof SubCanvas) {
             child._canvas.constrainToLayout(parent);
         }
 
-        child._canvas.bindContext(this.canvas.grid, this.canvas.stdout);
+        child._canvas.bindContext(this._canvas.grid, this._canvas.stdout);
     }
 
     private updateContentRange(child: DomElement, scroller: DomElement | undefined) {
@@ -120,17 +123,5 @@ export class Compositor {
                 unclippedChild.corner.x + unclippedChild.width,
             );
         }
-    }
-
-    private postLayoutDefer(cb: () => unknown): void {
-        this.postLayout.push(cb);
-    }
-
-    public getHeight(): number {
-        return this.canvas.grid.length;
-    }
-
-    public getStdout(): string {
-        return this.canvas.toString();
     }
 }

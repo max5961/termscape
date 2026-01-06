@@ -1,4 +1,11 @@
+import type { Grid } from "./compositor/Canvas.js";
+import type { Stdout } from "./Types.js";
+
 type Enum<T extends string> = { [P in T]: T };
+
+export function isFullscreen(grid: Grid, stdout: Stdout) {
+    return grid.length >= stdout.rows;
+}
 
 /**
  * FUTURE POSSIBLE TODO - Is it possible to narrow an explicitly injected T to

@@ -7,7 +7,20 @@ type Level = {
     afterLayout: (() => boolean)[];
 };
 
-export class PostLayoutManager {
+/**
+ * Stores callbacks from elements which may request layout reconciliation after
+ * the layout is completed.  This is necessary to allow reconciliation within the
+ * same render, rather than offloading side effects to the next render.  These
+ * are returned in sorted order so that parent effects are applied before child
+ * effects.
+ *
+ * This handles the following examples:
+ * - A resize event creates a larger content area and as a result de-optimizes
+ *   the corner offset of an element managing its scrollable content or the same
+ *   resize event moves the focused element out of view.
+ * - A user creates an afterLayout callback.
+ * */
+export class LayoutReconciler {
     private _levels: Record<number, Level>;
 
     constructor() {
