@@ -1,0 +1,30 @@
+import termscape from "@src/index.js";
+import { defaultSuite } from "test/createSuite.js";
+import { describe } from "node:test";
+import type { Style } from "@src/dom/style/Style.js";
+import { ColorSet } from "@src/Constants.js";
+
+const SUITE = "background-color";
+const run = defaultSuite(SUITE);
+
+async function runTest(style: Style.Box["backgroundColor"]) {
+    run(
+        style ?? "undefined",
+        termscape.createElement("box", {
+            style: {
+                height: 10,
+                width: 20,
+                borderStyle: "round",
+                backgroundColor: style,
+            },
+        }),
+    );
+}
+
+describe(SUITE, async () => {
+    [...ColorSet.values()].forEach(async (color) => {
+        await runTest(color);
+    });
+
+    await runTest(undefined);
+});

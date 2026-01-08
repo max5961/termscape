@@ -1,4 +1,6 @@
+import { TEST_ROOT_ELEMENT } from "../Constants.js";
 import type { Root } from "../dom/RootElement.js";
+import type { TestRoot } from "../testing/TestRoot.js";
 import type { WriteOpts } from "../Types.js";
 import { objectKeys } from "../Util.js";
 
@@ -6,15 +8,16 @@ type Updater = Root["render"];
 
 export class Scheduler {
     public debounceMs: number;
+    private host: Root;
     private tickScheduled: boolean;
     private wait: boolean;
     private updater: null | Updater;
     private capturedOutput: string[];
     private writeOpts: WriteOpts;
     private waitingOps: (() => unknown)[];
-    private isTestRoot: boolean;
 
-    constructor({ isTestRoot }: { isTestRoot: boolean }) {
+    constructor(host: Root) {
+        this.host = host;
         this.debounceMs = 16;
         this.tickScheduled = false;
         this.wait = false;
@@ -22,7 +25,6 @@ export class Scheduler {
         this.capturedOutput = [];
         this.writeOpts = {};
         this.waitingOps = [];
-        this.isTestRoot = !isTestRoot;
     }
 
     /**
@@ -93,7 +95,7 @@ export class Scheduler {
      * Prevents stdin events from polluting the dom tree during rendering.
      * */
     public execWhenFree(op: () => unknown) {
-        if (!this.wait) {
+        if (!this.wait && !this.isFrameTesting(this.host)) {
             op();
         } else {
             this.waitingOps.push(op);
@@ -120,8 +122,14 @@ export class Scheduler {
         const nextOp = this.waitingOps.pop();
         nextOp?.();
 
-        if (this.isTestRoot) {
+        if (!this.isFrameTesting(this.host)) {
             this.waitingOps = [];
+        } else {
+            this.host.exitIfDone(nextOp);
         }
+    }
+
+    private isFrameTesting(host: Root): host is TestRoot {
+        return host._is(TEST_ROOT_ELEMENT) && host.isFrameTesting;
     }
 }

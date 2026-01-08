@@ -3,4 +3,5 @@ node_modules/
 dist/
 sandbox/
 .ignore
+*.snapshot.actual
 

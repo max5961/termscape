@@ -9,15 +9,16 @@ import {
 import type { Root } from "../dom/RootElement.js";
 import type { Scheduler } from "./Scheduler.js";
 import type { EventEmitter } from "stream";
-import type { EventPayloadMap, RuntimeConfig } from "../Types.js";
+import type { EventPayloadMap, Runtime } from "../Types.js";
 import type { InputElement } from "../dom/InputElement.js";
 import { Ansi } from "./Ansi.js";
 import { Capture } from "log-goblin";
 import { MouseState } from "./MouseState.js";
 import { handleError } from "./ThrowError.js";
 import type { MetaDataRegister } from "../dom/shared/MetaData.js";
+import { logger } from "./Logger.js";
 
-type Config = Required<RuntimeConfig>;
+type Config = Required<Runtime>;
 export type RuntimeDependencies = {
     config: Partial<Config>;
     root: Root;
@@ -26,7 +27,7 @@ export type RuntimeDependencies = {
     actions: MetaDataRegister["_actions"];
 };
 
-export type Runtime = ReturnType<typeof createRuntime>;
+export type RuntimeCtl = ReturnType<typeof createRuntime>;
 
 /**
  * Forceful exits need to be handled.  In case of multiple root instances, only the
@@ -37,7 +38,9 @@ export type Runtime = ReturnType<typeof createRuntime>;
  * thrown, node executes exit handlers, *then* writes the error before exiting, so
  * we need to tell endRuntime to not force an exit here.
  */
-const latestEndRuntime: { latest: Runtime["logic"]["endRuntime"] } = { latest: () => {} };
+const latestEndRuntime: { latest: RuntimeCtl["logic"]["endRuntime"] } = {
+    latest: () => {},
+};
 
 process.on("exit", () => {
     latestEndRuntime.latest(undefined, true);
@@ -51,7 +54,7 @@ process.on("SIGINT", () => {
  * Runtime settings are handled here.  The purpose of this is to allow for
  * exiting the app gracefully when the call stack is empty. Returns a
  * getter/setter API for public usage and logic for private usage in the Root
- * class.  This should support runtime changes to any setting in RuntimeConfig.
+ * class.  This should support runtime changes to any setting in Runtime.
  *
  * Settings related to input handling only take effect when the stdin stream is
  * being listened to.  Resuming and pausing stdin therefore applies or removes
@@ -99,7 +102,7 @@ export function createRuntime(deps: RuntimeDependencies) {
     };
 
     const logic = {
-        configureRuntime: (newConfig: RuntimeConfig) => {
+        configureRuntime: (newConfig: Runtime) => {
             const wasListening = isListening;
 
             logic.endRuntime();

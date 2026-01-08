@@ -17,14 +17,14 @@ export type BorderMap = [
 
 export function createBox(chars: BorderMap): Border {
     return {
-        top: chars[0][1],
-        topLeft: chars[0][0],
-        topRight: chars[0][2],
-        left: chars[1][0],
-        right: chars[1][2],
-        bottom: chars[2][1],
-        bottomLeft: chars[2][0],
-        bottomRight: chars[2][2],
+        top: chars[0][1][0],
+        topLeft: chars[0][0][0],
+        topRight: chars[0][2][0],
+        left: chars[1][0][0],
+        right: chars[1][2][0],
+        bottom: chars[2][1][0],
+        bottomLeft: chars[2][0][0],
+        bottomRight: chars[2][2][0],
     };
 }
 

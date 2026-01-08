@@ -1,13 +1,13 @@
 import EventEmitter from "events";
 import { Yg, type TagNameEnum } from "../Constants.js";
 import type { InputElement } from "./InputElement.js";
-import type { RuntimeConfig, WriteOpts, EventPayloadMap } from "../Types.js";
+import type { Runtime, WriteOpts, EventPayloadMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 import { Scheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
-import { createRuntime, type Runtime } from "../shared/RuntimeFactory.js";
+import { createRuntime, type RuntimeCtl } from "../shared/RuntimeFactory.js";
 import { HooksManager, type Hook, type HookHandler } from "../render/hooks/Hooks.js";
-import { ROOT_ELEMENT, TEST_ROOT_ELEMENT } from "../Constants.js";
+import { ROOT_ELEMENT } from "../Constants.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { MetaData, MetaDataRegister } from "./shared/MetaData.js";
@@ -18,21 +18,21 @@ export class Root extends DomElement<{
 }> {
     protected static override identity = ROOT_ELEMENT;
 
-    public runtime: Runtime["api"];
+    public runtime: RuntimeCtl["api"];
     public hooks: HooksManager;
     private hasRendered: boolean;
     private _register: MetaDataRegister;
     private scheduler: Scheduler;
     private renderer: Renderer;
-    private runtimeCtl: Runtime["logic"];
+    private runtimeCtl: RuntimeCtl["logic"];
     private emitter: EventEmitter<EventPayloadMap>;
 
-    constructor(config: RuntimeConfig) {
+    constructor(config: Runtime) {
         super();
         this._register = new MetaDataRegister(this);
         this.hooks = new HooksManager();
         this.renderer = new Renderer(this);
-        this.scheduler = new Scheduler({ isTestRoot: this._is(TEST_ROOT_ELEMENT) });
+        this.scheduler = new Scheduler(this);
         this.emitter = new EventEmitter();
         this.emitter.on("MouseEvent", this.handleMouseEvent);
         this.hasRendered = false;

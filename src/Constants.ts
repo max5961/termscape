@@ -5,7 +5,7 @@ import type { FocusManager } from "./dom/FocusManager.js";
 import type { LayoutElement, LayoutNode } from "./dom/LayoutElement.js";
 import type { ListElement } from "./dom/ListElement.js";
 import type { Root } from "./dom/RootElement.js";
-import type { TestRoot } from "./dom/TestRoot.js";
+import type { TestRoot } from "./testing/TestRoot.js";
 import type { TextElement, TextNode } from "./dom/TextElement.js";
 import type { DomElement } from "./dom/DomElement.js";
 import type { BgColor } from "ansi-escape-sequences";

@@ -1,6 +1,6 @@
 import { throwError } from "./ThrowError.js";
 import { objectKeys } from "../Util.js";
-import type { RuntimeConfig, StyleHandler } from "../Types.js";
+import type { Runtime, StyleHandler } from "../Types.js";
 import type { Props } from "../dom/props/Props.js";
 import type { Style } from "../dom/style/Style.js";
 import type { DomElement } from "../dom/DomElement.js";
@@ -28,7 +28,7 @@ type OptionalConfig<Style extends Style.All, Props extends Props.All> =
 
 type TagMap = {
     root: {
-        config: undefined | RuntimeConfig;
+        config: undefined | Runtime;
         return: Root;
     };
     box: {
@@ -118,8 +118,8 @@ export function createElement<T extends Tags>(
         return layoutNode;
     }
     if (tag === "root") {
-        const runtimeConfig = config[0] as Config<"root">;
-        return new Root(runtimeConfig ?? {});
+        const Runtime = config[0] as Config<"root">;
+        return new Root(Runtime ?? {});
     }
     if (tag === "canvas") {
         const canvas = new CanvasElement();

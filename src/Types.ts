@@ -7,6 +7,8 @@ import type { FocusState } from "./dom/shared/FocusNode.js";
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
 export type { Node as YogaNode, Edge } from "yoga-wasm-web/auto";
 
+export type _Omit<T extends object, U extends keyof T> = Omit<T, U>;
+
 export type ExtractUnion<T, U extends T> = U extends T ? U : never;
 
 export type ReqProps<T extends object, U extends keyof T> = T & {
@@ -40,7 +42,7 @@ export type GridToken = {
 
 export type ConfigureStdin = Exclude<Parameters<typeof configureStdin>[0], undefined>;
 
-export type RuntimeConfig = {
+export type Runtime = {
     /** Renders occur at an interval no faster than `debounceMs` ms. */
     debounceMs?: number;
     /** Use terminal's alt screen buffer. Preserve main screen. */
@@ -114,8 +116,8 @@ export type EventHandler<T extends Event> = ({
     [_ in ConsoleEvent]: ConsoleEventHandler;
 })[T];
 
-export type Stdout = Required<RuntimeConfig>["stdout"];
-export type Stdin = Required<RuntimeConfig>["stdin"];
+export type Stdout = Required<Runtime>["stdout"];
+export type Stdin = Required<Runtime>["stdin"];
 
 export type WriteOpts = {
     resize?: boolean;
