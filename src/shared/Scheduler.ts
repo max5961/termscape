@@ -1,4 +1,3 @@
-import { TEST_ROOT_ELEMENT } from "../Constants.js";
 import type { Root } from "../dom/RootElement.js";
 import type { TestRoot } from "../testing/TestRoot.js";
 import type { WriteOpts } from "../Types.js";
@@ -8,16 +7,18 @@ type Updater = Root["render"];
 
 export class Scheduler {
     public debounceMs: number;
-    private host: Root;
-    private tickScheduled: boolean;
-    private wait: boolean;
-    private updater: null | Updater;
-    private capturedOutput: string[];
-    private writeOpts: WriteOpts;
-    private waitingOps: (() => unknown)[];
+    protected tickScheduled: boolean;
+    protected wait: boolean;
+    protected updater: null | Updater;
+    protected capturedOutput: string[];
+    protected writeOpts: WriteOpts;
+    protected waitingOps: (() => unknown)[];
 
-    constructor(host: Root) {
-        this.host = host;
+    protected setWait(b: boolean) {
+        this.wait = b;
+    }
+
+    constructor() {
         this.debounceMs = 16;
         this.tickScheduled = false;
         this.wait = false;
@@ -49,13 +50,11 @@ export class Scheduler {
         });
     };
 
-    private dispatchUpdater() {
+    protected dispatchUpdater() {
         if (this.updater) {
-            /*
-             * Join together captured output, then reset BEFORE the updater runs.
-             * By resetting before the updater runs, this allows Renderer methods
-             * to accrue console output and render hooks to utilize logging
-             */
+            // Join together captured output, then reset BEFORE the updater runs.
+            // By resetting before the updater runs, this allows Renderer methods
+            // to accrue console output and render hooks to utilize logging
             const consoleOutput = this.capturedOutput.join("");
             this.writeOpts.capturedOutput = consoleOutput;
             this.capturedOutput = [];
@@ -65,13 +64,13 @@ export class Scheduler {
 
         this.writeOpts = {};
         this.updater = null;
-        this.wait = true;
+        this.setWait(true);
 
         setTimeout(() => {
             if (this.updater) {
                 this.dispatchUpdater();
             } else {
-                this.wait = false;
+                this.setWait(false);
             }
 
             this.execWaitingOps();
@@ -82,7 +81,7 @@ export class Scheduler {
      * Overwrites anything not true, which allows captured console output to
      * overwrite previous.
      */
-    private mergeOpts(opts: WriteOpts) {
+    protected mergeOpts(opts: WriteOpts) {
         for (const key of objectKeys(opts)) {
             if (this.writeOpts[key] !== true) {
                 // @ts-ignore
@@ -95,41 +94,76 @@ export class Scheduler {
      * Prevents stdin events from polluting the dom tree during rendering.
      * */
     public execWhenFree(op: () => unknown) {
-        if (!this.wait && !this.isFrameTesting(this.host)) {
+        if (!this.wait) {
             op();
         } else {
             this.waitingOps.push(op);
         }
     }
 
-    // CHORE - Revisit this...but I think the right idea is to not debounce during
-    // tests so that junk double event handlers aren't ran when rapidly sending
-    // stdin events.
-
     /**
-     * Used to have a `debounce` option here.  But, making it default **except**
-     * for during testing code.  With debouncing enabled, behavior during slow
-     * renders seems more natural to me.  That said, if you were to not debounce,
-     * then `process.stdin` naturally debounces because it batches together
-     * multiple keypresses made during long synchronous blocks of code, which
-     * causes keymaps listening for a single keypress to no longer match.
+     * Used to have a `debounce` option here, but making it default.  With debouncing enabled, behavior during slow
+     * renders seems more natural to me.
      *
-     * During testing however, debouncing should be turned off, since we want to
-     * be able to send keypresses to a mock stdin with a minimal interval time
-     * in order to keep the test runner from waiting.
+     * Important to note: `process.stdin` batches together keypresses made during long synchronous blocks of code.
+     * For example, 5 'a' keypresses get batched together as 'aaaaa', and this causes keypresses to not match key
+     * listeners anyways.
+     *
+     * Debounce behavior is overridden in TestScheduler to allow testing operations in order.
      * */
-    private execWaitingOps() {
+    protected execWaitingOps() {
         const nextOp = this.waitingOps.pop();
         nextOp?.();
 
-        if (!this.isFrameTesting(this.host)) {
-            this.waitingOps = [];
-        } else {
-            this.host.exitIfDone(nextOp);
+        this.waitingOps = [];
+    }
+
+    public pushWaitingOps(...ops: (() => unknown)[]) {
+        this.waitingOps.push(...ops);
+    }
+}
+
+export class TestScheduler extends Scheduler {
+    private host: TestRoot;
+    private firstWait = false;
+    private afterFirstWait: (() => unknown)[] = [];
+
+    protected override setWait(b: boolean): void {
+        this.wait = b;
+
+        if (b && !this.firstWait) {
+            this.firstWait = true;
+            for (const batch of this.afterFirstWait) batch();
         }
     }
 
-    private isFrameTesting(host: Root): host is TestRoot {
-        return host._is(TEST_ROOT_ELEMENT) && host.isFrameTesting;
+    constructor(host: TestRoot) {
+        super();
+        this.host = host;
+    }
+
+    public override execWhenFree(op: () => unknown) {
+        this.waitingOps.push(op);
+    }
+
+    public override execWaitingOps(): void {
+        // Shift ops instead of popping as in non-test.  Popping allows for debounce-like behavior, whereas
+        // in testing we want all ops to exec in queue-like fashion.
+        const nextOp = this.waitingOps.shift();
+        nextOp?.();
+
+        this.host.exitIfDone(nextOp);
+    }
+
+    public sendOps(ops: (string | (() => unknown))[]): void {
+        this.afterFirstWait.push(() => {
+            ops.forEach((op) => {
+                if (typeof op === "string") {
+                    this.host.runtime.stdin.write(Buffer.from(op));
+                } else {
+                    this.execWhenFree(op);
+                }
+            });
+        });
     }
 }

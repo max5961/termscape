@@ -1,9 +1,9 @@
 import EventEmitter from "events";
-import { Yg, type TagNameEnum } from "../Constants.js";
+import { TEST_ROOT_ELEMENT, Yg, type TagNameEnum } from "../Constants.js";
 import type { InputElement } from "./InputElement.js";
 import type { Runtime, WriteOpts, EventPayloadMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
-import { Scheduler } from "../shared/Scheduler.js";
+import { Scheduler, TestScheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { createRuntime, type RuntimeCtl } from "../shared/RuntimeFactory.js";
 import { HooksManager, type Hook, type HookHandler } from "../render/hooks/Hooks.js";
@@ -20,19 +20,21 @@ export class Root extends DomElement<{
 
     public runtime: RuntimeCtl["api"];
     public hooks: HooksManager;
-    private hasRendered: boolean;
-    private _register: MetaDataRegister;
-    private scheduler: Scheduler;
-    private renderer: Renderer;
-    private runtimeCtl: RuntimeCtl["logic"];
-    private emitter: EventEmitter<EventPayloadMap>;
+    protected hasRendered: boolean;
+    protected _register: MetaDataRegister;
+    protected scheduler: Scheduler;
+    protected renderer: Renderer;
+    protected runtimeCtl: RuntimeCtl["logic"];
+    protected emitter: EventEmitter<EventPayloadMap>;
 
     constructor(config: Runtime) {
         super();
         this._register = new MetaDataRegister(this);
         this.hooks = new HooksManager();
         this.renderer = new Renderer(this);
-        this.scheduler = new Scheduler(this);
+        this.scheduler = this._is(TEST_ROOT_ELEMENT)
+            ? new TestScheduler(this)
+            : new Scheduler();
         this.emitter = new EventEmitter();
         this.emitter.on("MouseEvent", this.handleMouseEvent);
         this.hasRendered = false;

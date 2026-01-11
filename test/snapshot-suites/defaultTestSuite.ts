@@ -1,4 +1,5 @@
 import { configureSnapshot, type Snapshot } from "@src/testing/configureSnapshot.js";
+import { DEFAULT_TEST_RUNTIME } from "@src/testing/defaultSuite.js";
 import { expect, test } from "vitest";
 
 test("createSuite expect true to be true", () => expect(true).toBe(true));
@@ -9,24 +10,12 @@ function tester(...[name, actual, expected]: Parameters<Required<Snapshot>["test
     });
 }
 
-export const defaultSuite = (name: string) => {
+export const defaultTestSuite = (name: string) => {
     return configureSnapshot({
         record: "actual",
-        mode: "frames",
         replay: false,
         tester,
     })(name, {
-        rows: 20,
-        columns: 80,
-        mode: "frames",
-        writeStdout: false,
-        maxFrames: Infinity,
+        ...DEFAULT_TEST_RUNTIME,
     });
 };
-
-export const createSuite = configureSnapshot({
-    record: "actual",
-    mode: "frames",
-    replay: false,
-    tester,
-});

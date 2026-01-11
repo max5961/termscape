@@ -1,12 +1,12 @@
 import termscape from "@src/index.js";
 import { describe } from "vitest";
-import { defaultSuite } from "test/createSuite.js";
+import { defaultTestSuite } from "test/snapshot-suites/defaultTestSuite.js";
 import type { Style } from "@src/dom/style/Style.js";
 import type { BorderMap } from "@src/shared/Boxes.js";
 
 const SUITE = "borders";
 
-const run = defaultSuite(SUITE);
+const run = defaultTestSuite(SUITE);
 
 async function runTest(style: Exclude<Style.Box["borderStyle"], undefined | BorderMap>) {
     await run(

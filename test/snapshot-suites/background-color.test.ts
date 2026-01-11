@@ -1,11 +1,11 @@
 import termscape from "@src/index.js";
-import { defaultSuite } from "test/createSuite.js";
+import { defaultTestSuite } from "test/snapshot-suites/defaultTestSuite.js";
 import { describe } from "node:test";
 import type { Style } from "@src/dom/style/Style.js";
 import { ColorSet } from "@src/Constants.js";
 
 const SUITE = "background-color";
-const run = defaultSuite(SUITE);
+const run = defaultTestSuite(SUITE);
 
 async function runTest(style: Style.Box["backgroundColor"]) {
     run(

@@ -3,23 +3,20 @@ import type { Stdout } from "../Types.js";
 export type MockStdoutConfig = {
     rows: number;
     columns: number;
-    writeStdout: boolean;
 };
 
 export function getMockStdout(config: MockStdoutConfig): Stdout {
     return new MockStdout(config) as unknown as Stdout;
 }
 
-class MockStdout {
+export class MockStdout {
     private _rows: number;
     private _columns: number;
-    private _writeStdout: boolean;
     private _resizeHandlers: Set<() => unknown>;
 
-    constructor({ rows, columns, writeStdout }: MockStdoutConfig) {
+    constructor({ rows, columns }: MockStdoutConfig) {
         this._rows = rows;
         this._columns = columns;
-        this._writeStdout = writeStdout;
         this._resizeHandlers = new Set();
     }
 
@@ -31,10 +28,10 @@ class MockStdout {
         return this._columns;
     }
 
-    public write = (data: string) => {
-        if (this._writeStdout) {
-            process.stdout.write(data);
-        }
+    public write = (_data: string) => {
+        // if (this._writeStdout) {
+        //     process.stdout.write(data);
+        // }
     };
 
     public on = (_resize: "resize", cb: () => unknown) => {

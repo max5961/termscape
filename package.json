@@ -11,10 +11,13 @@
         "./dist"
     ],
     "scripts": {
-        "test": "tsc && TEST_ENV=true vitest",
-        "sandbox": "tsc && node ./dist/sandbox/index.js",
-        "sandbox:debug": "tsc && RENDER_DEBUG=true node ./dist/sandbox/index.js",
-        "build": "rm -r ./dist && tsc && rm -r ./dist/sandbox",
+        "compile": "tsc -p ./tsconfig.json",
+        "compile:test": "npm run compile && tsc -p ./tsconfig.json",
+        "test": "npm run compile:test && vitest",
+        "test:overwrite-snapshots": "./overwrite-snapshots.sh",
+        "sandbox": "npm run compile && node ./dist/sandbox/index.js",
+        "sandbox:debug": "npm run compile && RENDER_DEBUG=true node ./dist/sandbox/index.js",
+        "build": "rm -r ./dist && npm run compile:test && rm -r ./dist/sandbox",
         "publish": "npm run build && npm publish --access=public"
     },
     "type": "module",
