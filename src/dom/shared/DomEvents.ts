@@ -1,3 +1,4 @@
+import { logger } from "../../shared/Logger.js";
 import type {
     MouseEventType,
     MouseEvent,
@@ -8,6 +9,7 @@ import type {
     EventPayloadMap,
 } from "../../Types.js";
 import type { DomElement } from "../DomElement.js";
+import type { FocusState } from "./FocusNode.js";
 
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 
@@ -63,8 +65,9 @@ export class DomEvents {
         this.propagateMouseEvent(x, y, type);
     }
 
-    public dispatchFocusEvent(_event: FocusEvent) {
-        //
+    public dispatchFocusEvent(event: FocusEvent, state: FocusState) {
+        const listeners = this.getListeners(event);
+        listeners.forEach((cb) => cb(state));
     }
 
     public dispatchConsoleEvent(_event: ConsoleEvent) {

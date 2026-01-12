@@ -1,4 +1,5 @@
 import type { DomElement } from "../DomElement.js";
+import type { DomEvents } from "./DomEvents.js";
 
 // CHORE - move to types
 export type FocusState = { focus: boolean; shallowFocus: boolean };
@@ -9,6 +10,8 @@ export class FocusNode {
     private _nearestProvider: Provider | null;
     private _ownProvider: Provider | null;
     private _host: DomElement;
+    /** @internal */
+    public _currStatus: FocusState;
 
     constructor(elem: DomElement) {
         this._childNodes = new Set();
@@ -16,6 +19,7 @@ export class FocusNode {
         this._ownProvider = null;
         this._host = elem;
         this._parent = null;
+        this._currStatus = { focus: true, shallowFocus: false };
     }
 
     // CHORE - appendChild and removeChild needs tests to ensure Provider chain
@@ -35,9 +39,8 @@ export class FocusNode {
 
         if (node._nearestProvider === this._nearestProvider) {
             node._nearestProvider = null;
+            node.handleProviderChange();
         }
-
-        this.rewireChildren(this._ownProvider);
     }
 
     public getFocusState(): FocusState {
@@ -55,12 +58,6 @@ export class FocusNode {
         return this.getFocusState().shallowFocus;
     }
 
-    public focusNearestProvider() {
-        if (this._nearestProvider) {
-            this._nearestProvider.focused = true;
-        }
-    }
-
     /**
      * Make this node provide focus context for descendents.
      * */
@@ -76,7 +73,7 @@ export class FocusNode {
 
         this._ownProvider = provider;
         this._nearestProvider = provider;
-        this.propagateChanges();
+        this.handleProviderChange(true);
     }
 
     /**
@@ -85,8 +82,9 @@ export class FocusNode {
      * */
     public setOwnProvider(focused: boolean) {
         if (!this._ownProvider) return;
+        if (this._ownProvider.focused === focused) return;
         this._ownProvider.focused = focused;
-        this.propagateChanges();
+        this.handleProviderChange();
     }
 
     /**
@@ -100,42 +98,78 @@ export class FocusNode {
         this._ownProvider = null;
         this._nearestProvider = this._parent?._nearestProvider ?? null;
         if (!freeRecursive) {
-            this.propagateChanges();
+            this.handleProviderChange();
         }
     }
 
-    private propagateChanges() {
-        this.rewireChildren(this._nearestProvider);
-        this.reapplyStyles(this._host);
-    }
+    private suppressEvents = false;
+    private handleProviderChange(silent = false) {
+        this.suppressEvents = silent;
 
-    private reapplyStyles = (elem: DomElement) => {
-        const styleHandler = elem._styleHandler;
-
-        if (styleHandler) {
-            elem.style = styleHandler;
-        }
-
-        elem._children.forEach((child) => {
-            this.reapplyStyles(child);
+        this._childNodes.forEach((node) => {
+            this.rewireNearest(node, this._nearestProvider);
         });
-    };
 
-    private rewireChildren(nearest: Provider | null) {
-        this._childNodes.forEach((child) => this.rewireHelper(child, nearest));
+        this.propagateChanges();
     }
 
-    private rewireHelper = (node: FocusNode, nearest: Provider | null) => {
+    /** Updates nearest provider to direct children until the next provider */
+    private rewireNearest(node: FocusNode, nearest: Provider | null) {
         if (node._ownProvider) return;
         node._nearestProvider = nearest;
+        node._childNodes.forEach((chnode) => {
+            this.rewireNearest(chnode, nearest);
+        });
+    }
 
-        const styleHandler = node._host._styleHandler;
+    /** Handles status change handlers and reassign style handlers */
+    private propagateChanges() {
+        this.handleStatusChange();
+
+        const styleHandler = this._host._styleHandler;
         if (styleHandler) {
-            node._host.style = styleHandler;
+            this._host.style = styleHandler;
         }
 
-        node._childNodes.forEach((child) => this.rewireHelper(child, nearest));
-    };
+        this._childNodes.forEach((child) => {
+            child.propagateChanges();
+        });
+    }
+
+    /** Updates _currStatus and dispatches focus change handlers */
+    private handleStatusChange() {
+        const prev = this._currStatus;
+        const next = this.getFocusState();
+
+        if (prev.focus !== next.focus || prev.shallowFocus !== next.shallowFocus) {
+            this._currStatus = next;
+
+            if (!this.suppressEvents) {
+                this.dispatchChangeHandlers(prev, next);
+            }
+        }
+    }
+
+    private dispatchChangeHandlers(prev: FocusState, next: FocusState) {
+        if (!this._host.hasFocusChangeHandler) return;
+
+        const dispatch = (...[e, next]: Parameters<DomEvents["dispatchFocusEvent"]>) => {
+            this._host._events.dispatchFocusEvent(e, next);
+        };
+
+        if (!prev.focus && next.focus) dispatch("focus", next);
+        if (prev.focus && !next.focus) dispatch("blur", next);
+        if (!prev.shallowFocus && next.shallowFocus) dispatch("shallowfocus", next);
+        if (prev.shallowFocus && !next.shallowFocus) dispatch("shallowblur", next);
+    }
+
+    // ---UNUSED BUT WILL NEED TO BE IMPLEMENTED---
+    // public focusNearestProvider() {
+    //     if (this._nearestProvider) {
+    //         this._nearestProvider.focused = true;
+    //     }
+    //     // NEED TO PROPAGATE CHANGES FROM NEARESTPROVIDER
+    // }
 }
 
 export class Provider {
@@ -152,9 +186,7 @@ export class Provider {
             return { focus: false, shallowFocus: false };
         }
 
-        const result: FocusState = { focus: true, shallowFocus: false };
         let parent: Provider | null = this.parent;
-
         while (parent) {
             if (!parent.focused) {
                 return { focus: false, shallowFocus: true };
@@ -162,6 +194,6 @@ export class Provider {
             parent = parent.parent;
         }
 
-        return result;
+        return { focus: true, shallowFocus: false };
     }
 }

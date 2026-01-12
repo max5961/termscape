@@ -11,7 +11,7 @@ import {
     type ElementIdentityMap,
 } from "../Constants.js";
 import { Render, RequestInput } from "./util/decorators.js";
-import { FocusNode } from "./shared/FocusNode.js";
+import { FocusNode, type FocusState } from "./shared/FocusNode.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
 import { createVirtualStyleProxy } from "./style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
@@ -437,23 +437,22 @@ export abstract class DomElement<
     // Focus
     // =========================================================================
 
-    // CHORE
-    // Needs to be overridden in FocusManager to do this.focusChild(this)
-    @Render()
-    public focus() {
-        this._focusNode.focusNearestProvider();
-    }
+    // CHORE - How to handle this.  It needs to behave differently in FocusManager
+    // @Render()
+    // public focus() {
+    //     this._focusNode.focusNearestProvider();
+    // }
 
     public getFocus(): boolean {
-        return this._focusNode.getFocus();
+        return this._focusNode._currStatus.focus;
     }
 
     public getShallowFocus(): boolean {
-        return this._focusNode.getShallowFocus();
+        return this._focusNode._currStatus.shallowFocus;
     }
 
     public getFocusState() {
-        return this._focusNode.getFocusState();
+        return this._focusNode._currStatus;
     }
 
     // CHORE - Should these be _becomeFocusProvider for example since they are
@@ -542,6 +541,8 @@ export abstract class DomElement<
         this._events.removeListener(event, handler);
     }
 
+    // We don't necessarily want input this for non-mouse events, even though it would be rare to have an onFocus and not
+    // be using some sort of input
     @RequestInput()
     private setSingle(...args: Parameters<DomEvents["setSingle"]>) {
         return this._events.setSingle(...args);
@@ -657,6 +658,42 @@ export abstract class DomElement<
     }
     public get onDragStart() {
         return this._events.getSingle("dragstart");
+    }
+
+    // FOCUS/BLUR
+    /** @internal */
+    public get hasFocusChangeHandler() {
+        return (
+            this._events.hasListeners("focus") ||
+            this._events.hasListeners("blur") ||
+            this._events.hasListeners("shallowfocus") ||
+            this._events.hasListeners("shallowblur")
+        );
+    }
+
+    public set onFocus(cb: EventHandler<"focus"> | undefined) {
+        this.setSingle("focus", cb);
+    }
+    public set onShallowFocus(cb: EventHandler<"shallowfocus"> | undefined) {
+        this.setSingle("shallowfocus", cb);
+    }
+    public set onBlur(cb: EventHandler<"blur"> | undefined) {
+        this.setSingle("blur", cb);
+    }
+    public set onShallowBlur(cb: EventHandler<"shallowblur"> | undefined) {
+        this.setSingle("shallowblur", cb);
+    }
+    public get onFocus() {
+        return this._events.getSingle("focus");
+    }
+    public get onShallowFocus() {
+        return this._events.getSingle("shallowfocus");
+    }
+    public get onBlur() {
+        return this._events.getSingle("blur");
+    }
+    public get onShallowBlur() {
+        return this._events.getSingle("shallowblur");
     }
 
     // ========================================================================

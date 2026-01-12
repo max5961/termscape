@@ -75,10 +75,13 @@ export class ListElement extends FocusManager<{
     // refactoring
 
     protected override handleAppendChild(child: DomElement): void {
-        child._becomeProvider(false);
+        // In order to satisfy FocusNode dispatching focus change handlers ONLY when provider status changes, its important
+        // to make sure NOT to use _setOwnProvider here.
         if (this._children.length === 1) {
-            child._setOwnProvider(true);
+            child._becomeProvider(true);
             this.focused = child;
+        } else {
+            child._becomeProvider(false);
         }
     }
 

@@ -98,7 +98,7 @@ export type MouseEventType =
     // | "drag"
     | "dragstart"
     | "dragend";
-export type FocusEvent = "focus" | "blur" | "shallowFocus" | "shallowBlur";
+export type FocusEvent = "focus" | "blur" | "shallowfocus" | "shallowblur";
 export type ConsoleEvent = "console";
 
 export type Event = MouseEventType | FocusEvent | ConsoleEvent;
