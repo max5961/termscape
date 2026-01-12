@@ -6,9 +6,12 @@ export const DEFAULT_TEST_RUNTIME = {
     altScreen: false,
 };
 
-export const defaultSuite = (record: false | RecordType) => (desc: string) => {
-    return configureSnapshot({
-        record,
-        replay: "interactive",
-    })(desc, { ...DEFAULT_TEST_RUNTIME });
-};
+export const defaultSuite =
+    (record: false | RecordType, replay: "auto" | "interactive") => (desc: string) => {
+        return configureSnapshot({
+            record,
+            replay,
+        })(desc, {
+            ...DEFAULT_TEST_RUNTIME,
+        });
+    };

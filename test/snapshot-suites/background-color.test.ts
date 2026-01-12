@@ -1,5 +1,5 @@
 import termscape from "@src/index.js";
-import { defaultTestSuite } from "test/snapshot-suites/defaultTestSuite.js";
+import { defaultTestSuite } from "test/snapshot-suites/util/defaultTestSuite.js";
 import { describe } from "node:test";
 import type { Style } from "@src/dom/style/Style.js";
 import { ColorSet } from "@src/Constants.js";

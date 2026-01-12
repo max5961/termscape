@@ -1,6 +1,6 @@
 import termscape from "@src/index.js";
 import { describe } from "vitest";
-import { defaultTestSuite } from "test/snapshot-suites/defaultTestSuite.js";
+import { defaultTestSuite } from "test/snapshot-suites/util/defaultTestSuite.js";
 import type { Style } from "@src/dom/style/Style.js";
 import type { BorderMap } from "@src/shared/Boxes.js";
 

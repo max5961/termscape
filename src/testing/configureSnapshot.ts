@@ -34,9 +34,9 @@ export function configureSnapshot({ record, replay, tester }: Snapshot) {
 
             const dName = TestUtil.getDisplayName(desc, name);
             if (replay === "auto") {
-                root.replayAuto(dName);
+                await root.replayAuto(dName);
             } else if (replay === "interactive") {
-                root.replayInteractive("n", dName);
+                await root.replayInteractive("n", dName);
             }
 
             if (tester) {

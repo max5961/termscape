@@ -89,13 +89,13 @@ export class TestRoot extends Root {
         fs.writeFileSync(fpath, this._frames.join(""), "utf8");
     }
 
-    public replayAuto(name?: string) {
+    public async replayAuto(name?: string) {
         const frames = TestUtil.getParsedFrames(this._frames);
-        TestUtil.playFrames(frames, name);
+        await TestUtil.playFrames(frames, name);
     }
 
-    public replayInteractive(nextKey: string, name?: string) {
+    public async replayInteractive(nextKey: string, name?: string) {
         const frames = TestUtil.getParsedFrames(this._frames);
-        TestUtil.playFramesInteractive(frames, nextKey, name);
+        await TestUtil.playFramesInteractive(frames, nextKey, name);
     }
 }

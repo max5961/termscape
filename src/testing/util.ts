@@ -10,7 +10,7 @@ function drawFrame(frame: string, idx: number) {
 }
 
 function drawTestName(name: string) {
-    process.stdout.write(Ansi.format(name + "\n", ["yellow"]));
+    process.stdout.write(Ansi.format("\n" + name + "\n", ["yellow"]));
 }
 
 export function getDisplayName(desc: string, name: string) {
@@ -41,7 +41,7 @@ export function getParsedFrames(frames: string | string[]): string[] {
     return frames.split(TestRoot.Frame).filter((frame) => frame);
 }
 
-export function playFrames(frames: string[], name?: string) {
+export async function playFrames(frames: string[], name?: string): Promise<void> {
     if (name) drawTestName(name);
 
     frames.forEach((frame, idx) => {
@@ -49,58 +49,65 @@ export function playFrames(frames: string[], name?: string) {
     });
 }
 
-export function playFramesInteractive(frames: string[], nextKey: string, name?: string) {
-    if (name) {
-        drawTestName(name + "\n");
-    }
+export function playFramesInteractive(
+    frames: string[],
+    nextKey: string,
+    name?: string,
+): Promise<void> {
+    return new Promise<void>((res) => {
+        if (name) {
+            drawTestName(name);
+        }
 
-    process.stdout.write("Interactive snapshot viewer\n");
-    process.stdout.write(
-        `Press ${Ansi.format(nextKey, ["green"])} to advance frames (press once to start).\n`,
-    );
+        process.stdout.write("Interactive snapshot viewer\n");
+        process.stdout.write(
+            `Press ${Ansi.format(nextKey, ["green"])} to advance frames (press once to start).\n`,
+        );
 
-    if (!frames.length) process.stdout.write("No frames recorded\n");
+        if (!frames.length) process.stdout.write("No frames recorded\n");
 
-    let i = 0;
-    const handleStdin = (buf: Buffer) => {
-        const off = () => {
-            process.stdin.setRawMode(false);
-            process.stdin.pause();
-            process.stdin.removeListener("data", handleStdin);
+        let i = 0;
+        const handleStdin = (buf: Buffer) => {
+            const off = () => {
+                process.stdin.setRawMode(false);
+                process.stdin.pause();
+                process.stdin.removeListener("data", handleStdin);
+                res();
+            };
+
+            if (buf[0] === 3) return off();
+            if (buf.toString("utf8") !== nextKey) return;
+
+            const frame = frames.shift();
+            if (!frame) return off();
+
+            drawFrame(frame, ++i);
+
+            if (!frames.length) return off();
         };
 
-        if (buf[0] === 3) return off();
-        if (buf.toString("utf8") !== nextKey) return;
-
-        const frame = frames.shift();
-        if (!frame) return off();
-
-        drawFrame(frame, ++i);
-
-        if (!frames.length) return off();
-    };
-
-    process.stdin.resume();
-    process.stdin.setRawMode(true);
-    process.stdin.on("data", handleStdin);
+        process.stdin.resume();
+        process.stdin.setRawMode(true);
+        process.stdin.on("data", handleStdin);
+    });
 }
 
 type BaseArgs = { suite: string; test: string; type: RecordType };
 export function replaySuite<T extends "auto" | "interactive">(
     mode: T,
 ): T extends "auto"
-    ? (args: BaseArgs) => void
-    : (args: BaseArgs & { nextKey: string }) => void {
-    const handle = (args: BaseArgs & { nextKey?: string }) => {
+    ? (args: BaseArgs) => Promise<void>
+    : (args: BaseArgs & { nextKey: string }) => Promise<void> {
+    const handle = async (args: BaseArgs & { nextKey?: string }) => {
         const snapshot = snapshotName(args.suite, args.test, args.type);
         const rawFrames = fs.readFileSync(snapshot, "utf8");
         const parsedFrames = getParsedFrames(rawFrames);
         const name = getDisplayName(args.suite, args.test);
 
         if (mode === "auto") {
-            playFrames(parsedFrames, name);
+            await playFrames(parsedFrames, name);
         } else if (mode === "interactive" && args.nextKey) {
-            playFramesInteractive(parsedFrames, args.nextKey, name);
+            await playFramesInteractive(parsedFrames, args.nextKey, name);
         }
     };
 
