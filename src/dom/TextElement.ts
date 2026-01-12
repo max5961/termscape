@@ -12,6 +12,7 @@ import { Render } from "./util/decorators.js";
 import { TagNameEnum, TEXT_NODE, Yg } from "../Constants.js";
 import { TEXT_ELEMENT } from "../Constants.js";
 import { objectEntries } from "../Util.js";
+import { logger } from "../shared/Logger.js";
 
 export type TextContentNode = string | TextNode;
 export type TextContent = string | TextContentNode[];
@@ -52,6 +53,10 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
     protected get isTextNode() {
         return false;
     }
+
+    public _markNodeDirty = () => {
+        this._node.markDirty();
+    };
 
     protected findRootText(): TextElement | undefined {
         const parent = this.parentElement;

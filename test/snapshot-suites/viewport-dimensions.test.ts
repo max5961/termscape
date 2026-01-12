@@ -2,11 +2,12 @@ import termscape from "@src/index.js";
 import { defaultTestSuite } from "./util/defaultTestSuite.js";
 import type { TestRoot } from "@src/testing/TestRoot.js";
 import { DEFAULT_TEST_RUNTIME } from "@src/testing/defaultSuite.js";
+import { describe } from "vitest";
 
 const SUITE = "viewport dimensions";
 const run = defaultTestSuite(SUITE);
 
-export const record = async () => {
+describe(SUITE, async () => {
     await run("100 height/width", (root) => {
         const box = getBox("100", "100");
         root.sendOps(ops(root));
@@ -27,7 +28,7 @@ export const record = async () => {
         root.sendOps(ops(root));
         return box;
     });
-};
+});
 
 function getBox(h: string, w: string) {
     return termscape.createElement("box", {

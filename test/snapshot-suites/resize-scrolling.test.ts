@@ -1,10 +1,11 @@
 import termscape from "@src/index.js";
 import { defaultTestSuite } from "./util/defaultTestSuite.js";
+import { describe } from "vitest";
 
 const SUITE = "optimize scrolling post resize";
 const run = defaultTestSuite(SUITE);
 
-export const record = async () => {
+describe(SUITE, async () => {
     await run("rows resize larger at end", (root) => {
         const s = getScrollable("column");
         s.afterLayout({
@@ -46,7 +47,7 @@ export const record = async () => {
 
         return s;
     });
-};
+});
 
 function getScrollable(flex: "column" | "row") {
     return termscape.createElement("box", {

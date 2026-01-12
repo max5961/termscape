@@ -3,11 +3,9 @@ import type { Root } from "../RootElement.js";
 import type { ViewportStyle } from "../../Types.js";
 import type { DomElement } from "../DomElement.js";
 import { recalculateStyle } from "../util/recalculateStyle.js";
+import { TEXT_ELEMENT } from "../../Constants.js";
 
-/**
- * To enforce private references don't leak into the public interface but can
- * still be carefully accessed by MetaDataRegister.
- * */
+// To enforce private references don't leak into the public interface but can still be carefully accessed by MetaDataRegister.
 const __register = Symbol("termscape.metadata_register");
 const __host = Symbol("termscape.metadata_host");
 const __actions = Symbol("termscape.metadata_actions");
@@ -122,12 +120,28 @@ export class MetaDataRegister {
         if (metadata[__hasRequestedStdin]) {
             this._root.requestInputStream();
         }
+
+        const host = metadata[__host];
+        if (host._is(TEXT_ELEMENT)) {
+            // Yoga does not always consider wrapped text as dirty after resizes that *should* affect their width.  THis
+            // leads to unnatural text clipping/wrapping.
+            this._root.runtime.stdout.on("resize", host._markNodeDirty);
+
+            // Since unfocused pages are fully detached from the root, force Yoga to mark the node as dirty just in case it doesn't
+            // and there was a resize during the time it was blurred.
+            host._markNodeDirty();
+        }
     }
 
     public detach(metadata: MetaData) {
         metadata[__register] = undefined;
         this._actions.delete(metadata[__host]);
         this._viewportEls.delete(metadata[__host]);
+
+        const host = metadata[__host];
+        if (host._is(TEXT_ELEMENT)) {
+            this._root.runtime.stdout.off("resize", host._markNodeDirty);
+        }
     }
 
     public recalculateViewports() {
@@ -136,26 +150,3 @@ export class MetaDataRegister {
         });
     }
 }
-
-// ----Old System----
-// public handleAttachmentChange(
-//     metadata: DomElement["_metadata"],
-//     { attached }: { attached: boolean },
-// ) {
-//     const elem = metadata.ref;
-//     const { actions, viewportStyles } = metadata;
-//
-//     if (attached) {
-//         this.attached.actions.set(elem, actions);
-//
-//         metadata.viewportEls = this.attached.viewportEls;
-//         viewportStyles.forEach((style) => recalculateStyle(metadata.ref, style));
-//         if (viewportStyles.size) {
-//             metadata.viewportEls.add(elem);
-//         }
-//     } else {
-//         this.attached.actions.delete(elem);
-//         this.attached.viewportEls.delete(elem);
-//         metadata.viewportEls = null;
-//     }
-// }
