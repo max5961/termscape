@@ -44,11 +44,12 @@ export class Compositor {
         canvas: Canvas = this._canvas,
         rangeContext: DomElement | undefined = undefined,
         level = 0,
+        relIndex = 0,
     ) {
         if (elem.style.display === "none") return;
 
         const style = elem._shadowStyle;
-        const zIndex = style.zIndex ?? 0; // CHORE - zIndex needs to be incremental relative to parent
+        const zIndex = relIndex + (style.zIndex ?? 0);
 
         this._draw.updateLowestLayer(zIndex);
         this._reconciler.handleElement(elem, level);
@@ -82,7 +83,7 @@ export class Compositor {
             const overflowMgr = chstyle === "scroll" || chstyle === "hidden";
             const nextRangeCtx = overflowMgr ? child : rangeContext;
 
-            this.buildLayout(child, child._canvas!, nextRangeCtx, ++level);
+            this.buildLayout(child, child._canvas!, nextRangeCtx, ++level, zIndex);
         }
 
         if (elem._is(ROOT_ELEMENT)) {
