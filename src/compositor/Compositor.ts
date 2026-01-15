@@ -89,6 +89,7 @@ export class Compositor {
         if (elem._is(ROOT_ELEMENT)) {
             this._draw.performOps();
             this._postLayout.forEach((cb) => cb());
+            this.removeTrailingWs();
         }
     }
 
@@ -124,5 +125,14 @@ export class Compositor {
                 unclippedChild.corner.x + unclippedChild.width,
             );
         }
+    }
+
+    private removeTrailingWs() {
+        this.canvas.grid.forEach((row) => {
+            let i = row.length - 1;
+            while (row[i--] === " ") {
+                row.pop();
+            }
+        });
     }
 }
