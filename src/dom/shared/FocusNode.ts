@@ -39,7 +39,7 @@ export class FocusNode {
 
         if (node._nearestProvider === this._nearestProvider) {
             node._nearestProvider = null;
-            node.handleProviderChange();
+            node.handleProviderChange(true);
         }
     }
 
@@ -73,7 +73,7 @@ export class FocusNode {
 
         this._ownProvider = provider;
         this._nearestProvider = provider;
-        this.handleProviderChange(true);
+        this.handleProviderChange(true, true);
     }
 
     /**
@@ -84,7 +84,7 @@ export class FocusNode {
         if (!this._ownProvider) return;
         if (this._ownProvider.focused === focused) return;
         this._ownProvider.focused = focused;
-        this.handleProviderChange();
+        this.handleProviderChange(false);
     }
 
     /**
@@ -98,17 +98,24 @@ export class FocusNode {
         this._ownProvider = null;
         this._nearestProvider = this._parent?._nearestProvider ?? null;
         if (!freeRecursive) {
-            this.handleProviderChange();
+            this.handleProviderChange(true);
         }
     }
 
     private suppressEvents = false;
-    private handleProviderChange(silent = false) {
+    /**
+     * @param transformed false if only status change, true if change to Provider chain
+     * @param silent suppresses onFocus/onBlur handlers from executing.  Never suppresses except for when becoming a Provider
+     * because initial focusing should not trigger handlers
+     * */
+    private handleProviderChange(transformed: boolean, silent = false) {
         this.suppressEvents = silent;
 
-        this._childNodes.forEach((node) => {
-            this.rewireNearest(node, this._nearestProvider);
-        });
+        if (transformed) {
+            this._childNodes.forEach((node) => {
+                this.rewireNearest(node, this._nearestProvider);
+            });
+        }
 
         this.propagateChanges();
     }
