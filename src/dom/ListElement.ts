@@ -96,7 +96,7 @@ export class ListElement extends FocusManager<{
         const isColumn = this.style.flexDirection?.includes("column");
 
         if (!isColumn) {
-            const sortedX = children.slice().sort((prev, curr) => {
+            const sortedX = children.sort((prev, curr) => {
                 const prevStart = prev.unclippedRect?.corner.x ?? 0;
                 const currStart = curr.unclippedRect?.corner.x ?? 0;
                 return prevStart - currStart;
@@ -117,7 +117,7 @@ export class ListElement extends FocusManager<{
                 data.right = next;
             }
         } else {
-            const sortedY = children.slice().sort((prev, curr) => {
+            const sortedY = children.sort((prev, curr) => {
                 const prevStart = prev.unclippedRect?.corner.y ?? 0;
                 const currStart = curr.unclippedRect?.corner.y ?? 0;
                 return prevStart - currStart;
