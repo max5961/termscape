@@ -16,7 +16,6 @@ import { Capture } from "log-goblin";
 import { MouseState } from "./MouseState.js";
 import { handleError } from "./ThrowError.js";
 import type { MetaDataRegister } from "../dom/shared/MetaData.js";
-import { logger } from "./Logger.js";
 
 type Config = Required<Runtime>;
 export type RuntimeDependencies = {
@@ -135,6 +134,9 @@ export function createRuntime(deps: RuntimeDependencies) {
         startRuntime(wasListening?: boolean) {
             if (isStarted) return;
             isStarted = true;
+
+            // Text elements are always listening for resizes in order to mark their Yg nodes as dirty
+            config.stdout.setMaxListeners(Infinity);
 
             // Listening was requested while runtime not started
             if (requestedListening || wasListening) {
