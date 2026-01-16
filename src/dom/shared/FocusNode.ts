@@ -1,3 +1,4 @@
+import { logger } from "../../shared/Logger.js";
 import type { DomElement } from "../DomElement.js";
 import type { DomEvents } from "./DomEvents.js";
 
@@ -10,8 +11,21 @@ export class FocusNode {
     private _nearestProvider: Provider | null;
     private _ownProvider: Provider | null;
     private _host: DomElement;
+    private _currStatus: FocusState;
+
     /** @internal */
-    public _currStatus: FocusState;
+    public _getCurrStatus(): FocusState {
+        // Ensure status is closed to mutation publically (could be mutated in a style handler for example)
+        return { ...this._currStatus };
+    }
+    /** @internal */
+    public _getCurrFocus(): boolean {
+        return this._currStatus.focus;
+    }
+    /** @internal */
+    public _getCurrShallowFocus(): boolean {
+        return this._currStatus.shallowFocus;
+    }
 
     constructor(elem: DomElement) {
         this._childNodes = new Set();
@@ -47,6 +61,7 @@ export class FocusNode {
         if (this._nearestProvider) {
             return this._nearestProvider.status;
         }
+
         return { focus: true, shallowFocus: false };
     }
 
@@ -84,6 +99,7 @@ export class FocusNode {
         if (!this._ownProvider) return;
         if (this._ownProvider.focused === focused) return;
         this._ownProvider.focused = focused;
+
         this.handleProviderChange(false);
     }
 
@@ -122,7 +138,12 @@ export class FocusNode {
 
     /** Updates nearest provider to direct children until the next provider */
     private rewireNearest(node: FocusNode, nearest: Provider | null) {
-        if (node._ownProvider) return;
+        // Necessary to link existing Providers and allow for shallowFocus data
+        if (node._ownProvider) {
+            node._ownProvider.parent = nearest;
+            return;
+        }
+
         node._nearestProvider = nearest;
         node._childNodes.forEach((chnode) => {
             this.rewireNearest(chnode, nearest);
