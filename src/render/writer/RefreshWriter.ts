@@ -4,7 +4,7 @@ import { Canvas, type Grid } from "../../compositor/Canvas.js";
 import { Writer } from "./Writer.js";
 import { isFullscreen } from "../../Util.js";
 
-export class WriterRefresh extends Writer {
+export class RefreshWriter extends Writer {
     private lastOutput: string;
 
     constructor(cursor: Cursor, root: Root) {

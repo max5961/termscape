@@ -1,13 +1,11 @@
-import { Writer } from "./Writer.js";
+import { Writer, type Row } from "./Writer.js";
 import type { Cursor } from "../Cursor.js";
 import { Canvas, type Grid } from "../../compositor/Canvas.js";
-import type { GridToken } from "../../Types.js";
 import type { Root } from "../../dom/RootElement.js";
 
-type Row = Canvas["grid"][number];
 type Slice = { s: number; e: number };
 
-export class WriterCell extends Writer {
+export class CellWriter extends Writer {
     constructor(cursor: Cursor, root: Root) {
         super(cursor, root);
     }
@@ -15,15 +13,15 @@ export class WriterCell extends Writer {
     public instructCursor(lastGrid: Grid, nextGrid: Grid): void {
         this.clearLostRows(lastGrid.length, nextGrid.length);
 
-        const dirtyRows = [] as [number, { s: number; e: number }[]][];
+        const dirtyRows = [] as [number, Slice[]][];
         const shorterRows = [] as [number, number][];
-        const appendedRows = new Set<number>();
+        let newRows = 0;
 
         for (let y = nextGrid.length - 1; y >= 0; --y) {
             // New row
             if (lastGrid[y] === undefined) {
                 dirtyRows.push([y, [{ s: 0, e: nextGrid[y].length }]]);
-                appendedRows.add(y);
+                ++newRows;
                 continue;
             }
 
@@ -37,11 +35,7 @@ export class WriterCell extends Writer {
             if (slices.length) dirtyRows.push([y, slices]);
         }
 
-        // Force the terminal itself to scroll by writing newlines, so that the virtual row number the cursor tracks will remain valid.
-        if (appendedRows.size) {
-            this._cursor.moveToRow(lastGrid.length - 1);
-            this._cursor.deferOutput("\n".repeat(appendedRows.size), appendedRows.size);
-        }
+        this.appendNewRows(lastGrid, newRows);
 
         // Trim shorter rows because createRowDiff only produces diffs for the length of the next row
         shorterRows.forEach(([row, col]) => {
@@ -72,7 +66,7 @@ export class WriterCell extends Writer {
 
         let startDiff: number | undefined;
         for (let x = 0; x < next.length; ++x) {
-            const diff = this.isDiff(prev[x], next[x]);
+            const diff = this.isCellDiff(prev[x], next[x]);
 
             if (diff && startDiff === undefined) {
                 startDiff = x;
@@ -92,25 +86,5 @@ export class WriterCell extends Writer {
         }
 
         return slices;
-    }
-
-    private isDiff(prev: GridToken | string | undefined, next: GridToken | string) {
-        if (
-            typeof prev === "string" ||
-            typeof prev === "undefined" ||
-            typeof next === "string" ||
-            typeof next === "undefined"
-        ) {
-            return prev !== next;
-        } else {
-            return prev.ansi !== next.ansi || prev.char !== next.char;
-        }
-    }
-
-    private clearLostRows(lastRows: number, nextRows: number) {
-        const diff = lastRows - nextRows;
-        if (diff <= 0) return;
-
-        this._cursor.clearRowsUp(diff);
     }
 }

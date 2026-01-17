@@ -52,7 +52,7 @@ export type Runtime = {
     /** Forces process exit after this Root's runtime ends. Skips `waitUntilExit` promises. */
     exitForcesEndProc?: boolean;
     /** Experimental - rewrites only cells that are diffed from prev rendered output. */
-    cellWrite?: boolean;
+    writeMode?: "cell" | "row" | "refresh";
     /** If this is `false`, runtime can be explictly started at any given time with `Root.startRuntime`. */
     startOnCreate?: boolean;
 } & ConfigureStdin;

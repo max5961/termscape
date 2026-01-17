@@ -1,20 +1,23 @@
 import type { Root } from "../dom/RootElement.js";
 import type { WriteOpts } from "../Types.js";
 import type { Grid } from "../compositor/Canvas.js";
+import type { PerformanceData } from "./hooks/Hooks.js";
+import { logger } from "../shared/Logger.js";
+import { isFullscreen, objectKeys } from "../Util.js";
 import { Compositor } from "../compositor/Compositor.js";
 import { Cursor, DebugCursor } from "./Cursor.js";
-import { WriterRefresh } from "./writer/WriterRefresh.js";
-import { WriterCell } from "./writer/WriterCell.js";
-import { isFullscreen, objectKeys } from "../Util.js";
 import { DomRects } from "../compositor/DomRects.js";
 import { Ansi } from "../shared/Ansi.js";
-import { logger } from "../shared/Logger.js";
+import { CellWriter } from "./writer/CellWriter.js";
+import { RefreshWriter } from "./writer/RefreshWriter.js";
+import { RowWriter } from "./writer/RowWriter.js";
 
 export class Renderer {
     private readonly _host: Root;
     private readonly _cursor: Cursor;
-    private readonly _cellWriter: WriterCell;
-    private readonly _refreshWriter: WriterRefresh;
+    private readonly _cellWriter: CellWriter;
+    private readonly _refreshWriter: RefreshWriter;
+    private readonly _rowWriter: RowWriter;
     private _sinceResize: number;
     private _lastCompositor: Compositor | undefined;
     private _lastGrid: Grid | undefined;
@@ -33,8 +36,9 @@ export class Renderer {
             process.env.CURSOR_DEBUG === "true"
                 ? new DebugCursor(host)
                 : new Cursor(host);
-        this._cellWriter = new WriterCell(this._cursor, host);
-        this._refreshWriter = new WriterRefresh(this._cursor, host);
+        this._cellWriter = new CellWriter(this._cursor, host);
+        this._rowWriter = new RowWriter(this._cursor, host);
+        this._refreshWriter = new RefreshWriter(this._cursor, host);
         this._lastGrid = undefined;
         this._lastCompositor = undefined;
         this._rects = new DomRects();
@@ -58,29 +62,17 @@ export class Renderer {
 
         // Load cursor with operations and execute
         this._host.hooks.exec("pre-write", undefined);
-        const [diffMs, didRefreshWrite] = this.wrapPerf(() => {
+        const [diffMs, diffStrategy] = this.wrapPerf(() => {
             return this.prepareCursorOps(opts, _lastGrid, nextGrid);
         });
         this.executeCursorOps();
         this._host.hooks.exec("post-write", undefined);
 
-        performance.mark("render:end");
-        const hasStart = performance.getEntriesByName("render:start", "mark").length > 0;
-
-        if (hasStart) {
-            performance.measure("render", "render:start", "render:end");
-        }
-
         this._host.hooks.exec("performance", {
             layoutMs,
-            diffMs:
-                performance.getEntriesByName("render", "measure").at(-1)?.duration ??
-                diffMs,
-            diffStrategy: didRefreshWrite ? "refresh" : "cell",
+            diffMs,
+            diffStrategy,
         });
-
-        performance.clearMarks("render:start");
-        performance.clearMarks("render:end");
     }
 
     private wrapPerf<T>(cb: () => T): [number, T] {
@@ -99,19 +91,28 @@ export class Renderer {
 
     private prepareCursorOps(
         opts: WriteOpts,
-        _lastGrid: Grid | undefined,
+        lastGrid: Grid | undefined,
         nextGrid: Grid,
     ) {
         const shouldRefresh = this.shouldRefreshWrite(opts, nextGrid);
-        if (shouldRefresh || !_lastGrid) {
-            this._refreshWriter.instructCursor(_lastGrid, nextGrid, opts.capturedOutput);
+
+        let strategy: PerformanceData["diffStrategy"] = "refresh";
+        if (shouldRefresh || !lastGrid) {
+            this._refreshWriter.instructCursor(lastGrid, nextGrid, opts.capturedOutput);
         } else {
-            this._cellWriter.instructCursor(_lastGrid, nextGrid);
+            if (this._host.runtime.writeMode === "cell") {
+                this._cellWriter.instructCursor(lastGrid, nextGrid);
+                strategy = "cell";
+            } else {
+                this._rowWriter.instructCursor(lastGrid, nextGrid);
+                strategy = "row";
+            }
+
             this._refreshWriter.resetLastOutput();
         }
 
         this._cursor.moveToRow(nextGrid.length - 1);
-        return shouldRefresh;
+        return strategy;
     }
 
     private getComposedLayout(opts: WriteOpts): Compositor {
@@ -183,7 +184,7 @@ export class Renderer {
     }
 
     private shouldRefreshWrite(opts: WriteOpts, nextGrid: Grid) {
-        if (!this._host.runtime.cellWrite) return true;
+        if (this._host.runtime.writeMode === "refresh") return true;
         if (!this._lastCompositor) return true;
         if (opts.resize) return true;
         if (opts.screenChange) return true;

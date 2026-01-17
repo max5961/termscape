@@ -3,7 +3,7 @@ import type { Canvas } from "../../compositor/Canvas.js";
 export type PerformanceData = {
     layoutMs: number;
     diffMs: number;
-    diffStrategy: "refresh" | "cell";
+    diffStrategy: "refresh" | "cell" | "row";
 };
 
 export type Hook =

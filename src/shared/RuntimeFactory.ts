@@ -74,7 +74,7 @@ export function createRuntime(deps: RuntimeDependencies) {
     config.enableMouse ??= false;
     config.mouseMode ??= 3;
     config.enableKittyProtocol ??= true;
-    config.cellWrite ??= true;
+    config.writeMode ??= "cell";
     config.startOnCreate ??= true; // This has no effect on runtime so its not part of the returned api.
 
     let cleanupHandlers = [] as (() => void)[];
@@ -110,8 +110,6 @@ export function createRuntime(deps: RuntimeDependencies) {
         },
 
         handleStdinBuffer: (buf: Buffer) => {
-            performance.mark("render:start");
-
             scheduler.execWhenFree(() => {
                 if (inputStreamOwner) {
                     return inputStreamOwner.handleData(buf);
@@ -379,8 +377,8 @@ export function createRuntime(deps: RuntimeDependencies) {
         set exitForcesEndProc(val: Config["exitForcesEndProc"]) {
             config.exitForcesEndProc = val;
         },
-        set cellWrite(val: Config["cellWrite"]) {
-            config.cellWrite = val;
+        set writeMode(val: Config["writeMode"]) {
+            config.writeMode = val;
         },
 
         // GETTERS
@@ -411,8 +409,8 @@ export function createRuntime(deps: RuntimeDependencies) {
         get exitForcesEndProc() {
             return config.exitForcesEndProc;
         },
-        get cellWrite() {
-            return config.cellWrite;
+        get writeMode() {
+            return config.writeMode;
         },
     };
 
