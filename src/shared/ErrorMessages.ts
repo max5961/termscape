@@ -4,7 +4,7 @@ export const ErrorMessages = {
     removeChild:
         "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
     invalidOverflowStyleForScroll:
-        process.env["NODE_ENV"] === "development"
+        process.env.NODE_ENV === "development"
             ? `
 Cannot perform a scroll operation on an element whose 'style.overflow' is not 
 set to 'scroll'.

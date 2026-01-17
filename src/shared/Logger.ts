@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import fs from "node:fs";
 import path from "node:path";
+import util from "node:util";
 import { parseRgb } from "./ParseColor.js";
 
 type Configuration = {
@@ -63,18 +64,21 @@ export class Logger<T extends string> {
     }
 
     public write(...data: unknown[]): void {
+        if (!process.env.LOGGER) return;
         const fullString = this.getFullString(...data);
         const coloredString = this.colorString(fullString, this.default.color);
         this.appendFile(this.default.file!, coloredString);
     }
 
     public warn(...data: unknown[]): void {
+        if (!process.env.LOGGER) return;
         const fullString = this.getFullString(...data);
         const coloredString = this.colorString(fullString, this.default.warnColor);
         this.appendFile(this.default.file!, coloredString);
     }
 
     public error(...data: unknown[]): void {
+        if (!process.env.LOGGER) return;
         const fullString = this.getFullString(...data);
         const coloredString = this.colorString(fullString, this.default.errorColor);
         this.appendFile(this.default.file!, coloredString);
@@ -97,26 +101,15 @@ export class Logger<T extends string> {
 
             const curr = data.shift();
 
-            if (curr === undefined) {
-                cache.push("undefined");
-            }
-
-            if (curr === null) {
-                cache.push("null");
-            }
-
             if (
-                typeof curr === "string" ||
-                typeof curr === "number" ||
-                typeof curr === "boolean" ||
-                typeof curr === "function" ||
-                typeof curr === "symbol"
+                curr === null ||
+                (typeof curr !== "object" && typeof curr !== "function")
             ) {
-                cache.push(String(curr));
+                cache.push(util.format(curr));
             }
 
-            if (typeof curr === "bigint") {
-                cache.push(curr.toString() + "n");
+            if (typeof curr === "function") {
+                cache.push(curr.toString());
             }
 
             if (curr && typeof curr === "object") {

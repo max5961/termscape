@@ -61,4 +61,6 @@ export class MockStdout {
             handler();
         });
     };
+
+    public setMaxListeners(_n: number) {}
 }

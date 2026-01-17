@@ -11,7 +11,7 @@ import {
     type ElementIdentityMap,
 } from "../Constants.js";
 import { Render, RequestInput } from "./util/decorators.js";
-import { FocusNode, type FocusState } from "./shared/FocusNode.js";
+import { FocusNode } from "./shared/FocusNode.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
 import { createVirtualStyleProxy } from "./style/StyleProxy.js";
 import { objectEntries, objectKeys } from "../Util.js";
@@ -135,8 +135,9 @@ export abstract class DomElement<
 
         let styles = stylesheet;
         if (this._styleHandler) {
-            const { focus, shallowFocus } = this.getFocusState();
-            styles = this._styleHandler({ focus, shallowFocus });
+            // Important to spread into styleHandler to avoid mutating state from within
+            const status = this.getFocusStatus();
+            styles = this._styleHandler({ ...status });
         }
 
         const withDefault = {
@@ -383,6 +384,39 @@ export abstract class DomElement<
     }
 
     @Render({ layoutChange: true })
+    public destroyChild(child: DomElement) {
+        const idx = this._children.findIndex((el) => el === child);
+        if (idx === -1 || !this._childSet.has(child)) {
+            this._throwError(ErrorMessages.removeChild);
+        }
+
+        this._node.removeChild(child._node);
+        child._node.freeRecursive();
+        this.getRoot()?.recursivelyDetach(child);
+
+        this._childSet.delete(child);
+        this._focusNode.removeChild(child._focusNode);
+
+        this._children.splice(idx, 1);
+    }
+
+    @Render({ layoutChange: true })
+    public replaceChildren(...children: DomElement[]) {
+        const root = this.getRoot();
+        this._children.forEach((child) => {
+            child._node.freeRecursive();
+            this._focusNode.removeChild(child._focusNode);
+            this._childSet.delete(child);
+            if (root) root.recursivelyDetach(child);
+        });
+
+        this._children = [];
+        children.forEach((child) => {
+            this.appendChild(child);
+        });
+    }
+
+    @Render({ layoutChange: true })
     public removeChild(child: DomElement, freeRecursive?: boolean) {
         const idx = this._children.findIndex((el) => el === child);
 
@@ -393,16 +427,16 @@ export abstract class DomElement<
         this._childSet.delete(child);
         this._focusNode.removeChild(child._focusNode);
 
-        child.beforeDetaching(this.getRoot());
+        if (!freeRecursive) {
+            child.beforeDetaching(this.getRoot());
+        }
 
         this._children.splice(idx, 1);
-        this._node.removeChild(child._node);
 
-        // If React removes a child, it should be gc'd.  If removing w/o React,
-        // its possible that the child and its children may be used later, so
-        // freeRecursive should be optional.
-        if (freeRecursive) {
-            child._node.freeRecursive();
+        if (!freeRecursive) {
+            this._node.removeChild(child._node);
+        } else {
+            // child._node.freeRecursive();
         }
 
         child.parentElement = null;
@@ -444,15 +478,15 @@ export abstract class DomElement<
     // }
 
     public getFocus(): boolean {
-        return this._focusNode._currStatus.focus;
+        return this._focusNode._getCurrFocus();
     }
 
     public getShallowFocus(): boolean {
-        return this._focusNode._currStatus.shallowFocus;
+        return this._focusNode._getCurrShallowFocus();
     }
 
-    public getFocusState() {
-        return this._focusNode._currStatus;
+    public getFocusStatus() {
+        return this._focusNode._getCurrStatus();
     }
 
     // CHORE - Should these be _becomeFocusProvider for example since they are

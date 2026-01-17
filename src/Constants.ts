@@ -4,6 +4,7 @@ import type { CanvasElement } from "./dom/CanvasElement.js";
 import type { FocusManager } from "./dom/FocusManager.js";
 import type { LayoutElement, LayoutNode } from "./dom/LayoutElement.js";
 import type { ListElement } from "./dom/ListElement.js";
+import type { VirtualList } from "./dom/VirtualListElement.js";
 import type { Root } from "./dom/RootElement.js";
 import type { TestRoot } from "./testing/TestRoot.js";
 import type { TextElement, TextNode } from "./dom/TextElement.js";
@@ -29,6 +30,7 @@ export const CANVAS_ELEMENT = Symbol.for("termscape.canvas_element");
 export const LAYOUT_ELEMENT = Symbol.for("termscape.layout_element");
 export const LAYOUT_NODE = Symbol.for("termscape.layout_node");
 export const LIST_ELEMENT = Symbol.for("termscape.list_element");
+export const VIRTUAL_LIST_ELEMENT = Symbol.for("termscape.virtual_list_element");
 export const FOCUS_MANAGER = Symbol.for("termscape.focus_manager");
 export const ROOT_ELEMENT = Symbol.for("termscape.root_element");
 export const TEST_ROOT_ELEMENT = Symbol.for("termscape.test_root_element");
@@ -46,6 +48,7 @@ export const TagNameIdentityMap = {
     ["text-node"]: TEXT_NODE,
     ["layout-node"]: LAYOUT_NODE,
     ["focus-manager"]: FOCUS_MANAGER,
+    ["virtual-list"]: VIRTUAL_LIST_ELEMENT,
 } as const;
 
 export type ElementIdentityMap = {
@@ -58,6 +61,7 @@ export type ElementIdentityMap = {
     [LAYOUT_ELEMENT]: LayoutElement;
     [LAYOUT_NODE]: LayoutNode;
     [LIST_ELEMENT]: ListElement;
+    [VIRTUAL_LIST_ELEMENT]: VirtualList;
     [FOCUS_MANAGER]: FocusManager;
     [ROOT_ELEMENT]: Root;
     [TEST_ROOT_ELEMENT]: TestRoot;
@@ -69,6 +73,7 @@ export const TagNameEnum = {
     Text: "text",
     Root: "root",
     List: "list",
+    VirtualList: "virtual-list",
     Layout: "layout",
     LayoutNode: "layout-node",
     Book: "book",

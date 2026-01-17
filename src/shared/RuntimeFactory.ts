@@ -110,6 +110,8 @@ export function createRuntime(deps: RuntimeDependencies) {
         },
 
         handleStdinBuffer: (buf: Buffer) => {
+            performance.mark("render:start");
+
             scheduler.execWhenFree(() => {
                 if (inputStreamOwner) {
                     return inputStreamOwner.handleData(buf);
@@ -144,7 +146,7 @@ export function createRuntime(deps: RuntimeDependencies) {
             }
 
             // Hide Cursor
-            if (!process.env["RENDER_DEBUG"]) {
+            if (process.env.CURSOR_DEBUG !== "true") {
                 config.stdout.write(Ansi.cursor.hide);
                 cleanupHandlers.push(() => config.stdout.write(Ansi.cursor.show));
             }

@@ -11,21 +11,19 @@
         "./dist"
     ],
     "scripts": {
-        "compile": "tsc -p ./tsconfig.json",
-        "compile:test": "npm run compile && tsc -p ./tsconfig.json",
-        "test": "npm run compile:test && vitest",
-        "test:overwrite-snapshots": "./overwrite-snapshots.sh",
-        "sandbox": "npm run compile && node ./dist/sandbox/index.js",
-        "sandbox:debug": "npm run compile && RENDER_DEBUG=true node ./dist/sandbox/index.js",
-        "build": "rm -r ./dist && npm run compile:test && rm -r ./dist/sandbox",
-        "publish": "npm run build && npm publish --access=public"
+        "compile": "tsc -p ./tsconfig.json && tsc -p ./test/tsconfig.json",
+        "compile:dev": "tsc -p ./tsconfig.json",
+        "build": "rm -rf ./dist && npm run compile && rm -rf ./dist/sandbox",
+        "publish": "npm run build && npm publish --access=public",
+        "dev": "npm run compile:dev && NODE_ENV=development LOGGER=true node ./dist/sandbox/index.js",
+        "dev:debug": "npm run compile:dev && NODE_ENV=development LOGGER=true CURSOR_DEBUG=true node ./dist/sandbox/index.js",
+        "dev:prodlike": "npm run compile && node ./dist/sandbox/index.js",
+        "test": "npm run compile && NODE_ENV=test LOGGER=true vitest",
+        "test:overwrite-snapshots": "./overwrite-snapshots.sh"
     },
     "type": "module",
     "keywords": [
         "tui",
-        "react",
-        "react-reconciler",
-        "react-hook-form",
         "terminal"
     ],
     "author": "",
@@ -33,7 +31,6 @@
     "dependencies": {
         "ansi-escape-sequences": "^6.2.4",
         "log-goblin": "^0.0.4",
-        "perf_hooks": "^0.0.1",
         "react": "^18.3.1",
         "react-reconciler": "^0.29.2",
         "term-keymap": "^0.1.2",

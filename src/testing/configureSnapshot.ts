@@ -28,7 +28,7 @@ export function configureSnapshot({ record, replay, tester }: Snapshot) {
             // This exists in the event tests are failing, but when under inspection, they should be passing.  The drawback is
             // using this env var overwrites all tests so it should be used very cautiously and only in situations where most or
             // all tests are affected due to some rendering change that changes the output string but not the visual output.
-            if (tester && process.env["OVERWRITE_SNAPSHOTS"]) {
+            if (tester && process.env.OVERWRITE_SNAPSHOTS === "true") {
                 root.recordFrames(TestUtil.snapshotName(desc, name, "expected"));
             }
 

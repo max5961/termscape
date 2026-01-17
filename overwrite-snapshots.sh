@@ -6,6 +6,6 @@ printf "Type OVERWRITE to continue: "
 
 read -r overwrite
 if [[ $overwrite == "OVERWRITE" ]]; then
-    echo "...compiling typescript" && npm run compile:test || exit 1
-    echo "...running tests" && OVERWRITE_SNAPSHOTS=true npx vitest
+    echo "...compiling typescript" && npm run compile || exit 1
+    echo "...running tests" && NODE_ENV=test && OVERWRITE_SNAPSHOTS=true && LOGGER=true npx vitest
 fi

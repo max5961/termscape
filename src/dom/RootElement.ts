@@ -112,6 +112,14 @@ export class Root extends DomElement<{
         this._register.detach(metadata);
     }
 
+    /** @internal */
+    public recursivelyDetach(child: DomElement) {
+        this._register.detach(child._metadata);
+        child._children.forEach((child) => {
+            this.recursivelyDetach(child);
+        });
+    }
+
     public exit<T extends Error | undefined>(error?: T): T extends Error ? never : void {
         this.runtimeCtl.endRuntime(error);
         return undefined as T extends Error ? never : void;

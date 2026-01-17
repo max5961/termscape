@@ -31,11 +31,6 @@ export class WriterRefresh extends Writer {
         if (capturedOutput && !isFullscreen(nextGrid, this._root.runtime.stdout)) {
             capturedOutput = capturedOutput.trimEnd() + "\n";
             this._cursor.deferOutput(capturedOutput, 0);
-            // if (!process.env["RENDER_DEBUG"]) {
-            //     process.stdout.write(capturedOutput);
-            // } else {
-            //     this._cursor.deferOutput(capturedOutput, 0);
-            // }
         }
         this._cursor.deferOutput(output, newLines);
     }

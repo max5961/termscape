@@ -1,8 +1,7 @@
 import type { VisualNodeMap } from "../Types.js";
-import type { DomElement } from "./DomElement.js";
+import { DomElement } from "./DomElement.js";
 import { FocusManager } from "./FocusManager.js";
-import { TagNameEnum } from "../Constants.js";
-import { LIST_ELEMENT } from "../Constants.js";
+import { TagNameEnum, LIST_ELEMENT } from "../Constants.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 
@@ -137,122 +136,5 @@ export class ListElement extends FocusManager<{
                 data.down = next;
             }
         }
-    }
-}
-
-type BigListProps<T> = {
-    initialNumToRender: number;
-    renderItem: (item: T) => DomElement;
-    getData: () => T[];
-};
-
-export class BigList<T> extends ListElement {
-    private winstart: number;
-    private winend!: number;
-    private initialNumToRender: number;
-    private renderItem: (_item: T) => DomElement;
-    private getData: () => T[];
-    private data: ReturnType<BigListProps<T>["getData"]>;
-    private generatedItems: DomElement[];
-    private focusedIdx: number;
-
-    constructor(props: BigListProps<T>) {
-        super();
-        this.initialNumToRender = props.initialNumToRender;
-        this.renderItem = props.renderItem;
-        this.getData = props.getData;
-        this.data = this.updateData();
-        this.winstart = this.initialNumToRender ?? 0;
-        this.updateMaxWin();
-        this.generatedItems = [];
-        this.focusedIdx = this.winstart;
-
-        this.handleSliceChange();
-    }
-
-    private updateData(): T[] {
-        this.data = this.getData();
-        return this.data;
-    }
-
-    private handleIdxChange(nextIdx: number) {
-        if (nextIdx < 0 || nextIdx >= this.data.length) return;
-
-        let displacement = 0;
-        if (nextIdx < this.winstart) {
-            displacement = -(this.winstart - nextIdx);
-        }
-        if (nextIdx >= this.winend) {
-            displacement = nextIdx - this.winend + 1;
-        }
-
-        if (!displacement) {
-            this.focusedIdx = nextIdx;
-            return this.handleFocusChange();
-        }
-
-        this.winstart += displacement;
-        this.winend += displacement;
-        this.focusedIdx = nextIdx;
-        return this.handleSliceChange();
-    }
-
-    private handleSliceChange() {
-        this.updateRealChildren();
-        return this.handleFocusChange();
-    }
-
-    private handleFocusChange() {
-        const fromEnd = this.winend - this.focusedIdx;
-        const virFocusIdx = this.generatedItems.length - fromEnd;
-        const item = this.generatedItems[virFocusIdx];
-        return this.focusChild(item);
-    }
-
-    private updateRealChildren(): void {
-        this.generatedItems = [];
-
-        for (let i = this.winstart; i < this.winend; ++i) {
-            const dataItem = this.data[i];
-            if (dataItem) {
-                this.generatedItems.push(this.renderItem(dataItem));
-            }
-        }
-
-        // This is where FocusManager is 'picking' an index to focus and running
-        // focusChild automatically, see 'FocusManager.removeChild' which checks to
-        // see if the child being removed is focused, if it is then it shifts focus
-        [...this._children].forEach((child) => this.removeChild(child));
-        this.generatedItems.forEach((child) => this.appendChild(child));
-
-        // The real issue with this design is that once you remove or add a child
-        // you need to refresh the visual map to be safe. For the first render, this
-        // shouldn't really be an issue because there is no stdin to manipulate the
-        // list.  However, to ultimately be **safe**, it you may need to refresh
-        // the vmap on every tree manip and that could end up with a lot of redundancy
-        this.refreshVisualMap();
-    }
-
-    private updateMaxWin(): void {
-        const rows = this.getRoot()?.runtime.stdout.rows ?? 0;
-        const cols = this.getRoot()?.runtime.stdout.columns ?? 0;
-        const isColumn = this.style.flexDirection?.includes("column");
-        const max = Math.max(
-            rows,
-            cols,
-            isColumn
-                ? this.getRoot()?.runtime.stdout.rows ?? process.stdout.rows
-                : this.getRoot()?.runtime.stdout.columns ?? process.stdout.columns,
-        );
-
-        this.winend = this.winstart + max + 1;
-    }
-
-    public override focusNext(units = 1) {
-        return this.handleIdxChange(this.focusedIdx + units);
-    }
-
-    public override focusPrev(units = 1) {
-        return this.handleIdxChange(this.focusedIdx - units);
     }
 }

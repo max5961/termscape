@@ -1,4 +1,5 @@
 import type { Root } from "../dom/RootElement.js";
+import { parseBuffer } from "term-keymap";
 import { logger } from "../shared/Logger.js";
 import { Ansi } from "../shared/Ansi.js";
 
@@ -141,10 +142,11 @@ export class DebugCursor extends Cursor {
 
         const nextOperation = (buf: Buffer) => {
             if (buf[0] === 3) process.exit();
-            if (buf.toString("utf-8") !== "n") return;
+
+            const data = parseBuffer(buf);
+            if (data.key.size || !data.input.only("n")) return;
 
             logger.write(this._sequence.length);
-
             const chunk = this._sequence.shift();
             if (chunk !== undefined) {
                 process.stdout.write(chunk);

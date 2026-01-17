@@ -29,9 +29,10 @@ export class Renderer {
 
     constructor(host: Root) {
         this._host = host;
-        this._cursor = process.env["RENDER_DEBUG"]
-            ? new DebugCursor(host)
-            : new Cursor(host);
+        this._cursor =
+            process.env.CURSOR_DEBUG === "true"
+                ? new DebugCursor(host)
+                : new Cursor(host);
         this._cellWriter = new WriterCell(this._cursor, host);
         this._refreshWriter = new WriterRefresh(this._cursor, host);
         this._lastGrid = undefined;
@@ -63,11 +64,23 @@ export class Renderer {
         this.executeCursorOps();
         this._host.hooks.exec("post-write", undefined);
 
+        performance.mark("render:end");
+        const hasStart = performance.getEntriesByName("render:start", "mark").length > 0;
+
+        if (hasStart) {
+            performance.measure("render", "render:start", "render:end");
+        }
+
         this._host.hooks.exec("performance", {
             layoutMs,
-            diffMs,
+            diffMs:
+                performance.getEntriesByName("render", "measure").at(-1)?.duration ??
+                diffMs,
             diffStrategy: didRefreshWrite ? "refresh" : "cell",
         });
+
+        performance.clearMarks("render:start");
+        performance.clearMarks("render:end");
     }
 
     private wrapPerf<T>(cb: () => T): [number, T] {
