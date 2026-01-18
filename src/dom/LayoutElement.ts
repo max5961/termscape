@@ -93,13 +93,13 @@ export class LayoutElement extends FocusManager<{
     // child
 
     protected override handleAppendChild(child: DomElement): void {
-        if (this.focused) return;
+        if (this._focused) return;
 
         let found = false;
         this.dfs(child, (child) => {
             if (!found && child instanceof LayoutNode) {
                 child._setOwnProvider(true);
-                this.focused = child;
+                this._focused = child;
                 found = true;
             }
         });

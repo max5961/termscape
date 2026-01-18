@@ -78,7 +78,7 @@ export class ListElement extends FocusManager<{
         // to make sure NOT to use _setOwnProvider here.
         if (this._children.length === 1) {
             child._becomeProvider(true);
-            this.focused = child;
+            this._focused = child;
         } else {
             child._becomeProvider(false);
         }
