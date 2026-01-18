@@ -1,11 +1,8 @@
 import { VIRTUAL_LIST_ELEMENT } from "../Constants.js";
-import { logger } from "../shared/Logger.js";
 import type { DomElement } from "./DomElement.js";
 import { ListElement } from "./ListElement.js";
 
 type VirtualListProps<T> = {
-    // Unlike ReactNative, there is no initialNumToRender, this is decided internally by the runtime stdout
-
     renderItem: (item: T, index: number) => DomElement;
     data: T[];
 };
@@ -13,10 +10,8 @@ type VirtualListProps<T> = {
 export class VirtualList<T = any> extends ListElement {
     protected static override identity = VIRTUAL_LIST_ELEMENT;
 
-    // issa problem that you can't override tagName since ListElement isn't abstract, so we will need to make AbstractList a thing, but for
-    // now we ride with this poverty shit.
+    // need to make an Abstract ListElement so that we can override tagname here
 
-    /** raw data */
     private _data: T[];
     private _renderItem: VirtualListProps<T>["renderItem"];
     private _maxwin: number;
@@ -43,51 +38,9 @@ export class VirtualList<T = any> extends ListElement {
         this.destroyChild(this._children[0]);
     }
 
-    /**
-     * @param displace if 0 a full refresh is done, otherwise negative displace indicates that we need to remove displace units
-     * from the start and replace while positive displace indicates the opposite
-     * */
-    private setRealChildren(displace: number) {
-        const elements: DomElement[] = [];
-        if (!displace || Math.abs(displace) >= this._wend - this._wstart) {
-            for (let i = this._wstart; i < this._wend; ++i) {
-                if (i < this._data.length && i >= 0) {
-                    elements.push(this._renderItem(this._data[i], i));
-                }
-            }
-            return this.replaceChildren(...elements);
-        }
-
-        const indexed = (i: number): [T, number] => {
-            const real = displace > 0 ? this._wend - i : this._wstart - i + 1;
-            return [this._data[real], real];
-        };
-
-        const abs = Math.abs(displace);
-
-        if (displace < 0) {
-            for (let i = 0; i < abs; ++i) this.popChild();
-            for (let i = 0; i < abs; ++i) {
-                this.insertBefore(this._renderItem(...indexed(i)), this._children[0]);
-            }
-        } else {
-            for (let i = 0; i < abs; ++i) this.shiftChild();
-            for (let i = abs; i > 0; --i) {
-                this.appendChild(this._renderItem(...indexed(i)));
-            }
-        }
-    }
-
-    private handleFocusChange() {
-        const fromEnd = this._wend - this._focusedIdx;
-        const virFocusIdx = this._children.length - fromEnd;
-        const item = this._children[virFocusIdx];
-
-        return this.focusChild(item);
-    }
-
     private handleIdxChange(nextIdx: number) {
-        if (nextIdx < 0 || nextIdx >= this._data.length) return;
+        if (nextIdx < 0) nextIdx = Math.max(0, nextIdx);
+        if (nextIdx >= this._data.length) nextIdx = Math.min(this._data.length, nextIdx);
 
         this._focusedIdx = nextIdx;
 
@@ -105,8 +58,8 @@ export class VirtualList<T = any> extends ListElement {
         this.setRealChildren(displacement);
 
         // Unfortunately, this must be an after layout hook.  If we recalculated yg and refreshed the visual map that isn't enough
-        // because we still need to make sure the content depths are refreshed as well.  Its unfortunately a double composit,
-        // unless you add a quick pass before compositing where nothing is done except calculating depths and refreshing vis maps.
+        // because we still need to make sure the content depths are refreshed as well. It is a double composite pass unless you add
+        // a quick pass before compositing where nothing is done except calculating depths and refreshing vis maps.
         this.afterLayout({
             subscribe: false,
             handler: () => {
@@ -114,6 +67,47 @@ export class VirtualList<T = any> extends ListElement {
                 return true;
             },
         });
+    }
+
+    /**
+     * @param displace if 0 a full refresh is done, otherwise negative displace indicates that we need to remove displace units
+     * from the start and replace while positive displace indicates the opposite
+     * */
+    private setRealChildren(displace: number) {
+        const elements: DomElement[] = [];
+        if (!displace || Math.abs(displace) >= this._wend - this._wstart) {
+            for (let i = this._wstart; i < this._wend; ++i) {
+                if (i < this._data.length && i >= 0) {
+                    elements.push(this._renderItem(this._data[i], i));
+                }
+            }
+            return this.replaceChildren(...elements);
+        }
+
+        if (displace < 0) {
+            for (let i = 0; i > displace; --i) this.popChild();
+            for (let i = displace + 1; i <= 0; ++i) {
+                const adj = this._wstart - i;
+                this.insertBefore(
+                    this._renderItem(this._data[adj], adj),
+                    this._children[0],
+                );
+            }
+        } else {
+            for (let i = 0; i < displace; ++i) this.shiftChild();
+            for (let i = displace; i >= 1; --i) {
+                const adj = this._wend - i;
+                this.appendChild(this._renderItem(this._data[adj], adj));
+            }
+        }
+    }
+
+    private handleFocusChange() {
+        const fromEnd = this._wend - this._focusedIdx;
+        const virFocusIdx = this._children.length - fromEnd;
+        const item = this._children[virFocusIdx];
+
+        return this.focusChild(item);
     }
 
     public override focusNext(units = 1) {

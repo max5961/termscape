@@ -4,6 +4,7 @@ import { recalculateStyle } from "./util/recalculateStyle.js";
 import type { VisualNodeMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 import type { Props } from "./props/Props.js";
+import type { Rect } from "../compositor/Canvas.js";
 
 type FMSchema = {
     Style: Style.FocusManager;
@@ -323,10 +324,8 @@ export abstract class FocusManager<
         }
     }
 
-    // CHORE - should this really be public? If the public API needs this, then
-    // that means its broken
-
-    public refreshVisualMap() {
+    /** @internal */
+    public _refreshVisualMap() {
         const children = this.getNavigableChildren();
         this.vmap = new Map();
         this.buildVisualMap(children, this.vmap);

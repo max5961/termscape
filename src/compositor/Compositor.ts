@@ -64,7 +64,7 @@ export class Compositor {
 
             if (elem._is(FOCUS_MANAGER) && this._opts.layoutChange) {
                 this._postLayout.push(() => {
-                    elem.refreshVisualMap();
+                    elem._refreshVisualMap();
                 });
             }
         }
