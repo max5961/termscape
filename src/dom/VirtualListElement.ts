@@ -1,4 +1,6 @@
+import { stdout } from "process";
 import { VIRTUAL_LIST_ELEMENT } from "../Constants.js";
+import { logger } from "../shared/Logger.js";
 import type { DomElement } from "./DomElement.js";
 import { ListElement } from "./ListElement.js";
 
@@ -40,16 +42,46 @@ export class VirtualList<T = any> extends ListElement {
 
     private handleIdxChange(nextIdx: number) {
         if (nextIdx < 0) nextIdx = Math.max(0, nextIdx);
-        if (nextIdx >= this._data.length) nextIdx = Math.min(this._data.length, nextIdx);
+        if (nextIdx >= this._data.length)
+            nextIdx = Math.min(this._data.length - 1, nextIdx);
 
+        const wRect = this.getWindowRect();
+        const fRect = this.getFocusItemRect();
+        if (!wRect || !fRect) return;
+
+        const flexDir = this.style.flexDirection?.includes("row") ? "h" : "v";
+        const scrollOff =
+            flexDir === "v"
+                ? this.getVertScrollOff(wRect)
+                : this.getHorizScrollOff(wRect);
+
+        const focusDir = nextIdx > this._focusedIdx ? +1 : -1;
         this._focusedIdx = nextIdx;
 
+        const sowend = Math.min(
+            this._data.length,
+            focusDir > 0 ? this._wend - scrollOff : this._wend,
+        );
+        const sowstart = Math.max(
+            0,
+            focusDir < 0 ? this._wstart + scrollOff : this._wstart,
+        );
+
         let displacement = 0;
-        if (nextIdx < this._wstart) {
-            displacement = nextIdx - this._wstart;
-        } else if (nextIdx >= this._wend) {
-            displacement = nextIdx - this._wend + 1;
-        } else {
+        if (nextIdx < sowstart) {
+            displacement = nextIdx - sowstart;
+            logger.write({ displacement });
+            if (this._wstart + displacement < 0) {
+                displacement = -this._wstart;
+            }
+        } else if (nextIdx >= sowend) {
+            displacement = nextIdx - sowend + 1;
+            if (this._wend + displacement > this._data.length) {
+                displacement = this._data.length - this._wend;
+            }
+        }
+
+        if (!displacement) {
             return this.handleFocusChange();
         }
 
@@ -158,11 +190,14 @@ export class VirtualList<T = any> extends ListElement {
 
     private getMaxWin(): number {
         const isColumn = this.style.flexDirection?.includes("column");
+        let stdoutMax = 0;
         if (isColumn) {
-            return 1 + (this.getRoot()?.runtime.stdout.rows ?? process.stdout.rows);
+            stdoutMax = 1 + (this.getRoot()?.runtime.stdout.rows ?? process.stdout.rows);
         } else {
-            return 1 + (this.getRoot()?.runtime.stdout.columns ?? process.stdout.columns);
+            stdoutMax =
+                1 + (this.getRoot()?.runtime.stdout.columns ?? process.stdout.columns);
         }
+        return Math.min(this._data.length, stdoutMax);
     }
 }
 

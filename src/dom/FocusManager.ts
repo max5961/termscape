@@ -5,6 +5,7 @@ import type { VisualNodeMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 import type { Props } from "./props/Props.js";
 import type { Rect } from "../compositor/Canvas.js";
+import { logger } from "../shared/Logger.js";
 
 type FMSchema = {
     Style: Style.FocusManager;
@@ -105,11 +106,11 @@ export abstract class FocusManager<
         return this._focused;
     }
 
-    private getWindowRect() {
+    protected getWindowRect() {
         return this._canvas?.unclippedContentRect;
     }
 
-    private getFocusItemRect() {
+    protected getFocusItemRect() {
         return this._focused?.unclippedRect;
     }
 
@@ -131,16 +132,22 @@ export abstract class FocusManager<
         };
     }
 
-    private getVertScrollOff(windowRect: Rect, windowBot: number) {
+    protected getVertScrollOff(windowRect: Rect) {
         return this._getAnyProp("keepFocusedCenter")
             ? Math.floor(windowRect.height / 2)
-            : Math.min(this._getAnyProp("scrollOff") ?? 0, windowBot);
+            : Math.min(
+                  this._getAnyProp("scrollOff") ?? 0,
+                  windowRect.corner.y + windowRect.height,
+              );
     }
 
-    private getHorizScrollOff(windowRect: Rect, windowRight: number) {
+    protected getHorizScrollOff(windowRect: Rect) {
         return this._getAnyProp("keepFocusedCenter")
             ? Math.floor(windowRect.width / 2)
-            : Math.min(this._getAnyProp("scrollOff") ?? 0, windowRight);
+            : Math.min(
+                  this._getAnyProp("scrollOff") ?? 0,
+                  windowRect.corner.x + windowRect.width,
+              );
     }
 
     protected getVertVisibility(
@@ -150,7 +157,7 @@ export abstract class FocusManager<
         useScrollOff = false,
     ): { above: number; below: number } {
         const { wTop, fTop, wBot, fBot } = this.getTopBottom(windowRect, focusRect);
-        const scrollOff = useScrollOff ? this.getVertScrollOff(windowRect, wBot) : 0;
+        const scrollOff = useScrollOff ? this.getVertScrollOff(windowRect) : 0;
 
         const itemAboveWin = fTop < wTop + scrollOff;
         const itemBelowWin = fBot > wBot - scrollOff;
@@ -172,7 +179,7 @@ export abstract class FocusManager<
         useScrollOff = false,
     ): { left: number; right: number } {
         const { wLeft, fLeft, wRight, fRight } = this.getLeftRight(windowRect, focusRect);
-        const scrollOff = useScrollOff ? this.getHorizScrollOff(windowRect, wRight) : 0;
+        const scrollOff = useScrollOff ? this.getHorizScrollOff(windowRect) : 0;
 
         const itemLeftWin = fLeft < wLeft + scrollOff;
         const itemRightWin = fRight > wRight - scrollOff;
