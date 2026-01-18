@@ -1,4 +1,5 @@
 import { VIRTUAL_LIST_ELEMENT } from "../Constants.js";
+import { logger } from "../shared/Logger.js";
 import type { DomElement } from "./DomElement.js";
 import { ListElement } from "./ListElement.js";
 
@@ -16,9 +17,10 @@ export class VirtualList<T = any> extends ListElement {
     private _data: T[];
     private _renderItem: VirtualListProps<T>["renderItem"];
     private _maxwin: number;
+    private _winsize!: number;
     private _wstart: number;
     private _wend: number;
-    private _focusedIdx: number;
+    private _fidx: number;
 
     constructor(props: VirtualListProps<T>) {
         super();
@@ -27,8 +29,27 @@ export class VirtualList<T = any> extends ListElement {
         this._maxwin = this.getMaxWin();
         this._wstart = 0;
         this._wend = this._maxwin;
-        this._focusedIdx = this._wstart;
+        this._fidx = this._wstart;
+
+        // start at stdout rows or columns.  Subsequent renders will run again
+        // and use vis content rect dimensions
+        this.modifyWinSize(this.getMaxWin());
         this.setRealChildren(0);
+
+        this.afterLayout({
+            subscribe: true,
+            handler: () => {
+                return this.modifyWinSize(
+                    this.getIsVert()
+                        ? this.visibleContentRect.height
+                        : this.visibleContentRect.width,
+                );
+            },
+        });
+    }
+
+    private getIsVert() {
+        return this.style.flexDirection?.includes("column");
     }
 
     private popChild() {
@@ -39,6 +60,78 @@ export class VirtualList<T = any> extends ListElement {
         this.destroyChild(this._children[0]);
     }
 
+    private getMaxWin(): number {
+        const isVert = this.getIsVert();
+        let stdoutMax = 0;
+        if (isVert) {
+            stdoutMax = 1 + (this.getRoot()?.runtime.stdout.rows ?? process.stdout.rows);
+        } else {
+            stdoutMax =
+                1 + (this.getRoot()?.runtime.stdout.columns ?? process.stdout.columns);
+        }
+        return Math.min(this._data.length, stdoutMax);
+    }
+
+    // This needs to be a post layout hook...every time the winsize changes we need to
+    // update the real children and recomposite.  Since this is unlikely to happen
+    // its not a big deal that its a post layout hook.  This also means that
+    // nested VirtualLists should not be supported.  We COULD possibly support this by
+    // adding all virtual lists the the LayoutReconciler so that reconciliation happens
+    // in tree depth order, but this is unecessary because if you are nesting VirtualLists
+    // you are going against the intended design and should be using a Layout or List element as a parent
+    private modifyWinSize(nextWinSize: number) {
+        if (nextWinSize === this._wend - this._wstart) return false;
+        if (nextWinSize === 0) {
+            this._wstart = this._fidx;
+            this._wend = this._fidx;
+            return true;
+        }
+
+        const prevstart = this._wstart;
+
+        const d = this._wend - this._wstart > nextWinSize ? -1 : 1;
+        while (this._wend - this._wstart !== nextWinSize) {
+            if (this.isValidEnds(this._wstart, this._wend + d)) {
+                this._wend += d;
+            } else if (this.isValidEnds(this._wstart - d, this._wend)) {
+                this._wstart -= d;
+            } else {
+                break;
+            }
+        }
+
+        // If we've made it this far, then we need to fully refresh the children again
+        // and update the focused index
+        this.setRealChildren(0);
+        this.getRoot()?._refreshLayout();
+
+        const dfocus = prevstart - this._wstart;
+        this._fidx += dfocus;
+
+        this.handleFocusChange();
+
+        // unfortunately, you cannot nest afterLayout hooks.  They won't run until the next render, so you get a
+        // stale render
+        // this.afterLayout({
+        //     subscribe: false,
+        //     handler: () => {
+        //         this.handleFocusChange();
+        //         logger.write("im running inside after layout");
+        //         return true;
+        //     },
+        // });
+
+        return true;
+    }
+
+    private isValidEnds = (start: number, end: number): boolean => {
+        if (start < 0) return false;
+        if (start > end) return false;
+        if (end < 0) return false;
+        if (end > this._data.length) return false;
+        return true;
+    };
+
     private handleIdxChange(nextIdx: number) {
         if (nextIdx < 0) nextIdx = Math.max(0, nextIdx);
         if (nextIdx >= this._data.length)
@@ -48,14 +141,12 @@ export class VirtualList<T = any> extends ListElement {
         const fRect = this.getFocusItemRect();
         if (!wRect || !fRect) return;
 
-        const flexDir = this.style.flexDirection?.includes("row") ? "h" : "v";
-        const scrollOff =
-            flexDir === "v"
-                ? this.getVertScrollOff(wRect)
-                : this.getHorizScrollOff(wRect);
+        const scrollOff = this.getIsVert()
+            ? this.getVertScrollOff(wRect)
+            : this.getHorizScrollOff(wRect);
 
-        const focusDir = nextIdx > this._focusedIdx ? +1 : -1;
-        this._focusedIdx = nextIdx;
+        const focusDir = nextIdx > this._fidx ? +1 : -1;
+        this._fidx = nextIdx;
 
         const sowend = Math.min(
             this._data.length,
@@ -90,13 +181,16 @@ export class VirtualList<T = any> extends ListElement {
         // Unfortunately, this must be an after layout hook.  If we recalculated yg and refreshed the visual map that isn't enough
         // because we still need to make sure the content depths are refreshed as well. It is a double composite pass unless you add
         // a quick pass before compositing where nothing is done except calculating depths and refreshing vis maps.
-        this.afterLayout({
-            subscribe: false,
-            handler: () => {
-                this.handleFocusChange();
-                return true;
-            },
-        });
+        // this.afterLayout({
+        //     subscribe: false,
+        //     handler: () => {
+        //         this.handleFocusChange();
+        //         return true;
+        //     },
+        // });
+
+        this.getRoot()?._refreshLayout();
+        this.handleFocusChange();
     }
 
     /**
@@ -133,19 +227,22 @@ export class VirtualList<T = any> extends ListElement {
     }
 
     private handleFocusChange() {
-        const fromEnd = this._wend - this._focusedIdx;
+        const fromEnd = this._wend - this._fidx;
         const virFocusIdx = this._children.length - fromEnd;
         const item = this._children[virFocusIdx];
+
+        // @ts-ignore
+        logger.write({ item: item?._children[0].textContent ?? "item is undef" });
 
         return this.focusChild(item);
     }
 
     public override focusNext(units = 1) {
-        return this.handleIdxChange(this._focusedIdx + units);
+        return this.handleIdxChange(this._fidx + units);
     }
 
     public override focusPrev(units = 1) {
-        return this.handleIdxChange(this._focusedIdx - units);
+        return this.handleIdxChange(this._fidx - units);
     }
 
     public setData(_d: T[]) {
@@ -185,18 +282,6 @@ export class VirtualList<T = any> extends ListElement {
             this._data.splice(i, 1);
         }
     }
-
-    private getMaxWin(): number {
-        const isColumn = this.style.flexDirection?.includes("column");
-        let stdoutMax = 0;
-        if (isColumn) {
-            stdoutMax = 1 + (this.getRoot()?.runtime.stdout.rows ?? process.stdout.rows);
-        } else {
-            stdoutMax =
-                1 + (this.getRoot()?.runtime.stdout.columns ?? process.stdout.columns);
-        }
-        return Math.min(this._data.length, stdoutMax);
-    }
 }
 
 // private handleIdxChange(nextIdx: number) {
@@ -211,13 +296,13 @@ export class VirtualList<T = any> extends ListElement {
 //     }
 //
 //     if (!displacement) {
-//         this._focusedIdx = nextIdx;
+//         this._fidx = nextIdx;
 //         return this.handleFocusChange();
 //     }
 //
 //     this._winstart += displacement;
 //     this._winend += displacement;
-//     this._focusedIdx = nextIdx;
+//     this._fidx = nextIdx;
 //     return this.handleSliceChange();
 // }
 //
@@ -227,7 +312,7 @@ export class VirtualList<T = any> extends ListElement {
 // }
 //
 // private handleFocusChange() {
-//     const fromEnd = this._winend - this._focusedIdx;
+//     const fromEnd = this._winend - this._fidx;
 //     const virFocusIdx = this._generatedItems.length - fromEnd;
 //     const item = this._generatedItems[virFocusIdx];
 //     return this.focusChild(item);
@@ -273,9 +358,9 @@ export class VirtualList<T = any> extends ListElement {
 // }
 //
 // public override focusNext(units = 1) {
-//     return this.handleIdxChange(this._focusedIdx + units);
+//     return this.handleIdxChange(this._fidx + units);
 // }
 //
 // public override focusPrev(units = 1) {
-//     return this.handleIdxChange(this._focusedIdx - units);
+//     return this.handleIdxChange(this._fidx - units);
 // }
