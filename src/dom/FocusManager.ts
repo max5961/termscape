@@ -135,19 +135,13 @@ export abstract class FocusManager<
     protected getVertScrollOff(windowRect: Rect) {
         return this._getAnyProp("keepFocusedCenter")
             ? Math.floor(windowRect.height / 2)
-            : Math.min(
-                  this._getAnyProp("scrollOff") ?? 0,
-                  windowRect.corner.y + windowRect.height,
-              );
+            : Math.min(this._getAnyProp("scrollOff") ?? 0, windowRect.height - 1);
     }
 
     protected getHorizScrollOff(windowRect: Rect) {
         return this._getAnyProp("keepFocusedCenter")
             ? Math.floor(windowRect.width / 2)
-            : Math.min(
-                  this._getAnyProp("scrollOff") ?? 0,
-                  windowRect.corner.x + windowRect.width,
-              );
+            : Math.min(this._getAnyProp("scrollOff") ?? 0, windowRect.width - 1);
     }
 
     protected getVertVisibility(

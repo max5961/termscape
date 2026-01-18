@@ -1,10 +1,9 @@
-import { stdout } from "process";
 import { VIRTUAL_LIST_ELEMENT } from "../Constants.js";
-import { logger } from "../shared/Logger.js";
 import type { DomElement } from "./DomElement.js";
 import { ListElement } from "./ListElement.js";
 
 type VirtualListProps<T> = {
+    itemSize: number;
     renderItem: (item: T, index: number) => DomElement;
     data: T[];
 };
@@ -70,7 +69,6 @@ export class VirtualList<T = any> extends ListElement {
         let displacement = 0;
         if (nextIdx < sowstart) {
             displacement = nextIdx - sowstart;
-            logger.write({ displacement });
             if (this._wstart + displacement < 0) {
                 displacement = -this._wstart;
             }
