@@ -118,7 +118,8 @@ export class Renderer {
     private getComposedLayout(opts: WriteOpts): Compositor {
         let compositor: Compositor;
         if (this.onlyStyleChange(opts) && this._lastCompositor) {
-            compositor = this.redrawLastGrid(this._lastCompositor);
+            this._lastGrid = this._lastCompositor.redrawCanvas();
+            compositor = this._lastCompositor;
         } else {
             compositor = this.composeNewLayout(opts);
         }
@@ -127,26 +128,7 @@ export class Renderer {
 
     private composeNewLayout(opts: WriteOpts): Compositor {
         const compositor = new Compositor(this._host, opts);
-        compositor.buildLayout(this._host);
-        return compositor;
-    }
-
-    /**
-     * Assumes no layout work is needed but styles (coloring, borders, etc...)
-     * need to be updated.
-     * */
-    private redrawLastGrid(compositor: Compositor): Compositor {
-        // reset grid while preserving references, then re-perform draw ops
-
-        this._lastGrid = compositor.canvas.grid.map((row) => row.slice());
-
-        compositor.canvas.grid.splice(0);
-        this._lastGrid.forEach((row) => {
-            const nextRow = Array.from({ length: row.length }).fill(" ") as string[];
-            compositor.canvas.grid.push(nextRow);
-        });
-
-        compositor.draw.performOps();
+        compositor.buildLayout();
         return compositor;
     }
 
@@ -170,15 +152,15 @@ export class Renderer {
         const withYoga = (cb: () => boolean) => {
             recompose(() => {
                 const result = cb();
-                if (result) this._host._calculateYogaLayout();
+                if (result) compositor.calculateYogaLayout();
                 return result;
             });
         };
 
         const sorted = compositor.reconciler.getSorted();
+        sorted.afterLayout.forEach(withYoga);
         sorted.scrollManagers.forEach(recompose);
         sorted.focusManagers.forEach(recompose);
-        sorted.afterLayout.forEach(withYoga);
 
         return compositor;
     }

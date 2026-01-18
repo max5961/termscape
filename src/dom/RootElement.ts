@@ -11,6 +11,7 @@ import { ROOT_ELEMENT } from "../Constants.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { MetaData, MetaDataRegister } from "./shared/MetaData.js";
+import { Compositor } from "../compositor/Compositor.js";
 
 export class Root extends DomElement<{
     Style: Style.Root;
@@ -120,6 +121,12 @@ export class Root extends DomElement<{
         });
     }
 
+    /** @internal */
+    public _refreshLayout() {
+        const compositor = new Compositor(this, {});
+        compositor.refreshLayout();
+    }
+
     public exit<T extends Error | undefined>(error?: T): T extends Error ? never : void {
         this.runtimeCtl.endRuntime(error);
         return undefined as T extends Error ? never : void;
@@ -138,33 +145,23 @@ export class Root extends DomElement<{
         return this.renderer.lastGrid?.length ?? 0;
     }
 
+    // CHORE - underscore prefix these internals
+
+    /** @internal */
     public render = (opts: WriteOpts = {}) => {
         if (opts.resize) {
             this._register.recalculateViewports();
-        }
-
-        if (opts.layoutChange || !this.hasRendered) {
-            this._calculateYogaLayout();
         }
 
         if (this.hasRendered) {
             this.renderer.renderTree(opts);
         } else {
             this.renderer.renderTree({ ...opts, layoutChange: true });
+            this.hasRendered = true;
         }
-
-        this.hasRendered = true;
     };
 
     /** @internal */
-    public _calculateYogaLayout = () => {
-        this._node.calculateLayout(
-            this.runtime.stdout.columns,
-            undefined,
-            Yg.DIRECTION_LTR,
-        );
-    };
-
     public scheduleRender(opts: WriteOpts = {}) {
         if (this.runtimeCtl.isStarted) {
             this.scheduler.scheduleUpdate(this.render, opts);
