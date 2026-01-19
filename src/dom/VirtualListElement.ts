@@ -116,10 +116,8 @@ export class VirtualList<T = any> extends ListElement {
         }
 
         // If we've made it this far, then we need to fully refresh the children again and displace the virtual focus
-        // this.handleVirtualChanges(0);
-        // return true;
-        process.nextTick(() => this.handleVirtualChanges(0));
-        return false;
+        this.handleVirtualChanges(0);
+        return true;
     }
 
     private handleVirtualChanges(winDisplace: number) {

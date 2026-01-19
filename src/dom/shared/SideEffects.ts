@@ -37,9 +37,30 @@ export class SideEffects {
         if (this.hasConstructed) {
             this.map[prop]?.(value, setProp);
         } else {
-            queueMicrotask(() => {
+            queuePreCompositeTask(() => {
                 this.map[prop]?.(value, setProp);
             });
         }
     }
+}
+
+const preCompositeQ = new Set<() => unknown>();
+
+/**
+ * Not exported - dispatchEffect should be the only one allowed to use this.  If the need
+ * for something similar outside of this context arises, a separate queue can always be made
+ * for public
+ */
+function queuePreCompositeTask(task: () => unknown) {
+    preCompositeQ.add(task);
+}
+
+/** @returns true if any tasks were queue'd */
+export function execPreCompositeTasks(): boolean {
+    const hasTasks = !!preCompositeQ.size;
+    for (const task of preCompositeQ) {
+        task();
+        preCompositeQ.delete(task);
+    }
+    return hasTasks;
 }

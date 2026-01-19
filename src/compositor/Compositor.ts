@@ -1,6 +1,8 @@
 import { FOCUS_MANAGER, Yg } from "../Constants.js";
 import type { DomElement } from "../dom/DomElement.js";
 import type { Root } from "../dom/RootElement.js";
+import { execPreCompositeTasks } from "../dom/shared/SideEffects.js";
+import { logger } from "../shared/Logger.js";
 import type { WriteOpts } from "../Types.js";
 import { type Canvas, RootCanvas, SubCanvas } from "./Canvas.js";
 import { DomRects } from "./DomRects.js";
@@ -48,6 +50,7 @@ export class Compositor {
     }
 
     public buildLayout() {
+        execPreCompositeTasks();
         if (this._opts.layoutChange) {
             this.refreshLayout();
         }
@@ -125,6 +128,13 @@ export class Compositor {
      * need to be updated.
      * */
     public redrawCanvas() {
+        // This should always be empty, but just in case...
+        const ranTasks = execPreCompositeTasks();
+        if (ranTasks)
+            logger.write(
+                "WARN: ran a preCompositeTask in redrawCanvas.  This is harmless, but tracking because it points to a potential design hole because its predicted to be empty in this function",
+            );
+
         // reset grid while preserving references, then re-perform draw ops
         const last = this.canvas.grid.map((row) => row.slice());
 

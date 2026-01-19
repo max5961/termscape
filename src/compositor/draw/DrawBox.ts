@@ -109,20 +109,6 @@ export class DrawBox extends DrawContract<BoxLike> {
         // color to undefined isn't an issue if there isn't a color set.
         const scrollbar = elem._getAnyProp("scrollbar") as Required<Scrollbar>;
 
-        if (scrollbar.trackChar == undefined) {
-            logger.write("----NOT DEFINED----", {
-                scrollbar,
-                // @ts-ignore
-                tc: elem._children[0]?.textContent ?? "no text content",
-            });
-        } else {
-            logger.write("DEFINED", {
-                scrollbar,
-                // @ts-ignore
-                tc: elem._children[0]?.textContent ?? "no text content",
-            });
-        }
-
         const units = this.getScrollBarUnits(elem, scrollbar.edge);
         const direction =
             scrollbar.edge === "right" || scrollbar.edge === "left" ? "d" : "r";
