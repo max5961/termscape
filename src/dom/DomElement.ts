@@ -242,6 +242,10 @@ export abstract class DomElement<
         scrollbar.barChar = scrollbar.barChar ? scrollbar.barChar[0] : " ";
         scrollbar.trackChar = scrollbar.trackChar ? scrollbar.trackChar[0] : " ";
 
+        if (scrollbar.trackChar === undefined) {
+            logger.write("trackChar is undef");
+        }
+
         if (scrollbar.placement === "border") {
             this.style._scrollbarBorderTop = scrollbar.edge === "top" ? 1 : 0;
             this.style._scrollbarBorderBottom = scrollbar.edge === "bottom" ? 1 : 0;

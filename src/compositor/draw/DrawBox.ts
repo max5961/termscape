@@ -1,5 +1,5 @@
 import { DrawContract } from "./DrawContract.js";
-import { Yg } from "../../Constants.js";
+import { VIRTUAL_LIST_ELEMENT, Yg } from "../../Constants.js";
 import {
     BackgroundCharacters,
     Borders,
@@ -8,7 +8,6 @@ import {
 } from "../../shared/Boxes.js";
 import type { Props, Scrollbar, Title, TitleStyleConfig } from "../../dom/props/Props.js";
 import type { Shadow, Style } from "../../dom/style/Style.js";
-// import type { Canvas } from "../Canvas.js";
 import type { Canvas } from "../Canvas.js";
 import type { Pen } from "../Pen.js";
 import type { BoxLike } from "../types.js";
@@ -110,6 +109,20 @@ export class DrawBox extends DrawContract<BoxLike> {
         // color to undefined isn't an issue if there isn't a color set.
         const scrollbar = elem._getAnyProp("scrollbar") as Required<Scrollbar>;
 
+        if (scrollbar.trackChar == undefined) {
+            logger.write("----NOT DEFINED----", {
+                scrollbar,
+                // @ts-ignore
+                tc: elem._children[0]?.textContent ?? "no text content",
+            });
+        } else {
+            logger.write("DEFINED", {
+                scrollbar,
+                // @ts-ignore
+                tc: elem._children[0]?.textContent ?? "no text content",
+            });
+        }
+
         const units = this.getScrollBarUnits(elem, scrollbar.edge);
         const direction =
             scrollbar.edge === "right" || scrollbar.edge === "left" ? "d" : "r";
@@ -170,7 +183,25 @@ export class DrawBox extends DrawContract<BoxLike> {
             pctScrolled = elem.getScrollData().x;
         }
 
-        const barPct = Math.min(1, contentUnits / unclippedContentUnits);
+        let barPct = Math.min(1, contentUnits / unclippedContentUnits);
+
+        if (elem._is(VIRTUAL_LIST_ELEMENT)) {
+            const items = elem._data.length;
+            const itemsShown = Math.ceil(contentUnits / elem._itemSize);
+            const maxStart = Math.max(0, items - itemsShown);
+
+            const trueStart =
+                elem._wstart +
+                Math.floor(
+                    (elem.visibleContentRect.corner.y - elem._contentRange.high) /
+                        elem._itemSize,
+                );
+
+            barPct = items === 0 ? 1 : Math.min(1, itemsShown / items);
+            pctScrolled = maxStart === 0 ? 0 : Math.floor((trueStart / maxStart) * 100);
+            unclippedContentUnits = items * elem._itemSize;
+        }
+
         const barUnits = Math.max(1, Math.ceil(barPct * contentUnits));
 
         const trackUnits = elem.unclippedContentRect.height - barUnits;

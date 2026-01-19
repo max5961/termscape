@@ -3,8 +3,20 @@ import type { DomElement } from "./DomElement.js";
 import { VIRTUAL_LIST_ELEMENT } from "../Constants.js";
 import { ListElement } from "./ListElement.js";
 
+// TODO
+// - override onFocus/onBlur/onShallow... so that children of VirtualList dispatch
+// these handlers at the control of VirtualList and not the FocusNode which is the
+// default behavior.  There should be something like a 'visited indexes' Set that is
+// used to see when to dispatch these handlers.
+// - test for deletion, insertion, etc..
+// - test for replacing data
+// - modify other classes so that appendChild, insertChild, removeChild, etc.. can be noop-able
+// - create AbstractList so that we can extend from that instead of ListElement
+// - make this an option in createElement
+// - instead of using ctor props, make createElement apply the props in its function and use those instead
+
 type VirtualListProps<T> = {
-    itemSize: number;
+    itemSize?: number;
     renderItem: (item: T, index: number) => DomElement;
     data: T[];
 };
@@ -14,31 +26,52 @@ export class VirtualList<T = any> extends ListElement {
 
     // need to make an Abstract ListElement so that we can override tagname here
 
-    private _data: T[];
-    private _renderItem: VirtualListProps<T>["renderItem"];
-    private _wstart: number;
-    private _wend: number;
-    private _fidx: number;
-
     /** @internal */
     public _itemSize: number;
+    /** @internal */
+    public _data: T[];
+    /** @internal */
+    public _wstart: number;
+    /** @internal */
+    public _wend: number;
+    /** @internal */
+    public _fidx: number;
+    private _renderItem: VirtualListProps<T>["renderItem"];
+    private _explicitSize?: number;
 
     constructor(props: VirtualListProps<T>) {
         super();
         this._renderItem = props.renderItem;
         this._data = props.data;
-        this._itemSize = props.itemSize;
+        this._itemSize = props.itemSize ?? 1;
+        this._explicitSize = props.itemSize;
         this._fidx = 0;
         this._wstart = 0;
-        this._wend = 0;
+        this._wend = this.initWinEnd();
+        this.handleVirtualChanges(0);
 
         this.afterLayout({
             subscribe: true,
             handler: () => {
-                return this.modifyWinSize(
-                    this.getIsVert()
-                        ? this.visibleContentRect.height
-                        : this.visibleContentRect.width,
+                const possibleUnits = this.getIsVert()
+                    ? this.visibleContentRect.height
+                    : this.visibleContentRect.width;
+
+                let didModSize = false;
+                if (this._explicitSize === undefined) {
+                    const nextSize = this.getIsVert()
+                        ? this._children[0]?._node.getComputedHeight() ?? 1
+                        : this._children[0]?._node.getComputedWidth() ?? 1;
+                    didModSize = nextSize !== this._itemSize;
+                    if (didModSize) this._itemSize = nextSize;
+                } else if (this._itemSize !== this._explicitSize) {
+                    this._itemSize = this._explicitSize;
+                    didModSize = true;
+                }
+
+                return (
+                    this.modifyWinSize(Math.ceil(possibleUnits / this._itemSize)) ||
+                    didModSize
                 );
             },
         });
@@ -83,8 +116,10 @@ export class VirtualList<T = any> extends ListElement {
         }
 
         // If we've made it this far, then we need to fully refresh the children again and displace the virtual focus
-        this.handleVirtualChanges(0);
-        return true;
+        // this.handleVirtualChanges(0);
+        // return true;
+        process.nextTick(() => this.handleVirtualChanges(0));
+        return false;
     }
 
     private handleVirtualChanges(winDisplace: number) {
@@ -94,8 +129,7 @@ export class VirtualList<T = any> extends ListElement {
     }
 
     private getCurrFocus(): DomElement | undefined {
-        const fromEnd = this._wend - this._fidx;
-        const virFocusIdx = this._children.length - fromEnd;
+        const virFocusIdx = this._fidx - this._wstart;
         return this._children[virFocusIdx];
     }
 
@@ -216,7 +250,7 @@ export class VirtualList<T = any> extends ListElement {
         if (this._data !== d) this.setData(d);
     }
 
-    // /** noop - use `appendVirtual` */
+    /** noop - use `appendVirtual` */
     // public override appendChild(_child: DomElement): void {}
     // /** noop - use `removeVirtual` */
     // public override removeChild(_child: DomElement, _freeRecursive?: boolean): void {}
@@ -267,5 +301,12 @@ export class VirtualList<T = any> extends ListElement {
         return this.getIsVert()
             ? this.getVertScrollOff(windowRect)
             : this.getHorizScrollOff(windowRect);
+    }
+
+    private initWinEnd() {
+        return Math.min(
+            this._data.length,
+            this.getIsVert() ? process.stdout.rows : process.stdout.columns,
+        );
     }
 }
