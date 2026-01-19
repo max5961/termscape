@@ -135,9 +135,8 @@ export abstract class DomElement<
 
         let styles = stylesheet;
         if (this._styleHandler) {
-            // Important to spread into styleHandler to avoid mutating state from within
             const status = this.getFocusStatus();
-            styles = this._styleHandler({ ...status });
+            styles = this._styleHandler(status);
         }
 
         const withDefault = {

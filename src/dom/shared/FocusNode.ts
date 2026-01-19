@@ -1,4 +1,3 @@
-import { logger } from "../../shared/Logger.js";
 import type { DomElement } from "../DomElement.js";
 import type { DomEvents } from "./DomEvents.js";
 
@@ -15,7 +14,7 @@ export class FocusNode {
 
     /** @internal */
     public _getCurrStatus(): FocusState {
-        // Ensure status is closed to mutation publically (could be mutated in a style handler for example)
+        // Sread to ensure status is closed to mutation publically (could be mutated in a style handler for example)
         return { ...this._currStatus };
     }
     /** @internal */
