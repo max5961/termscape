@@ -54,7 +54,7 @@ export class Renderer {
         const [layoutMs, compositor] = this.wrapPerf(() => this.getComposedLayout(opts));
         this._host.hooks.exec("post-layout", compositor.canvas);
 
-        const _lastGrid = this._lastGrid;
+        const lastGrid = this._lastGrid;
         const nextGrid = compositor.canvas.grid;
         this._lastCompositor = compositor;
         this._lastGrid = nextGrid;
@@ -63,7 +63,7 @@ export class Renderer {
         // Load cursor with operations and execute
         this._host.hooks.exec("pre-write", undefined);
         const [diffMs, diffStrategy] = this.wrapPerf(() => {
-            return this.prepareCursorOps(opts, _lastGrid, nextGrid);
+            return this.prepareCursorOps(opts, lastGrid, nextGrid);
         });
         this.executeCursorOps();
         this._host.hooks.exec("post-write", undefined);
@@ -80,6 +80,48 @@ export class Renderer {
         const result = cb();
         const end = performance.now();
         return [end - start, result];
+    }
+
+    private getComposedLayout(opts: WriteOpts): Compositor {
+        let compositor: Compositor;
+        if (this.onlyStyleChange(opts) && this._lastCompositor) {
+            this._lastGrid = this._lastCompositor.redrawCanvas();
+            compositor = this._lastCompositor;
+        } else {
+            compositor = this.composeNewLayout(opts);
+        }
+        return this.reconcileLayout(compositor);
+    }
+
+    private composeNewLayout(opts: WriteOpts): Compositor {
+        const compositor = new Compositor(this._host, opts);
+        compositor.buildLayout();
+        return compositor;
+    }
+
+    private reconcileLayout(compositor: Compositor): Compositor {
+        const recompose = (cb: () => boolean) => {
+            if (cb()) {
+                logger.write("RECOMPOSE");
+                compositor = this.composeNewLayout({ layoutChange: true });
+            }
+        };
+
+        // Order Matters: CB -> Yoga -> Recompose
+        const withYoga = (cb: () => boolean) => {
+            recompose(() => {
+                const result = cb();
+                if (result) compositor.calculateYogaLayout();
+                return result;
+            });
+        };
+
+        const sorted = compositor.reconciler.getSorted();
+        sorted.afterLayout.forEach(withYoga);
+        sorted.scrollManagers.forEach(recompose);
+        sorted.focusManagers.forEach(recompose);
+
+        return compositor;
     }
 
     private executeCursorOps() {
@@ -115,54 +157,12 @@ export class Renderer {
         return strategy;
     }
 
-    private getComposedLayout(opts: WriteOpts): Compositor {
-        let compositor: Compositor;
-        if (this.onlyStyleChange(opts) && this._lastCompositor) {
-            this._lastGrid = this._lastCompositor.redrawCanvas();
-            compositor = this._lastCompositor;
-        } else {
-            compositor = this.composeNewLayout(opts);
-        }
-        return this.reconcileLayout(compositor);
-    }
-
-    private composeNewLayout(opts: WriteOpts): Compositor {
-        const compositor = new Compositor(this._host, opts);
-        compositor.buildLayout();
-        return compositor;
-    }
-
     private onlyStyleChange(opts: WriteOpts): boolean {
         const keys = objectKeys(opts);
         if (keys.length <= 2 && opts.capturedOutput !== undefined && opts.styleChange) {
             return true;
         }
         return false;
-    }
-
-    private reconcileLayout(compositor: Compositor): Compositor {
-        const recompose = (cb: () => boolean) => {
-            if (cb()) {
-                logger.write("RECOMPOSE");
-                compositor = this.composeNewLayout({ layoutChange: true });
-            }
-        };
-
-        // Order Matters: CB -> Yoga -> Recompose
-        const withYoga = (cb: () => boolean) => {
-            recompose(() => {
-                const result = cb();
-                if (result) compositor.calculateYogaLayout();
-                return result;
-            });
-        };
-
-        const sorted = compositor.reconciler.getSorted();
-        sorted.afterLayout.forEach(withYoga);
-        sorted.scrollManagers.forEach(recompose);
-        sorted.focusManagers.forEach(recompose);
-
-        return compositor;
     }
 
     private shouldRefreshWrite(opts: WriteOpts, nextGrid: Grid) {

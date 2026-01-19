@@ -2,7 +2,6 @@ import type { Rect } from "../compositor/Canvas.js";
 import type { DomElement } from "./DomElement.js";
 import { VIRTUAL_LIST_ELEMENT } from "../Constants.js";
 import { ListElement } from "./ListElement.js";
-import { logger } from "../shared/Logger.js";
 
 type VirtualListProps<T> = {
     itemSize: number;

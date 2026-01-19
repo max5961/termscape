@@ -115,8 +115,10 @@ export class Root extends DomElement<{
 
     /** @internal */
     public _refreshLayout() {
+        const rootCanvas = this._canvas;
         const compositor = new Compositor(this, {});
         compositor.refreshLayout();
+        this._canvas = rootCanvas;
     }
 
     public exit<T extends Error | undefined>(error?: T): T extends Error ? never : void {

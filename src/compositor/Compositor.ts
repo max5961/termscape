@@ -1,7 +1,6 @@
 import { FOCUS_MANAGER, Yg } from "../Constants.js";
 import type { DomElement } from "../dom/DomElement.js";
 import type { Root } from "../dom/RootElement.js";
-import { logger } from "../shared/Logger.js";
 import type { WriteOpts } from "../Types.js";
 import { type Canvas, RootCanvas, SubCanvas } from "./Canvas.js";
 import { DomRects } from "./DomRects.js";
@@ -97,6 +96,7 @@ export class Compositor {
         nodeDepth = 0,
         relZIndex = 0,
     ) {
+        this.bindCanvas(elem);
         if (elem.style.display === "none") return;
 
         const style = elem._shadowStyle;
@@ -142,11 +142,19 @@ export class Compositor {
     private updateChildCanvas(child: DomElement, parent: Canvas) {
         if (!child._canvas) {
             child._canvas = new SubCanvas(child, parent);
-        } else if (this._opts.layoutChange && child._canvas instanceof SubCanvas) {
+        } else if (child._canvas instanceof SubCanvas) {
             child._canvas.constrainToLayout(parent);
         }
 
-        child._canvas.bindContext(this._canvas.grid, this._canvas.stdout);
+        this.bindCanvas(child);
+    }
+
+    /**
+     * Extremely important.  This must be performed at least once on every render
+     * pass.  Otherwise, you are writing to a ghost grid.
+     * */
+    private bindCanvas(child: DomElement) {
+        child._canvas?.bindContext(this._canvas.grid, this._canvas.stdout);
     }
 
     private updateContentRange(child: DomElement, scroller: DomElement | undefined) {
