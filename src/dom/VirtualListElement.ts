@@ -2,6 +2,7 @@ import type { Rect } from "../compositor/Canvas.js";
 import type { DomElement } from "./DomElement.js";
 import { VIRTUAL_LIST_ELEMENT } from "../Constants.js";
 import { ListElement } from "./ListElement.js";
+import { logger } from "../shared/Logger.js";
 
 type VirtualListProps<T> = {
     itemSize: number;
@@ -252,11 +253,15 @@ export class VirtualList<T = any> extends ListElement {
     }
 
     private popChild() {
-        this.destroyChild(this._children[this._children.length - 1]);
+        if (this._children.length) {
+            this.removeChild(this._children[this._children.length - 1], true);
+        }
     }
 
     private shiftChild() {
-        this.destroyChild(this._children[0]);
+        if (this._children.length) {
+            this.removeChild(this._children[0], true);
+        }
     }
 
     private getScrollOff(windowRect: Rect) {

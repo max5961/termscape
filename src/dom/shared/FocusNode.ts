@@ -38,7 +38,7 @@ export class FocusNode {
     // CHORE - appendChild and removeChild needs tests to ensure Provider chain
     // is predictable/stable
 
-    public appendChild(node: FocusNode) {
+    public addChild(node: FocusNode) {
         node._parent = this;
         if (!node._nearestProvider) {
             node._nearestProvider = this._nearestProvider;

@@ -69,7 +69,9 @@ export abstract class FocusManager<
             this.focusChild(next);
         }
 
-        FocusManager.RecalulateFlexShrink(child);
+        if (!freeRecursive) {
+            FocusManager.RecalulateFlexShrink(child);
+        }
     }
 
     public get focused() {

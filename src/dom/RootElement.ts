@@ -114,14 +114,6 @@ export class Root extends DomElement<{
     }
 
     /** @internal */
-    public recursivelyDetach(child: DomElement) {
-        this._register.detach(child._metadata);
-        child._children.forEach((child) => {
-            this.recursivelyDetach(child);
-        });
-    }
-
-    /** @internal */
     public _refreshLayout() {
         const compositor = new Compositor(this, {});
         compositor.refreshLayout();
