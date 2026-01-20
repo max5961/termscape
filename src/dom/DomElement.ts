@@ -20,7 +20,6 @@ import { SideEffects, type PropEffectHandler } from "./shared/SideEffects.js";
 import { MetaData } from "./shared/MetaData.js";
 import { DomEvents } from "./shared/DomEvents.js";
 import type { Event, EventHandler } from "../Types.js";
-import { logger } from "../shared/Logger.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -241,10 +240,6 @@ export abstract class DomElement<
         scrollbar.placement ??= "padding-outer";
         scrollbar.barChar = scrollbar.barChar ? scrollbar.barChar[0] : " ";
         scrollbar.trackChar = scrollbar.trackChar ? scrollbar.trackChar[0] : " ";
-
-        if (scrollbar.trackChar === undefined) {
-            logger.write("trackChar is undef");
-        }
 
         if (scrollbar.placement === "border") {
             this.style._scrollbarBorderTop = scrollbar.edge === "top" ? 1 : 0;

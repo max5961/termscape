@@ -1,2 +1,2 @@
-import { create } from "./shared/CreateElement.js";
+import { create } from "./shared/Create.js";
 export default { create };

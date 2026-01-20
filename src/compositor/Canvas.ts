@@ -261,6 +261,13 @@ export class RootCanvas extends Canvas {
             maxY: maxHeight,
         };
     }
+
+    /**
+     * override to noop - because we don't need to bind the root canvas to itself
+     * and more importantly if we run this on root, then it will force new rows since
+     * root starts out with limits of stdout dimensions
+     */
+    public override bindContext(_grid: Grid, _stdout: Stdout): void {}
 }
 
 export class SubCanvas extends Canvas {
