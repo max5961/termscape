@@ -8,7 +8,7 @@ const run = defaultTestSuite(SUITE);
 describe(SUITE, async () => {
     await run(
         "no zindex is 'transparent' (doesn't clear bg)",
-        termscape.createElement("box", {
+        termscape.create.box({
             style: {
                 height: 20,
                 width: 40,
@@ -16,7 +16,7 @@ describe(SUITE, async () => {
                 backgroundStyle: "dotted",
             },
             children: [
-                termscape.createElement("box", {
+                termscape.create.box({
                     style: {
                         height: 10,
                         width: 20,
@@ -31,7 +31,7 @@ describe(SUITE, async () => {
     );
     await run(
         "unstacked zindex clears bg",
-        termscape.createElement("box", {
+        termscape.create.box({
             style: {
                 height: 20,
                 width: 40,
@@ -39,7 +39,7 @@ describe(SUITE, async () => {
                 backgroundStyle: "dotted",
             },
             children: [
-                termscape.createElement("box", {
+                termscape.create.box({
                     style: {
                         height: 10,
                         width: 20,
@@ -55,7 +55,7 @@ describe(SUITE, async () => {
     );
     await run(
         "stacked zindex clears both bgs",
-        termscape.createElement("box", {
+        termscape.create.box({
             style: {
                 height: 20,
                 width: 40,
@@ -63,7 +63,7 @@ describe(SUITE, async () => {
                 backgroundStyle: "dotted",
             },
             children: [
-                termscape.createElement("box", {
+                termscape.create.box({
                     style: {
                         height: 10,
                         width: 20,
@@ -75,7 +75,7 @@ describe(SUITE, async () => {
                         zIndex: 1,
                     },
                     children: [
-                        termscape.createElement("box", {
+                        termscape.create.box({
                             style: {
                                 height: 5,
                                 width: 10,

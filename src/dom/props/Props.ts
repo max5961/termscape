@@ -2,6 +2,7 @@ import type { Action } from "term-keymap";
 import type { TitleBorders } from "../../shared/Boxes.js";
 import type { Color } from "../../Types.js";
 import type { Pen } from "../../compositor/Pen.js";
+import type { DomElement } from "../DomElement.js";
 
 export type Scrollbar = {
     /** TODO - default is 'always' */
@@ -98,6 +99,12 @@ export namespace Props {
         draw?: (pen: Pen) => unknown;
     };
 
+    type VirtualListProps<T = any> = {
+        itemSize?: number;
+        renderItem?: (item: T, index: number) => DomElement;
+        data?: T[];
+    };
+
     // prettier-ignore
     export type All = 
         Base &
@@ -105,7 +112,8 @@ export namespace Props {
         TextInput &
         FocusManagerBase &
         FocusManagerScroll & 
-        CanvasProps;
+        CanvasProps & 
+        VirtualListProps
 
     export type BoxLike = Base & BoxProps;
 
@@ -115,6 +123,7 @@ export namespace Props {
     export type Book = BoxLike;
     export type FocusManager = BoxLike & FocusManagerBase & FocusManagerScroll;
     export type List = FocusManager & FocusManagerScroll;
+    export type VirtualList<T> = List & VirtualListProps<T>;
     export type Layout = FocusManager;
     export type LayoutNode = BoxLike;
     export type Canvas = Base & CanvasProps;

@@ -31,7 +31,7 @@ describe(SUITE, async () => {
 });
 
 function getBox(h: string, w: string) {
-    return termscape.createElement("box", {
+    return termscape.create.box({
         style: {
             height: h + "vh",
             width: w + "vw",
@@ -41,7 +41,7 @@ function getBox(h: string, w: string) {
 }
 
 function getMinDimBox(h: string, w: string) {
-    return termscape.createElement("box", {
+    return termscape.create.box({
         style: {
             minHeight: h + "vh",
             minWidth: w + "vw",

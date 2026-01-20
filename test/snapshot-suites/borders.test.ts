@@ -11,7 +11,7 @@ const run = defaultTestSuite(SUITE);
 async function runTest(style: Exclude<Style.Box["borderStyle"], undefined | BorderMap>) {
     await run(
         style,
-        termscape.createElement("box", {
+        termscape.create.box({
             style: {
                 height: 10,
                 width: 20,

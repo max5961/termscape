@@ -10,7 +10,7 @@ const run = defaultTestSuite(SUITE);
 async function runTest(style: Style.Box["backgroundColor"]) {
     run(
         style ?? "undefined",
-        termscape.createElement("box", {
+        termscape.create.box({
             style: {
                 height: 10,
                 width: 20,

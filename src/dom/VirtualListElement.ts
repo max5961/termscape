@@ -1,7 +1,8 @@
 import type { Rect } from "../compositor/Canvas.js";
 import type { DomElement } from "./DomElement.js";
-import { VIRTUAL_LIST_ELEMENT } from "../Constants.js";
-import { ListElement } from "./ListElement.js";
+import type { Props } from "./props/Props.js";
+import { TagNameEnum, VIRTUAL_LIST_ELEMENT } from "../Constants.js";
+import { AbstractList } from "./ListElement.js";
 
 // TODO
 // - override onFocus/onBlur/onShallow... so that children of VirtualList dispatch
@@ -11,20 +12,13 @@ import { ListElement } from "./ListElement.js";
 // - test for deletion, insertion, etc..
 // - test for replacing data
 // - modify other classes so that appendChild, insertChild, removeChild, etc.. can be noop-able
-// - create AbstractList so that we can extend from that instead of ListElement
-// - make this an option in createElement
-// - instead of using ctor props, make createElement apply the props in its function and use those instead
 
-type VirtualListProps<T> = {
-    itemSize?: number;
-    renderItem: (item: T, index: number) => DomElement;
-    data: T[];
-};
-
-export class VirtualList<T = any> extends ListElement {
+export class VirtualList<T = any> extends AbstractList {
     protected static override identity = VIRTUAL_LIST_ELEMENT;
 
-    // need to make an Abstract ListElement so that we can override tagname here
+    public override get tagName(): typeof TagNameEnum.VirtualList {
+        return "virtual-list";
+    }
 
     /** @internal */
     public _itemSize: number;
@@ -36,19 +30,36 @@ export class VirtualList<T = any> extends ListElement {
     public _wend: number;
     /** @internal */
     public _fidx: number;
-    private _renderItem: VirtualListProps<T>["renderItem"];
+    private _renderItem: Exclude<Props.VirtualList<T>["renderItem"], undefined>;
     private _explicitSize?: number;
 
-    constructor(props: VirtualListProps<T>) {
+    constructor(props: Props.VirtualList<T>) {
         super();
-        this._renderItem = props.renderItem;
-        this._data = props.data;
+        this._renderItem = props.renderItem!;
+        this._data = props.data!;
         this._itemSize = props.itemSize ?? 1;
         this._explicitSize = props.itemSize;
         this._fidx = 0;
         this._wstart = 0;
         this._wend = this.initWinEnd();
         this.handleVirtualChanges(0);
+
+        this.registerPropEffect("itemSize", (v, set) => {
+            this._itemSize = v ?? 1;
+            set(v);
+        });
+        this.registerPropEffect("data", (v, set) => {
+            this._data = v ?? [];
+            set(v);
+        });
+        this.registerPropEffect("renderItem", (v, set) => {
+            // Do nothing if undefined, in order to support setProp behavior which allows undefined values for everything.
+            // But this is something that will need to be fixed later on...certain props should not be undefined
+            if (v) {
+                this._renderItem = v;
+                set(v);
+            }
+        });
 
         this.afterLayout({
             subscribe: true,

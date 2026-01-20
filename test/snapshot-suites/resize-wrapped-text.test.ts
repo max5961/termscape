@@ -8,7 +8,7 @@ const run = defaultTestSuite(SUITE);
 
 describe(SUITE, async () => {
     await run("wrapped text is not clipped when increasing width via resize", (root) => {
-        const container = termscape.createElement("box", {
+        const container = termscape.create.box({
             style: {
                 width: "100vw",
                 height: "100vh",
@@ -19,7 +19,7 @@ describe(SUITE, async () => {
                 gap: 1,
             },
             children: ["foobar", "bazban", "quzqux"].map((text) => {
-                return termscape.createElement("box", {
+                return termscape.create.box({
                     style: {
                         width: "100",
                         height: 3,
@@ -28,7 +28,7 @@ describe(SUITE, async () => {
                         borderStyle: "round",
                     },
                     children: [
-                        termscape.createElement("text", {
+                        termscape.create.text({
                             textContent: text,
                             style: {
                                 wrap: "wrap",

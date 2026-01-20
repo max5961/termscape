@@ -8,12 +8,12 @@ describe("FocusNode - appends", () => {
     describe("predictable", () => {
         const { root, c1, checkpoint1, c2, c3, checkpoint2, c4 } = nodes;
 
-        root.appendChild(c1);
-        c1.appendChild(checkpoint1);
-        checkpoint1.appendChild(c2);
-        c2.appendChild(c3);
-        c3.appendChild(checkpoint2);
-        checkpoint2.appendChild(c4);
+        root.addChild(c1);
+        c1.addChild(checkpoint1);
+        checkpoint1.addChild(c2);
+        c2.addChild(c3);
+        c3.addChild(checkpoint2);
+        checkpoint2.addChild(c4);
 
         checkpoint1.becomeProvider(false);
         checkpoint2.becomeProvider(true);
@@ -24,12 +24,12 @@ describe("FocusNode - appends", () => {
         nodes = getNodes();
         const { root, c1, checkpoint1, c2, c3, checkpoint2, c4 } = nodes;
 
-        checkpoint2.appendChild(c4);
-        c3.appendChild(checkpoint2);
-        c2.appendChild(c3);
-        checkpoint1.appendChild(c2);
-        c1.appendChild(checkpoint1);
-        root.appendChild(c1);
+        checkpoint2.addChild(c4);
+        c3.addChild(checkpoint2);
+        c2.addChild(c3);
+        checkpoint1.addChild(c2);
+        c1.addChild(checkpoint1);
+        root.addChild(c1);
 
         checkpoint1.becomeProvider(false);
         checkpoint2.becomeProvider(true);
@@ -130,12 +130,12 @@ describe("FocusNode - appends", () => {
 
 function getNodes() {
     return {
-        root: new FocusNode(termscape.createElement("box")),
-        c1: new FocusNode(termscape.createElement("box")),
-        checkpoint1: new FocusNode(termscape.createElement("box")),
-        c2: new FocusNode(termscape.createElement("box")),
-        c3: new FocusNode(termscape.createElement("box")),
-        checkpoint2: new FocusNode(termscape.createElement("box")),
-        c4: new FocusNode(termscape.createElement("box")),
+        root: new FocusNode(termscape.create.box()),
+        c1: new FocusNode(termscape.create.box()),
+        checkpoint1: new FocusNode(termscape.create.box()),
+        c2: new FocusNode(termscape.create.box()),
+        c3: new FocusNode(termscape.create.box()),
+        checkpoint2: new FocusNode(termscape.create.box()),
+        c4: new FocusNode(termscape.create.box()),
     };
 }

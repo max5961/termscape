@@ -1,11 +1,11 @@
-import type { VisualNodeMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 import { FocusManager } from "./FocusManager.js";
 import { TagNameEnum, LIST_ELEMENT } from "../Constants.js";
+import type { VisualNodeMap } from "../Types.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 
-export class ListElement extends FocusManager<{
+export abstract class AbstractList extends FocusManager<{
     Style: Style.List;
     Props: Props.List;
 }> {
@@ -13,10 +13,6 @@ export class ListElement extends FocusManager<{
 
     constructor() {
         super();
-    }
-
-    public override get tagName(): typeof TagNameEnum.List {
-        return "list";
     }
 
     protected override get defaultStyles(): Style.List {
@@ -136,5 +132,17 @@ export class ListElement extends FocusManager<{
                 data.down = next;
             }
         }
+    }
+}
+
+export class ListElement extends AbstractList {
+    protected static override identity = LIST_ELEMENT;
+
+    constructor() {
+        super();
+    }
+
+    public override get tagName(): typeof TagNameEnum.List {
+        return "list";
     }
 }

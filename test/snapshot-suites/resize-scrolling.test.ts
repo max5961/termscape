@@ -50,7 +50,7 @@ describe(SUITE, async () => {
 });
 
 function getScrollable(flex: "column" | "row") {
-    return termscape.createElement("box", {
+    return termscape.create.box({
         style: {
             height: "100vh",
             width: "100vw",
@@ -59,12 +59,12 @@ function getScrollable(flex: "column" | "row") {
             flexDirection: flex,
         },
         children: Array.from({ length: 1000 }).map((_, idx) => {
-            return termscape.createElement("box", {
+            return termscape.create.box({
                 style: {
                     flexShrink: 0,
                 },
                 children: [
-                    termscape.createElement("text", {
+                    termscape.create.text({
                         textContent: ` ${String(idx)} `,
                     }),
                 ],
