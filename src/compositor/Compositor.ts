@@ -139,12 +139,17 @@ export class Compositor {
         const last = this.canvas.grid.map((row) => row.slice());
 
         this.canvas.grid.splice(0);
-        last.forEach((row) => {
-            const nextRow = Array.from({ length: row.length }).fill(" ") as string[];
+        last.forEach(() => {
+            // Ensure we are creating rows which are the width of the stdout.  Since
+            // the compositor removes trailing ws, previous rows could be too short
+            // to effectively draw the newly styled layout.
+            const cols = this._root.runtime.stdout.columns;
+            const nextRow = Array.from({ length: cols }).fill(" ") as string[];
             this.canvas.grid.push(nextRow);
         });
 
         this.draw.performOps();
+        this.removeTrailingWs();
 
         return last;
     }
