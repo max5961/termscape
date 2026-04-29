@@ -66,7 +66,7 @@ export namespace Style {
     type Background = {
         zIndex?: number | "auto";
         backgroundColor?: Color;
-        backgroundStyle?: "dotted" | "dashed";
+        backgroundStyle?: "dotted" | "dashed" | { char: string };
         backgroundStyleColor?: Color;
     };
 

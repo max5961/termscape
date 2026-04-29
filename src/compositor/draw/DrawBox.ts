@@ -43,7 +43,13 @@ export class DrawBox extends DrawContract<BoxLike> {
 
     private fillBg(canvas: Canvas, elem: BoxLike) {
         const pen = canvas.getPen();
-        const char = BackgroundCharacters[elem.style.backgroundStyle ?? "default"];
+
+        let char = " ";
+        if (typeof elem.style.backgroundStyle === "string") {
+            char = BackgroundCharacters[elem.style.backgroundStyle ?? "default"];
+        } else {
+            char = elem.style.backgroundStyle?.char[0] || " ";
+        }
 
         pen.set("backgroundColor", elem._shadowStyle.backgroundColor);
         if (char !== " ") {
