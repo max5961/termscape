@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "rootDir": "./src/",
         "outDir": "./dist/",
         "target": "es2022",
         "module": "nodenext",
@@ -29,7 +30,8 @@
         "noUnusedLocals": false,
         "stripInternal": true,
 
-        "lib": ["es2022"]
+        "lib": ["es2022"],
+        "types": ["node"]
     },
     "include": ["src"]
 }
