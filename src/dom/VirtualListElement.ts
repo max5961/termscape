@@ -101,82 +101,80 @@ export class VirtualListElement<T = any> extends DomElement {
     }
 
     private reconcile(opts: Required<IndexBufferOpts>) {
-        const prev = this._buffer.read();
-        this._buffer.reconcile({ ...opts, nextFocusIdx: this._focusIdx });
-        const next = this._buffer.read();
-
+        // Handle previous
+        const prevIndexBuf = this._buffer.read();
+        const prevKeys = this.createKeys(prevIndexBuf);
         const prevMap = new Map<string, DomElement>();
-        const nextMap = new Map<string, DomElement>();
 
-        const prevArr = [] as string[];
-        const nextArr = [] as string[];
-
-        for (let i = 0; i < prev.length; ++i) {
-            const dataIdx = prev[i];
-            const key = this._opts.getItemKey(this._opts.data[dataIdx]);
-            prevMap.set(key, this._children[i]);
-            prevArr.push(key);
-            this._children[i]._becomeProvider(false);
-            this._children[i]._setOwnProvider(false);
+        let prevFocus: DomElement | undefined = undefined;
+        for (let i = 0; i < prevIndexBuf.length; ++i) {
+            const key = prevKeys[i];
+            const el = this._children[i];
+            if (el) {
+                prevMap.set(key, el);
+                if (el.getFocus()) {
+                    prevFocus = el;
+                }
+            }
         }
 
-        // Need to change opts AFTER using data to find the previous data
+        // Get new buffer and update opts
+        this._buffer.reconcile({ ...opts, nextFocusIdx: this._focusIdx });
         this._opts = opts;
 
-        for (let i = 0; i < next.length; ++i) {
-            const dataIdx = next[i];
-            const key = this._opts.getItemKey(this._opts.data[dataIdx]);
-            if (prevMap.has(key)) {
-                nextMap.set(key, prevMap.get(key)!);
-            } else {
-                nextMap.set(
-                    key,
-                    this._opts.renderItem(this._opts.data[dataIdx], dataIdx),
-                );
-            }
-            nextArr.push(key);
+        // Handle next
+        const nextIndexBuf = this._buffer.read();
+        const nextKeys = this.createKeys(nextIndexBuf);
+        const nextMap = new Map<string, DomElement>();
 
-            nextMap.get(key)!._becomeProvider(dataIdx === this._focusIdx);
-            nextMap.get(key)!._setOwnProvider(dataIdx === this._focusIdx);
+        let nextFocus: DomElement | undefined = undefined;
+        for (let i = 0; i < nextIndexBuf.length; ++i) {
+            const dataIdx = nextIndexBuf[i];
+            const key = nextKeys[i];
+            const el =
+                prevMap.get(key) ??
+                this._opts.renderItem(this._opts.data[dataIdx], dataIdx);
+
+            nextMap.set(key, el);
+
+            if (dataIdx === this._focusIdx) {
+                nextFocus = el;
+            }
         }
 
-        // logger.write({
-        //     prevArr,
-        //     nextArr,
-        // });
+        // Check for diff
+        if (
+            prevKeys.length === nextKeys.length &&
+            prevKeys.every((k, i) => nextKeys[i] === k)
+        ) {
+            if (prevFocus !== nextFocus) {
+                prevFocus?._becomeProvider(false);
+                prevFocus?._setOwnProvider(false);
+                nextFocus?._becomeProvider(true);
+                nextFocus?._setOwnProvider(true);
+            }
+            return;
+        }
 
-        // this.reconcileBufs(prevArr, nextArr, prevMap, nextMap);
-        this.reconcileBufs(prevArr, nextArr, nextMap);
+        // If diff, then remove and replace children
+        const children = [...this._children];
+        children.forEach((c) => this.removeChild(c));
+        nextKeys.forEach((k) => {
+            const el = nextMap.get(k);
+            if (el) {
+                this.appendChild(el);
+                el._becomeProvider(el === nextFocus);
+                el._setOwnProvider(el === nextFocus);
+            }
+        });
     }
 
-    private reconcileBufs(
-        prevArr: string[],
-        nextArr: string[],
-        // prevMap: Map<string, DomElement>,
-        nextMap: Map<string, DomElement>,
-    ) {
-        const diffIdxs = [] as number[];
-        // const remove = [] as DomElement[];
-        // const retain = [] as DomElement[];
-        // const add = [] as DomElement[];
-
-        for (let i = 0; i < Math.max(prevArr.length, nextArr.length); ++i) {
-            if (prevArr[i] !== nextArr[i]) {
-                diffIdxs.push(i);
-            }
+    private createKeys(indexBuf: number[]) {
+        const keys = [] as string[];
+        for (let i = 0; i < indexBuf.length; ++i) {
+            const dataIdx = indexBuf[i];
+            keys.push(this._opts.getItemKey(this._opts.data[dataIdx]));
         }
-
-        // No tree manipulation needed.
-        if (!diffIdxs.length) {
-            return;
-        } else {
-            const children = [...this._children];
-            for (const child of children) {
-                this.removeChild(child);
-            }
-            for (const key of nextArr) {
-                this.appendChild(nextMap.get(key)!);
-            }
-        }
+        return keys;
     }
 }

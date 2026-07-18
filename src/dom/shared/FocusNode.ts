@@ -72,6 +72,10 @@ export class FocusNode {
         return this.getFocusState().shallowFocus;
     }
 
+    public getProviderStatus(): boolean {
+        return !!this._ownProvider;
+    }
+
     /**
      * Make this node provide focus context for descendents.
      * */
