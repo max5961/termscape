@@ -4,7 +4,7 @@ import type { CanvasElement } from "./dom/CanvasElement.js";
 import type { FocusManager } from "./dom/FocusManager.js";
 import type { LayoutElement, LayoutNode } from "./dom/LayoutElement.js";
 import type { ListElement } from "./dom/ListElement.js";
-import type { VirtualList } from "./dom/VirtualListElement.js";
+import type { VirtualListElement } from "./dom/VirtualListElement.js";
 import type { Root } from "./dom/RootElement.js";
 import type { TestRoot } from "./testing/TestRoot.js";
 import type { TextElement, TextNode } from "./dom/TextElement.js";
@@ -61,7 +61,7 @@ export type ElementIdentityMap = {
     [LAYOUT_ELEMENT]: LayoutElement;
     [LAYOUT_NODE]: LayoutNode;
     [LIST_ELEMENT]: ListElement;
-    [VIRTUAL_LIST_ELEMENT]: VirtualList;
+    [VIRTUAL_LIST_ELEMENT]: VirtualListElement;
     [FOCUS_MANAGER]: FocusManager;
     [ROOT_ELEMENT]: Root;
     [TEST_ROOT_ELEMENT]: TestRoot;
@@ -73,7 +73,7 @@ export const TagNameEnum = {
     Text: "text",
     Root: "root",
     List: "list",
-    VirtualList: "virtual-list",
+    VirtualListElement: "virtual-list",
     Layout: "layout",
     LayoutNode: "layout-node",
     Book: "book",

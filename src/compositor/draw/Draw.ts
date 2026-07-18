@@ -7,6 +7,7 @@ import {
     LIST_ELEMENT,
     TEXT_ELEMENT,
     INPUT_ELEMENT,
+    VIRTUAL_LIST_ELEMENT,
 } from "../../Constants.js";
 import type { DomElement } from "../../dom/DomElement.js";
 import type { Canvas } from "../Canvas.js";
@@ -74,7 +75,8 @@ export class Draw {
             elem._is(LIST_ELEMENT) ||
             elem._is(LAYOUT_ELEMENT) ||
             elem._is(LAYOUT_NODE) ||
-            elem._is(INPUT_ELEMENT)
+            elem._is(INPUT_ELEMENT) ||
+            elem._is(VIRTUAL_LIST_ELEMENT)
         );
     }
 }

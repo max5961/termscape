@@ -1,10 +1,9 @@
-import type { Rect } from "../compositor/Canvas.js";
-import type { DomElement } from "./DomElement.js";
 import type { Props } from "./props/Props.js";
 import { TagNameEnum, VIRTUAL_LIST_ELEMENT } from "../Constants.js";
-import { AbstractList } from "./ListElement.js";
+import { DomElement } from "./DomElement.js";
+import type { Style } from "./style/Style.js";
+import { IndexBuffer, type IndexBufferOpts } from "./shared/IndexBuffer.js";
 
-// TODO
 // - override onFocus/onBlur/onShallow... so that children of VirtualList dispatch
 // these handlers at the control of VirtualList and not the FocusNode which is the
 // default behavior.  There should be something like a 'visited indexes' Set that is
@@ -13,309 +12,122 @@ import { AbstractList } from "./ListElement.js";
 // - test for replacing data
 // - modify other classes so that appendChild, insertChild, removeChild, etc.. can be noop-able
 
-export class VirtualList<T = any> extends AbstractList {
+export class VirtualListElement<T = any> extends DomElement {
     protected static override identity = VIRTUAL_LIST_ELEMENT;
 
-    public override get tagName(): typeof TagNameEnum.VirtualList {
-        return "virtual-list";
-    }
+    private _opts: Required<IndexBufferOpts<T>>;
+    private _focusIdx: number;
+    private _buffer: IndexBuffer;
+    private _realized: Map<string, DomElement>;
 
-    /** @internal */
-    public _itemSize: number;
-    /** @internal */
-    public _data: T[];
-    /** @internal */
-    public _wstart: number;
-    /** @internal */
-    public _wend: number;
-    /** @internal */
-    public _fidx: number;
-    private _renderItem: Exclude<Props.VirtualList<T>["renderItem"], undefined>;
-    private _explicitSize?: number;
-
-    constructor(props: Props.VirtualList<T>) {
+    constructor(props: IndexBufferOpts<T>) {
         super();
-        this._renderItem = props.renderItem!;
-        this._data = props.data!;
-        this._itemSize = props.itemSize ?? 1;
-        this._explicitSize = props.itemSize;
-        this._fidx = 0;
-        this._wstart = 0;
-        this._wend = this.initWinEnd();
-        this.handleVirtualChanges(0);
 
-        this.registerPropEffect("itemSize", (v, set) => {
-            this._itemSize = v ?? 1;
-            set(v);
-        });
-        this.registerPropEffect("data", (v, set) => {
-            this._data = v ?? [];
-            set(v);
-        });
-        this.registerPropEffect("renderItem", (v, set) => {
-            // Do nothing if undefined, in order to support setProp behavior which allows undefined values for everything.
-            // But this is something that will need to be fixed later on...certain props should not be undefined
-            if (v) {
-                this._renderItem = v;
-                set(v);
-            }
-        });
+        this._realized = new Map();
+        props.offset ??= 0;
+        props.initialIndex ??= 0;
+        props.initialIndex = Math.max(0, props.initialIndex);
+        props.expandStrategy ??= "fillEnd";
+        props.compressStrategy ??= "clipEnd";
+        props.size = 0;
+
+        this._opts = props as Required<IndexBufferOpts<T>>;
+        this._focusIdx = 0;
+        this.setNextFocus(props.initialIndex);
+
+        this._buffer = new IndexBuffer(this._opts);
+        this.reconcile();
 
         this.afterLayout({
             subscribe: true,
             handler: () => {
-                const possibleUnits = this.getIsVert()
-                    ? this.visibleContentRect.height
-                    : this.visibleContentRect.width;
+                const prevSize = this._opts.size;
+                const nextSize = this.visibleContentRect.height;
 
-                let didModSize = false;
-                if (this._explicitSize === undefined) {
-                    const nextSize = this.getIsVert()
-                        ? this._children[0]?._node.getComputedHeight() ?? 1
-                        : this._children[0]?._node.getComputedWidth() ?? 1;
-                    didModSize = nextSize !== this._itemSize;
-                    if (didModSize) this._itemSize = nextSize;
-                } else if (this._itemSize !== this._explicitSize) {
-                    this._itemSize = this._explicitSize;
-                    didModSize = true;
+                if (prevSize !== nextSize) {
+                    this.size = nextSize;
+                    this.reconcile();
+                    return true;
                 }
-
-                return (
-                    this.modifyWinSize(Math.ceil(possibleUnits / this._itemSize)) ||
-                    didModSize
-                );
+                return false;
             },
         });
     }
 
-    public override focusNext(units = 1) {
-        return this.handleIdxChange(this._fidx + units);
-    }
-    public override focusPrev(units = 1) {
-        return this.handleIdxChange(this._fidx - units);
-    }
-    public override focusLast() {
-        return this.handleIdxChange(this._data.length - 1);
-    }
-    public override focusFirst() {
-        return this.handleIdxChange(0);
+    public override get tagName(): typeof TagNameEnum.VirtualListElement {
+        return "virtual-list";
     }
 
-    /**
-     * Runs after every composite and handles any changes of the visible content rect
-     * */
-    private modifyWinSize(nextWinSize: number) {
-        if (nextWinSize === this._wend - this._wstart) {
-            return false;
-        }
-        if (nextWinSize === 0) {
-            this._wstart = this._fidx;
-            this._wend = this._fidx;
-            return false;
-        }
-
-        // Always start by shifting end index as much as possible, *then* start index
-        const d = this._wend - this._wstart > nextWinSize ? -1 : 1;
-        while (this._wend - this._wstart !== nextWinSize) {
-            if (this.isValidEnds(this._wstart, this._wend + d)) {
-                this._wend += d;
-            } else if (this.isValidEnds(this._wstart - d, this._wend)) {
-                this._wstart -= d;
-            } else {
-                break;
-            }
-        }
-
-        // If we've made it this far, then we need to fully refresh the children again and displace the virtual focus
-        this.handleVirtualChanges(0);
-        return true;
+    protected override get defaultProps(): Props.All {
+        return {};
     }
 
-    private handleVirtualChanges(winDisplace: number) {
-        this.setRealChildren(winDisplace);
-        this.getRoot()?._refreshLayout();
-        return this.handleFocusChange();
+    protected override get defaultStyles(): Style.All {
+        return {
+            flexDirection: "column",
+        };
     }
 
-    private getCurrFocus(): DomElement | undefined {
-        const virFocusIdx = this._fidx - this._wstart;
-        return this._children[virFocusIdx];
+    public set data(d: T[]) {
+        this._opts.data = d;
+        this.reconcile();
+    }
+    public get data(): Readonly<unknown[]> {
+        return this._opts.data;
     }
 
-    private handleFocusChange() {
-        const item = this.getCurrFocus();
-        if (item) {
-            return this.focusChild(item);
-        }
-        return undefined;
+    public set size(n: number) {
+        this._opts.size = n;
+        this.reconcile();
+    }
+    public get size() {
+        return this._opts.size;
     }
 
-    private handleIdxChange(nextIdx: number) {
-        const wRect = this.getWindowRect();
-        const fRect = this.getFocusItemRect();
-        if (!wRect || !fRect) return;
+    public focusNext(n: number = 1) {
+        this.setNextFocus(n);
+        this.reconcile();
+    }
 
-        // Clamp nextIdx
-        if (nextIdx < 0) {
-            nextIdx = Math.max(0, nextIdx);
-        }
-        if (nextIdx >= this._data.length) {
-            nextIdx = Math.min(this._data.length - 1, nextIdx);
+    public focusPrev(n: number = 1) {
+        this.setNextFocus(-n);
+        this.reconcile();
+    }
+
+    private setNextFocus(d: number) {
+        let n = this._focusIdx + d;
+        n = Math.min(n, this._opts.data.length - 1);
+        n = Math.max(0, n);
+
+        this._focusIdx = n;
+    }
+
+    private reconcile() {
+        const prev = this._buffer.read();
+        this._buffer.reconcile({ ...this._opts, nextFocusIdx: this._focusIdx });
+        const next = this._buffer.read();
+
+        for (let i = 0; i < prev.length; ++i) {
+            const key = this._opts.getItemKey(this._opts.data[prev[i]]);
+            this._realized.set(key, this._children[i]);
         }
 
-        const scrollOff = this.getScrollOff(wRect);
-        const focusDir = nextIdx > this._fidx ? +1 : -1;
-        this._fidx = nextIdx;
-
-        const sowend = Math.min(
-            this._data.length,
-            focusDir > 0 ? this._wend - scrollOff : this._wend,
-        );
-        const sowstart = Math.max(
-            0,
-            focusDir < 0 ? this._wstart + scrollOff : this._wstart,
-        );
-
-        let winDisplace = 0;
-        if (nextIdx < sowstart) {
-            winDisplace = nextIdx - sowstart;
-            if (this._wstart + winDisplace < 0) {
-                winDisplace = -this._wstart;
-            }
-        } else if (nextIdx >= sowend) {
-            winDisplace = nextIdx - sowend + 1;
-            if (this._wend + winDisplace > this._data.length) {
-                winDisplace = this._data.length - this._wend;
-            }
+        const children = [...this._children];
+        for (const child of children) {
+            this.removeChild(child);
         }
 
-        if (!winDisplace) {
-            return this.handleFocusChange();
+        for (let i = 0; i < next.length; ++i) {
+            const dataIdx = next[i];
+            const key = this._opts.getItemKey(this._opts.data[dataIdx]);
+            const el =
+                this._realized.get(key) ??
+                this._opts.renderItem(this._opts.data[dataIdx], dataIdx);
+
+            this.appendChild(el);
+            el._focusNode.becomeProvider(dataIdx === this._focusIdx);
+            el._focusNode.setOwnProvider(dataIdx === this._focusIdx);
+            el.style.flexShrink = 0;
         }
-
-        this._wstart += winDisplace;
-        this._wend += winDisplace;
-
-        // One downside of this is it makes perforance tracking more difficult since this does a layout composite pass before
-        // the actual rendering cycle.
-        return this.handleVirtualChanges(winDisplace);
-    }
-
-    /**
-     * @param winDisplace if 0 a full refresh is done, otherwise negative winDisplace indicates that we need to remove winDisplace units
-     * from the start and replace while positive winDisplace indicates the opposite
-     * */
-    private setRealChildren(winDisplace: number) {
-        if (!winDisplace || Math.abs(winDisplace) >= this._wend - this._wstart) {
-            return this.fullWipeChildren();
-        } else if (winDisplace < 0) {
-            return this.setNegativeDisplacedChildren(winDisplace);
-        } else {
-            return this.setPositiveDisplacedChildren(winDisplace);
-        }
-    }
-
-    private fullWipeChildren() {
-        const elements: DomElement[] = [];
-        for (let i = this._wstart; i < this._wend; ++i) {
-            if (i < this._data.length && i >= 0) {
-                elements.push(this._renderItem(this._data[i], i));
-            }
-        }
-        return this.replaceChildren(...elements);
-    }
-
-    private setNegativeDisplacedChildren(winDisplace: number) {
-        for (let i = 0; i > winDisplace; --i) this.popChild();
-        for (let i = winDisplace + 1; i <= 0; ++i) {
-            const adj = this._wstart - i;
-            this.insertBefore(this._renderItem(this._data[adj], adj), this._children[0]);
-        }
-    }
-
-    private setPositiveDisplacedChildren(winDisplace: number) {
-        for (let i = 0; i < winDisplace; ++i) this.shiftChild();
-        for (let i = winDisplace; i >= 1; --i) {
-            const adj = this._wend - i;
-            this.appendChild(this._renderItem(this._data[adj], adj));
-        }
-    }
-
-    public setData(_d: T[]) {
-        // force a nuclear delete, create, append on all children
-        // attempt to keep same index slices
-        //
-        // If only the array length changes, we can't just assume that it was a simple append or delete
-        // operation.  It always could be an operation that changes the entire data.
-    }
-
-    /**
-     * @internal
-     * Still allow .splice() only changes in dom layer with setData, but adhere to React
-     * immutability in vdom. In vdom, we pipe all state into _setDataStrict so we don't want to
-     * refresh all children unless the state slice actually changes.
-     * */
-    public _setDataStrict(d: T[]) {
-        if (this._data !== d) this.setData(d);
-    }
-
-    /** noop - use `appendVirtual` */
-    // public override appendChild(_child: DomElement): void {}
-    // /** noop - use `removeVirtual` */
-    // public override removeChild(_child: DomElement, _freeRecursive?: boolean): void {}
-    // /** noop - use `insertVirtual` */
-    // public override insertBefore(_child: DomElement, _beforeChild: DomElement): void {}
-
-    // For all of these, decide how they _data will be hanlded once changes are made
-    public appendVirtual(data: T): void {
-        this._data.push(data);
-    }
-    public insertVirtual(data: T, beforeIndex: number): void {
-        this._data.splice(beforeIndex, 0, data);
-    }
-    public removeVirtual(data: T): void {
-        const i = this._data.indexOf(data);
-        if (i >= 0) {
-            this._data.splice(i, 1);
-        }
-    }
-
-    private isValidEnds = (start: number, end: number): boolean => {
-        if (start < 0) return false;
-        if (start > end) return false;
-        if (end < 0) return false;
-        if (end > this._data.length) return false;
-        if (start > this._fidx) return false;
-        if (end <= this._fidx) return false;
-        return true;
-    };
-
-    private getIsVert() {
-        return this.style.flexDirection?.includes("column");
-    }
-
-    private popChild() {
-        if (this._children.length) {
-            this.removeChild(this._children[this._children.length - 1], true);
-        }
-    }
-
-    private shiftChild() {
-        if (this._children.length) {
-            this.removeChild(this._children[0], true);
-        }
-    }
-
-    private getScrollOff(windowRect: Rect) {
-        return this.getIsVert()
-            ? this.getVertScrollOff(windowRect)
-            : this.getHorizScrollOff(windowRect);
-    }
-
-    private initWinEnd() {
-        return Math.min(
-            this._data.length,
-            this.getIsVert() ? process.stdout.rows : process.stdout.columns,
-        );
     }
 }

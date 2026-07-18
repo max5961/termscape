@@ -5,7 +5,7 @@ import type { VisualNodeMap } from "../Types.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 
-export abstract class AbstractList extends FocusManager<{
+export class ListElement extends FocusManager<{
     Style: Style.List;
     Props: Props.List;
 }> {
@@ -13,6 +13,10 @@ export abstract class AbstractList extends FocusManager<{
 
     constructor() {
         super();
+    }
+
+    public override get tagName(): typeof TagNameEnum.List {
+        return "list";
     }
 
     protected override get defaultStyles(): Style.List {
@@ -132,17 +136,5 @@ export abstract class AbstractList extends FocusManager<{
                 data.down = next;
             }
         }
-    }
-}
-
-export class ListElement extends AbstractList {
-    protected static override identity = LIST_ELEMENT;
-
-    constructor() {
-        super();
-    }
-
-    public override get tagName(): typeof TagNameEnum.List {
-        return "list";
     }
 }

@@ -10,8 +10,9 @@ import { ListElement } from "../dom/ListElement.js";
 import { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
 import { BookElement } from "../dom/BookElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
-import { VirtualList } from "../dom/VirtualListElement.js";
+import { VirtualListElement } from "../dom/VirtualListElement.js";
 import { InputElement } from "../dom/InputElement.js";
+import type { IndexBufferOpts } from "../dom/shared/IndexBuffer.js";
 
 type StyleHelper<T extends Style.All> = T | StyleHandler<T>;
 type Children = DomElement[];
@@ -90,14 +91,14 @@ export const create = {
         return elem;
     },
     virtualList: <Data>(
-        config: Config<Style.List, Props.VirtualList<Data>> & {
+        config: Config<Style.List, IndexBufferOpts<Data>> & {
             props: {
                 data: Props.VirtualList<Data>["data"];
                 renderItem: Props.VirtualList<Data>["renderItem"];
             };
         },
     ) => {
-        const elem = new VirtualList<Data>(config.props);
+        const elem = new VirtualListElement<Data>(config.props);
         applyConfig(elem, config);
         return elem;
     },
