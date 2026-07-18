@@ -3,7 +3,6 @@ import { TagNameEnum, VIRTUAL_LIST_ELEMENT } from "../Constants.js";
 import { DomElement } from "./DomElement.js";
 import type { Style } from "./style/Style.js";
 import { IndexBuffer, type IndexBufferOpts } from "./shared/IndexBuffer.js";
-import { logger } from "../shared/Logger.js";
 
 // - override onFocus/onBlur/onShallow... so that children of VirtualList dispatch
 // these handlers at the control of VirtualList and not the FocusNode which is the

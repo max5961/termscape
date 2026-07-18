@@ -5,3 +5,4 @@ sandbox/
 .ignore
 *.snapshot.actual
 
+.clinic/
