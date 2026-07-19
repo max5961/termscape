@@ -38,6 +38,10 @@ export class IndexBuffer {
         this.applyOffset(dir);
     }
 
+    public getFocusIdx() {
+        return this._focusIdx;
+    }
+
     private fillFromStart(start: number) {
         start = this.clampIndex(start);
         const next = [] as number[];
@@ -115,6 +119,7 @@ export class IndexBuffer {
     }
 
     private shift(nextFocusIdx: number) {
+        nextFocusIdx = this.clampIndex(nextFocusIdx);
         if (nextFocusIdx < this._buffer[0]) {
             this._buffer = this.fillFromStart(nextFocusIdx);
         } else if (nextFocusIdx > this._buffer[this._buffer.length - 1]) {

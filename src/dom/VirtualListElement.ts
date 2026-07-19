@@ -3,6 +3,7 @@ import { TagNameEnum, VIRTUAL_LIST_ELEMENT } from "../Constants.js";
 import { DomElement } from "./DomElement.js";
 import type { Style } from "./style/Style.js";
 import { IndexBuffer, type IndexBufferOpts } from "./shared/IndexBuffer.js";
+import { logger } from "../shared/Logger.js";
 
 // - override onFocus/onBlur/onShallow... so that children of VirtualList dispatch
 // these handlers at the control of VirtualList and not the FocusNode which is the
@@ -41,11 +42,19 @@ export class VirtualListElement<T = any> extends DomElement {
         this.afterLayout({
             subscribe: true,
             handler: () => {
-                const prevSize = this._opts.size;
-                const nextSize = this.visibleContentRect.height;
+                const prevItemSize = this._opts.itemSize;
+                const nextItemSize = Math.max(
+                    1,
+                    this._children[0]?.unclippedRect.height ?? prevItemSize,
+                );
 
-                if (prevSize !== nextSize) {
+                const prevSize = this._opts.size;
+                // const nextSize = this.visibleContentRect.height;
+                const nextSize = Math.ceil(this.visibleContentRect.height / nextItemSize);
+
+                if (prevSize !== nextSize || prevItemSize !== nextItemSize) {
                     this.size = nextSize;
+                    this._opts.itemSize = nextItemSize;
                     this.reconcile({ ...this._opts });
                     return true;
                 }
@@ -65,6 +74,7 @@ export class VirtualListElement<T = any> extends DomElement {
     protected override get defaultStyles(): Style.All {
         return {
             flexDirection: "column",
+            overflow: "scroll",
         };
     }
 
@@ -93,6 +103,17 @@ export class VirtualListElement<T = any> extends DomElement {
         this.reconcile({ ...this._opts });
     }
 
+    public getFocusedIndex() {
+        return this._focusIdx;
+    }
+
+    public getFocusedItem(): DomElement | undefined {
+        const idx = this.getFocusedIndex();
+        const buffer = this._buffer.read();
+        const idxOf = buffer.indexOf(idx);
+        return this._children[idxOf];
+    }
+
     private setNextFocus(d: number) {
         let n = this._focusIdx + d;
         n = Math.min(n, this._opts.data.length - 1);
@@ -119,9 +140,20 @@ export class VirtualListElement<T = any> extends DomElement {
             }
         }
 
+        // this should be Math.ceil eventually
+        opts.size = Math.ceil(
+            (this.visibleContentRect.height ?? opts.size) / Math.max(1, opts.itemSize),
+        );
+
         // Get new buffer and update opts
         this._buffer.reconcile({ ...opts, nextFocusIdx: this._focusIdx });
         this._opts = opts;
+
+        // Possible that new data has pushed focusIdx out of range, so update
+        // Problem...we are controlling focus index in two places. We need to
+        // ensure this focus index is clamped before passing it to buffer...but
+        // buffer handles shifting...smelly
+        this.setNextFocus(this._focusIdx);
 
         // Handle next
         const nextIndexBuf = this._buffer.read();
@@ -132,6 +164,7 @@ export class VirtualListElement<T = any> extends DomElement {
         for (let i = 0; i < nextIndexBuf.length; ++i) {
             const dataIdx = nextIndexBuf[i];
             const key = nextKeys[i];
+            logger.write([dataIdx]);
             const el =
                 prevMap.get(key) ??
                 this._opts.renderItem(this._opts.data[dataIdx], dataIdx);
@@ -154,20 +187,25 @@ export class VirtualListElement<T = any> extends DomElement {
                 nextFocus?._becomeProvider(true);
                 nextFocus?._setOwnProvider(true);
             }
-            return;
+        } else {
+            // If diff, then remove and replace children
+            const children = [...this._children];
+            children.forEach((c) => this.removeChild(c));
+            nextKeys.forEach((k) => {
+                const el = nextMap.get(k);
+                if (el) {
+                    this.appendChild(el);
+                    el._becomeProvider(el === nextFocus);
+                    el._setOwnProvider(el === nextFocus);
+                }
+            });
         }
 
-        // If diff, then remove and replace children
-        const children = [...this._children];
-        children.forEach((c) => this.removeChild(c));
-        nextKeys.forEach((k) => {
-            const el = nextMap.get(k);
-            if (el) {
-                this.appendChild(el);
-                el._becomeProvider(el === nextFocus);
-                el._setOwnProvider(el === nextFocus);
-            }
-        });
+        if (nextFocus === this._children[this._children.length - 1]) {
+            this.scrollDown(Infinity);
+        } else if (nextFocus === this._children[0]) {
+            this.scrollUp(Infinity);
+        }
     }
 
     private createKeys(indexBuf: number[]) {
