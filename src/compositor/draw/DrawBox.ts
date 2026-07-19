@@ -178,11 +178,12 @@ export class DrawBox extends DrawContract<BoxLike> {
         let barPct = Math.min(1, contentUnits / unclippedContentUnits);
 
         if (elem._is(VIRTUAL_LIST_ELEMENT)) {
+            const data = elem.getProp("data") ?? [];
             const buffer = elem._buffer.read();
-            const items = elem._opts.data.length;
+            const items = data?.length;
             const itemsShown = buffer.length;
             const start = buffer[0] ?? 0;
-            const maxStart = elem._opts.data.length - buffer.length;
+            const maxStart = data.length - buffer.length;
 
             barPct = items === 0 ? 1 : Math.min(1, itemsShown / items);
             pctScrolled = maxStart === 0 ? 0 : Math.floor((start / maxStart) * 100);

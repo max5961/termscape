@@ -2,123 +2,65 @@ import type { Props } from "./props/Props.js";
 import { TagNameEnum, VIRTUAL_LIST_ELEMENT } from "../Constants.js";
 import { DomElement } from "./DomElement.js";
 import type { Style } from "./style/Style.js";
-import { IndexBuffer } from "./shared/IndexBuffer.js";
+import { IndexBuffer, type IndexBufferOpts } from "./shared/IndexBuffer.js";
 import { logger } from "../shared/Logger.js";
-import type { PropEffectHandler } from "./shared/SideEffects.js";
 
 // - override onFocus/onBlur/onShallow... so that children of VirtualList dispatch
 // these handlers at the control of VirtualList and not the FocusNode which is the
 // default behavior.  There should be something like a 'visited indexes' Set that is
 // used to see when to dispatch these handlers.
-//
+// - test for deletion, insertion, etc..
+// - test for replacing data
 // - modify other classes so that appendChild, insertChild, removeChild, etc.. can be noop-able
 
-export class VirtualListElement<T = any> extends DomElement<{
-    Style: Style.VirtualList;
-    Props: Props.VirtualList<T>;
-}> {
+export class VirtualListElement<T = any> extends DomElement {
     protected static override identity = VIRTUAL_LIST_ELEMENT;
 
     /** @internal */
+    public _opts: Required<IndexBufferOpts<T>>;
+    /** @internal */
     public _buffer: IndexBuffer;
     private _focusIdx: number;
-    private _itemSize: number;
-    private _size: number;
 
-    constructor(initialIndex?: number) {
+    constructor(props: IndexBufferOpts<T>) {
         super();
 
-        initialIndex ??= 0;
-        // _focusIdx should be a setter so that we can clamp it
-        // or we should have a function that sets it that takes in a data array
-        // so we can safely clamp it
-        this._focusIdx = initialIndex;
-        this.setNextFocus(initialIndex);
-        this._size = 0;
-        this._itemSize = 1;
+        props.offset ??= 0;
+        props.initialIndex ??= 0;
+        props.initialIndex = Math.max(0, props.initialIndex);
+        props.expandStrategy ??= "fillEnd";
+        props.compressStrategy ??= "clipEnd";
+        props.size = 0;
 
-        this._buffer = new IndexBuffer(this);
-        this.reconcile();
+        this._opts = props as Required<IndexBufferOpts<T>>;
+        this._focusIdx = 0;
+        this.setNextFocus(props.initialIndex);
+
+        this._buffer = new IndexBuffer(this._opts);
+        this.reconcile({ ...this._opts });
 
         this.afterLayout({
             subscribe: true,
             handler: () => {
-                const prevItemSize = this._itemSize;
+                const prevItemSize = this._opts.itemSize;
                 const nextItemSize = Math.max(
                     1,
                     this._children[0]?.unclippedRect.height ?? prevItemSize,
                 );
 
-                const prevSize = this._size;
+                const prevSize = this._opts.size;
                 // const nextSize = this.visibleContentRect.height;
                 const nextSize = Math.ceil(this.visibleContentRect.height / nextItemSize);
 
                 if (prevSize !== nextSize || prevItemSize !== nextItemSize) {
-                    this._size = nextSize;
-                    this._itemSize = nextItemSize;
-                    this.reconcile();
+                    this.size = nextSize;
+                    this._opts.itemSize = nextItemSize;
+                    this.reconcile({ ...this._opts });
                     return true;
                 }
                 return false;
             },
         });
-
-        // When data changes, we must really track when the data change is applied
-        // and we can recursively call setProp here.  Perhaps we need a _data property
-        // in the class in order to have a reference of the previous data during
-        // reconciliation
-        this.registerPropEffect(
-            "data",
-            (...[data, setProp]: Parameters<PropEffectHandler<Props.All["data"]>>) => {
-                const prevData = this.getProp("data") ?? [];
-                if (data) {
-                    setProp(data);
-                    this.reconcile({ prevData });
-                }
-            },
-        );
-
-        this.registerPropEffect(
-            "getItemKey",
-            (
-                ...[getItemKey, setProp]: Parameters<
-                    PropEffectHandler<Props.All["getItemKey"]>
-                >
-            ) => {
-                if (getItemKey) {
-                    setProp(getItemKey);
-                    this.reconcile();
-                }
-            },
-        );
-
-        this.registerPropEffect(
-            "renderItem",
-            (
-                ...[renderItem, setProp]: Parameters<
-                    PropEffectHandler<Props.All["renderItem"]>
-                >
-            ) => {
-                if (renderItem) {
-                    setProp(renderItem);
-                    this.reconcile();
-                }
-            },
-        );
-
-        this.registerPropEffect(
-            "initialIndex",
-            (
-                ...[initialIndex, setProp]: Parameters<
-                    PropEffectHandler<Props.All["initialIndex"]>
-                >
-            ) => {
-                if (initialIndex) {
-                    setProp(initialIndex);
-                    this.reconcile();
-                }
-            },
-        );
     }
 
     public override get tagName(): typeof TagNameEnum.VirtualListElement {
@@ -126,12 +68,7 @@ export class VirtualListElement<T = any> extends DomElement<{
     }
 
     protected override get defaultProps(): Props.All {
-        return {
-            offset: 0,
-            initialIndex: 0,
-            expandStrategy: "fillEnd",
-            compressStrategy: "clipEnd",
-        };
+        return {};
     }
 
     protected override get defaultStyles(): Style.All {
@@ -141,43 +78,54 @@ export class VirtualListElement<T = any> extends DomElement<{
         };
     }
 
+    public set data(d: T[]) {
+        this.reconcile({ ...this._opts, data: d });
+    }
+    public get data(): Readonly<T[]> {
+        return this._opts.data;
+    }
+
+    public set size(n: number) {
+        this._opts.size = n;
+        this.reconcile({ ...this._opts, size: n });
+    }
+    public get size() {
+        return this._opts.size;
+    }
+
     public focusNext(n: number = 1) {
         this.setNextFocus(n);
-        this.reconcile();
+        this.reconcile({ ...this._opts });
     }
 
     public focusPrev(n: number = 1) {
         this.setNextFocus(-n);
-        this.reconcile();
+        this.reconcile({ ...this._opts });
     }
 
     public getFocusedIndex() {
-        return this._focusIdx;
+        const idx = this.getFocusedIndex();
+        const buffer = this._buffer.read();
+        return buffer.indexOf(idx);
     }
 
     public getFocusedItem(): DomElement | undefined {
         const idx = this.getFocusedIndex();
-        const buffer = this._buffer.read();
-        const idxOf = buffer.indexOf(idx);
-        return this._children[idxOf];
+        return this._children[idx];
     }
 
     private setNextFocus(d: number) {
-        const data = this.getProp("data") ?? [];
         let n = this._focusIdx + d;
-        n = Math.min(n, data.length - 1);
+        n = Math.min(n, this._opts.data.length - 1);
         n = Math.max(0, n);
 
         this._focusIdx = n;
     }
 
-    private reconcile(opts: { prevData: undefined | any[] } = { prevData: undefined }) {
+    private reconcile(opts: Required<IndexBufferOpts>) {
         // Handle previous
         const prevIndexBuf = this._buffer.read();
-        const prevKeys = this.createKeys(
-            prevIndexBuf,
-            opts.prevData ?? this.getProp("data") ?? [],
-        );
+        const prevKeys = this.createKeys(prevIndexBuf);
         const prevMap = new Map<string, DomElement>();
 
         let prevFocus: DomElement | undefined = undefined;
@@ -193,28 +141,36 @@ export class VirtualListElement<T = any> extends DomElement<{
         }
 
         // this should be Math.ceil eventually
-        this._size = Math.ceil(
-            (this.visibleContentRect.height ?? this._size) / Math.max(1, this._itemSize),
+        opts.size = Math.ceil(
+            (this.visibleContentRect.height ?? opts.size) / Math.max(1, opts.itemSize),
         );
 
         // Get new buffer and update opts
-        this._buffer.reconcile({ size: this._size, nextFocusIdx: this._focusIdx });
+        this._buffer.reconcile({ ...opts, nextFocusIdx: this._focusIdx });
+        this._opts = opts;
+
+        // Possible that new data has pushed focusIdx out of range, so update
+        // Problem...we are controlling focus index in two places. We need to
+        // ensure this focus index is clamped before passing it to buffer...but
+        // buffer handles shifting...smelly
+        this.setNextFocus(this._buffer.getFocusIdx());
 
         // Handle next
         const nextIndexBuf = this._buffer.read();
-        const nextKeys = this.createKeys(nextIndexBuf, this.getProp("data") ?? []);
+        const nextKeys = this.createKeys(nextIndexBuf);
         const nextMap = new Map<string, DomElement>();
 
         let nextFocus: DomElement | undefined = undefined;
         for (let i = 0; i < nextIndexBuf.length; ++i) {
             const dataIdx = nextIndexBuf[i];
             const key = nextKeys[i];
-            const data = this.getProp("data");
-            const renderItem = this.getProp("renderItem");
-            if (!data || !renderItem) continue;
+            logger.write([dataIdx]);
+            const el =
+                prevMap.get(key) ??
+                this._opts.renderItem(this._opts.data[dataIdx], dataIdx);
 
-            const el = prevMap.get(key) ?? renderItem(data[dataIdx], dataIdx);
             nextMap.set(key, el);
+
             if (dataIdx === this._focusIdx) {
                 nextFocus = el;
             }
@@ -252,17 +208,12 @@ export class VirtualListElement<T = any> extends DomElement<{
         }
     }
 
-    private createKeys(indexBuf: number[], data: any[]) {
-        const getItemKey = this.getProp("getItemKey");
-        if (!getItemKey) return [];
-
+    private createKeys(indexBuf: number[]) {
         const keys = [] as string[];
         for (let i = 0; i < indexBuf.length; ++i) {
             const dataIdx = indexBuf[i];
-            keys.push(getItemKey(data[dataIdx]));
+            keys.push(this._opts.getItemKey(this._opts.data[dataIdx]));
         }
-
-        logger.write({ data: data.slice(0, 5) });
         return keys;
     }
 }

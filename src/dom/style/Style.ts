@@ -155,6 +155,7 @@ export namespace Style {
     export type FocusManager = BoxLike;
     export type Layout = BoxLike;
     export type List = BoxLike;
+    export type VirtualList = BoxLike;
     export type Input = All; // because it sets text styles as well
     export type Text = TextLike;
     export type Canvas = Dimension & Margin;

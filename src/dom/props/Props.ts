@@ -100,9 +100,14 @@ export namespace Props {
     };
 
     type VirtualListProps<T = any> = {
-        itemSize?: number;
-        renderItem?: (item: T, index: number) => DomElement;
         data?: T[];
+        renderItem?: (item: T, index: number) => DomElement;
+        getItemKey?: (item: T) => string;
+        initialIndex?: number;
+        /** If value set between 0 - 1, offset will be a percentage of content window */
+        offset?: number;
+        expandStrategy?: "fillStart" | "fillEnd" | "fillEqual";
+        compressStrategy?: "clipStart" | "clipEnd" | "clipEqual";
     };
 
     // prettier-ignore
@@ -123,7 +128,7 @@ export namespace Props {
     export type Book = BoxLike;
     export type FocusManager = BoxLike & FocusManagerBase & FocusManagerScroll;
     export type List = FocusManager & FocusManagerScroll;
-    export type VirtualList<T> = List & VirtualListProps<T>;
+    export type VirtualList<T> = BoxLike & VirtualListProps<T>;
     export type Layout = FocusManager;
     export type LayoutNode = BoxLike;
     export type Canvas = Base & CanvasProps;

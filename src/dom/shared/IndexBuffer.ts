@@ -1,41 +1,25 @@
-import type { DomElement } from "../DomElement.js";
-
-export type IndexBufferOpts<T = any> = {
-    data: T[];
-    size?: number;
-    offset?: number;
-    expandStrategy?: "fillStart" | "fillEnd" | "fillEqual";
-    compressStrategy?: "clipStart" | "clipEnd" | "clipEqual";
-    initialIndex?: number;
-
-    // messy but whatever for now
-    renderItem: (item: T, index: number) => DomElement;
-    getItemKey: (item: T) => string;
-    itemSize: number;
-};
+import type { VirtualListElement } from "../VirtualListElement.js";
 
 export class IndexBuffer {
+    private _host: VirtualListElement;
     private _buffer: number[];
     private _focusIdx: number;
-    private _opts: Required<IndexBufferOpts>;
 
-    constructor(opts: Required<IndexBufferOpts>) {
-        this._opts = opts;
-        this._focusIdx = opts.initialIndex;
+    constructor(host: VirtualListElement) {
+        this._host = host;
         this._buffer = [];
+        this._focusIdx = 0;
     }
 
     public read(): number[] {
         return [...this._buffer];
     }
 
-    public reconcile(opts: Required<IndexBufferOpts> & { nextFocusIdx: number }) {
-        this._opts = opts;
-
-        const dir = opts.nextFocusIdx < this._focusIdx ? -1 : 1;
-        this.resize(this._opts.size);
-        this.shift(opts.nextFocusIdx);
-        this.applyOffset(dir);
+    public reconcile({ size, nextFocusIdx }: { size: number; nextFocusIdx: number }) {
+        const focusDirection = nextFocusIdx < this._focusIdx ? -1 : 1;
+        this.resize(size);
+        this.shift(nextFocusIdx);
+        this.applyOffset(focusDirection);
     }
 
     public getFocusIdx() {
@@ -60,7 +44,8 @@ export class IndexBuffer {
     }
 
     private fillFromDataEnd() {
-        return this.fillFromEnd(this._opts.data.length - 1);
+        const data = this._host.getProp("data") ?? [];
+        return this.fillFromEnd(data.length - 1);
     }
 
     private fillFromDataStart() {
@@ -80,7 +65,7 @@ export class IndexBuffer {
         this._buffer = Array.from({ length: this.getMaxBufferSize(size) });
 
         let next: number[];
-        const strategy = this._opts.expandStrategy;
+        const strategy = this._host.getProp("expandStrategy") ?? "fillEnd";
         const start = prev[0] ?? this._focusIdx;
         const end = prev[prev.length - 1] ?? this._focusIdx;
 
@@ -102,7 +87,7 @@ export class IndexBuffer {
         this._buffer = Array.from({ length: this.getMaxBufferSize(size) });
 
         let next: number[];
-        const strategy = this._opts.compressStrategy;
+        const strategy = this._host.getProp("compressStrategy") ?? "clipEnd";
         const start = prev[0] ?? this._focusIdx;
         const end = prev[prev.length - 1] ?? this._focusIdx;
 
@@ -131,7 +116,7 @@ export class IndexBuffer {
 
     private applyOffset(dir: -1 | 1) {
         let next: number[] | undefined = undefined;
-        const offset = this.resolveOffset(this._opts.offset);
+        const offset = this.resolveOffset(this._host.getProp("offset") ?? 0);
         const legalStart = this.getLegalStart(offset);
         const legalEnd = this.getLegalEnd(offset);
         const fillStart = () => this.fillFromStart(this._focusIdx - offset);
@@ -159,17 +144,20 @@ export class IndexBuffer {
     }
 
     private getMaxBufferSize(size: number) {
-        return Math.min(size, this._opts.data.length);
+        const data = this._host.getProp("data") ?? [];
+        return Math.min(size, data.length);
     }
 
     private clampIndex(n: number) {
+        const data = this._host.getProp("data") ?? [];
         n = Math.max(0, n);
-        n = Math.min(n, this._opts.data.length - 1);
+        n = Math.min(n, data.length - 1);
         return n;
     }
 
     private isLegalIndex(n: number) {
-        return n >= 0 && n < this._opts.data.length;
+        const data = this._host.getProp("data") ?? [];
+        return n >= 0 && n < data.length;
     }
 
     private resolveOffset(offset: number) {
@@ -192,7 +180,8 @@ export class IndexBuffer {
 
     private ensureBufferFullyFilled(next: number[]) {
         if (next.length < this._buffer.length) {
-            if (next[next.length - 1] === this._opts.data.length - 1) {
+            const data = this._host.getProp("data") ?? [];
+            if (next[next.length - 1] === data.length - 1) {
                 next = this.fillFromDataEnd();
             } else {
                 next = this.fillFromDataStart();

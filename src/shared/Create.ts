@@ -12,7 +12,6 @@ import { BookElement } from "../dom/BookElement.js";
 import { CanvasElement } from "../dom/CanvasElement.js";
 import { VirtualListElement } from "../dom/VirtualListElement.js";
 import { InputElement } from "../dom/InputElement.js";
-import type { IndexBufferOpts } from "../dom/shared/IndexBuffer.js";
 
 type StyleHelper<T extends Style.All> = T | StyleHandler<T>;
 type Children = DomElement[];
@@ -91,14 +90,15 @@ export const create = {
         return elem;
     },
     virtualList: <Data>(
-        config: Config<Style.List, IndexBufferOpts<Data>> & {
+        config: Config<Style.List, Props.VirtualList<Data>> & {
             props: {
                 data: Props.VirtualList<Data>["data"];
                 renderItem: Props.VirtualList<Data>["renderItem"];
+                getItemKey: Props.VirtualList<Data>["getItemKey"];
             };
         },
     ) => {
-        const elem = new VirtualListElement<Data>(config.props);
+        const elem = new VirtualListElement<Data>(config.props.initialIndex);
         applyConfig(elem, config);
         return elem;
     },
