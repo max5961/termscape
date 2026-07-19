@@ -3,12 +3,13 @@
  * once if any prop changes are made during the effect
  * */
 export type PropEffectHandler<Value> = (
-    value: Value,
+    nextValue: Value,
     // not sure why typescript forces an unknown here.
     setProp: (value: unknown) => void,
+    prevValue: Value,
 ) => unknown;
 
-type Effect = (value: unknown, setProp: unknown) => unknown;
+type Effect = (value: unknown, setProp: unknown, prevValue: unknown) => unknown;
 
 export class SideEffects {
     private hasConstructed: boolean;
@@ -31,14 +32,15 @@ export class SideEffects {
 
     public dispatchEffect(
         prop: string,
-        value: unknown,
+        nextValue: unknown,
+        prevValue: unknown,
         setProp: (value: unknown) => unknown,
     ) {
         if (this.hasConstructed) {
-            this.map[prop]?.(value, setProp);
+            this.map[prop]?.(nextValue, setProp, prevValue);
         } else {
             queuePreCompositeTask(() => {
-                this.map[prop]?.(value, setProp);
+                this.map[prop]?.(nextValue, setProp, prevValue);
             });
         }
     }

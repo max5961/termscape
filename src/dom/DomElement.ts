@@ -199,14 +199,15 @@ export abstract class DomElement<
     @Render()
     public setProp<T extends keyof Schema["Props"]>(
         key: T,
-        value: Schema["Props"][T],
+        nextValue: Schema["Props"][T],
     ): void {
         const setProp = (value: unknown) => {
             this._props.set(key as string, value);
         };
 
-        setProp(value);
-        this._effects.dispatchEffect(key as string, value, setProp);
+        const prevValue = this._props.get(key as string);
+        setProp(nextValue);
+        this._effects.dispatchEffect(key as string, nextValue, prevValue, setProp);
     }
 
     protected registerPropEffect<T extends keyof Props.All>(

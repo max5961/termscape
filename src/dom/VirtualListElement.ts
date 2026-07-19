@@ -69,8 +69,11 @@ export class VirtualListElement<T = any> extends DomElement<{
         // reconciliation
         this.registerPropEffect(
             "data",
-            (...[data, setProp]: Parameters<PropEffectHandler<Props.All["data"]>>) => {
-                const prevData = this.getProp("data") ?? [];
+            (
+                ...[data, setProp, prevData]: Parameters<
+                    PropEffectHandler<Props.All["data"]>
+                >
+            ) => {
                 if (data) {
                     setProp(data);
                     this.reconcile({ prevData });
