@@ -15,9 +15,11 @@ import { IndexBuffer, type IndexBufferOpts } from "./shared/IndexBuffer.js";
 export class VirtualListElement<T = any> extends DomElement {
     protected static override identity = VIRTUAL_LIST_ELEMENT;
 
-    private _opts: Required<IndexBufferOpts<T>>;
+    /** @internal */
+    public _opts: Required<IndexBufferOpts<T>>;
+    /** @internal */
+    public _buffer: IndexBuffer;
     private _focusIdx: number;
-    private _buffer: IndexBuffer;
 
     constructor(props: IndexBufferOpts<T>) {
         super();

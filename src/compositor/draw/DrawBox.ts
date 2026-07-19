@@ -175,23 +175,17 @@ export class DrawBox extends DrawContract<BoxLike> {
             pctScrolled = elem.getScrollData().x;
         }
 
-        const barPct = Math.min(1, contentUnits / unclippedContentUnits);
+        let barPct = Math.min(1, contentUnits / unclippedContentUnits);
 
         if (elem._is(VIRTUAL_LIST_ELEMENT)) {
-            // const items = elem._data.length;
-            // const itemsShown = Math.ceil(contentUnits / elem._itemSize);
-            // const maxStart = Math.max(0, items - itemsShown);
-            //
-            // const trueStart =
-            //     elem._wstart +
-            //     Math.floor(
-            //         (elem.visibleContentRect.corner.y - elem._contentRange.high) /
-            //             elem._itemSize,
-            //     );
-            //
-            // barPct = items === 0 ? 1 : Math.min(1, itemsShown / items);
-            // pctScrolled = maxStart === 0 ? 0 : Math.floor((trueStart / maxStart) * 100);
-            // unclippedContentUnits = items * elem._itemSize;
+            const buffer = elem._buffer.read();
+            const items = elem._opts.data.length;
+            const itemsShown = buffer.length;
+            const start = buffer[0] ?? 0;
+            const maxStart = elem._opts.data.length - buffer.length;
+
+            barPct = items === 0 ? 1 : Math.min(1, itemsShown / items);
+            pctScrolled = maxStart === 0 ? 0 : Math.floor((start / maxStart) * 100);
         }
 
         const barUnits = Math.max(1, Math.ceil(barPct * contentUnits));
