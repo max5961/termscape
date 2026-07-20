@@ -1,126 +1,147 @@
 import type { VirtualListElement } from "../VirtualListElement.js";
 
 export class IndexBuffer {
-    private _host: VirtualListElement;
     private _buffer: number[];
-    private _focusIdx: number;
+    private _data: any[];
+    private _host: VirtualListElement;
 
     constructor(host: VirtualListElement) {
-        this._host = host;
         this._buffer = [];
-        this._focusIdx = 0;
+        this._data = [];
+        this._host = host;
     }
 
     public read(): number[] {
         return [...this._buffer];
     }
 
-    public reconcile({ size, nextFocusIdx }: { size: number; nextFocusIdx: number }) {
-        const focusDirection = nextFocusIdx < this._focusIdx ? -1 : 1;
-        this.resize(size);
-        this.shift(nextFocusIdx);
-        this.applyOffset(focusDirection);
-    }
+    public reconcile({
+        bufferSize,
+        focusIdx,
+        focusChangeDirection,
+        data,
+    }: {
+        bufferSize: number;
+        focusIdx: number;
+        focusChangeDirection: -1 | 1 | 0;
+        data: any[];
+    }) {
+        this._data = data;
 
-    public getFocusIdx() {
-        return this._focusIdx;
+        this._buffer = this.resize(bufferSize);
+        this._buffer = this.shift(focusIdx);
+        this._buffer = this.applyOffset(focusChangeDirection, focusIdx);
     }
 
     private fillFromStart(start: number) {
-        start = this.clampIndex(start);
-        const next = [] as number[];
+        let next = [] as number[];
         for (let i = 0; i < this._buffer.length; ++i) {
             if (this.isLegalIndex(start + i)) {
                 next.push(start + i);
             }
         }
+
+        // Example - data changes from larger to smaller where larger focus is
+        // out of range of smaller
+        // prev: [100, 101, **102**]
+        // expected next: [0, 1, **2**]
+        // next focus becomes next data.length - 1
+        // since focus shifts out of bounds of prev to the left, we call fillFromStart(2)
+        // which generates only [2]
+        if (next.length >= this._buffer.length) {
+            return next;
+        }
+
+        if (next[next.length - 1] === this._data.length - 1) {
+            next = this.fillFromDataEnd();
+        } else {
+            next = this.fillFromDataStart();
+        }
+
         return next;
     }
 
     private fillFromEnd(end: number) {
-        end = this.clampIndex(end);
         const start = end - this._buffer.length + 1;
         return this.fillFromStart(start);
     }
 
     private fillFromDataEnd() {
-        const data = this._host.getProp("data") ?? [];
-        return this.fillFromEnd(data.length - 1);
+        return this.fillFromEnd(this._data.length - 1);
     }
 
     private fillFromDataStart() {
         return this.fillFromStart(0);
     }
 
-    private resize(size: number) {
-        if (size < this._buffer.length) {
-            this.compress(size);
-        } else if (size > this._buffer.length) {
-            this.expand(size);
+    private resize(bufferSize: number) {
+        const prevBuffer = [...this._buffer];
+        this._buffer = Array.from({ length: Math.min(bufferSize, this._data.length) });
+
+        let next = prevBuffer;
+        if (bufferSize < prevBuffer.length) {
+            next = this.compress(prevBuffer);
+        } else if (bufferSize > prevBuffer.length) {
+            next = this.expand(prevBuffer);
         }
+        return next ?? prevBuffer;
     }
 
-    private expand(size: number) {
-        const prev = this._buffer;
-        this._buffer = Array.from({ length: this.getMaxBufferSize(size) });
-
-        let next: number[];
+    private expand(prevBuffer: number[]) {
         const strategy = this._host.getProp("expandStrategy") ?? "fillEnd";
-        const start = prev[0] ?? this._focusIdx;
-        const end = prev[prev.length - 1] ?? this._focusIdx;
+        const start = prevBuffer[0] ?? 0;
+        const end = prevBuffer[prevBuffer.length - 1] ?? 0;
 
+        let next = prevBuffer;
         if (strategy === "fillEnd") {
             next = this.fillFromStart(start);
         } else if (strategy === "fillStart") {
-            next = this.fillFromEnd(end);
+            next = this.fillFromStart(end);
         } else {
-            const offset = Math.ceil((this._buffer.length - prev.length) / 2);
+            const offset = Math.ceil((this._buffer.length - prevBuffer.length) / 2);
             next = this.fillFromStart(start - offset);
         }
 
-        next = this.ensureBufferFullyFilled(next);
-        this._buffer = next;
+        return next;
     }
 
-    private compress(size: number) {
-        const prev = this._buffer;
-        this._buffer = Array.from({ length: this.getMaxBufferSize(size) });
-
-        let next: number[];
+    private compress(prevBuffer: number[]) {
         const strategy = this._host.getProp("compressStrategy") ?? "clipEnd";
-        const start = prev[0] ?? this._focusIdx;
-        const end = prev[prev.length - 1] ?? this._focusIdx;
+        const start = prevBuffer[0] ?? 0;
+        const end = prevBuffer[prevBuffer.length - 1] ?? 0;
 
+        let next = prevBuffer;
         if (strategy === "clipStart") {
             next = this.fillFromStart(start);
         } else if (strategy === "clipEnd") {
             next = this.fillFromEnd(end);
         } else {
-            const offset = Math.ceil((prev.length - this._buffer.length) / 2);
+            const offset = Math.ceil((prevBuffer.length - this._buffer.length) / 2);
             next = this.fillFromStart(start + offset);
         }
 
-        this._buffer = next;
+        return next;
     }
 
     private shift(nextFocusIdx: number) {
-        nextFocusIdx = this.clampIndex(nextFocusIdx);
+        let next = [...this._buffer];
         if (nextFocusIdx < this._buffer[0]) {
-            this._buffer = this.fillFromStart(nextFocusIdx);
+            next = this.fillFromStart(nextFocusIdx);
         } else if (nextFocusIdx > this._buffer[this._buffer.length - 1]) {
-            this._buffer = this.fillFromEnd(nextFocusIdx);
+            next = this.fillFromEnd(nextFocusIdx);
         }
 
-        this._focusIdx = nextFocusIdx;
+        return next;
     }
 
-    private applyOffset(dir: -1 | 1) {
-        let next: number[] | undefined = undefined;
+    private applyOffset(dir: -1 | 1 | 0, focusIdx: number) {
         const offset = this.resolveOffset(this._host.getProp("offset") ?? 0);
         const legalStart = this.getLegalStart(offset);
         const legalEnd = this.getLegalEnd(offset);
-        const fillStart = () => this.fillFromStart(this._focusIdx - offset);
-        const fillEnd = () => this.fillFromEnd(this._focusIdx + offset);
+        const fillStart = () => this.fillFromStart(focusIdx - offset);
+        const fillEnd = () => this.fillFromEnd(focusIdx + offset);
+
+        let next = [...this._buffer];
 
         // there are no legal indexes, so offset should be applied in a way that
         // depends on the direction in which focus changed.  This is necessary
@@ -131,28 +152,13 @@ export class IndexBuffer {
             } else {
                 next = fillStart();
             }
-        } else if (this._focusIdx < legalStart) {
+        } else if (focusIdx < legalStart) {
             next = fillStart();
-        } else if (this._focusIdx > legalEnd) {
+        } else if (focusIdx > legalEnd) {
             next = fillEnd();
         }
 
-        if (next) {
-            next = this.ensureBufferFullyFilled(next);
-            this._buffer = next;
-        }
-    }
-
-    private getMaxBufferSize(size: number) {
-        const data = this._host.getProp("data") ?? [];
-        return Math.min(size, data.length);
-    }
-
-    private clampIndex(n: number) {
-        const data = this._host.getProp("data") ?? [];
-        n = Math.max(0, n);
-        n = Math.min(n, data.length - 1);
-        return n;
+        return next;
     }
 
     private isLegalIndex(n: number) {
@@ -176,18 +182,5 @@ export class IndexBuffer {
 
     private getLegalEnd(offset: number) {
         return this._buffer[this._buffer.length - 1 - offset] ?? this._buffer[0] ?? 0;
-    }
-
-    private ensureBufferFullyFilled(next: number[]) {
-        if (next.length < this._buffer.length) {
-            const data = this._host.getProp("data") ?? [];
-            if (next[next.length - 1] === data.length - 1) {
-                next = this.fillFromDataEnd();
-            } else {
-                next = this.fillFromDataStart();
-            }
-        }
-
-        return next;
     }
 }
