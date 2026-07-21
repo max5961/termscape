@@ -84,6 +84,7 @@ export class VirtualListElement<T = any> extends DomElement<{
             this.registerPropEffect(p, (next, _setProp, prev) => {
                 if (p === "data") {
                     this._focusState.data = next as T[];
+                    this._focusState.incrementFocus(0);
                     this.reconcile({ prevData: (prev as T[]) ?? [] });
                 } else {
                     this.reconcile();
@@ -175,8 +176,6 @@ export class VirtualListElement<T = any> extends DomElement<{
         const nextIndexBuf = this._buffer.read();
         const nextKeys = this.createKeys(nextIndexBuf, this.getProp("data") ?? []);
         const nextMap = new Map<string, DomElement>();
-
-        // logger.write({ nextKeys: nextKeys.slice(0, 3), length: nextKeys.length });
 
         let nextFocus: DomElement | undefined = undefined;
         for (let i = 0; i < nextIndexBuf.length; ++i) {

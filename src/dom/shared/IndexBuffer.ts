@@ -34,6 +34,7 @@ export class IndexBuffer {
     }
 
     private fillFromStart(start: number) {
+        start = Math.max(0, start);
         let next = [] as number[];
         for (let i = 0; i < this._buffer.length; ++i) {
             if (this.isLegalIndex(start + i)) {
@@ -124,11 +125,16 @@ export class IndexBuffer {
     }
 
     private shift(nextFocusIdx: number) {
+        const bufferStart = this._buffer[0] ?? 0;
+        const bufferEnd = this._buffer[this._buffer.length - 1] ?? 0;
+
         let next = [...this._buffer];
-        if (nextFocusIdx < this._buffer[0]) {
+        if (nextFocusIdx < bufferStart) {
             next = this.fillFromStart(nextFocusIdx);
-        } else if (nextFocusIdx > this._buffer[this._buffer.length - 1]) {
+        } else if (nextFocusIdx > bufferEnd) {
             next = this.fillFromEnd(nextFocusIdx);
+        } else if (bufferEnd > this._data.length - 1) {
+            next = this.fillFromDataEnd();
         }
 
         return next;
