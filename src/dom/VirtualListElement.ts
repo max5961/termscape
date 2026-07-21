@@ -3,7 +3,6 @@ import type { Style } from "./style/Style.js";
 import { TagNameEnum, VIRTUAL_LIST_ELEMENT } from "../Constants.js";
 import { DomElement } from "./DomElement.js";
 import { IndexBuffer } from "./shared/IndexBuffer.js";
-import { logger } from "../shared/Logger.js";
 
 // - override onFocus/onBlur/onShallow... so that children of VirtualList dispatch
 // these handlers at the control of VirtualList and not the FocusNode which is the
@@ -22,11 +21,11 @@ export class VirtualListElement<T = any> extends DomElement<{
     public _buffer: IndexBuffer;
     private _focusState: FocusState;
     private _itemSize: number;
-    private _size: number;
+    private _bufferSize: number;
 
     constructor(initialIndex?: number) {
         super();
-        this._size = 0;
+        this._bufferSize = 0;
         this._itemSize = 1;
         this._focusState = new FocusState([], initialIndex ?? 0);
         this._buffer = new IndexBuffer(this);
@@ -42,17 +41,35 @@ export class VirtualListElement<T = any> extends DomElement<{
                     this._children[0]?.unclippedRect.height ?? prevItemSize,
                 );
 
-                const prevSize = this._size;
-                // const nextSize = this.visibleContentRect.height;
-                const nextSize = Math.ceil(this.visibleContentRect.height / nextItemSize);
+                const prevBufferSize = this._bufferSize;
+                const nextBufferSize = this.getBufferSize(this._bufferSize, nextItemSize);
 
-                if (prevSize !== nextSize || prevItemSize !== nextItemSize) {
-                    this._size = nextSize;
+                if (prevBufferSize !== nextBufferSize || prevItemSize !== nextItemSize) {
+                    this._bufferSize = nextBufferSize;
                     this._itemSize = nextItemSize;
                     this.reconcile();
+
                     return true;
                 }
                 return false;
+            },
+        });
+
+        let initChildDimensions = false;
+        this.afterLayout({
+            subscribe: true,
+            handler: () => {
+                if (initChildDimensions) return false;
+
+                const child = this._children[0];
+                if (child) {
+                    initChildDimensions = child.hasComposedCanvas;
+                    if (initChildDimensions) {
+                        this._itemSize = Math.max(1, child.unclippedRect.height);
+                        this.reconcile();
+                    }
+                }
+                return initChildDimensions;
             },
         });
 
@@ -66,7 +83,6 @@ export class VirtualListElement<T = any> extends DomElement<{
         props.forEach((p) => {
             this.registerPropEffect(p, (next, _setProp, prev) => {
                 if (p === "data") {
-                    // this.setNextFocus(this._focusIdx);
                     this._focusState.data = next as T[];
                     this.reconcile({ prevData: (prev as T[]) ?? [] });
                 } else {
@@ -75,7 +91,6 @@ export class VirtualListElement<T = any> extends DomElement<{
             });
         });
     }
-
     public override get tagName(): typeof TagNameEnum.VirtualListElement {
         return "virtual-list";
     }
@@ -103,6 +118,11 @@ export class VirtualListElement<T = any> extends DomElement<{
 
     public focusPrev(n: number = 1) {
         this._focusState.decrementFocus(n);
+        this.reconcile();
+    }
+
+    public focusIndex(i: number) {
+        this._focusState.moveFocusToIndex(i);
         this.reconcile();
     }
 
@@ -142,14 +162,11 @@ export class VirtualListElement<T = any> extends DomElement<{
             }
         }
 
-        // this should be Math.ceil eventually
-        this._size = Math.ceil(
-            (this.visibleContentRect.height ?? this._size) / Math.max(1, this._itemSize),
-        );
+        this._bufferSize = this.getBufferSize(this._bufferSize, this._itemSize);
 
         this._buffer.reconcile({
             data: this.getProp("data") ?? [],
-            bufferSize: this._size,
+            bufferSize: this._bufferSize,
             focusIdx: this.getFocusedIndex(),
             focusChangeDirection: this.getFocusChangeDirection(),
         });
@@ -158,6 +175,8 @@ export class VirtualListElement<T = any> extends DomElement<{
         const nextIndexBuf = this._buffer.read();
         const nextKeys = this.createKeys(nextIndexBuf, this.getProp("data") ?? []);
         const nextMap = new Map<string, DomElement>();
+
+        // logger.write({ nextKeys: nextKeys.slice(0, 3), length: nextKeys.length });
 
         let nextFocus: DomElement | undefined = undefined;
         for (let i = 0; i < nextIndexBuf.length; ++i) {
@@ -200,9 +219,9 @@ export class VirtualListElement<T = any> extends DomElement<{
         }
 
         if (nextFocus === this._children[this._children.length - 1]) {
-            // this.scrollDown(Infinity);
+            this.scrollDown(Infinity);
         } else if (nextFocus === this._children[0]) {
-            // this.scrollUp(Infinity);
+            this.scrollUp(Infinity);
         }
     }
 
@@ -217,6 +236,12 @@ export class VirtualListElement<T = any> extends DomElement<{
         }
 
         return keys;
+    }
+
+    private getBufferSize(currentBufferSize: number, itemSize: number) {
+        return Math.ceil(
+            (this.visibleContentRect.height ?? currentBufferSize) / Math.max(1, itemSize),
+        );
     }
 }
 

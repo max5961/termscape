@@ -517,6 +517,10 @@ export abstract class DomElement<
         };
     }
 
+    public get hasComposedCanvas() {
+        return !!this._canvas?.unclippedRect;
+    }
+
     public get unclippedRect(): Rect {
         return this._canvas?.unclippedRect ?? this.getDefaultRect();
     }
