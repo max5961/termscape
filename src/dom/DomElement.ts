@@ -156,6 +156,11 @@ export abstract class DomElement<
         return this._virStyle;
     }
 
+    // ***todo***
+    // public getComputedStyle(style: keyof Schema["Style"]) {
+    //     return this._shadowStyle[style];
+    // }
+
     private collectIdentities() {
         let ctor: any = this.constructor;
 

@@ -14,8 +14,8 @@ export namespace Style {
     };
 
     type MinDimension = {
-        minWidth?: number | string;
         minHeight?: number | string;
+        minWidth?: number | string;
     };
 
     type Margin = {
