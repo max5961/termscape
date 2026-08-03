@@ -191,7 +191,7 @@ export class VirtualStyleProxy {
     }
     set marginY(v: Vir["marginY"]) {
         const resolved = this.__reconciler.resolveStyle("marginY", v);
-        if (this.__values["marginY"] === resolved) return;
+        if (resolved === this.__values["marginY"]) return;
 
         this.__values["marginY"] = resolved;
         this._setShadowIfVirtualUndef("marginTop", resolved);
@@ -230,7 +230,7 @@ export class VirtualStyleProxy {
         return this.__values["padding"];
     }
     set padding(v: Vir["padding"]) {
-        const resolved = this.resolveStyle("padding", v);
+        const resolved = this.__reconciler.resolveStyle("padding", v);
         if (this.shorthandIsEqual(this.__values["padding"], resolved)) return;
 
         this.__values["padding"] = resolved;
@@ -245,7 +245,10 @@ export class VirtualStyleProxy {
         return this.__values["paddingX"];
     }
     set paddingX(v: Vir["paddingX"]) {
-        const resolved = this._setResolvedVirtual("paddingX", v);
+        const resolved = this.__reconciler.resolveStyle("paddingX", v);
+        if (resolved === this.__values["paddingX"]) return;
+
+        this.__values["paddingX"] = resolved;
         this._setShadowIfVirtualUndef("paddingLeft", resolved);
         this._setShadowIfVirtualUndef("paddingRight", resolved);
     }
@@ -254,9 +257,10 @@ export class VirtualStyleProxy {
         return this.__values["paddingY"];
     }
     set paddingY(v: Vir["paddingY"]) {
-        if (this.__values["paddingY"] === v) return;
-        this.__values["paddingY"] = v;
+        const resolved = this.__reconciler.resolveStyle("paddingY", v);
+        if (resolved === this.__values["paddingY"]) return;
 
+        this.__values["paddingY"] = v;
         this._setShadowIfVirtualUndef("paddingTop", v);
         this._setShadowIfVirtualUndef("paddingBottom", v);
     }
@@ -265,8 +269,6 @@ export class VirtualStyleProxy {
         return this.__values["paddingTop"];
     }
     set paddingTop(v: Vir["paddingTop"]) {
-        if (this.__values["paddingTop"] === v) return;
-
         this._setResolvedStyle("paddingTop", v);
     }
 
@@ -274,8 +276,6 @@ export class VirtualStyleProxy {
         return this.__values["paddingBottom"];
     }
     set paddingBottom(v: Vir["paddingBottom"]) {
-        if (this.__values["paddingBottom"] === v) return;
-
         this._setResolvedStyle("paddingBottom", v);
     }
 
@@ -283,8 +283,6 @@ export class VirtualStyleProxy {
         return this.__values["paddingLeft"];
     }
     set paddingLeft(v: Vir["paddingLeft"]) {
-        if (this.__values["paddingLeft"] === v) return;
-
         this._setResolvedStyle("paddingLeft", v);
     }
 
@@ -292,8 +290,6 @@ export class VirtualStyleProxy {
         return this.__values["paddingRight"];
     }
     set paddingRight(v: Vir["paddingRight"]) {
-        if (this.__values["paddingRight"] === v) return;
-
         this._setResolvedStyle("paddingRight", v);
     }
 
@@ -301,8 +297,6 @@ export class VirtualStyleProxy {
         return this.__values["position"];
     }
     set position(v: Vir["position"]) {
-        if (this.__values["position"] === v) return;
-
         this._setResolvedStyle("position", v);
     }
 
@@ -310,8 +304,6 @@ export class VirtualStyleProxy {
         return this.__values["display"];
     }
     set display(v: Vir["display"]) {
-        if (this.__values["display"] === v) return;
-
         this._setResolvedStyle("display", v);
     }
 
@@ -319,18 +311,16 @@ export class VirtualStyleProxy {
         return this.__values["flexGrow"];
     }
     set flexGrow(v: Vir["flexGrow"]) {
-        if (this.__values["flexGrow"] === v) return;
-
         this._setResolvedStyle("flexGrow", v);
     }
 
     get flexShrink(): Vir["flexShrink"] {
         return this.__values["flexShrink"];
     }
+    // ***** COME BACK TO THIS ONE *****
     set flexShrink(v: Vir["flexShrink"]) {
         // flexShrink should always be recalculated
         // if (this.__values["flexShrink"] === v) return;
-
         this._setResolvedStyle("flexShrink", v);
     }
 
@@ -338,7 +328,6 @@ export class VirtualStyleProxy {
         return this.__values["flexDirection"];
     }
     set flexDirection(v: Vir["flexDirection"]) {
-        if (this.__values["flexDirection"] === v) return;
         this._setResolvedStyle("flexDirection", v);
     }
 
@@ -346,7 +335,6 @@ export class VirtualStyleProxy {
         return this.__values["flexBasis"];
     }
     set flexBasis(v: Vir["flexBasis"]) {
-        if (this.__values["flexBasis"] === v) return;
         this._setResolvedStyle("flexBasis", v);
     }
 
@@ -354,7 +342,6 @@ export class VirtualStyleProxy {
         return this.__values["flexWrap"];
     }
     set flexWrap(v: Vir["flexWrap"]) {
-        if (this.__values["flexWrap"] === v) return;
         this._setResolvedStyle("flexWrap", v);
     }
 
@@ -362,7 +349,6 @@ export class VirtualStyleProxy {
         return this.__values["alignItems"];
     }
     set alignItems(v: Vir["alignItems"]) {
-        if (this.__values["alignItems"] === v) return;
         this._setResolvedStyle("alignItems", v);
     }
 
@@ -370,13 +356,7 @@ export class VirtualStyleProxy {
         return this.__values["alignSelf"];
     }
     set alignSelf(v: Vir["alignSelf"]) {
-        if (this.__values["alignSelf"] === v) return;
-        this.__values["alignSelf"] = v;
-        // If we are going to have "auto" as a possible value for alignSelf, then we
-        // should have "auto" for nearly all other properties that have a YogaNode.<property>Auto()
-        // method...I think the better idea would be to just remove "auto" as an option
-        // and assume that "auto" means undefined.
-        this.__shadow["alignSelf"] = Sanitizers.alignSelf(v);
+        this._setResolvedStyle("alignSelf", v);
     }
 
     get justifyContent(): Vir["justifyContent"] {
@@ -418,9 +398,7 @@ export class VirtualStyleProxy {
         return this.__values["zIndex"];
     }
     set zIndex(v: Vir["zIndex"]) {
-        if (this.__values["zIndex"] === v) return;
-        this.__values["zIndex"] = v;
-        this.__shadow.zIndex = Sanitizers.zIndex(v);
+        this._setResolvedStyle("zIndex", v);
     }
 
     get backgroundColor(): Vir["backgroundColor"] {

@@ -47,7 +47,7 @@ export namespace Style {
         flexBasis?: number | string;
         flexWrap?: "nowrap" | "wrap" | "wrap-reverse";
         alignItems?: "flex-start" | "center" | "flex-end" | "stretch";
-        alignSelf?: "flex-start" | "center" | "flex-end" | "auto";
+        alignSelf?: "flex-start" | "center" | "flex-end";
         justifyContent?:
             | "flex-start"
             | "flex-end"
@@ -64,7 +64,7 @@ export namespace Style {
     };
 
     type Background = {
-        zIndex?: number | "auto";
+        zIndex?: number;
         backgroundColor?: Color;
         backgroundStyle?: "dotted" | "dashed" | { char: string };
         backgroundStyleColor?: Color;

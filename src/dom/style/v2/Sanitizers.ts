@@ -22,22 +22,6 @@ export class Sanitizers {
         return dim;
     }
 
-    public static zIndex(next: S<"zIndex">): SS<"zIndex"> {
-        if (typeof next === "string") {
-            return 0;
-        } else {
-            return next ?? 0;
-        }
-    }
-
-    public static alignSelf(next: S<"alignSelf">): SS<"alignSelf"> {
-        if (next === "auto") {
-            return undefined;
-        } else {
-            return next;
-        }
-    }
-
     public static height(next: S<"height">, stdout: NodeJS.WriteStream): SS<"height"> {
         return Sanitizers.parseDim(next, stdout);
     }

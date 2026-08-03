@@ -455,8 +455,8 @@ export class ShadowStyleProxy {
         this.scheduleRender({ layoutChange: true });
     }
 
-    get zIndex(): Sha["zIndex"] {
-        return this.values["zIndex"];
+    get zIndex(): NoUndef<Sha["zIndex"]> {
+        return this.values["zIndex"] ?? 0;
     }
     set zIndex(v: Sha["zIndex"]) {
         if (this.values["zIndex"] === v) return;
