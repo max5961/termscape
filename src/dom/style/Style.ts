@@ -4,7 +4,7 @@ import type { Color } from "../../Types.js";
 export type BorderStyle = keyof typeof Borders;
 export type Shorthand<T> = [T] | [T, T] | [T, T, T] | [T, T, T, T];
 export type Shadow<T extends Style.All> = {
-    [P in keyof T]: Exclude<T[P], "inherit" | "auto">;
+    [P in keyof T]: Exclude<T[P], "inherit">;
 };
 
 export namespace Style {

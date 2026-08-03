@@ -1,4 +1,3 @@
-import type { Style } from "../Style.js";
 import type { VirtualStyleProxy } from "./VirtualStyleProxy.js";
 
 /**
