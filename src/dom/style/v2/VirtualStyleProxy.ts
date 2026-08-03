@@ -14,12 +14,12 @@ export class VirtualStyleProxy {
     private __styleHandler: StyleHandler<Style.All> | null;
     private __reconciler: StyleReconciler;
 
-    constructor(host: DomElement) {
+    constructor(host: DomElement, defaultStyles: Style.All) {
         this.__values = {};
         this.__host = host;
         this.__shadow = host._shadow;
         this.__styleHandler = null;
-        this.__reconciler = new StyleReconciler(this, {});
+        this.__reconciler = new StyleReconciler(this, defaultStyles);
     }
 
     /** @internal */

@@ -72,7 +72,7 @@ export abstract class DomElement<
 
     public parentElement: null | DomElement;
 
-    constructor() {
+    constructor(defaultStyles: Style.All) {
         this._identities = new Set();
         this.collectIdentities();
 
@@ -95,7 +95,7 @@ export abstract class DomElement<
         this._lastOffsetChangeWasFocus = false;
 
         this._shadow = new ShadowStyleProxy(this);
-        this._virtual = new VirtualStyleProxy(this);
+        this._virtual = new VirtualStyleProxy(this, defaultStyles);
 
         this.applyDefaultStyles();
         this.applyDefaultProps();

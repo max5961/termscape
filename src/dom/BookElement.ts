@@ -3,6 +3,7 @@ import { TagNameEnum, BOOK_ELEMENT } from "../Constants.js";
 import type { Style } from "./style/Style.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
 import type { Props } from "./props/Props.js";
+import { DefaultStyles } from "./style/v2/DefaultStyles.js";
 
 /**
  * The `BookElement` does not manage focus like `ListElement` and `PageElement`,
@@ -24,7 +25,7 @@ export class BookElement extends DomElement<{
     private _pagesSet: Set<DomElement>;
 
     constructor() {
-        super();
+        super(DefaultStyles.Book);
         this._pages = [];
         this._pagesSet = new Set();
     }

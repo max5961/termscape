@@ -4,6 +4,7 @@ import { TagNameEnum, LIST_ELEMENT } from "../Constants.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
+import { DefaultStyles } from "./style/v2/DefaultStyles.js";
 
 export class ListElement extends FocusManager<{
     Style: Style.List;
@@ -12,7 +13,7 @@ export class ListElement extends FocusManager<{
     protected static override identity = LIST_ELEMENT;
 
     constructor() {
-        super();
+        super(DefaultStyles.List);
     }
 
     public override get tagName(): typeof TagNameEnum.List {

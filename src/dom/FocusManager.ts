@@ -5,7 +5,6 @@ import type { VisualNodeMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
 import type { Props } from "./props/Props.js";
 import type { Rect } from "../compositor/Canvas.js";
-import { logger } from "../shared/Logger.js";
 
 type FMSchema = {
     Style: Style.FocusManager;
@@ -24,8 +23,8 @@ export abstract class FocusManager<
     private vmap: VisualNodeMap;
     protected _focused: DomElement | undefined;
 
-    constructor() {
-        super();
+    constructor(defaultStyles: Style.All) {
+        super(defaultStyles);
         this.vmap = new Map();
         this._focused = undefined;
         this._lastOffsetChangeWasFocus = true;

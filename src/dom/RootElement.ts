@@ -12,6 +12,7 @@ import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { MetaData, MetaDataRegister } from "./shared/MetaData.js";
 import { Compositor } from "../compositor/Compositor.js";
+import { DefaultStyles } from "./style/v2/DefaultStyles.js";
 
 export class Root extends DomElement<{
     Style: Style.Root;
@@ -29,7 +30,7 @@ export class Root extends DomElement<{
     protected emitter: EventEmitter<EventPayloadMap>;
 
     constructor(config: Runtime) {
-        super();
+        super(DefaultStyles.Root);
         this._register = new MetaDataRegister(this);
         this.hooks = new HooksManager();
         this.renderer = new Renderer(this);

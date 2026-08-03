@@ -4,6 +4,7 @@ import { DomElement } from "./DomElement.js";
 import { TextElement } from "./TextElement.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
+import { DefaultStyles } from "./style/v2/DefaultStyles.js";
 
 export class InputElement extends DomElement<{
     Style: Style.Input; // includes TextStyle & BoxStyle
@@ -23,7 +24,7 @@ export class InputElement extends DomElement<{
     private _actionsMap: Map<keyof Props.Input, Action[]>;
 
     constructor() {
-        super();
+        super(DefaultStyles.Input);
         this.hasClaimedStdin = false;
         this._inputState = null;
         this._actionStore = new ActionStore();

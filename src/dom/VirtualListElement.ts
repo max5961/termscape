@@ -3,6 +3,7 @@ import type { Style } from "./style/Style.js";
 import { TagNameEnum, VIRTUAL_LIST_ELEMENT } from "../Constants.js";
 import { DomElement } from "./DomElement.js";
 import { IndexBuffer } from "./shared/IndexBuffer.js";
+import { DefaultStyles } from "./style/v2/DefaultStyles.js";
 
 // - override onFocus/onBlur/onShallow... so that children of VirtualList dispatch
 // these handlers at the control of VirtualList and not the FocusNode which is the
@@ -24,7 +25,7 @@ export class VirtualListElement<T = any> extends DomElement<{
     private _bufferSize: number;
 
     constructor(initialIndex?: number) {
-        super();
+        super(DefaultStyles.VirtualList);
         this._bufferSize = 0;
         this._itemSize = 1;
         this._focusState = new FocusState([], initialIndex ?? 0);
