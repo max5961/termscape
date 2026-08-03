@@ -1,36 +1,50 @@
 import type { Style } from "../Style.js";
 import type { ShadowStyleProxy } from "./ShadowStyleProxy.js";
-import type { YogaNode } from "../../../Types.js";
+import type { StyleHandler } from "../../../Types.js";
 import { Sanitizers } from "./Sanitizers.js";
 import { DomElement } from "../../DomElement.js";
-import type { WriteOpts } from "../../../Types.js";
 
 type Vir = Style.All;
 
 export class VirtualStyleProxy {
     private __values: Record<string, any>;
     private __shadow: ShadowStyleProxy;
-    private __metadata: DomElement["_metadata"];
-    private __node: YogaNode;
+    private __host: DomElement;
+    private __styleHandler: StyleHandler<Style.All> | null;
 
-    constructor(
-        shadow: ShadowStyleProxy,
-        metadata: DomElement["_metadata"],
-        node: YogaNode,
-    ) {
+    constructor(host: DomElement) {
         this.__values = {};
-        this.__shadow = shadow;
-        this.__metadata = metadata;
-        this.__node = node;
+        this.__host = host;
+        this.__shadow = host._shadow;
+        this.__styleHandler = null;
     }
 
     /** @internal */
-    public __setDefaults(_defaults: Style.All) {
+    public _hasStyleHandler() {
+        return !!this.__styleHandler;
+    }
+
+    private resolveStylesheet(stylesheet: Style.All | StyleHandler<Style.All>) {
+        if (typeof stylesheet === "function") {
+            this.__styleHandler = stylesheet;
+            return stylesheet(this.__host.getFocusStatus());
+        }
+        this.__styleHandler = null;
+        return stylesheet;
+    }
+
+    /** @internal */
+    public _setStyle(stylesheet: Style.All | StyleHandler<Style.All>) {
+        const styles = this.resolveStylesheet(stylesheet);
+    }
+
+    /** @internal */
+    public _setDefaults(_defaults: Style.All) {
         //
     }
 
     private getStdout() {
-        return this.__metadata.getRoot()?.runtime.stdout ?? process.stdout;
+        return this.__host._metadata.getRoot()?.runtime.stdout ?? process.stdout;
     }
 
     /**

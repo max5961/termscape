@@ -2,7 +2,7 @@ import { Yg } from "../Constants.js";
 import type { Root } from "./RootElement.js";
 import type { Action, KeyMap } from "term-keymap";
 import type { DOMRect, YogaNode, Point, StyleHandler, TagName } from "../Types.js";
-import type { Shadow, Style } from "./style/Style.js";
+import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import type { Canvas, Rect } from "../compositor/Canvas.js";
 import {
@@ -13,13 +13,14 @@ import {
 import { Render, RequestInput } from "./util/decorators.js";
 import { FocusNode } from "./shared/FocusNode.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
-import { createVirtualStyleProxy } from "./style/StyleProxy.js";
-import { objectEntries, objectKeys } from "../Util.js";
+import { objectEntries } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
 import { SideEffects, type PropEffectHandler } from "./shared/SideEffects.js";
 import { MetaData } from "./shared/MetaData.js";
 import { DomEvents } from "./shared/DomEvents.js";
 import type { Event, EventHandler } from "../Types.js";
+import { ShadowStyleProxy } from "./style/v2/ShadowStyleProxy.js";
+import { VirtualStyleProxy } from "./style/v2/VirtualStyleProxy.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -57,15 +58,13 @@ export abstract class DomElement<
     /** @internal */
     public readonly _props: Map<string, unknown>;
     /** @internal */
-    public readonly _virStyle!: Schema["Style"];
+    public readonly _virtual!: VirtualStyleProxy;
     /** @internal */
-    public readonly _shadowStyle!: Shadow<Style.All>;
+    public readonly _shadow!: ShadowStyleProxy;
     /** @internal */
     public readonly _scrollOffset: Point;
     /** @internal */
     public _canvas: Canvas | null;
-    /** @internal */
-    public _styleHandler: StyleHandler<Schema["Style"]> | null;
     /** @internal */
     public _afterLayoutHandlers: Set<() => boolean>;
     /** @internal */
@@ -95,10 +94,8 @@ export abstract class DomElement<
         // Mutable flags
         this._lastOffsetChangeWasFocus = false;
 
-        const proxy = createVirtualStyleProxy(this, this._metadata);
-        this._virStyle = proxy.virtualStyle;
-        this._shadowStyle = proxy.shadowStyle;
-        this._styleHandler = null;
+        this._shadow = new ShadowStyleProxy(this);
+        this._virtual = new VirtualStyleProxy(this);
 
         this.applyDefaultStyles();
         this.applyDefaultProps();
@@ -127,33 +124,11 @@ export abstract class DomElement<
     }
 
     set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
-        if (typeof stylesheet === "function") {
-            this._styleHandler = stylesheet;
-        } else {
-            this._styleHandler = null;
-        }
-
-        let styles = stylesheet;
-        if (this._styleHandler) {
-            const status = this.getFocusStatus();
-            styles = this._styleHandler(status);
-        }
-
-        const withDefault = {
-            ...DomElement.DefaultStyle,
-            ...this.defaultStyles,
-            ...styles,
-        } as Schema["Style"];
-
-        const keys = [...objectKeys(withDefault), ...objectKeys(this.style)];
-
-        for (const key of keys) {
-            this.style[key] = withDefault[key];
-        }
+        this._virtual.setStyle(stylesheet);
     }
 
     get style(): Schema["Style"] {
-        return this._virStyle;
+        return this._virtual as Schema["Style"];
     }
 
     // ***todo***

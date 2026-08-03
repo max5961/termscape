@@ -14,10 +14,10 @@ export class ShadowStyleProxy {
     protected node: YogaNode;
     protected host: DomElement;
 
-    constructor(node: YogaNode, host: DomElement) {
+    constructor(host: DomElement) {
         this.values = {};
-        this.node = node;
         this.host = host;
+        this.node = host._node;
     }
 
     protected scheduleRender(opts?: WriteOpts) {
