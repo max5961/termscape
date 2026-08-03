@@ -1,9 +1,9 @@
 import type { Style } from "../Style.js";
 import type { ShadowStyleProxy } from "./ShadowStyleProxy.js";
-import { decodeShorthand } from "../../util/decodeShorthand.js";
 import type { YogaNode } from "../../../Types.js";
 import { Sanitizers } from "./Sanitizers.js";
 import { DomElement } from "../../DomElement.js";
+import type { WriteOpts } from "../../../Types.js";
 
 type Vir = Style.All;
 
@@ -38,8 +38,15 @@ export class VirtualStyleProxy {
      * nullish coalescing operator because (in the future) styles set to null
      * could have different implications than those set to undefined
      * */
-    private _setShadowIfVirtualUndef(key: keyof ShadowStyleProxy, nextValue: any) {
+    private _setShadowIfVirtualUndef(
+        key: keyof ShadowStyleProxy,
+        nextValue: any,
+        overrideKey?: keyof ShadowStyleProxy,
+    ) {
         if (this.__values[key] === undefined) {
+            if (overrideKey && this.__values[overrideKey] !== undefined) return;
+
+            // @ts-expect-error `key` will not be a read only property in shadow
             this.__shadow[key] = nextValue;
         }
     }
@@ -49,6 +56,7 @@ export class VirtualStyleProxy {
      * */
     private _setBoth(key: keyof ShadowStyleProxy, nextValue: any) {
         this.__values[key] = nextValue;
+        // @ts-expect-error `key` will not be a read only property in shadow
         this.__shadow[key] = nextValue;
     }
 
@@ -87,7 +95,7 @@ export class VirtualStyleProxy {
     }
     set height(v: Vir["height"]) {
         this.__values["height"] = v;
-        this.__shadow["height"] = Sanitizers.height(v, this.getStdout());
+        this.__shadow.height = Sanitizers.height(v, this.getStdout());
     }
 
     get width(): Vir["width"] {
@@ -95,7 +103,7 @@ export class VirtualStyleProxy {
     }
     set width(v: Vir["width"]) {
         this.__values["width"] = v;
-        this.__shadow["width"] = Sanitizers.width(v, this.getStdout());
+        this.__shadow.width = Sanitizers.width(v, this.getStdout());
     }
 
     get minHeight(): Vir["minHeight"] {
@@ -103,7 +111,7 @@ export class VirtualStyleProxy {
     }
     set minHeight(v: Vir["minHeight"]) {
         this.__values["minHeight"] = v;
-        this.__shadow["minHeight"] = Sanitizers.minHeight(v, this.getStdout());
+        this.__shadow.minHeight = Sanitizers.minHeight(v, this.getStdout());
     }
 
     get minWidth(): Vir["minWidth"] {
@@ -111,7 +119,7 @@ export class VirtualStyleProxy {
     }
     set minWidth(v: Vir["minWidth"]) {
         this.__values["minWidth"] = v;
-        this.__shadow["minWidth"] = Sanitizers.minHeight(v, this.getStdout());
+        this.__shadow.minWidth = Sanitizers.minWidth(v, this.getStdout());
     }
 
     get margin(): Vir["margin"] {
@@ -123,10 +131,10 @@ export class VirtualStyleProxy {
         this.__values["margin"] = v;
 
         const [top, right, bottom, left] = this.expandShorthand(v);
-        this._setShadowIfVirtualUndef("marginTop", top);
-        this._setShadowIfVirtualUndef("marginRight", right);
-        this._setShadowIfVirtualUndef("marginBottom", bottom);
-        this._setShadowIfVirtualUndef("marginLeft", left);
+        this._setShadowIfVirtualUndef("marginTop", top, "marginY");
+        this._setShadowIfVirtualUndef("marginRight", right, "marginX");
+        this._setShadowIfVirtualUndef("marginBottom", bottom, "marginY");
+        this._setShadowIfVirtualUndef("marginLeft", left, "marginX");
     }
 
     get marginX(): Vir["marginX"] {
@@ -193,10 +201,10 @@ export class VirtualStyleProxy {
         this.__values["padding"] = v;
 
         const [top, right, bottom, left] = this.expandShorthand(v);
-        this._setShadowIfVirtualUndef("paddingTop", top);
-        this._setShadowIfVirtualUndef("paddingRight", right);
-        this._setShadowIfVirtualUndef("paddingBottom", bottom);
-        this._setShadowIfVirtualUndef("paddingLeft", left);
+        this._setShadowIfVirtualUndef("paddingTop", top, "paddingY");
+        this._setShadowIfVirtualUndef("paddingRight", right, "paddingX");
+        this._setShadowIfVirtualUndef("paddingBottom", bottom, "paddingY");
+        this._setShadowIfVirtualUndef("paddingLeft", left, "paddingX");
     }
 
     get paddingX(): Vir["paddingX"] {
@@ -323,6 +331,10 @@ export class VirtualStyleProxy {
     set alignSelf(v: Vir["alignSelf"]) {
         if (this.__values["alignSelf"] === v) return;
         this.__values["alignSelf"] = v;
+        // If we are going to have "auto" as a possible value for alignSelf, then we
+        // should have "auto" for nearly all other properties that have a YogaNode.<property>Auto()
+        // method...I think the better idea would be to just remove "auto" as an option
+        // and assume that "auto" means undefined.
         this.__shadow["alignSelf"] = Sanitizers.alignSelf(v);
     }
 
@@ -367,7 +379,7 @@ export class VirtualStyleProxy {
     set zIndex(v: Vir["zIndex"]) {
         if (this.__values["zIndex"] === v) return;
         this.__values["zIndex"] = v;
-        this.__shadow["zIndex"] = Sanitizers.zIndex(v);
+        this.__shadow.zIndex = Sanitizers.zIndex(v);
     }
 
     get backgroundColor(): Vir["backgroundColor"] {
