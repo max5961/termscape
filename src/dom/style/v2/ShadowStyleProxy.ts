@@ -10,9 +10,9 @@ type Sha = Shadow<Style.All>;
  * Setters sanitize data, apply yoga styles, and request re-renders
  * */
 export class ShadowStyleProxy {
-    protected values: Record<string, any>;
-    protected node: YogaNode;
-    protected host: DomElement;
+    private values: Record<string, any>;
+    private node: YogaNode;
+    private host: DomElement;
 
     constructor(host: DomElement) {
         this.values = {};
@@ -20,7 +20,7 @@ export class ShadowStyleProxy {
         this.node = host._node;
     }
 
-    protected scheduleRender(opts?: WriteOpts) {
+    private scheduleRender(opts?: WriteOpts) {
         this.host._metadata.getRoot()?.scheduleRender(opts);
     }
 

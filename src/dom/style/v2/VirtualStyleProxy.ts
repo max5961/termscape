@@ -3,6 +3,7 @@ import type { ShadowStyleProxy } from "./ShadowStyleProxy.js";
 import type { StyleHandler } from "../../../Types.js";
 import { Sanitizers } from "./Sanitizers.js";
 import { DomElement } from "../../DomElement.js";
+import { StyleReconciler } from "./StyleReconciler.js";
 
 type Vir = Style.All;
 
@@ -11,12 +12,14 @@ export class VirtualStyleProxy {
     private __shadow: ShadowStyleProxy;
     private __host: DomElement;
     private __styleHandler: StyleHandler<Style.All> | null;
+    private __reconciler: StyleReconciler;
 
     constructor(host: DomElement) {
         this.__values = {};
         this.__host = host;
         this.__shadow = host._shadow;
         this.__styleHandler = null;
+        this.__reconciler = new StyleReconciler(this, {});
     }
 
     /** @internal */
@@ -36,6 +39,7 @@ export class VirtualStyleProxy {
     /** @internal */
     public _setStyle(stylesheet: Style.All | StyleHandler<Style.All>) {
         const styles = this.resolveStylesheet(stylesheet);
+        this.__reconciler.reconcile(styles);
     }
 
     /** @internal */
@@ -51,11 +55,13 @@ export class VirtualStyleProxy {
      * Sets shadow proxy if value has not been set in virtual. Cannot use
      * nullish coalescing operator because (in the future) styles set to null
      * could have different implications than those set to undefined
+     *
+     * Does not resolve the style
      * */
     private _setShadowIfVirtualUndef(
         key: keyof ShadowStyleProxy,
         nextValue: any,
-        overrideKey?: keyof ShadowStyleProxy,
+        overrideKey?: keyof VirtualStyleProxy,
     ) {
         if (this.__values[key] === undefined) {
             if (overrideKey && this.__values[overrideKey] !== undefined) return;
@@ -66,12 +72,29 @@ export class VirtualStyleProxy {
     }
 
     /**
-     * Sets shadow proxy and values in virtual
+     * Resolves the style and applies the resolved style to the virtual values
+     * and the shadow proxy
      * */
-    private _setBoth(key: keyof ShadowStyleProxy, nextValue: any) {
-        this.__values[key] = nextValue;
-        // @ts-expect-error `key` will not be a read only property in shadow
-        this.__shadow[key] = nextValue;
+    private _setResolvedStyle(key: keyof VirtualStyleProxy, nextValue: any) {
+        const resolved = this.__reconciler.resolveStyle(key, nextValue);
+        if (this.__values[key] === resolved) return;
+
+        this.__values[key] = resolved;
+        // @ts-expect-error key will not be a read only property in shadow
+        this.__shadow[key] = resolved;
+
+        return resolved;
+    }
+
+    /**
+     * Applies the resolved style to the virtual values
+     * */
+    private _setResolvedVirtual(key: keyof VirtualStyleProxy, nextValue: any) {
+        const resolved = this.__reconciler.resolveStyle(key, nextValue);
+        if (this.__values[key] !== resolved) {
+            this.__values[key] = resolved;
+        }
+        return resolved;
     }
 
     private expandShorthand<T>(v: T | T[]) {
@@ -108,43 +131,43 @@ export class VirtualStyleProxy {
         return this.__values["height"];
     }
     set height(v: Vir["height"]) {
-        this.__values["height"] = v;
-        this.__shadow.height = Sanitizers.height(v, this.getStdout());
+        const resolved = this._setResolvedVirtual("height", v);
+        this.__shadow.height = Sanitizers.height(resolved, this.getStdout());
     }
 
     get width(): Vir["width"] {
         return this.__values["width"];
     }
     set width(v: Vir["width"]) {
-        this.__values["width"] = v;
-        this.__shadow.width = Sanitizers.width(v, this.getStdout());
+        const resolved = this._setResolvedVirtual("width", v);
+        this.__shadow.width = Sanitizers.width(resolved, this.getStdout());
     }
 
     get minHeight(): Vir["minHeight"] {
         return this.__values["minHeight"];
     }
     set minHeight(v: Vir["minHeight"]) {
-        this.__values["minHeight"] = v;
-        this.__shadow.minHeight = Sanitizers.minHeight(v, this.getStdout());
+        const resolved = this._setResolvedVirtual("minHeight", v);
+        this.__shadow.minHeight = Sanitizers.minHeight(resolved, this.getStdout());
     }
 
     get minWidth(): Vir["minWidth"] {
         return this.__values["minWidth"];
     }
     set minWidth(v: Vir["minWidth"]) {
-        this.__values["minWidth"] = v;
-        this.__shadow.minWidth = Sanitizers.minWidth(v, this.getStdout());
+        const resolved = this._setResolvedVirtual("minWidth", v);
+        this.__shadow.minWidth = Sanitizers.minWidth(resolved, this.getStdout());
     }
 
     get margin(): Vir["margin"] {
         return this.__values["margin"];
     }
     set margin(v: Vir["margin"]) {
-        if (this.shorthandIsEqual(this.__values["margin"], v)) return;
+        const resolved = this.__reconciler.resolveStyle("margin", v);
+        if (this.shorthandIsEqual(this.__values["margin"], resolved)) return;
 
-        this.__values["margin"] = v;
-
-        const [top, right, bottom, left] = this.expandShorthand(v);
+        this.__values["margin"] = resolved;
+        const [top, right, bottom, left] = this.expandShorthand(resolved);
         this._setShadowIfVirtualUndef("marginTop", top, "marginY");
         this._setShadowIfVirtualUndef("marginRight", right, "marginX");
         this._setShadowIfVirtualUndef("marginBottom", bottom, "marginY");
@@ -155,65 +178,62 @@ export class VirtualStyleProxy {
         return this.__values["marginX"];
     }
     set marginX(v: Vir["marginX"]) {
-        if (this.__values["marginX"] === v) return;
-        this.__values["marginX"] = v;
+        const resolved = this.__reconciler.resolveStyle("marginX", v);
+        if (resolved === this.__values["marginX"]) return;
 
-        this._setShadowIfVirtualUndef("marginLeft", v);
-        this._setShadowIfVirtualUndef("marginRight", v);
+        this.__values["marginX"] = resolved;
+        this._setShadowIfVirtualUndef("marginLeft", resolved);
+        this._setShadowIfVirtualUndef("marginRight", resolved);
     }
 
     get marginY(): Vir["marginY"] {
         return this.__values["marginY"];
     }
     set marginY(v: Vir["marginY"]) {
-        if (this.__values["marginY"] === v) return;
-        this.__values["marginY"] = v;
+        const resolved = this.__reconciler.resolveStyle("marginY", v);
+        if (this.__values["marginY"] === resolved) return;
 
-        this._setShadowIfVirtualUndef("marginTop", v);
-        this._setShadowIfVirtualUndef("marginBottom", v);
+        this.__values["marginY"] = resolved;
+        this._setShadowIfVirtualUndef("marginTop", resolved);
+        this._setShadowIfVirtualUndef("marginBottom", resolved);
     }
 
     get marginTop(): Vir["marginTop"] {
         return this.__values["marginTop"];
     }
     set marginTop(v: Vir["marginTop"]) {
-        if (this.__values["marginTop"] === v) return;
-
-        this._setBoth("marginTop", v);
+        this._setResolvedStyle("marginTop", v);
     }
 
     get marginBottom(): Vir["marginBottom"] {
         return this.__values["marginBottom"];
     }
     set marginBottom(v: Vir["marginBottom"]) {
-        if (this.__values["marginBottom"] === v) return;
-        this._setBoth("marginBottom", v);
+        this._setResolvedStyle("marginBottom", v);
     }
 
     get marginLeft(): Vir["marginLeft"] {
         return this.__values["marginLeft"];
     }
     set marginLeft(v: Vir["marginLeft"]) {
-        if (this.__values["marginLeft"] === v) return;
-        this._setBoth("marginLeft", v);
+        this._setResolvedStyle("marginLeft", v);
     }
 
     get marginRight(): Vir["marginRight"] {
         return this.__values["marginRight"];
     }
     set marginRight(v: Vir["marginRight"]) {
-        if (this.__values["marginRight"] === v) return;
-        this._setBoth("marginRight", v);
+        this._setResolvedStyle("marginRight", v);
     }
 
     get padding(): Vir["padding"] {
         return this.__values["padding"];
     }
     set padding(v: Vir["padding"]) {
-        if (this.shorthandIsEqual(this.__values["padding"], v)) return;
+        const resolved = this.resolveStyle("padding", v);
+        if (this.shorthandIsEqual(this.__values["padding"], resolved)) return;
 
-        this.__values["padding"] = v;
-
+        this.__values["padding"] = resolved;
         const [top, right, bottom, left] = this.expandShorthand(v);
         this._setShadowIfVirtualUndef("paddingTop", top, "paddingY");
         this._setShadowIfVirtualUndef("paddingRight", right, "paddingX");
@@ -225,11 +245,9 @@ export class VirtualStyleProxy {
         return this.__values["paddingX"];
     }
     set paddingX(v: Vir["paddingX"]) {
-        if (this.__values["paddingX"] === v) return;
-        this.__values["paddingX"] = v;
-
-        this._setShadowIfVirtualUndef("paddingLeft", v);
-        this._setShadowIfVirtualUndef("paddingRight", v);
+        const resolved = this._setResolvedVirtual("paddingX", v);
+        this._setShadowIfVirtualUndef("paddingLeft", resolved);
+        this._setShadowIfVirtualUndef("paddingRight", resolved);
     }
 
     get paddingY(): Vir["paddingY"] {
@@ -248,7 +266,8 @@ export class VirtualStyleProxy {
     }
     set paddingTop(v: Vir["paddingTop"]) {
         if (this.__values["paddingTop"] === v) return;
-        this._setBoth("paddingTop", v);
+
+        this._setResolvedStyle("paddingTop", v);
     }
 
     get paddingBottom(): Vir["paddingBottom"] {
@@ -256,7 +275,8 @@ export class VirtualStyleProxy {
     }
     set paddingBottom(v: Vir["paddingBottom"]) {
         if (this.__values["paddingBottom"] === v) return;
-        this._setBoth("paddingBottom", v);
+
+        this._setResolvedStyle("paddingBottom", v);
     }
 
     get paddingLeft(): Vir["paddingLeft"] {
@@ -264,7 +284,8 @@ export class VirtualStyleProxy {
     }
     set paddingLeft(v: Vir["paddingLeft"]) {
         if (this.__values["paddingLeft"] === v) return;
-        this._setBoth("paddingLeft", v);
+
+        this._setResolvedStyle("paddingLeft", v);
     }
 
     get paddingRight(): Vir["paddingRight"] {
@@ -272,7 +293,8 @@ export class VirtualStyleProxy {
     }
     set paddingRight(v: Vir["paddingRight"]) {
         if (this.__values["paddingRight"] === v) return;
-        this._setBoth("paddingRight", v);
+
+        this._setResolvedStyle("paddingRight", v);
     }
 
     get position(): Vir["position"] {
@@ -280,7 +302,8 @@ export class VirtualStyleProxy {
     }
     set position(v: Vir["position"]) {
         if (this.__values["position"] === v) return;
-        this._setBoth("position", v);
+
+        this._setResolvedStyle("position", v);
     }
 
     get display(): Vir["display"] {
@@ -288,7 +311,8 @@ export class VirtualStyleProxy {
     }
     set display(v: Vir["display"]) {
         if (this.__values["display"] === v) return;
-        this._setBoth("display", v);
+
+        this._setResolvedStyle("display", v);
     }
 
     get flexGrow(): Vir["flexGrow"] {
@@ -296,15 +320,18 @@ export class VirtualStyleProxy {
     }
     set flexGrow(v: Vir["flexGrow"]) {
         if (this.__values["flexGrow"] === v) return;
-        this._setBoth("flexGrow", v);
+
+        this._setResolvedStyle("flexGrow", v);
     }
 
     get flexShrink(): Vir["flexShrink"] {
         return this.__values["flexShrink"];
     }
     set flexShrink(v: Vir["flexShrink"]) {
-        if (this.__values["flexShrink"] === v) return;
-        this._setBoth("flexShrink", v);
+        // flexShrink should always be recalculated
+        // if (this.__values["flexShrink"] === v) return;
+
+        this._setResolvedStyle("flexShrink", v);
     }
 
     get flexDirection(): Vir["flexDirection"] {
@@ -312,7 +339,7 @@ export class VirtualStyleProxy {
     }
     set flexDirection(v: Vir["flexDirection"]) {
         if (this.__values["flexDirection"] === v) return;
-        this._setBoth("flexDirection", v);
+        this._setResolvedStyle("flexDirection", v);
     }
 
     get flexBasis(): Vir["flexBasis"] {
@@ -320,7 +347,7 @@ export class VirtualStyleProxy {
     }
     set flexBasis(v: Vir["flexBasis"]) {
         if (this.__values["flexBasis"] === v) return;
-        this._setBoth("flexBasis", v);
+        this._setResolvedStyle("flexBasis", v);
     }
 
     get flexWrap(): Vir["flexWrap"] {
@@ -328,7 +355,7 @@ export class VirtualStyleProxy {
     }
     set flexWrap(v: Vir["flexWrap"]) {
         if (this.__values["flexWrap"] === v) return;
-        this._setBoth("flexWrap", v);
+        this._setResolvedStyle("flexWrap", v);
     }
 
     get alignItems(): Vir["alignItems"] {
@@ -336,7 +363,7 @@ export class VirtualStyleProxy {
     }
     set alignItems(v: Vir["alignItems"]) {
         if (this.__values["alignItems"] === v) return;
-        this._setBoth("alignItems", v);
+        this._setResolvedStyle("alignItems", v);
     }
 
     get alignSelf(): Vir["alignSelf"] {
@@ -357,7 +384,7 @@ export class VirtualStyleProxy {
     }
     set justifyContent(v: Vir["justifyContent"]) {
         if (this.__values["justifyContent"] === v) return;
-        this._setBoth("justifyContent", v);
+        this._setResolvedStyle("justifyContent", v);
     }
 
     get gap(): Vir["gap"] {
@@ -376,7 +403,7 @@ export class VirtualStyleProxy {
     }
     set columnGap(v: Vir["columnGap"]) {
         if (this.__values["columnGap"] === v) return;
-        this._setBoth("columnGap", v);
+        this._setResolvedStyle("columnGap", v);
     }
 
     get rowGap(): Vir["rowGap"] {
@@ -384,7 +411,7 @@ export class VirtualStyleProxy {
     }
     set rowGap(v: Vir["rowGap"]) {
         if (this.__values["rowGap"] === v) return;
-        this._setBoth("rowGap", v);
+        this._setResolvedStyle("rowGap", v);
     }
 
     get zIndex(): Vir["zIndex"] {
@@ -401,7 +428,7 @@ export class VirtualStyleProxy {
     }
     set backgroundColor(v: Vir["backgroundColor"]) {
         if (this.__values["backgroundColor"] === v) return;
-        this._setBoth("backgroundColor", v);
+        this._setResolvedStyle("backgroundColor", v);
     }
 
     get backgroundStyle(): Vir["backgroundStyle"] {
@@ -409,7 +436,7 @@ export class VirtualStyleProxy {
     }
     set backgroundStyle(v: Vir["backgroundStyle"]) {
         if (this.__values["backgroundStyle"] === v) return;
-        this._setBoth("backgroundStyle", v);
+        this._setResolvedStyle("backgroundStyle", v);
     }
 
     get backgroundStyleColor(): Vir["backgroundStyleColor"] {
@@ -417,7 +444,7 @@ export class VirtualStyleProxy {
     }
     set backgroundStyleColor(v: Vir["backgroundStyleColor"]) {
         if (this.__values["backgroundStyleColor"] === v) return;
-        this._setBoth("backgroundStyleColor", v);
+        this._setResolvedStyle("backgroundStyleColor", v);
     }
 
     get overflow(): Vir["overflow"] {
@@ -436,7 +463,7 @@ export class VirtualStyleProxy {
     }
     set overflowX(v: Vir["overflowX"]) {
         if (this.__values["overflowX"] === v) return;
-        this._setBoth("overflowX", v);
+        this._setResolvedStyle("overflowX", v);
     }
 
     get overflowY(): Vir["overflowY"] {
@@ -444,7 +471,7 @@ export class VirtualStyleProxy {
     }
     set overflowY(v: Vir["overflowY"]) {
         if (this.__values["overflowY"] === v) return;
-        this._setBoth("overflowY", v);
+        this._setResolvedStyle("overflowY", v);
     }
 
     get borderStyle(): Vir["borderStyle"] {
@@ -465,7 +492,7 @@ export class VirtualStyleProxy {
     }
     set borderTop(v: Vir["borderTop"]) {
         if (this.__values["borderTop"] === v) return;
-        this._setBoth("borderTop", v);
+        this._setResolvedStyle("borderTop", v);
     }
 
     get borderBottom(): Vir["borderBottom"] {
@@ -473,7 +500,7 @@ export class VirtualStyleProxy {
     }
     set borderBottom(v: Vir["borderBottom"]) {
         if (this.__values["borderBottom"] === v) return;
-        this._setBoth("borderBottom", v);
+        this._setResolvedStyle("borderBottom", v);
     }
 
     get borderLeft(): Vir["borderLeft"] {
@@ -481,7 +508,7 @@ export class VirtualStyleProxy {
     }
     set borderLeft(v: Vir["borderLeft"]) {
         if (this.__values["borderLeft"] === v) return;
-        this._setBoth("borderLeft", v);
+        this._setResolvedStyle("borderLeft", v);
     }
 
     get borderRight(): Vir["borderRight"] {
@@ -489,7 +516,7 @@ export class VirtualStyleProxy {
     }
     set borderRight(v: Vir["borderRight"]) {
         if (this.__values["borderRight"] === v) return;
-        this._setBoth("borderRight", v);
+        this._setResolvedStyle("borderRight", v);
     }
 
     get borderColor(): Vir["borderColor"] {
@@ -510,7 +537,7 @@ export class VirtualStyleProxy {
     }
     set borderTopColor(v: Vir["borderTopColor"]) {
         if (this.__values["borderTopColor"] === v) return;
-        this._setBoth("borderTopColor", v);
+        this._setResolvedStyle("borderTopColor", v);
     }
 
     get borderBottomColor(): Vir["borderBottomColor"] {
@@ -518,7 +545,7 @@ export class VirtualStyleProxy {
     }
     set borderBottomColor(v: Vir["borderBottomColor"]) {
         if (this.__values["borderBottomColor"] === v) return;
-        this._setBoth("borderBottomColor", v);
+        this._setResolvedStyle("borderBottomColor", v);
     }
 
     get borderLeftColor(): Vir["borderLeftColor"] {
@@ -526,7 +553,7 @@ export class VirtualStyleProxy {
     }
     set borderLeftColor(v: Vir["borderLeftColor"]) {
         if (this.__values["borderLeftColor"] === v) return;
-        this._setBoth("borderLeftColor", v);
+        this._setResolvedStyle("borderLeftColor", v);
     }
 
     get borderRightColor(): Vir["borderRightColor"] {
@@ -534,7 +561,7 @@ export class VirtualStyleProxy {
     }
     set borderRightColor(v: Vir["borderRightColor"]) {
         if (this.__values["borderRightColor"] === v) return;
-        this._setBoth("borderRightColor", v);
+        this._setResolvedStyle("borderRightColor", v);
     }
 
     get borderDimColor(): Vir["borderDimColor"] {
@@ -555,7 +582,7 @@ export class VirtualStyleProxy {
     }
     set borderTopDimColor(v: Vir["borderTopDimColor"]) {
         if (this.__values["borderTopDimColor"] === v) return;
-        this._setBoth("borderTopDimColor", v);
+        this._setResolvedStyle("borderTopDimColor", v);
     }
 
     get borderBottomDimColor(): Vir["borderBottomDimColor"] {
@@ -563,7 +590,7 @@ export class VirtualStyleProxy {
     }
     set borderBottomDimColor(v: Vir["borderBottomDimColor"]) {
         if (this.__values["borderBottomDimColor"] === v) return;
-        this._setBoth("borderBottomDimColor", v);
+        this._setResolvedStyle("borderBottomDimColor", v);
     }
 
     get borderLeftDimColor(): Vir["borderLeftDimColor"] {
@@ -571,7 +598,7 @@ export class VirtualStyleProxy {
     }
     set borderLeftDimColor(v: Vir["borderLeftDimColor"]) {
         if (this.__values["borderLeftDimColor"] === v) return;
-        this._setBoth("borderLeftDimColor", v);
+        this._setResolvedStyle("borderLeftDimColor", v);
     }
 
     get borderRightDimColor(): Vir["borderRightDimColor"] {
@@ -579,7 +606,7 @@ export class VirtualStyleProxy {
     }
     set borderRightDimColor(v: Vir["borderRightDimColor"]) {
         if (this.__values["borderRightDimColor"] === v) return;
-        this._setBoth("borderRightDimColor", v);
+        this._setResolvedStyle("borderRightDimColor", v);
     }
 
     get _scrollbarPaddingLeft(): Vir["_scrollbarPaddingLeft"] {
@@ -587,7 +614,7 @@ export class VirtualStyleProxy {
     }
     set _scrollbarPaddingLeft(v: Vir["_scrollbarPaddingLeft"]) {
         if (this.__values["_scrollbarPaddingLeft"] === v) return;
-        this._setBoth("_scrollbarBorderLeft", v);
+        this._setResolvedStyle("_scrollbarBorderLeft", v);
     }
 
     get _scrollbarPaddingRight(): Vir["_scrollbarPaddingRight"] {
@@ -595,7 +622,7 @@ export class VirtualStyleProxy {
     }
     set _scrollbarPaddingRight(v: Vir["_scrollbarPaddingRight"]) {
         if (this.__values["_scrollbarPaddingRight"] === v) return;
-        this._setBoth("_scrollbarPaddingRight", v);
+        this._setResolvedStyle("_scrollbarPaddingRight", v);
     }
 
     get _scrollbarPaddingTop(): Vir["_scrollbarPaddingTop"] {
@@ -603,7 +630,7 @@ export class VirtualStyleProxy {
     }
     set _scrollbarPaddingTop(v: Vir["_scrollbarPaddingTop"]) {
         if (this.__values["_scrollbarPaddingTop"] === v) return;
-        this._setBoth("_scrollbarBorderTop", v);
+        this._setResolvedStyle("_scrollbarBorderTop", v);
     }
 
     get _scrollbarPaddingBottom(): Vir["_scrollbarPaddingBottom"] {
@@ -611,7 +638,7 @@ export class VirtualStyleProxy {
     }
     set _scrollbarPaddingBottom(v: Vir["_scrollbarPaddingBottom"]) {
         if (this.__values["_scrollbarPaddingBottom"] === v) return;
-        this._setBoth("_scrollbarPaddingBottom", v);
+        this._setResolvedStyle("_scrollbarPaddingBottom", v);
     }
 
     get _scrollbarBorderLeft(): Vir["_scrollbarBorderLeft"] {
@@ -619,7 +646,7 @@ export class VirtualStyleProxy {
     }
     set _scrollbarBorderLeft(v: Vir["_scrollbarBorderLeft"]) {
         if (this.__values["_scrollbarBorderLeft"] === v) return;
-        this._setBoth("_scrollbarBorderLeft", v);
+        this._setResolvedStyle("_scrollbarBorderLeft", v);
     }
 
     get _scrollbarBorderRight(): Vir["_scrollbarBorderRight"] {
@@ -627,7 +654,7 @@ export class VirtualStyleProxy {
     }
     set _scrollbarBorderRight(v: Vir["_scrollbarBorderRight"]) {
         if (this.__values["_scrollbarBorderRight"] === v) return;
-        this._setBoth("_scrollbarBorderRight", v);
+        this._setResolvedStyle("_scrollbarBorderRight", v);
     }
 
     get _scrollbarBorderTop(): Vir["_scrollbarBorderTop"] {
@@ -635,7 +662,7 @@ export class VirtualStyleProxy {
     }
     set _scrollbarBorderTop(v: Vir["_scrollbarBorderTop"]) {
         if (this.__values["_scrollbarBorderTop"] === v) return;
-        this._setBoth("_scrollbarBorderTop", v);
+        this._setResolvedStyle("_scrollbarBorderTop", v);
     }
 
     get _scrollbarBorderBottom(): Vir["_scrollbarBorderBottom"] {
@@ -643,7 +670,7 @@ export class VirtualStyleProxy {
     }
     set _scrollbarBorderBottom(v: Vir["_scrollbarBorderBottom"]) {
         if (this.__values["_scrollbarBorderBottom"] === v) return;
-        this._setBoth("_scrollbarBorderBottom", v);
+        this._setResolvedStyle("_scrollbarBorderBottom", v);
     }
 
     // ***** TEXT *****
@@ -653,7 +680,7 @@ export class VirtualStyleProxy {
     }
     set color(v: Vir["color"]) {
         if (this.__values["color"] === v) return;
-        this._setBoth("color", v);
+        this._setResolvedStyle("color", v);
     }
 
     // backgroundColor overlaps that of regular styles
@@ -663,7 +690,7 @@ export class VirtualStyleProxy {
     }
     set dimColor(v: Vir["dimColor"]) {
         if (this.__values["dimColor"] === v) return;
-        this._setBoth("dimColor", v);
+        this._setResolvedStyle("dimColor", v);
     }
 
     get bold(): Vir["bold"] {
@@ -671,7 +698,7 @@ export class VirtualStyleProxy {
     }
     set bold(v: Vir["bold"]) {
         if (this.__values["bold"] === v) return;
-        this._setBoth("bold", v);
+        this._setResolvedStyle("bold", v);
     }
 
     get italic(): Vir["italic"] {
@@ -679,7 +706,7 @@ export class VirtualStyleProxy {
     }
     set italic(v: Vir["italic"]) {
         if (this.__values["italic"] === v) return;
-        this._setBoth("italic", v);
+        this._setResolvedStyle("italic", v);
     }
 
     get underline(): Vir["underline"] {
@@ -687,7 +714,7 @@ export class VirtualStyleProxy {
     }
     set underline(v: Vir["underline"]) {
         if (this.__values["underline"] === v) return;
-        this._setBoth("underline", v);
+        this._setResolvedStyle("underline", v);
     }
 
     get strikethrough(): Vir["strikethrough"] {
@@ -695,7 +722,7 @@ export class VirtualStyleProxy {
     }
     set strikethrough(v: Vir["strikethrough"]) {
         if (this.__values["strikethrough"] === v) return;
-        this._setBoth("strikethrough", v);
+        this._setResolvedStyle("strikethrough", v);
     }
 
     get wrap(): Vir["wrap"] {
@@ -703,7 +730,7 @@ export class VirtualStyleProxy {
     }
     set wrap(v: Vir["wrap"]) {
         if (this.__values["wrap"] === v) return;
-        this._setBoth("wrap", v);
+        this._setResolvedStyle("wrap", v);
     }
 
     get align(): Vir["align"] {
@@ -711,7 +738,7 @@ export class VirtualStyleProxy {
     }
     set align(v: Vir["align"]) {
         if (this.__values["align"] === v) return;
-        this._setBoth("align", v);
+        this._setResolvedStyle("align", v);
     }
 
     get imagePositive(): Vir["imagePositive"] {
@@ -719,7 +746,7 @@ export class VirtualStyleProxy {
     }
     set imagePositive(v: Vir["imagePositive"]) {
         if (this.__values["imagePositive"] === v) return;
-        this._setBoth("imagePositive", v);
+        this._setResolvedStyle("imagePositive", v);
     }
 
     get imageNegative(): Vir["imageNegative"] {
@@ -727,7 +754,7 @@ export class VirtualStyleProxy {
     }
     set imageNegative(v: Vir["imageNegative"]) {
         if (this.__values["imageNegative"] === v) return;
-        this._setBoth("imageNegative", v);
+        this._setResolvedStyle("imageNegative", v);
     }
 
     get fontDefault(): Vir["fontDefault"] {
@@ -735,7 +762,7 @@ export class VirtualStyleProxy {
     }
     set fontDefault(v: Vir["fontDefault"]) {
         if (this.__values["fontDefault"] === v) return;
-        this._setBoth("fontDefault", v);
+        this._setResolvedStyle("fontDefault", v);
     }
 
     get font1(): Vir["font1"] {
@@ -743,7 +770,7 @@ export class VirtualStyleProxy {
     }
     set font1(v: Vir["font1"]) {
         if (this.__values["font1"] === v) return;
-        this._setBoth("font1", v);
+        this._setResolvedStyle("font1", v);
     }
 
     get font2(): Vir["font2"] {
@@ -751,7 +778,7 @@ export class VirtualStyleProxy {
     }
     set font2(v: Vir["font2"]) {
         if (this.__values["font2"] === v) return;
-        this._setBoth("font3", v);
+        this._setResolvedStyle("font3", v);
     }
 
     get font3(): Vir["font3"] {
@@ -759,7 +786,7 @@ export class VirtualStyleProxy {
     }
     set font3(v: Vir["font3"]) {
         if (this.__values["font3"] === v) return;
-        this._setBoth("font3", v);
+        this._setResolvedStyle("font3", v);
     }
 
     get font4(): Vir["font4"] {
@@ -767,7 +794,7 @@ export class VirtualStyleProxy {
     }
     set font4(v: Vir["font4"]) {
         if (this.__values["font4"] === v) return;
-        this._setBoth("font4", v);
+        this._setResolvedStyle("font4", v);
     }
 
     get font5(): Vir["font5"] {
@@ -775,7 +802,7 @@ export class VirtualStyleProxy {
     }
     set font5(v: Vir["font5"]) {
         if (this.__values["font5"] === v) return;
-        this._setBoth("font5", v);
+        this._setResolvedStyle("font5", v);
     }
 
     get font6(): Vir["font6"] {
@@ -783,6 +810,6 @@ export class VirtualStyleProxy {
     }
     set font6(v: Vir["font6"]) {
         if (this.__values["font6"] === v) return;
-        this._setBoth("font6", v);
+        this._setResolvedStyle("font6", v);
     }
 }
