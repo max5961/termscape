@@ -289,7 +289,6 @@ export class ShadowStyleProxy {
                 v = 0;
             }
         }
-
         if (this.values["flexShrink"] === v) return;
 
         this.values["flexShrink"] = v;

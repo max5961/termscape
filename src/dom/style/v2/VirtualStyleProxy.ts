@@ -4,6 +4,7 @@ import type { StyleHandler } from "../../../Types.js";
 import { Sanitizers } from "./Sanitizers.js";
 import { DomElement } from "../../DomElement.js";
 import { StyleReconciler } from "./StyleReconciler.js";
+import { logger } from "../../../shared/Logger.js";
 
 type Vir = Style.All;
 
@@ -135,7 +136,11 @@ export class VirtualStyleProxy {
     }
     set height(v: Vir["height"]) {
         const resolved = this._setResolvedVirtual("height", v);
-        this.__shadow.height = Sanitizers.height(resolved, this._getStdout());
+        this.__shadow.height = Sanitizers.height(
+            resolved,
+            this._getStdout(),
+            this.__host,
+        );
     }
 
     get width(): Vir["width"] {
@@ -143,7 +148,7 @@ export class VirtualStyleProxy {
     }
     set width(v: Vir["width"]) {
         const resolved = this._setResolvedVirtual("width", v);
-        this.__shadow.width = Sanitizers.width(resolved, this._getStdout());
+        this.__shadow.width = Sanitizers.width(resolved, this._getStdout(), this.__host);
     }
 
     get minHeight(): Vir["minHeight"] {
@@ -151,7 +156,11 @@ export class VirtualStyleProxy {
     }
     set minHeight(v: Vir["minHeight"]) {
         const resolved = this._setResolvedVirtual("minHeight", v);
-        this.__shadow.minHeight = Sanitizers.minHeight(resolved, this._getStdout());
+        this.__shadow.minHeight = Sanitizers.minHeight(
+            resolved,
+            this._getStdout(),
+            this.__host,
+        );
     }
 
     get minWidth(): Vir["minWidth"] {
@@ -159,7 +168,11 @@ export class VirtualStyleProxy {
     }
     set minWidth(v: Vir["minWidth"]) {
         const resolved = this._setResolvedVirtual("minWidth", v);
-        this.__shadow.minWidth = Sanitizers.minWidth(resolved, this._getStdout());
+        this.__shadow.minWidth = Sanitizers.minWidth(
+            resolved,
+            this._getStdout(),
+            this.__host,
+        );
     }
 
     get margin(): Vir["margin"] {
