@@ -1,3 +1,4 @@
+import { logger } from "../../shared/Logger.js";
 import type { Point } from "../../Types.js";
 import type { DomElement } from "../DomElement.js";
 
@@ -10,8 +11,13 @@ type ContentRange = {
 
 export class ScrollManager {
     private host: DomElement;
-    private scrollOffset: Point;
     private contentRange: ContentRange;
+
+    private _scrollOffset: Point;
+    public get scrollOffset(): Readonly<Point> {
+        return this._scrollOffset;
+    }
+
     private _lastOffsetChangeWasFocus: boolean;
     public get lastOffsetChangeWasFocus() {
         return this._lastOffsetChangeWasFocus;
@@ -19,7 +25,7 @@ export class ScrollManager {
 
     constructor(host: DomElement) {
         this.host = host;
-        this.scrollOffset = { x: 0, y: 0 };
+        this._scrollOffset = { x: 0, y: 0 };
         this.contentRange = {
             high: Infinity,
             low: -Infinity,
@@ -49,6 +55,11 @@ export class ScrollManager {
         this.applyScroll(-units, 0);
     }
 
+    // There **WAS** a triggerRender optional param here.  This was used during
+    // FocusManager code...but unsure why
+    /**
+     * Triggers a render *if* the requested scroll amount is greater than 0
+     * */
     private applyScroll(dx: number, dy: number) {
         const allowedUnits = this.requestScroll(dx, dy);
 
@@ -58,14 +69,25 @@ export class ScrollManager {
             } else if (dx) {
                 this.applyCornerOffset(allowedUnits, 0);
             }
+
+            this.host._metadata.getRoot()?.scheduleRender({ layoutChange: true });
         }
     }
 
+    /**
+     * Does **NOT** trigger a render
+     * */
     private applyCornerOffset(dx: number, dy: number) {
-        this.scrollOffset.x += dx;
-        this.scrollOffset.y += dy;
+        this._scrollOffset.x += dx;
+        this._scrollOffset.y += dy;
     }
 
+    // CHORE (possibly) - is it possible to make it so that we only need to remember
+    // that negative offsets scroll up/left only here?
+    /**
+     * A negative dy scrolls *down* by "pulling" content *up*.
+     * A negative dx scrolls *right* by "pulling" content *left*
+     * */
     private requestScroll(dx: number, dy: number) {
         if (!this.host._canvas) return 0;
 
@@ -80,8 +102,8 @@ export class ScrollManager {
         const contentWidth = contentRect.corner.x + contentRect.width;
 
         if (dy) {
-            const lowest = this.host._contentRange.low;
-            const highest = this.host._contentRange.high;
+            const lowest = this.contentRange.low;
+            const highest = this.contentRange.high;
 
             // Pulling content up - scrolling down
             if (dy < 0) {
@@ -96,8 +118,8 @@ export class ScrollManager {
         }
 
         if (dx) {
-            const mostRight = this.host._contentRange.right;
-            const mostLeft = this.host._contentRange.left;
+            const mostRight = this.contentRange.right;
+            const mostLeft = this.contentRange.left;
 
             // Pulling content left - scrolling right
             if (dx < 0) {
@@ -134,5 +156,87 @@ export class ScrollManager {
             this.contentRange.right,
             unclippedChild.corner.x + unclippedChild.width,
         );
+    }
+
+    public getScrollData(): { x: number; y: number } {
+        const rect = this.host.unclippedContentRect;
+        const result = { x: 0, y: 0 };
+        if (!rect) return result;
+
+        const lowest = this.contentRange.low;
+        const highest = this.contentRange.high;
+        const currentY = rect.corner.y - highest;
+        const possibleY = Math.abs(this.requestScroll(0, -Infinity));
+
+        if (highest >= rect.corner.y) {
+            result.y = 0;
+        } else if (lowest <= rect.corner.y + rect.height) {
+            result.y = 100;
+        } else {
+            result.y = Math.floor((currentY / (currentY + possibleY)) * 100);
+        }
+
+        const mostLeft = this.contentRange.left;
+        const mostRight = this.contentRange.right;
+        const currentX = rect.corner.x - mostLeft;
+        const possibleX = Math.abs(this.requestScroll(-Infinity, 0));
+
+        if (mostLeft >= rect.corner.x) {
+            result.x = 0;
+        } else if (mostRight <= rect.corner.x + rect.width) {
+            result.x = 100;
+        } else {
+            result.x = Math.floor((currentX / (currentX + possibleX)) * 100);
+        }
+
+        return result;
+    }
+
+    /**
+     * After resizes, corner offset might be unoptimized.
+     *
+     * @returns `true` if any adjustments were made
+     * */
+    public adjustScrollToFillContainer(): boolean {
+        const highest = this.contentRange.high;
+        const lowest = this.contentRange.low;
+        const leftest = this.contentRange.left;
+        const rightest = this.contentRange.right;
+
+        const rect = this.host.unclippedContentRect;
+        if (!rect) return false;
+
+        const lowestVis = rect.corner.y + rect.height;
+        const highestVis = rect.corner.y;
+        const leftestVis = rect.corner.x;
+        const rightestVis = rect.corner.x + rect.width;
+
+        const fitsHeight = lowest - highest <= rect.height;
+        const fitsWidth = rightest - leftest <= rect.width;
+
+        let dy = 0;
+        let dx = 0;
+
+        if (!fitsHeight) {
+            if (highest > highestVis) {
+                // need to scroll DOWN (-dy)
+                dy = highestVis - highest;
+            } else if (lowest < lowestVis) {
+                // need to scroll UP (+dy)
+                dy = lowestVis - lowest;
+            }
+        }
+        if (!fitsWidth) {
+            if (leftest > leftestVis) {
+                dx = leftestVis - leftest;
+            } else if (rightest < rightestVis) {
+                dx = rightestVis - rightest;
+            }
+        }
+
+        if (!dx && !dy) return false;
+
+        this.applyCornerOffset(dx, dy);
+        return true;
     }
 }

@@ -38,7 +38,7 @@ export class LayoutReconciler {
         if (elem._virtual.overflow === "scroll") {
             this.prepareLevel(level);
             this.getLevel(level).scrollManagers.push(() => {
-                return elem._adjustScrollToFillContainer();
+                return elem._scrollManager.adjustScrollToFillContainer();
             });
         }
 

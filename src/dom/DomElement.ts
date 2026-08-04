@@ -1,7 +1,7 @@
 import { Yg } from "../Constants.js";
 import type { Root } from "./RootElement.js";
 import type { Action, KeyMap } from "term-keymap";
-import type { DOMRect, YogaNode, Point, StyleHandler, TagName } from "../Types.js";
+import type { DOMRect, YogaNode, StyleHandler, TagName } from "../Types.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import type { Canvas, Rect } from "../compositor/Canvas.js";
@@ -20,6 +20,7 @@ import type { Event, EventHandler } from "../Types.js";
 import { ShadowStyleProxy } from "./style/ShadowStyleProxy.js";
 import { VirtualStyleProxy } from "./style/VirtualStyleProxy.js";
 import { PropsManager, type PropEffectHandler } from "./shared/PropsManager.js";
+import { ScrollManager } from "./shared/ScrollManager.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -32,8 +33,6 @@ export abstract class DomElement<
     protected readonly _identities: Set<symbol>;
     protected readonly _childSet: Set<DomElement>;
     public readonly _events: DomEvents;
-    /** @internal */
-    public _lastOffsetChangeWasFocus: boolean;
 
     /** @internal */
     public readonly _metadata: MetaData;
@@ -48,8 +47,6 @@ export abstract class DomElement<
     /** @internal */
     public readonly _shadow!: ShadowStyleProxy;
     /** @internal */
-    public readonly _scrollOffset: Point;
-    /** @internal */
     public _canvas: Canvas | null;
     /** @internal */
     public _afterLayoutHandlers: Set<() => boolean>;
@@ -57,6 +54,8 @@ export abstract class DomElement<
     public _contentRange: ReturnType<DomElement["_initContentRange"]>;
     /** @internal */
     public readonly _propsManager: PropsManager;
+    /** @internal */
+    public readonly _scrollManager: ScrollManager;
 
     public parentElement: null | DomElement;
 
@@ -66,20 +65,17 @@ export abstract class DomElement<
 
         this._node = Yg.Node.create();
         this._children = [];
-        this._scrollOffset = { x: 0, y: 0 };
         this._focusNode = new FocusNode(this);
         this._events = new DomEvents(this);
         this._metadata = new MetaData(this);
         this._childSet = new Set();
         this._propsManager = new PropsManager(this);
+        this._scrollManager = new ScrollManager(this);
         this._afterLayoutHandlers = new Set();
         this._canvas = null;
 
         this._contentRange = this._initContentRange();
         this.parentElement = null;
-
-        // Mutable flags
-        this._lastOffsetChangeWasFocus = false;
 
         this._shadow = new ShadowStyleProxy(this);
         this._virtual = new VirtualStyleProxy(this, defaultStyles);
@@ -715,238 +711,29 @@ export abstract class DomElement<
     // Scrolling
     // =========================================================================
 
+    /** @internal */
+    public get _lastOffsetChangeWasFocus() {
+        return this._scrollManager.lastOffsetChangeWasFocus;
+    }
+
     public scrollDown(units = 1) {
-        this._lastOffsetChangeWasFocus = false;
-        this.applyScroll(0, -units);
+        this._scrollManager.scrollDown(units);
     }
 
     public scrollUp(units = 1) {
-        this._lastOffsetChangeWasFocus = false;
-        this.applyScroll(0, units);
+        this._scrollManager.scrollUp(units);
     }
 
     public scrollLeft(units = 1) {
-        this._lastOffsetChangeWasFocus = false;
-        this.applyScroll(units, 0);
+        this._scrollManager.scrollLeft(units);
     }
 
     public scrollRight(units = 1) {
-        this._lastOffsetChangeWasFocus = false;
-        this.applyScroll(-units, 0);
+        this._scrollManager.scrollRight(units);
     }
 
-    // CHORE - should this code be in FocusManager, or streamlined in some other way
-
-    /** @internal */
-    public _scrollDownWithFocus(units: number, triggerRender: boolean) {
-        this._lastOffsetChangeWasFocus = true;
-        this.applyScroll(0, -units, triggerRender);
-    }
-
-    /** @internal */
-    public _scrollUpWithFocus(units: number, triggerRender: boolean) {
-        this._lastOffsetChangeWasFocus = true;
-        this.applyScroll(0, units, triggerRender);
-    }
-
-    /** @internal */
-    public _scrollLeftWithFocus(units: number, triggerRender: boolean) {
-        this._lastOffsetChangeWasFocus = true;
-        this.applyScroll(units, 0, triggerRender);
-    }
-
-    /** @internal */
-    public _scrollRightWithFocus(units: number, triggerRender: boolean) {
-        this._lastOffsetChangeWasFocus = true;
-        this.applyScroll(-units, 0, triggerRender);
-    }
-
-    // CHORE - triggerRender is difficult to follow/poorly named, but its for applying offsets
-    // during compositing I'm pretty sure.
-
-    private applyScroll(dx: number, dy: number, triggerRender = true) {
-        if (this.style.overflow !== "scroll") {
-            this._throwError(ErrorMessages.invalidOverflowStyleForScroll);
-        }
-
-        const allowedUnits = this.requestScroll(dx, dy);
-
-        if (allowedUnits) {
-            // scroll up/down
-            if (dy) {
-                return triggerRender
-                    ? this.applyCornerOffset(0, allowedUnits)
-                    : this._applyCornerOffsetWithoutRender(0, allowedUnits);
-            }
-            // scroll left/right
-            if (dx) {
-                return triggerRender
-                    ? this.applyCornerOffset(allowedUnits, 0)
-                    : this._applyCornerOffsetWithoutRender(allowedUnits, 0);
-            }
-        }
-    }
-
-    // CHORE (possibly) - is it possible to make it so that we only need to remember
-    // that negative offsets scroll up/left only here?
-
-    /**
-     * A negative dy scrolls *down* by "pulling" content *up*.
-     * A negative dx scrolls *right* by "pulling" content *left*
-     * */
-    private requestScroll(dx: number, dy: number): number {
-        if (!this._canvas) return 0;
-
-        // Corner offsets **MUST** be whole numbers.  When drawing to the Canvas,
-        // if the computed rects are floats, then nothing will be drawn since
-        // you can't index a point on a grid with a float.
-        dx = dx > 0 ? Math.floor(dx) : Math.ceil(dx);
-        dy = dy > 0 ? Math.floor(dy) : Math.ceil(dy);
-
-        const contentRect = this._canvas.unclippedContentRect;
-        const contentDepth = contentRect.corner.y + contentRect.height;
-        const contentWidth = contentRect.corner.x + contentRect.width;
-
-        if (dy) {
-            const lowest = this._contentRange.low;
-            const highest = this._contentRange.high;
-
-            // Pulling content up - scrolling down
-            if (dy < 0) {
-                if (contentDepth >= lowest) return 0;
-                return Math.max(dy, contentDepth - lowest);
-
-                // Pushing content down - scrolling up
-            } else {
-                if (contentRect.corner.y <= highest) return 0;
-                return Math.min(dy, contentRect.corner.y - highest);
-            }
-        }
-
-        if (dx) {
-            const mostRight = this._contentRange.right;
-            const mostLeft = this._contentRange.left;
-
-            // Pulling content left - scrolling right
-            if (dx < 0) {
-                if (contentWidth >= mostRight) return 0;
-                return Math.max(dx, contentWidth - mostRight);
-
-                // Pushing content right - scrolling left
-            } else {
-                if (contentRect.corner.x <= mostLeft) return 0;
-                return Math.min(dx, contentRect.corner.x - mostLeft);
-            }
-        }
-
-        return 0;
-    }
-
-    @Render({ layoutChange: true })
-    private applyCornerOffset(dx: number, dy: number) {
-        this._applyCornerOffsetWithoutRender(dx, dy);
-    }
-
-    // CHORE - this goes along with the triggerRender optional param.  This is poorly named
-
-    /**
-     * @internal
-     *
-     * Applies the corner offset without triggering a render change.  This is
-     * necessary during rendering itself and prevents the cascade of a new render.
-     * */
-    public _applyCornerOffsetWithoutRender(dx: number, dy: number) {
-        this._scrollOffset.x += dx;
-        this._scrollOffset.y += dy;
-    }
-
-    // CHORE - this may be repeating logic but probably not
-
-    /**
-     * @internal
-     *
-     * After resizes, corner offset might be unoptimized.
-     *
-     * @returns `true` if any adjustments were made
-     * */
-    public _adjustScrollToFillContainer(): boolean {
-        const highest = this._contentRange.high;
-        const lowest = this._contentRange.low;
-        const leftest = this._contentRange.left;
-        const rightest = this._contentRange.right;
-
-        const rect = this.unclippedContentRect;
-
-        if (rect) {
-            const lowestVis = rect.corner.y + rect.height;
-            const highestVis = rect.corner.y;
-            const leftestVis = rect.corner.x;
-            const rightestVis = rect.corner.x + rect.width;
-
-            const fitsHeight = lowest - highest <= rect.height;
-            const fitsWidth = rightest - leftest <= rect.width;
-
-            let dy = 0;
-            let dx = 0;
-
-            if (!fitsHeight) {
-                if (highest > highestVis) {
-                    // need to scroll DOWN (-dy)
-                    dy = highestVis - highest;
-                } else if (lowest < lowestVis) {
-                    // need to scroll UP (+dy)
-                    dy = lowestVis - lowest;
-                }
-            }
-            if (!fitsWidth) {
-                if (leftest > leftestVis) {
-                    dx = leftestVis - leftest;
-                } else if (rightest < rightestVis) {
-                    dx = rightestVis - rightest;
-                }
-            }
-
-            if (!dx && !dy) return false;
-
-            this._applyCornerOffsetWithoutRender(dx, dy);
-            return true;
-        }
-
-        return false;
-    }
-
-    public getScrollData(): { x: number; y: number } {
-        const rect = this.unclippedContentRect;
-        const result = { x: 0, y: 0 };
-        if (!rect) return result;
-
-        const lowest = this._contentRange.low;
-        const highest = this._contentRange.high;
-        const currentY = rect.corner.y - highest;
-        const possibleY = Math.abs(this.requestScroll(0, -Infinity));
-
-        if (highest >= rect.corner.y) {
-            result.y = 0;
-        } else if (lowest <= rect.corner.y + rect.height) {
-            result.y = 100;
-        } else {
-            result.y = Math.floor((currentY / (currentY + possibleY)) * 100);
-        }
-
-        const mostLeft = this._contentRange.left;
-        const mostRight = this._contentRange.right;
-        const currentX = rect.corner.x - mostLeft;
-        const possibleX = Math.abs(this.requestScroll(-Infinity, 0));
-
-        if (mostLeft >= rect.corner.x) {
-            result.x = 0;
-        } else if (mostRight <= rect.corner.x + rect.width) {
-            result.x = 100;
-        } else {
-            result.x = Math.floor((currentX / (currentX + possibleX)) * 100);
-        }
-
-        return result;
+    public getScrollData() {
+        return this._scrollManager.getScrollData();
     }
 
     // =========================================================================

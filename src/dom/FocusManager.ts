@@ -27,7 +27,7 @@ export abstract class FocusManager<
         super(defaultStyles);
         this.vmap = new Map();
         this._focused = undefined;
-        this._lastOffsetChangeWasFocus = true;
+        // this._lastOffsetChangeWasFocus = true;
 
         this.registerPropEffect("blockChildrenShrink", () => {
             this._children.forEach((child) => {
@@ -188,14 +188,24 @@ export abstract class FocusManager<
         return { left: 0, right: 0 };
     }
 
+    private focusScrollDown(toScroll: number) {
+        this._scrollManager.scrollDown(toScroll, true);
+    }
+    private focusScrollUp(toScroll: number) {
+        this._scrollManager.scrollUp(toScroll, true);
+    }
+    private focusScrollLeft(toScroll: number) {
+        this._scrollManager.scrollLeft(toScroll, true);
+    }
+    private focusScrollRight(toScroll: number) {
+        this._scrollManager.scrollRight(toScroll, true);
+    }
+
     /**
      * @internal
      * Adjust the `_scrollOffset` in order to keep the focused element in view
      */
-    public normalizeScrollToFocus(
-        d: "up" | "down" | "left" | "right",
-        triggerRender = true,
-    ) {
+    public normalizeScrollToFocus(d: "up" | "down" | "left" | "right") {
         if (!this._focused) return;
         if (!this._getAnyProp("keepFocusedVisible")) return;
 
@@ -210,14 +220,14 @@ export abstract class FocusManager<
         // If focus item is too large for window, pin to top or left
         if (isVertScroll && fRect.height >= wRect.height) {
             const toScroll = fRect.corner.y - wRect.corner.y;
-            if (toScroll > 0) this._scrollDownWithFocus(toScroll, triggerRender);
-            else this._scrollUpWithFocus(Math.abs(toScroll), triggerRender);
+            if (toScroll > 0) this.focusScrollDown(toScroll);
+            else this.focusScrollUp(Math.abs(toScroll));
             return;
         }
         if (!isVertScroll && fRect.width >= wRect.width) {
             const toScroll = fRect.corner.x - wRect.corner.x;
-            if (toScroll > 0) this._scrollRightWithFocus(toScroll, triggerRender);
-            else this._scrollLeftWithFocus(Math.abs(toScroll), triggerRender);
+            if (toScroll > 0) this.focusScrollRight(toScroll);
+            else this.focusScrollLeft(Math.abs(toScroll));
             return;
         }
 
@@ -230,9 +240,9 @@ export abstract class FocusManager<
             );
 
             if (above) {
-                this._scrollUpWithFocus(above, triggerRender);
+                this.focusScrollUp(above);
             } else if (below) {
-                this._scrollDownWithFocus(below, triggerRender);
+                this.focusScrollDown(below);
             }
         } else {
             const { left, right } = this.getHorizVisibility(
@@ -243,9 +253,9 @@ export abstract class FocusManager<
             );
 
             if (left) {
-                this._scrollLeftWithFocus(left, triggerRender);
+                this.focusScrollLeft(left);
             } else if (right) {
-                this._scrollRightWithFocus(right, triggerRender);
+                this.focusScrollRight(right);
             }
         }
     }
@@ -276,8 +286,8 @@ export abstract class FocusManager<
             return false;
         }
 
-        if (above || below) this.normalizeScrollToFocus("up", false);
-        if (left || right) this.normalizeScrollToFocus("left", false);
+        if (above || below) this.normalizeScrollToFocus("up");
+        if (left || right) this.normalizeScrollToFocus("left");
         return true;
     }
 

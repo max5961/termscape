@@ -77,7 +77,8 @@ export class Compositor {
 
         elem._children.forEach((child) => {
             this.updateChildCanvas(child, canvas);
-            this.updateContentRange(child, rangeContext);
+            // this.updateContentRange(child, rangeContext);
+            rangeContext?._scrollManager.updateContentRange(child);
 
             // todo - this doesn't account for overflowX or overflowY without just overflow
             const chstyle = child._virtual.overflow;

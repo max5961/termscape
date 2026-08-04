@@ -306,8 +306,8 @@ export class SubCanvas extends Canvas {
         const ygXoff = this.host._node.getComputedLeft();
         const ygYoff = this.host._node.getComputedTop();
 
-        const pscrollX = parent.host._scrollOffset.x;
-        const pscrollY = parent.host._scrollOffset.y;
+        const pscrollX = parent.host._scrollManager.scrollOffset.x;
+        const pscrollY = parent.host._scrollManager.scrollOffset.y;
 
         return {
             x: parent.corner.x + ygXoff + pscrollX,
