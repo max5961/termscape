@@ -282,17 +282,21 @@ export class ShadowStyleProxy {
     get computedFlexShrink() {
         return this.node.getFlexShrink();
     }
-    // TODO - clean this up
-    set flexShrink(v: Sha["flexShrink"]) {
+    private getEffectiveFlexShrink(v: Sha["flexShrink"]) {
         if (this.host.parentElement?._is(FOCUS_MANAGER)) {
             if (this.host.parentElement._getAnyProp("blockChildrenShrink")) {
-                v = 0;
+                return 0;
             }
         }
-        if (this.values["flexShrink"] === v) return;
+        return v;
+    }
 
-        this.values["flexShrink"] = v;
-        this.node.setFlexShrink(v ?? 0);
+    set flexShrink(v: Sha["flexShrink"]) {
+        const resolved = this.getEffectiveFlexShrink(v);
+        if (this.values["flexShrink"] === resolved) return;
+
+        this.values["flexShrink"] = resolved;
+        this.node.setFlexShrink(resolved ?? 0);
         this.scheduleRender({ layoutChange: true });
     }
 

@@ -4,7 +4,6 @@ import type { StyleHandler } from "../../../Types.js";
 import { Sanitizers } from "./Sanitizers.js";
 import { DomElement } from "../../DomElement.js";
 import { StyleReconciler } from "./StyleReconciler.js";
-import { logger } from "../../../shared/Logger.js";
 
 type Vir = Style.All;
 
@@ -22,11 +21,6 @@ export class VirtualStyleProxy {
         this.__styleHandler = null;
         this.__reconciler = new StyleReconciler(this, defaultStyles);
         this.__reconciler.reconcile(defaultStyles);
-    }
-
-    /** @internal */
-    public _hasStyleHandler() {
-        return !!this.__styleHandler;
     }
 
     /** @internal */
