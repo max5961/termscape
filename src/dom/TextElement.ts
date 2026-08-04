@@ -136,7 +136,7 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
         map?: Map<TextElement, Style.All>,
         style?: Style.All,
     ): Map<TextElement, Style.All> {
-        style ??= { ...this._shadow };
+        style ??= { ...this._shadow.values };
         map ??= new Map();
         map.set(this, style);
 

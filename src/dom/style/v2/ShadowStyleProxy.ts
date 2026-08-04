@@ -10,7 +10,8 @@ type Sha = Shadow<Style.All>;
  * Setters sanitize data, apply yoga styles, and request re-renders
  * */
 export class ShadowStyleProxy {
-    private values: Record<string, any>;
+    /** @internal */
+    public values: Record<string, any>;
     private node: YogaNode;
     private host: DomElement;
 
