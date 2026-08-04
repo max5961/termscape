@@ -24,13 +24,13 @@ export class VirtualStyleProxy {
     }
 
     /** @internal */
-    public _reapplyStyleHandlerIfExists() {
+    public _recomputeStyleIfStyleHandlerExists() {
         if (this.__styleHandler) {
             this._setStyle(this.__styleHandler);
         }
     }
 
-    private resolveStylesheet(stylesheet: Style.All | StyleHandler<Style.All>) {
+    private _resolveStylesheet(stylesheet: Style.All | StyleHandler<Style.All>) {
         if (typeof stylesheet === "function") {
             this.__styleHandler = stylesheet;
             return stylesheet(this.__host.getFocusStatus());
@@ -41,7 +41,7 @@ export class VirtualStyleProxy {
 
     /** @internal */
     public _setStyle(stylesheet: Style.All | StyleHandler<Style.All>) {
-        const styles = this.resolveStylesheet(stylesheet);
+        const styles = this._resolveStylesheet(stylesheet);
         this.__reconciler.reconcile(styles);
     }
 
