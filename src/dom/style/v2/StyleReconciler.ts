@@ -17,9 +17,6 @@ export class StyleReconciler {
         this._style = style;
         this._defaults = defaults;
         this._active = new Set();
-
-        // Apply the default styles
-        this.reconcile(defaults);
     }
 
     public resolveStyle<T>(key: keyof VirtualStyleProxy, value: T): T | undefined {

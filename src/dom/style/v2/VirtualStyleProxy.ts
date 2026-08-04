@@ -20,6 +20,7 @@ export class VirtualStyleProxy {
         this.__shadow = host._shadow;
         this.__styleHandler = null;
         this.__reconciler = new StyleReconciler(this, defaultStyles);
+        this.__reconciler.reconcile(defaultStyles);
     }
 
     /** @internal */
@@ -456,6 +457,7 @@ export class VirtualStyleProxy {
         if (resolved === this.__values["borderStyle"]) return;
 
         this.__values["borderStyle"] = resolved;
+        this.__shadow["borderStyle"] = resolved;
         const bool = !!resolved;
         this._setShadowIfVirtualUndef("borderTop", bool);
         this._setShadowIfVirtualUndef("borderBottom", bool);

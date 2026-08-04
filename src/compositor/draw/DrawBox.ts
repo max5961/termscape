@@ -23,7 +23,7 @@ export class DrawBox extends DrawContract<BoxLike> {
         const style = elem._shadow;
 
         if (
-            (style.zIndex ?? 0) > this.lowestLayer ||
+            style.zIndex > this.lowestLayer ||
             style.backgroundColor ||
             style.backgroundStyle
         ) {
