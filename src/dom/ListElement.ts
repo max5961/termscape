@@ -4,7 +4,7 @@ import { TagNameEnum, LIST_ELEMENT } from "../Constants.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
-import { DefaultStyles } from "./style/v2/DefaultStyles.js";
+import { DefaultStyles } from "./style/DefaultStyles.js";
 
 export class ListElement extends FocusManager<{
     Style: Style.List;

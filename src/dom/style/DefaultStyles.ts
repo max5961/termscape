@@ -1,4 +1,4 @@
-import type { Style } from "../Style.js";
+import type { Style } from "./Style.js";
 
 export class DefaultStyles {
     public static readonly DomElement: Style.All = {

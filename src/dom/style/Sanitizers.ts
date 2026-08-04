@@ -1,7 +1,7 @@
-import type { Style, Shadow } from "../Style.js";
-import type { FocusManager } from "../../FocusManager.js";
-import type { DomElement } from "../../DomElement.js";
-import type { ViewportStyle } from "../../../Types.js";
+import type { Style, Shadow } from "./Style.js";
+import type { FocusManager } from "./../FocusManager.js";
+import type { DomElement } from "./../DomElement.js";
+import type { ViewportStyle } from "./../../Types.js";
 
 type S<T extends keyof Style.All> = Style.All[T];
 type SS<T extends keyof Style.All> = Shadow<Style.All>[T];

@@ -3,7 +3,7 @@ import { TagNameEnum, BOOK_ELEMENT } from "../Constants.js";
 import type { Style } from "./style/Style.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
 import type { Props } from "./props/Props.js";
-import { DefaultStyles } from "./style/v2/DefaultStyles.js";
+import { DefaultStyles } from "./style/DefaultStyles.js";
 
 /**
  * The `BookElement` does not manage focus like `ListElement` and `PageElement`,

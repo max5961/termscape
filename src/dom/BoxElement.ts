@@ -2,7 +2,7 @@ import { DomElement } from "./DomElement.js";
 import { TagNameEnum, BOX_ELEMENT } from "../Constants.js";
 import type { Props } from "./props/Props.js";
 import type { Style } from "./style/Style.js";
-import { DefaultStyles } from "./style/v2/DefaultStyles.js";
+import { DefaultStyles } from "./style/DefaultStyles.js";
 
 export abstract class AbstractBoxElement extends DomElement<{
     Style: Style.Box;

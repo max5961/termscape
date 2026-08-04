@@ -19,8 +19,8 @@ import { SideEffects, type PropEffectHandler } from "./shared/SideEffects.js";
 import { MetaData } from "./shared/MetaData.js";
 import { DomEvents } from "./shared/DomEvents.js";
 import type { Event, EventHandler } from "../Types.js";
-import { ShadowStyleProxy } from "./style/v2/ShadowStyleProxy.js";
-import { VirtualStyleProxy } from "./style/v2/VirtualStyleProxy.js";
+import { ShadowStyleProxy } from "./style/ShadowStyleProxy.js";
+import { VirtualStyleProxy } from "./style/VirtualStyleProxy.js";
 
 export abstract class DomElement<
     Schema extends {

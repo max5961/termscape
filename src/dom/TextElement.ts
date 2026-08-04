@@ -12,8 +12,7 @@ import { Render } from "./util/decorators.js";
 import { TagNameEnum, TEXT_NODE, Yg } from "../Constants.js";
 import { TEXT_ELEMENT } from "../Constants.js";
 import { objectEntries } from "../Util.js";
-import { DefaultStyles } from "./style/v2/DefaultStyles.js";
-import { logger } from "../shared/Logger.js";
+import { DefaultStyles } from "./style/DefaultStyles.js";
 
 export type TextContentNode = string | TextNode;
 export type TextContent = string | TextContentNode[];
@@ -140,7 +139,6 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
         this._textNodes.forEach((node) => {
             if (typeof node !== "string") {
                 const childStyle = { ...node._shadow.values };
-                logger.write({ childStyle });
                 objectEntries(style).forEach(([k, v]) => {
                     // @ts-ignore
                     if (childStyle[k] === undefined) childStyle[k] = v;

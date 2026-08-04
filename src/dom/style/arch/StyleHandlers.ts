@@ -1,11 +1,11 @@
-import { Yg } from "../../Constants.js";
-import type { YogaNode } from "../../Types.js";
-import type { DomElement } from "../DomElement.js";
-import type { Shadow, Style } from "./Style.js";
-import type { FocusManager } from "../FocusManager.js";
-import { decodeShorthand } from "../util/decodeShorthand.js";
-import { ifUndef } from "../../Util.js";
-import { parseDimensions } from "../util/parseDimensions.js";
+import { Yg } from "../../../Constants.js";
+import type { YogaNode } from "../../../Types.js";
+import type { DomElement } from "../../DomElement.js";
+import type { Shadow, Style } from "../Style.js";
+import type { FocusManager } from "../../FocusManager.js";
+import { decodeShorthand } from "../../util/decodeShorthand.js";
+import { ifUndef } from "../../../Util.js";
+import { parseDimensions } from "../../util/parseDimensions.js";
 
 /**
  * The set handler in the Proxy for Shadow<Style.All> passes the `prop` and `newValue` through

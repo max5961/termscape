@@ -7,7 +7,7 @@ import { objectKeys } from "../Util.js";
 import { TagNameEnum } from "../Constants.js";
 import { LAYOUT_ELEMENT, LAYOUT_NODE } from "../Constants.js";
 import type { Props } from "./props/Props.js";
-import { DefaultStyles } from "./style/v2/DefaultStyles.js";
+import { DefaultStyles } from "./style/DefaultStyles.js";
 
 export class LayoutElement extends FocusManager<{
     Style: Style.Layout;

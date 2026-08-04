@@ -1,8 +1,8 @@
-import type { Style } from "../Style.js";
+import type { Style } from "./Style.js";
 import type { ShadowStyleProxy } from "./ShadowStyleProxy.js";
-import type { StyleHandler } from "../../../Types.js";
+import type { StyleHandler } from "./../../Types.js";
 import { Sanitizers } from "./Sanitizers.js";
-import { DomElement } from "../../DomElement.js";
+import { DomElement } from "./../DomElement.js";
 import { StyleReconciler } from "./StyleReconciler.js";
 
 type Vir = Style.All;
