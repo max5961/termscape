@@ -81,7 +81,8 @@ export class Compositor {
             this.updateChildCanvas(child, canvas);
             this.updateContentRange(child, rangeContext);
 
-            const chstyle = child._shadowStyle.overflow;
+            // todo - this doesn't account for overflowX or overflowY without just overflow
+            const chstyle = child._virtual.overflow;
             const overflowMgr = chstyle === "scroll" || chstyle === "hidden";
             const nextRangeCtx = overflowMgr ? child : rangeContext;
 
@@ -102,7 +103,7 @@ export class Compositor {
         this.bindCanvas(elem);
         if (elem.style.display === "none") return;
 
-        const style = elem._shadowStyle;
+        const style = elem._shadow;
         const zIndex = relZIndex + (style.zIndex ?? 0);
 
         this._draw.updateLowestLayer(zIndex);

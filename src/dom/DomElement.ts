@@ -124,7 +124,7 @@ export abstract class DomElement<
     }
 
     set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
-        this._virtual.setStyle(stylesheet);
+        this._virtual._setStyle(stylesheet);
     }
 
     get style(): Schema["Style"] {
@@ -133,7 +133,7 @@ export abstract class DomElement<
 
     // ***todo***
     // public getComputedStyle(style: keyof Schema["Style"]) {
-    //     return this._shadowStyle[style];
+    //     return this._shadow[style];
     // }
 
     private collectIdentities() {
@@ -212,7 +212,7 @@ export abstract class DomElement<
             return setProp(scrollbar);
         }
 
-        if (this._shadowStyle.flexDirection?.includes("row")) {
+        if (this._shadow.flexDirection?.includes("row")) {
             scrollbar.edge ??= "bottom";
         } else {
             scrollbar.edge ??= "right";

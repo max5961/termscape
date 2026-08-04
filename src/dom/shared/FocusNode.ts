@@ -157,10 +157,7 @@ export class FocusNode {
     private propagateChanges() {
         this.handleStatusChange();
 
-        const styleHandler = this._host._styleHandler;
-        if (styleHandler) {
-            this._host.style = styleHandler;
-        }
+        this._host._virtual._reapplyStyleHandlerIfExists();
 
         this._childNodes.forEach((child) => {
             child.propagateChanges();

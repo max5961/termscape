@@ -45,16 +45,6 @@ export const SanitizerHandlers: {
             return nextVal ?? 0;
         }
     },
-    // Pruning out "auto" here even though there aren't any corresponding Yg
-    // styles to give it.  The Yg Handler for alignSelf will interpret
-    // undefined as auto.
-    alignSelf(nextVal) {
-        if (nextVal === "auto") {
-            return undefined;
-        } else {
-            return nextVal;
-        }
-    },
     height(newVal, stdout) {
         return parseDimensions(newVal, stdout, "vh");
     },

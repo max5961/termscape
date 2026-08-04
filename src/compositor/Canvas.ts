@@ -156,17 +156,11 @@ export abstract class Canvas {
     }
 
     protected hasHiddenXOverflow(elem: DomElement): boolean {
-        return (
-            elem._shadowStyle.overflowX === "hidden" ||
-            elem._shadowStyle.overflowX === "scroll"
-        );
+        return elem._shadow.overflowX === "hidden" || elem._shadow.overflowX === "scroll";
     }
 
     protected hasHiddenYOverflow(elem: DomElement): boolean {
-        return (
-            elem._shadowStyle.overflowY === "hidden" ||
-            elem._shadowStyle.overflowY === "scroll"
-        );
+        return elem._shadow.overflowY === "hidden" || elem._shadow.overflowY === "scroll";
     }
 
     // ----Public Interface----

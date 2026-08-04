@@ -20,7 +20,7 @@ export class DrawBox extends DrawContract<BoxLike> {
     }
 
     public override compose(elem: BoxLike, canvas: Canvas): void {
-        const style = elem._shadowStyle;
+        const style = elem._shadow;
 
         if (
             (style.zIndex ?? 0) > this.lowestLayer ||
@@ -51,7 +51,7 @@ export class DrawBox extends DrawContract<BoxLike> {
             char = elem.style.backgroundStyle?.char[0] || " ";
         }
 
-        pen.set("backgroundColor", elem._shadowStyle.backgroundColor);
+        pen.set("backgroundColor", elem._shadow.backgroundColor);
         if (char !== " ") {
             pen.set("color", elem.style.backgroundStyleColor);
         }
@@ -336,9 +336,8 @@ export class DrawBox extends DrawContract<BoxLike> {
         return {
             left,
             right,
-            leftColor: elem._shadowStyle.borderLeftColor ?? elem._shadowStyle.borderColor,
-            rightColor:
-                elem._shadowStyle.borderRightColor ?? elem._shadowStyle.borderColor,
+            leftColor: elem._shadow.borderLeftColor ?? elem._shadow.borderColor,
+            rightColor: elem._shadow.borderRightColor ?? elem._shadow.borderColor,
         };
     }
 }

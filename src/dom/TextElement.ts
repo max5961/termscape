@@ -111,7 +111,7 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
     }
 
     /** @internal */
-    public _getSlices(): [TextElement["_shadowStyle"], number, string][] {
+    public _getSlices(): [Style.All, number, string][] {
         const slices = this.getIndexSlices();
         const styleMap = this.getStyleMap();
 
@@ -133,10 +133,10 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
     }
 
     private getStyleMap(
-        map?: Map<TextElement, TextElement["_shadowStyle"]>,
-        style?: TextElement["_shadowStyle"],
-    ): Map<TextElement, TextElement["_shadowStyle"]> {
-        style ??= { ...this._shadowStyle };
+        map?: Map<TextElement, Style.All>,
+        style?: Style.All,
+    ): Map<TextElement, Style.All> {
+        style ??= { ...this._shadow };
         map ??= new Map();
         map.set(this, style);
 
@@ -160,7 +160,7 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
                 return { width: 0, height: 0 };
             }
 
-            const style = this._shadowStyle;
+            const style = this._shadow;
             const tc = this.textContent;
             const nowrap = tc.length < width || style.wrap === "overflow";
 
@@ -220,7 +220,7 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
     //
     //     const nextBufStop = { idx: 0 };
     //     const nextRows = getRows(nextText, width, nextBufStop, stopRows);
-    //     const nextAlignedRows = alignRows(nextRows, width, this._shadowStyle.align);
+    //     const nextAlignedRows = alignRows(nextRows, width, this._shadow.align);
     //
     //     this.alignedRows = [...this.alignedRows, ...nextAlignedRows];
     //     this.bufferIdx += nextBufStop.idx;

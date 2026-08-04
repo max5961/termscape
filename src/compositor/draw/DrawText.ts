@@ -118,7 +118,7 @@ export class DrawText extends DrawContract<TextElement> {
         const inputEl = elem.parentElement! as InputElement;
         const cursorIdx = inputEl._cursorIdx;
 
-        pen.set("color", inputEl._shadowStyle.color);
+        pen.set("color", inputEl._shadow.color);
         for (let i = 0; i < elem.textContent.length; ++i) {
             if (inputEl.hasClaimedStdin && cursorIdx === i) {
                 pen.set("backgroundColor", "gray"); // for now before cursorIdx style
