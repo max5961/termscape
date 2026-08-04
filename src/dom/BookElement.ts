@@ -34,10 +34,6 @@ export class BookElement extends DomElement<{
         return "book";
     }
 
-    protected override get defaultStyles(): Style.Book {
-        return {};
-    }
-
     protected override get defaultProps(): Props.Book {
         return {};
     }

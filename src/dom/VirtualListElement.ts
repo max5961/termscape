@@ -106,13 +106,6 @@ export class VirtualListElement<T = any> extends DomElement<{
         };
     }
 
-    protected override get defaultStyles(): Style.All {
-        return {
-            flexDirection: "column",
-            overflow: "scroll",
-        };
-    }
-
     public focusNext(n: number = 1) {
         this._focusState.incrementFocus(n);
         this.reconcile();

@@ -65,9 +65,6 @@ export class Root extends DomElement<{
         return "root";
     }
 
-    protected override get defaultStyles(): Style.Root {
-        return {};
-    }
     protected override get defaultProps(): Props.Root {
         return {};
     }

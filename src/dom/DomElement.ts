@@ -30,15 +30,6 @@ export abstract class DomElement<
 > {
     protected static readonly identity = DOM_ELEMENT;
 
-    private static DefaultStyle = {
-        display: "flex",
-        zIndex: "auto",
-        overflow: "visible",
-        flexDirection: "row",
-        flexGrow: 0,
-        flexShrink: 1,
-    };
-
     protected readonly _identities: Set<symbol>;
     protected readonly _childSet: Set<DomElement>;
     protected readonly _effects: SideEffects;
@@ -97,7 +88,6 @@ export abstract class DomElement<
         this._shadow = new ShadowStyleProxy(this);
         this._virtual = new VirtualStyleProxy(this, defaultStyles);
 
-        this.applyDefaultStyles();
         this.applyDefaultProps();
 
         this.registerPropEffect("scrollbar", this.registerScrollbarEffect);
@@ -111,16 +101,11 @@ export abstract class DomElement<
 
     public abstract get tagName(): TagName;
     protected abstract get defaultProps(): Schema["Props"];
-    protected abstract get defaultStyles(): Schema["Style"];
 
     private applyDefaultProps() {
         for (const [k, v] of objectEntries(this.defaultProps)) {
             this.setProp(k, v);
         }
-    }
-
-    private applyDefaultStyles() {
-        this.style = {};
     }
 
     set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {

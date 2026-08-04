@@ -75,14 +75,6 @@ export class InputElement extends DomElement<{
         return "input";
     }
 
-    protected override get defaultStyles(): Style.Input {
-        return {
-            width: "100",
-            height: 1,
-            overflow: "scroll",
-        };
-    }
-
     protected override get defaultProps(): Props.Input {
         return {
             enter: [{ key: "return" }],

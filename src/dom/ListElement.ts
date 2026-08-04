@@ -20,16 +20,6 @@ export class ListElement extends FocusManager<{
         return "list";
     }
 
-    protected override get defaultStyles(): Style.List {
-        return {
-            flexDirection: "column",
-            flexWrap: "nowrap",
-            overflow: "scroll",
-            height: "100",
-            width: "100",
-        };
-    }
-
     protected override get defaultProps(): Props.List {
         return {
             blockChildrenShrink: true,

@@ -12,16 +12,6 @@ export abstract class AbstractBoxElement extends DomElement<{
 
     constructor() {
         super(DefaultStyles.Box);
-        this.style = this.defaultStyles;
-    }
-
-    protected override get defaultStyles(): Style.Box {
-        return {
-            flexWrap: "nowrap",
-            flexDirection: "row",
-            flexGrow: 0,
-            flexShrink: 1,
-        };
     }
 
     protected override get defaultProps(): Props.Box {

@@ -21,8 +21,4 @@ export class CanvasElement extends DomElement<{
     protected override get defaultProps(): Props.Canvas {
         return { draw: (_pen) => {} };
     }
-
-    protected override get defaultStyles(): Style.Canvas {
-        return {};
-    }
 }

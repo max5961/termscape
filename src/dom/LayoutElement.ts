@@ -23,16 +23,6 @@ export class LayoutElement extends FocusManager<{
         return "layout";
     }
 
-    protected override get defaultStyles(): Style.Layout {
-        return {
-            flexDirection: "column",
-            flexWrap: "nowrap",
-            overflow: "scroll",
-            height: "100",
-            width: "100",
-        };
-    }
-
     // TODO - only this prop for now
     protected override get defaultProps(): Props.Layout {
         return { blockChildrenShrink: false };

@@ -47,10 +47,6 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
         return {};
     }
 
-    protected override get defaultStyles(): Style.Text {
-        return { wrap: "wrap" };
-    }
-
     protected get isTextNode() {
         return false;
     }
