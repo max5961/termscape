@@ -42,10 +42,6 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
         return TagNameEnum.Text;
     }
 
-    protected override get defaultProps(): Props.Text {
-        return {};
-    }
-
     protected get isTextNode() {
         return false;
     }

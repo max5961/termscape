@@ -13,10 +13,6 @@ export abstract class AbstractBoxElement extends DomElement<{
     constructor() {
         super(DefaultStyles.Box);
     }
-
-    protected override get defaultProps(): Props.Box {
-        return {};
-    }
 }
 
 export class BoxElement extends AbstractBoxElement {

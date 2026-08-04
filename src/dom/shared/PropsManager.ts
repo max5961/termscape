@@ -1,13 +1,13 @@
 import type { DomElement } from "../DomElement.js";
 import type { Props } from "../props/Props.js";
 
-export type PropsManagerPropEffectHandler<T extends keyof Props.All> = (
+export type PropEffectHandler<T extends keyof Props.All> = (
     value: Props.All[T],
     prev: Props.All[T],
     update: (value: Props.All[T]) => void,
 ) => any;
 
-type UntypedPropEffectHandler = PropsManagerPropEffectHandler<any>;
+type UntypedPropEffectHandler = PropEffectHandler<any>;
 
 export class PropsManager {
     private host: DomElement;

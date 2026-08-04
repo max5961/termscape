@@ -75,22 +75,6 @@ export class InputElement extends DomElement<{
         return "input";
     }
 
-    protected override get defaultProps(): Props.Input {
-        return {
-            enter: [{ key: "return" }],
-            exit: [{ key: "esc" }, { key: "return" }],
-            cursorLeft: [{ key: "alt", input: "h" }],
-            cursorRight: [{ key: "alt", input: "l" }],
-            prevWord: [{ key: "alt", input: "b" }],
-            nextWord: [{ key: "alt", input: "w" }],
-            deleteWord: [{ key: "alt", input: "d" }],
-            deleteChar: [{ key: "alt", input: "x" }],
-            startOfLine: [{ key: "alt", input: "0" }],
-            endOfLine: [{ key: "alt", input: "A" }],
-            tabWidth: 4,
-        };
-    }
-
     private registerProp(
         prop: Exclude<keyof Props.TextInput, "enterOnFocus" | "tabWidth">,
         cb: () => unknown,

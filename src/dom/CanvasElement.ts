@@ -17,8 +17,4 @@ export class CanvasElement extends DomElement<{
     public override get tagName(): typeof TagNameEnum.Canvas {
         return "canvas";
     }
-
-    protected override get defaultProps(): Props.Canvas {
-        return { draw: (_pen) => {} };
-    }
 }

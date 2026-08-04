@@ -13,16 +13,13 @@ import {
 import { Render, RequestInput } from "./util/decorators.js";
 import { FocusNode } from "./shared/FocusNode.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";
-import { objectEntries } from "../Util.js";
 import { throwError } from "../shared/ThrowError.js";
-import { SideEffects, type PropEffectHandler } from "./shared/SideEffects.js";
 import { MetaData } from "./shared/MetaData.js";
 import { DomEvents } from "./shared/DomEvents.js";
 import type { Event, EventHandler } from "../Types.js";
 import { ShadowStyleProxy } from "./style/ShadowStyleProxy.js";
 import { VirtualStyleProxy } from "./style/VirtualStyleProxy.js";
-import { PropsManager } from "./shared/PropsManager.js";
-import { type PropsManagerPropEffectHandler } from "./shared/PropsManager.js";
+import { PropsManager, type PropEffectHandler } from "./shared/PropsManager.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -34,8 +31,6 @@ export abstract class DomElement<
 
     protected readonly _identities: Set<symbol>;
     protected readonly _childSet: Set<DomElement>;
-    protected readonly _effects: SideEffects;
-    // protected readonly _eventListeners: Map<MouseEventType, Set<MouseEventHandler>>;
     public readonly _events: DomEvents;
     /** @internal */
     public _lastOffsetChangeWasFocus: boolean;
@@ -49,8 +44,6 @@ export abstract class DomElement<
     /** @internal */
     public readonly _focusNode: FocusNode;
     /** @internal */
-    public readonly _props: Map<string, unknown>;
-    /** @internal */
     public readonly _virtual!: VirtualStyleProxy;
     /** @internal */
     public readonly _shadow!: ShadowStyleProxy;
@@ -62,9 +55,8 @@ export abstract class DomElement<
     public _afterLayoutHandlers: Set<() => boolean>;
     /** @internal */
     public _contentRange: ReturnType<DomElement["_initContentRange"]>;
-
     /** @internal */
-    public _propsManager: PropsManager;
+    public readonly _propsManager: PropsManager;
 
     public parentElement: null | DomElement;
 
@@ -78,12 +70,10 @@ export abstract class DomElement<
         this._focusNode = new FocusNode(this);
         this._events = new DomEvents(this);
         this._metadata = new MetaData(this);
-        this._effects = new SideEffects();
         this._childSet = new Set();
-        this._props = new Map();
+        this._propsManager = new PropsManager(this);
         this._afterLayoutHandlers = new Set();
         this._canvas = null;
-        this._propsManager = new PropsManager(this);
 
         this._contentRange = this._initContentRange();
         this.parentElement = null;
@@ -93,8 +83,6 @@ export abstract class DomElement<
 
         this._shadow = new ShadowStyleProxy(this);
         this._virtual = new VirtualStyleProxy(this, defaultStyles);
-
-        this.applyDefaultProps();
 
         this.registerPropEffect("scrollbar", this.registerScrollbarEffect);
         this.registerPropEffect("titleTopLeft", this.registerTitleEffect);
@@ -106,13 +94,6 @@ export abstract class DomElement<
     }
 
     public abstract get tagName(): TagName;
-    protected abstract get defaultProps(): Schema["Props"];
-
-    private applyDefaultProps() {
-        for (const [k, v] of objectEntries(this.defaultProps)) {
-            this.setProp(k, v);
-        }
-    }
 
     set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
         this._virtual._setStyle(stylesheet);
@@ -156,61 +137,32 @@ export abstract class DomElement<
         return this._children;
     }
 
+    public setProp<T extends keyof Schema["Props"]>(key: T, next: Schema["Props"][T]) {
+        this._propsManager.setProp(key, next);
+    }
+
     public getProp<T extends keyof Schema["Props"]>(
         key: T,
     ): Schema["Props"][T] | undefined {
-        return this._props.get(key as string) as Schema["Props"][T] | undefined;
+        return this._propsManager.getProp(key);
     }
 
     /** @internal for better internal types */
     public _getAnyProp<T extends keyof Props.All>(key: T): Props.All[T] | undefined {
-        return this._props.get(key) as Props.All[T] | undefined;
-    }
-
-    public setProp_v2<T extends keyof Schema["Props"]>(key: T, next: Schema["Props"][T]) {
-        this._propsManager.setProp(key, next);
-    }
-
-    public getProp_v2<T extends keyof Schema["Props"]>(
-        key: T,
-    ): Schema["Props"][T] | undefined {
         return this._propsManager.getProp(key);
     }
 
-    public _getAnyProp_v2<T extends keyof Props.All>(key: T): Props.All[T] | undefined {
-        return this._propsManager.getProp(key);
-    }
-
-    public registerPropEffect_v2<T extends keyof Props.All>(
+    public registerPropEffect<T extends keyof Props.All>(
         prop: T,
-        handler: PropsManagerPropEffectHandler<T>,
+        handler: PropEffectHandler<T>,
     ) {
         this._propsManager.registerEffect(prop, handler);
     }
 
-    @Render()
-    public setProp<T extends keyof Schema["Props"]>(
-        key: T,
-        nextValue: Schema["Props"][T],
-    ): void {
-        const setProp = (value: unknown) => {
-            this._props.set(key as string, value);
-        };
-
-        const prevValue = this._props.get(key as string);
-        setProp(nextValue);
-        this._effects.dispatchEffect(key as string, nextValue, prevValue, setProp);
-    }
-
-    protected registerPropEffect<T extends keyof Props.All>(
-        prop: T,
-        cb: PropEffectHandler<Props.All[T]>,
-    ) {
-        this._effects.registerEffect(prop, cb as any);
-    }
-
     private registerScrollbarEffect = (
-        ...[scrollbar, setProp]: Parameters<PropEffectHandler<Props.All["scrollbar"]>>
+        ...[scrollbar, _prevScrollbar, setProp]: Parameters<
+            PropEffectHandler<"scrollbar">
+        >
     ) => {
         if (scrollbar === undefined) {
             this.style._scrollbarBorderTop = 0;
@@ -249,7 +201,7 @@ export abstract class DomElement<
     };
 
     private registerTitleEffect = (
-        ...[title, setProp]: Parameters<PropEffectHandler<Props.All["titleTopLeft"]>>
+        ...[title, _prevTitle, setProp]: Parameters<PropEffectHandler<"titleTopLeft">>
     ) => {
         if (title === undefined) {
             return setProp(title);

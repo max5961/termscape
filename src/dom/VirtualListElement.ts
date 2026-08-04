@@ -82,7 +82,7 @@ export class VirtualListElement<T = any> extends DomElement<{
         ];
 
         props.forEach((p) => {
-            this.registerPropEffect(p, (next, _setProp, prev) => {
+            this.registerPropEffect(p, (next, prev) => {
                 if (p === "data") {
                     this._focusState.data = next as T[];
                     this._focusState.incrementFocus(0);
@@ -95,15 +95,6 @@ export class VirtualListElement<T = any> extends DomElement<{
     }
     public override get tagName(): typeof TagNameEnum.VirtualListElement {
         return "virtual-list";
-    }
-
-    protected override get defaultProps(): Props.All {
-        return {
-            offset: 0,
-            initialIndex: 0,
-            expandStrategy: "fillEnd",
-            compressStrategy: "clipEnd",
-        };
     }
 
     public focusNext(n: number = 1) {

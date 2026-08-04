@@ -23,11 +23,6 @@ export class LayoutElement extends FocusManager<{
         return "layout";
     }
 
-    // TODO - only this prop for now
-    protected override get defaultProps(): Props.Layout {
-        return { blockChildrenShrink: false };
-    }
-
     public override focusUp() {
         return super.focusUp();
     }

@@ -34,10 +34,6 @@ export class BookElement extends DomElement<{
         return "book";
     }
 
-    protected override get defaultProps(): Props.Book {
-        return {};
-    }
-
     /*
      * BookElement has only 1 real child at a time.  The rest are detached from
      * tree but privately stored.

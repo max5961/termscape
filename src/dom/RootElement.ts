@@ -65,10 +65,6 @@ export class Root extends DomElement<{
         return "root";
     }
 
-    protected override get defaultProps(): Props.Root {
-        return {};
-    }
-
     // CHORE - changed the Style.Root type so this needs to be changed to allow
     // root to set the allowed styles
 

@@ -20,15 +20,6 @@ export class ListElement extends FocusManager<{
         return "list";
     }
 
-    protected override get defaultProps(): Props.List {
-        return {
-            blockChildrenShrink: true,
-            fallthrough: false,
-            keepFocusedCenter: false,
-            keepFocusedVisible: true, // TODO
-        };
-    }
-
     public focusNext(units = 1) {
         return this.isLTR() ? super.displaceRight(units) : super.displaceDown(units);
     }
