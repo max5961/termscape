@@ -1,4 +1,4 @@
-import { Yg } from "../../../Constants.js";
+import { FOCUS_MANAGER, Yg } from "../../../Constants.js";
 import type { YogaNode, WriteOpts } from "../../../Types.js";
 import type { DomElement } from "../../DomElement.js";
 import type { Shadow, Style } from "../Style.js";
@@ -282,10 +282,17 @@ export class ShadowStyleProxy {
     get computedFlexShrink() {
         return this.node.getFlexShrink();
     }
+    // TODO - clean this up
     set flexShrink(v: Sha["flexShrink"]) {
-        if (this.values["flexShrink"] === v) return;
-        this.values["flexShrink"] = v;
+        if (this.host.parentElement?._is(FOCUS_MANAGER)) {
+            if (this.host.parentElement._getAnyProp("blockChildrenShrink")) {
+                v = 0;
+            }
+        }
 
+        if (this.values["flexShrink"] === v) return;
+
+        this.values["flexShrink"] = v;
         this.node.setFlexShrink(v ?? 0);
         this.scheduleRender({ layoutChange: true });
     }

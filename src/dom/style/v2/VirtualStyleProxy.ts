@@ -320,11 +320,11 @@ export class VirtualStyleProxy {
     get flexShrink(): Vir["flexShrink"] {
         return this.__values["flexShrink"];
     }
-    // ***** COME BACK TO THIS ONE *****
+    // flexShrink must always be recalculated
     set flexShrink(v: Vir["flexShrink"]) {
-        // flexShrink should always be recalculated
-        // if (this.__values["flexShrink"] === v) return;
-        this._setResolvedStyle("flexShrink", v);
+        const resolved = this.__reconciler.resolveStyle("flexShrink", v);
+        this.__values["flexShrink"] = resolved;
+        this.__shadow.flexShrink = resolved;
     }
 
     get flexDirection(): Vir["flexDirection"] {
