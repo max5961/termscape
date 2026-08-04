@@ -1,15 +1,18 @@
 import type { DomElement } from "../DomElement.js";
+import type { Props } from "../props/Props.js";
 
-type Effect = (
-    value: unknown,
-    prev: unknown,
-    update: (value: unknown) => void,
-) => unknown;
+export type PropsManagerPropEffectHandler<T extends keyof Props.All> = (
+    value: Props.All[T],
+    prev: Props.All[T],
+    update: (value: Props.All[T]) => void,
+) => any;
+
+type UntypedPropEffectHandler = PropsManagerPropEffectHandler<any>;
 
 export class PropsManager {
     private host: DomElement;
-    private props: Map<string, unknown>;
-    private effects: Map<string, Effect>;
+    private props: Map<PropertyKey, any>;
+    private effects: Map<PropertyKey, UntypedPropEffectHandler>;
 
     constructor(host: DomElement) {
         this.host = host;
@@ -17,10 +20,10 @@ export class PropsManager {
         this.effects = new Map();
     }
 
-    public setProp(key: string, value: unknown) {
+    public setProp(key: PropertyKey, value: any) {
         const prev = this.props.get(key);
 
-        const setProp = (value: unknown) => {
+        const setProp = (value: any) => {
             this.props.set(key, value);
             if (value !== prev) {
                 this.host._metadata.getRoot()?.scheduleRender();
@@ -32,7 +35,11 @@ export class PropsManager {
         effect?.(value, prev, setProp);
     }
 
-    public createEffect(key: string, effect: Effect) {
+    public getProp(key: PropertyKey) {
+        return this.props.get(key);
+    }
+
+    public registerEffect(key: string, effect: UntypedPropEffectHandler) {
         this.effects.set(key, effect);
     }
 }

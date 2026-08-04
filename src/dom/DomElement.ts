@@ -21,6 +21,8 @@ import { DomEvents } from "./shared/DomEvents.js";
 import type { Event, EventHandler } from "../Types.js";
 import { ShadowStyleProxy } from "./style/ShadowStyleProxy.js";
 import { VirtualStyleProxy } from "./style/VirtualStyleProxy.js";
+import { PropsManager } from "./shared/PropsManager.js";
+import { type PropsManagerPropEffectHandler } from "./shared/PropsManager.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -61,6 +63,9 @@ export abstract class DomElement<
     /** @internal */
     public _contentRange: ReturnType<DomElement["_initContentRange"]>;
 
+    /** @internal */
+    public _propsManager: PropsManager;
+
     public parentElement: null | DomElement;
 
     constructor(defaultStyles: Style.All) {
@@ -78,6 +83,7 @@ export abstract class DomElement<
         this._props = new Map();
         this._afterLayoutHandlers = new Set();
         this._canvas = null;
+        this._propsManager = new PropsManager(this);
 
         this._contentRange = this._initContentRange();
         this.parentElement = null;
@@ -159,6 +165,27 @@ export abstract class DomElement<
     /** @internal for better internal types */
     public _getAnyProp<T extends keyof Props.All>(key: T): Props.All[T] | undefined {
         return this._props.get(key) as Props.All[T] | undefined;
+    }
+
+    public setProp_v2<T extends keyof Schema["Props"]>(key: T, next: Schema["Props"][T]) {
+        this._propsManager.setProp(key, next);
+    }
+
+    public getProp_v2<T extends keyof Schema["Props"]>(
+        key: T,
+    ): Schema["Props"][T] | undefined {
+        return this._propsManager.getProp(key);
+    }
+
+    public _getAnyProp_v2<T extends keyof Props.All>(key: T): Props.All[T] | undefined {
+        return this._propsManager.getProp(key);
+    }
+
+    public registerPropEffect_v2<T extends keyof Props.All>(
+        prop: T,
+        handler: PropsManagerPropEffectHandler<T>,
+    ) {
+        this._propsManager.registerEffect(prop, handler);
     }
 
     @Render()
