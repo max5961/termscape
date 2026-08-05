@@ -97,4 +97,15 @@ export class ChildrenManager {
         this.children.splice(idx, 1);
         this.node.removeChild(child._node);
     }
+
+    public replaceChildren(
+        next: (DomElement | undefined | null)[],
+        freeRecursive = true,
+    ) {
+        const children = this.getChildren();
+        children.forEach((c) => {
+            this.removeChild(c, freeRecursive);
+        });
+        next.forEach((c) => c && this.appendChild(c));
+    }
 }

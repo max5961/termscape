@@ -1,6 +1,5 @@
 import type { Point } from "../../Types.js";
 import type { DomElement } from "../DomElement.js";
-import { logger } from "../../shared/Logger.js";
 
 type ContentRange = {
     high: number;
@@ -70,8 +69,6 @@ export class ScrollManager {
     private applyScroll(dx: number, dy: number) {
         const allowedUnits = this.requestScroll(dx, dy);
 
-        logger.write({ allowedUnits });
-
         if (allowedUnits) {
             if (dy) {
                 this.applyCornerOffset(0, allowedUnits);
@@ -89,8 +86,6 @@ export class ScrollManager {
     private applyCornerOffset(dx: number, dy: number) {
         this._scrollOffset.x += dx;
         this._scrollOffset.y += dy;
-
-        // logger.write({ scrollOffset: this._scrollOffset });
     }
 
     // CHORE (possibly) - is it possible to make it so that we only need to remember
@@ -112,12 +107,6 @@ export class ScrollManager {
         const contentDepth = contentRect.corner.y + contentRect.height;
         const contentWidth = contentRect.corner.x + contentRect.width;
 
-        logger.write({
-            _contentRange: this._contentRange,
-            cRectCornerY: contentRect.corner.y,
-            contentDepth,
-        });
-
         if (dy) {
             const lowest = this._contentRange.low;
             const highest = this._contentRange.high;
@@ -130,7 +119,6 @@ export class ScrollManager {
                 // Pushing content down - scrolling up
             } else {
                 if (contentRect.corner.y <= highest) return 0;
-                logger.write("WHY");
                 return Math.min(dy, contentRect.corner.y - highest);
             }
         }

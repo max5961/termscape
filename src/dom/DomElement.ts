@@ -60,12 +60,10 @@ export abstract class DomElement<
 
         this._node = Yg.Node.create();
         this._focusNode = new FocusNode(this);
-        this._events = new DomEvents(this);
-        this._metadata = new MetaData(this);
         this._propsManager = new PropsManager(this);
+        this._metadata = new MetaData(this);
+        this._events = new DomEvents(this);
         this._scrollManager = new ScrollManager(this);
-        this._afterLayoutHandlers = new Set();
-        this._canvas = null;
         this._childrenManager = new ChildrenManager(this);
         this._afterLayoutHandlers = new Set();
         this._canvas = null;

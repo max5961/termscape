@@ -190,7 +190,7 @@ export class VirtualListElement<T = any> extends DomElement<{
             }
         } else {
             // If diff, then remove and replace children
-            const children = [...this._childrenManager.children];
+            const children = this.children;
             children.forEach((c) => this.removeChild(c));
             nextKeys.forEach((k) => {
                 const el = nextMap.get(k);
