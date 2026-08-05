@@ -12,7 +12,6 @@ import {
 } from "../Constants.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { FocusNode } from "./shared/FocusNode.js";
-import { ErrorMessages } from "../shared/ErrorMessages.js";
 import { throwError } from "../shared/ThrowError.js";
 import { MetaData } from "./shared/MetaData.js";
 import { DomEvents } from "./shared/DomEvents.js";
@@ -21,6 +20,7 @@ import { ShadowStyleProxy } from "./style/ShadowStyleProxy.js";
 import { VirtualStyleProxy } from "./style/VirtualStyleProxy.js";
 import { PropsManager, type PropEffectHandler } from "./shared/PropsManager.js";
 import { ScrollManager } from "./shared/ScrollManager.js";
+import { ChildrenManager } from "./shared/ChildrenManager.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -31,15 +31,12 @@ export abstract class DomElement<
     protected static readonly identity = DOM_ELEMENT;
 
     protected readonly _identities: Set<symbol>;
-    protected readonly _childSet: Set<DomElement>;
     public readonly _events: DomEvents;
 
     /** @internal */
     public readonly _metadata: MetaData;
     /** @internal */
     public readonly _node: YogaNode;
-    /** @internal Privately using the `children` getter conflicts with the `BookElement` implementation */
-    public _children: DomElement[];
     /** @internal */
     public readonly _focusNode: FocusNode;
     /** @internal */
@@ -54,25 +51,24 @@ export abstract class DomElement<
     public readonly _propsManager: PropsManager;
     /** @internal */
     public readonly _scrollManager: ScrollManager;
-
-    public parentElement: null | DomElement;
+    /** @internal */
+    public readonly _childrenManager: ChildrenManager;
 
     constructor(defaultStyles: Style.All) {
         this._identities = new Set();
         this.collectIdentities();
 
         this._node = Yg.Node.create();
-        this._children = [];
         this._focusNode = new FocusNode(this);
         this._events = new DomEvents(this);
         this._metadata = new MetaData(this);
-        this._childSet = new Set();
         this._propsManager = new PropsManager(this);
         this._scrollManager = new ScrollManager(this);
         this._afterLayoutHandlers = new Set();
         this._canvas = null;
-
-        this.parentElement = null;
+        this._childrenManager = new ChildrenManager(this);
+        this._afterLayoutHandlers = new Set();
+        this._canvas = null;
 
         this._shadow = new ShadowStyleProxy(this);
         this._virtual = new VirtualStyleProxy(this, defaultStyles);
@@ -124,10 +120,6 @@ export abstract class DomElement<
     ): this is ElementIdentityMap[(typeof TagNameIdentityMap)[T]] {
         const identity = TagNameIdentityMap[tag];
         return this._identities.has(identity);
-    }
-
-    get children(): Readonly<DomElement[]> {
-        return this._children;
     }
 
     public setProp<T extends keyof Schema["Props"]>(key: T, next: Schema["Props"][T]) {
@@ -263,133 +255,48 @@ export abstract class DomElement<
         });
     }
 
-    private addChildToTree(child: DomElement): void {
-        this._childSet.add(child);
-        this._focusNode.addChild(child._focusNode);
-        child.parentElement = this;
+    public get parentElement() {
+        return this._childrenManager.getParentElement();
     }
 
-    private removeChildFromTree(child: DomElement): void {
-        this._childSet.delete(child);
-        this._focusNode.removeChild(child._focusNode);
-        child.parentElement = null;
+    public get children() {
+        return this._childrenManager.getChildren();
     }
 
-    private insertChildAtEnd(child: DomElement): void {
-        this._node.insertChild(child._node, this._children.length);
-        this._children.push(child);
+    public get firstElementChild() {
+        return this._childrenManager.firstElementChild;
     }
 
-    private insertChildAt(child: DomElement, idx: number) {
-        this._node.insertChild(child._node, idx);
-        this._children.splice(idx, 0, child);
-    }
-
-    private insertChildBefore(child: DomElement, beforeChild: DomElement) {
-        if (!this._childSet.has(beforeChild)) {
-            this._throwError(ErrorMessages.insertBefore);
-        }
-
-        const idx = this._children.indexOf(beforeChild);
-        this.insertChildAt(child, idx);
+    public get lastElementChild() {
+        return this._childrenManager.lastElementChild;
     }
 
     @Render({ layoutChange: true })
-    private _appendChild(child: DomElement): void {
-        if (this._childSet.has(child)) return;
-
-        this.addChildToTree(child);
-        this.insertChildAtEnd(child);
+    public appendChild(child: DomElement) {
+        this._childrenManager.appendChild(child);
         child.afterAttached(this.getRoot());
     }
-    public appendChild(child: DomElement): void {
-        this._appendChild(child);
-    }
 
     @Render({ layoutChange: true })
-    private _insertBefore(child: DomElement, beforeChild?: DomElement | null): void {
-        // insertBefore supports inserting a child that is already a child
-        if (this._childSet.has(child)) {
-            this.removeChild(child);
-        }
-
-        if (!beforeChild) {
-            return this.appendChild(child);
-        }
-
-        this.addChildToTree(child);
-        this.insertChildBefore(child, beforeChild);
+    public insertBefore(child: DomElement, beforeChild: DomElement) {
+        this._childrenManager.insertBefore(child, beforeChild);
         child.afterAttached(this.getRoot());
     }
-    public insertBefore(child: DomElement, beforeChild?: DomElement | null): void {
-        this._insertBefore(child, beforeChild);
-    }
 
     @Render({ layoutChange: true })
-    private _removeChild(child: DomElement, freeRecursive?: boolean) {
-        const idx = this._children.indexOf(child);
-
-        if (idx === -1 || !this._childSet.has(child)) {
-            this._throwError(ErrorMessages.removeChild);
-        }
-        child.beforeDetaching(this.getRoot());
-        this.removeChildFromTree(child);
-        this._children.splice(idx, 1);
-        this._node.removeChild(child._node);
-
-        if (freeRecursive) {
-            child._node.freeRecursive();
-        }
-    }
     public removeChild(child: DomElement, freeRecursive?: boolean) {
-        this._removeChild(child, freeRecursive);
-    }
-
-    @Render({ layoutChange: true })
-    private _removeParent() {
-        this.parentElement?.removeChild(this);
-    }
-    public removeParent() {
-        this._removeParent();
-    }
-
-    @Render({ layoutChange: true })
-    private _replaceChildren(...children: DomElement[]) {
-        const root = this.getRoot();
-        this._children.forEach((child) => {
-            this.removeChildFromTree(child);
-            child.beforeDetaching(root);
-            this._node.removeChild(child._node);
-            child._node.freeRecursive();
-        });
-
-        this._children = [];
-        children.forEach((child) => {
-            this.appendChild(child);
-        });
-    }
-    public replaceChildren(...children: DomElement[]) {
-        this._replaceChildren(...children);
+        child.beforeDetaching(this.getRoot());
+        this._childrenManager.removeChild(child, freeRecursive);
     }
 
     @Render({ layoutChange: true })
     public hide(): void {
-        this._node.setDisplay(Yg.DISPLAY_NONE);
+        this.style.display = "none";
     }
 
     @Render({ layoutChange: true })
     public unhide(): void {
-        this._node.setDisplay(Yg.DISPLAY_FLEX);
-    }
-
-    /** @internal */
-    public _getYogaChildren(): YogaNode[] {
-        const count = this._node.getChildCount();
-        const yogaNodes = [] as YogaNode[];
-        for (let i = 0; i < count; ++i) {
-            yogaNodes.push(this._node.getChild(i));
-        }
-        return yogaNodes;
+        this.style.display = "flex";
     }
 
     // =========================================================================
@@ -729,7 +636,7 @@ export abstract class DomElement<
 
     protected dfs(elem: DomElement, cb: (elem: DomElement) => void) {
         cb(elem);
-        elem._children.forEach((child) => {
+        elem._childrenManager.children.forEach((child) => {
             this.dfs(child, cb);
         });
     }

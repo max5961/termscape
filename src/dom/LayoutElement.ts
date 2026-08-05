@@ -68,7 +68,7 @@ export class LayoutElement extends FocusManager<{
                 child.children.forEach((child) => dfs(child));
             }
         };
-        this._children.forEach((child) => dfs(child));
+        this._childrenManager.children.forEach((child) => dfs(child));
 
         return nodes;
     }

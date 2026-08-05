@@ -39,7 +39,7 @@ export class VirtualListElement<T = any> extends DomElement<{
                 const prevItemSize = this._itemSize;
                 const nextItemSize = Math.max(
                     1,
-                    this._children[0]?.unclippedRect.height ?? prevItemSize,
+                    this.firstElementChild?.unclippedRect.height ?? prevItemSize,
                 );
 
                 const prevBufferSize = this._bufferSize;
@@ -62,7 +62,7 @@ export class VirtualListElement<T = any> extends DomElement<{
             handler: () => {
                 if (initChildDimensions) return false;
 
-                const child = this._children[0];
+                const child = this.firstElementChild;
                 if (child) {
                     initChildDimensions = child.hasComposedCanvas;
                     if (initChildDimensions) {
@@ -124,7 +124,7 @@ export class VirtualListElement<T = any> extends DomElement<{
         const idx = this.getFocusedIndex();
         const buffer = this._buffer.read();
         const idxOf = buffer.indexOf(idx);
-        return this._children[idxOf];
+        return this._childrenManager.children[idxOf];
     }
 
     private reconcile(opts: { prevData: undefined | any[] } = { prevData: undefined }) {
@@ -139,7 +139,7 @@ export class VirtualListElement<T = any> extends DomElement<{
         let prevFocus: DomElement | undefined = undefined;
         for (let i = 0; i < prevIndexBuf.length; ++i) {
             const key = prevKeys[i];
-            const el = this._children[i];
+            const el = this._childrenManager.children[i];
             if (el) {
                 prevMap.set(key, el);
                 if (el.getFocus()) {
@@ -190,7 +190,7 @@ export class VirtualListElement<T = any> extends DomElement<{
             }
         } else {
             // If diff, then remove and replace children
-            const children = [...this._children];
+            const children = [...this._childrenManager.children];
             children.forEach((c) => this.removeChild(c));
             nextKeys.forEach((k) => {
                 const el = nextMap.get(k);
@@ -202,9 +202,12 @@ export class VirtualListElement<T = any> extends DomElement<{
             });
         }
 
-        if (nextFocus === this._children[this._children.length - 1]) {
+        if (
+            nextFocus ===
+            this._childrenManager.children[this._childrenManager.children.length - 1]
+        ) {
             this.scrollDown(Infinity);
-        } else if (nextFocus === this._children[0]) {
+        } else if (nextFocus === this._childrenManager.children[0]) {
             this.scrollUp(Infinity);
         }
     }

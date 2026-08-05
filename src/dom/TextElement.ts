@@ -77,7 +77,7 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
     }
 
     public set textContent(value: TextContent) {
-        if (!this._childSet.size && typeof value === "string") {
+        if (!this._childrenManager.children.length && typeof value === "string") {
             if (this.textContent === value) return;
         }
         this.setTextContentWithRender(value);

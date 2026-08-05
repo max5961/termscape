@@ -38,8 +38,8 @@ export class BookElement extends DomElement<{
      * BookElement has only 1 real child at a time.  The rest are detached from
      * tree but privately stored.
      * */
-    override get children(): readonly DomElement[] {
-        return this._pages;
+    override get children(): DomElement[] {
+        return [...this._pages];
     }
 
     private get pageIdx(): number {

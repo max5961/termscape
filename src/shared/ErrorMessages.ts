@@ -1,6 +1,8 @@
 export const ErrorMessages = {
     insertBefore:
         "Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.",
+    insertBeforeArgs:
+        "Failed to execute 'insertBefore' on 'Node': At least 2 arguments required, but only 1 passed",
     removeChild:
         "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
     invalidOverflowStyleForScroll:

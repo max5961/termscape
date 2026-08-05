@@ -75,7 +75,7 @@ export class Compositor {
         }
         elem._scrollManager.resetContentRange();
 
-        elem._children.forEach((child) => {
+        elem._childrenManager.children.forEach((child) => {
             this.updateChildCanvas(child, canvas);
             // this.updateContentRange(child, rangeContext);
             rangeContext?._scrollManager.updateContentRange(child);
@@ -113,7 +113,7 @@ export class Compositor {
             this._draw.enqueue(zIndex, elem, canvas);
         }
 
-        for (const child of elem._children) {
+        for (const child of elem._childrenManager.children) {
             this.composite(child, child._canvas!, ++nodeDepth, zIndex);
         }
 

@@ -30,7 +30,7 @@ export abstract class FocusManager<
         // this._lastOffsetChangeWasFocus = true;
 
         this.registerPropEffect("blockChildrenShrink", () => {
-            this._children.forEach((child) => {
+            this._childrenManager.children.forEach((child) => {
                 recalculateStyle(child, "flexShrink");
             });
         });
