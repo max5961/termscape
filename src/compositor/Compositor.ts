@@ -73,7 +73,7 @@ export class Compositor {
                 elem._refreshVisualMap();
             });
         }
-        elem._contentRange = elem._initContentRange();
+        elem._scrollManager.resetContentRange();
 
         elem._children.forEach((child) => {
             this.updateChildCanvas(child, canvas);
@@ -163,30 +163,6 @@ export class Compositor {
      * */
     private bindCanvas(child: DomElement) {
         child._canvas?.bindContext(this._canvas.grid, this._canvas.stdout);
-    }
-
-    private updateContentRange(child: DomElement, scroller: DomElement | undefined) {
-        if (!scroller) return;
-
-        const unclippedChild = child.unclippedRect;
-        if (unclippedChild) {
-            scroller._contentRange.high = Math.min(
-                scroller._contentRange.high,
-                unclippedChild.corner.y,
-            );
-            scroller._contentRange.low = Math.max(
-                scroller._contentRange.low,
-                unclippedChild.corner.y + unclippedChild.height,
-            );
-            scroller._contentRange.left = Math.min(
-                scroller._contentRange.left,
-                unclippedChild.corner.x,
-            );
-            scroller._contentRange.right = Math.max(
-                scroller._contentRange.right,
-                unclippedChild.corner.x + unclippedChild.width,
-            );
-        }
     }
 
     private removeTrailingWs() {

@@ -167,11 +167,15 @@ export class DrawBox extends DrawContract<BoxLike> {
         let pctScrolled: number;
         if (side === "left" || side === "right") {
             contentUnits = elem.unclippedContentRect.height;
-            unclippedContentUnits = elem._contentRange.low - elem._contentRange.high;
+            unclippedContentUnits =
+                elem._scrollManager.contentRange.low -
+                elem._scrollManager.contentRange.high;
             pctScrolled = elem.getScrollData().y;
         } else {
             contentUnits = elem.unclippedContentRect.width;
-            unclippedContentUnits = elem._contentRange.right - elem._contentRange.left;
+            unclippedContentUnits =
+                elem._scrollManager.contentRange.right -
+                elem._scrollManager.contentRange.left;
             pctScrolled = elem.getScrollData().x;
         }
 

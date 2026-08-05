@@ -51,8 +51,6 @@ export abstract class DomElement<
     /** @internal */
     public _afterLayoutHandlers: Set<() => boolean>;
     /** @internal */
-    public _contentRange: ReturnType<DomElement["_initContentRange"]>;
-    /** @internal */
     public readonly _propsManager: PropsManager;
     /** @internal */
     public readonly _scrollManager: ScrollManager;
@@ -74,7 +72,6 @@ export abstract class DomElement<
         this._afterLayoutHandlers = new Set();
         this._canvas = null;
 
-        this._contentRange = this._initContentRange();
         this.parentElement = null;
 
         this._shadow = new ShadowStyleProxy(this);
@@ -214,16 +211,6 @@ export abstract class DomElement<
     /** @internal */
     public _throwError(errorMsg: string) {
         return throwError(this.getRoot(), errorMsg);
-    }
-
-    /** @internal */
-    public _initContentRange() {
-        return {
-            high: Infinity,
-            low: -Infinity,
-            left: Infinity,
-            right: -Infinity,
-        };
     }
 
     /**
