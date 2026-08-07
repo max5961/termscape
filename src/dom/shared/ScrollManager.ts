@@ -41,6 +41,21 @@ export class ScrollManager {
         };
     }
 
+    // TODO - does high mean deepest (high number value) or high visually (low number value)
+
+    public get highestContent() {
+        return this._contentRange.high;
+    }
+    public get deepestContent() {
+        return this._contentRange.low;
+    }
+    public get leftestContent() {
+        return this._contentRange.left;
+    }
+    public get rightestContent() {
+        return this._contentRange.right;
+    }
+
     public scrollDown(units: number, focus = false) {
         this._lastOffsetChangeWasFocus = focus;
         this.applyScroll(0, -units);

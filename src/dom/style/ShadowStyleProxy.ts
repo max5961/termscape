@@ -14,11 +14,18 @@ export class ShadowStyleProxy {
     public values: Record<string, any>;
     private node: YogaNode;
     private host: DomElement;
+    private flexShrinkBlocked: boolean;
 
     constructor(host: DomElement) {
         this.values = {};
         this.host = host;
         this.node = host._node;
+        this.flexShrinkBlocked = false;
+    }
+
+    public blockFlexShrink(b: boolean) {
+        this.flexShrinkBlocked = b;
+        this.flexShrink = this.host._virtual.flexShrink;
     }
 
     private scheduleRender(opts?: WriteOpts) {
@@ -282,23 +289,33 @@ export class ShadowStyleProxy {
     get computedFlexShrink() {
         return this.node.getFlexShrink();
     }
-    private getEffectiveFlexShrink(v: Sha["flexShrink"]) {
-        if (this.host.parentElement?._is(FOCUS_MANAGER)) {
-            if (this.host.parentElement._getAnyProp("blockChildrenShrink")) {
-                return 0;
-            }
-        }
-        return v;
-    }
 
     set flexShrink(v: Sha["flexShrink"]) {
-        const resolved = this.getEffectiveFlexShrink(v);
-        if (this.values["flexShrink"] === resolved) return;
+        v = this.flexShrinkBlocked ? 0 : v;
+        if (this.values["flexShrink"] === v) return;
 
-        this.values["flexShrink"] = resolved;
-        this.node.setFlexShrink(resolved ?? 0);
+        this.values["flexShrink"] = v;
+        this.node.setFlexShrink(v ?? 0);
         this.scheduleRender({ layoutChange: true });
     }
+
+    // private getEffectiveFlexShrink(v: Sha["flexShrink"]) {
+    //     if (this.host.parentElement?._is(FOCUS_MANAGER)) {
+    //         if (this.host.parentElement._getAnyProp("blockChildrenShrink")) {
+    //             return 0;
+    //         }
+    //     }
+    //     return v;
+    // }
+    //
+    // set flexShrink(v: Sha["flexShrink"]) {
+    //     const resolved = this.getEffectiveFlexShrink(v);
+    //     if (this.values["flexShrink"] === resolved) return;
+    //
+    //     this.values["flexShrink"] = resolved;
+    //     this.node.setFlexShrink(resolved ?? 0);
+    //     this.scheduleRender({ layoutChange: true });
+    // }
 
     get flexDirection(): Sha["flexDirection"] {
         return this.values["flexDirection"];
