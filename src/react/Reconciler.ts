@@ -3,7 +3,7 @@ import { DomElement } from "../dom/DomElement.js";
 import { TextElement } from "../dom/TextElement.js";
 import { deepStrictEqual } from "../shared/DeepStrictEqual.js";
 import { getUpdatePayload } from "./util/getUpdatePayload.js";
-import { type TagName } from "../Types.js";
+// import { type TagName } from "../Types.js";
 
 type A = "A";
 type B = "B";
@@ -19,7 +19,8 @@ type K = "K";
 type L = "L";
 type M = "M";
 
-type Type = TagName;
+// type Type = TagName;
+type Type = any;
 // type P = Props;
 type Container = DomElement; // The root node
 type Instance = DomElement;

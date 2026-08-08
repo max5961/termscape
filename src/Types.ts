@@ -1,5 +1,4 @@
 import { configureStdin } from "term-keymap";
-import { TagNameEnum } from "./Constants.js";
 import type { DomElement } from "./dom/DomElement.js";
 import type { Style } from "./dom/style/Style.js";
 import type { FocusState } from "./dom/shared/FocusNode.js";
@@ -18,8 +17,6 @@ export type ReqProps<T extends object, U extends keyof T> = T & {
 export type Hex = `#${string}`;
 
 export type Rgb = `rgb(${string}${string}${string})`;
-
-export type TagName = (typeof TagNameEnum)[keyof typeof TagNameEnum];
 
 export type Point = { x: number; y: number };
 

@@ -3,6 +3,7 @@ import {
     type IdentityMap,
     TagNameIdentityMap,
     ElementIdentities,
+    LIST_ELEMENT,
 } from "../Constants.js";
 import type { Root } from "./RootElement.js";
 import type { Action, KeyMap } from "term-keymap";
@@ -21,6 +22,7 @@ import { VirtualStyleProxy } from "./style/VirtualStyleProxy.js";
 import { PropsManager, type PropEffectHandler } from "./shared/PropsManager.js";
 import { ScrollManager } from "./shared/ScrollManager.js";
 import { ChildrenManager } from "./shared/ChildrenManager.js";
+import type { ListElement } from "./ListElement.js";
 
 export abstract class DomElement<
     Schema extends {
@@ -306,11 +308,34 @@ export abstract class DomElement<
     // Focus
     // =========================================================================
 
-    // CHORE - How to handle this.  It needs to behave differently in FocusManager
-    // @Render()
-    // public focus() {
-    //     this._focusNode.focusNearestProvider();
-    // }
+    // TODO  add LayoutElement, and VirtualListElement to focus/blur
+
+    public focus() {
+        let p = this.parentElement;
+        let ctlr: undefined | ListElement;
+        while (p) {
+            if (p._is(LIST_ELEMENT)) {
+                ctlr = p;
+                break;
+            }
+            p = p.parentElement;
+        }
+        ctlr?._focusController.focusChild(this);
+    }
+
+    public blur() {
+        let p = this.parentElement;
+        let ctlr: undefined | ListElement;
+
+        while (p) {
+            if (p._is(LIST_ELEMENT)) {
+                ctlr = p;
+                break;
+            }
+            p = p.parentElement;
+        }
+        ctlr?._focusController.blurChild(this);
+    }
 
     public getFocus(): boolean {
         return this._focusNode._getCurrFocus();

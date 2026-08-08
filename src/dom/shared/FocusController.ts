@@ -3,14 +3,13 @@ import type { DomElement } from "../DomElement.js";
 import type { Rect } from "../../compositor/Canvas.js";
 
 export interface IFocusController {
+    /** @internal */
     _focusController: FocusController;
 }
 
 export abstract class FocusStrategy {
     public abstract getNavigableChildren(): DomElement[];
     public abstract buildVisualMap(children: DomElement[]): VisualNodeMap;
-    public abstract onPostAppend: (child: DomElement) => unknown;
-    public abstract onPreRemove: (child: DomElement, freeRecursive?: boolean) => unknown;
 }
 
 export class FocusController {
@@ -18,30 +17,20 @@ export class FocusController {
     private focused: DomElement | undefined;
     private visualMap: VisualNodeMap;
     private strategy: FocusStrategy;
+    private hasInitializedVisualMap: boolean;
 
     constructor(host: DomElement, strategy: FocusStrategy) {
         this.host = host;
         this.focused = undefined;
         this.visualMap = new Map();
         this.strategy = strategy;
-        this.host._childrenManager.onPostAppend = (c) => strategy.onPostAppend(c);
-        this.host._childrenManager.onPreRemove = (c, freeRecursive) => {
-            strategy.onPreRemove(c, freeRecursive);
-            this.handleFocusChangeOnRemoval(c);
-        };
-    }
-
-    private handleFocusChangeOnRemoval(child: DomElement) {
-        if (this.focused === child) {
-            const data = this.getFocusedData();
-            const next = data?.up || data?.down || data?.left || data?.right;
-            this.focusChild(next);
-        }
+        this.hasInitializedVisualMap = false;
     }
 
     public refreshVisualMap() {
         const children = this.strategy.getNavigableChildren();
         this.visualMap = this.strategy.buildVisualMap(children);
+        this.hasInitializedVisualMap = true;
     }
 
     private displaceFocus(dx: number, dy: number): DomElement | undefined {
@@ -79,7 +68,37 @@ export class FocusController {
         return result;
     }
 
+    // Importantly, blurChild and focusChild need to handle cases where there is
+    // no visual map and/or no focused child
+
+    public blurChild(child: DomElement) {
+        if (!this.hasInitializedVisualMap) {
+            child._focusNode.becomeProvider(false);
+            child._focusNode.setOwnProvider(false);
+            return;
+        }
+
+        if (this.focused !== child) return;
+
+        const data = this.getFocusedData();
+        const next = data?.up || data?.down || data?.left || data?.right;
+        this.focusChild(next);
+    }
+
+    private setFocusToChild(child: DomElement) {
+        this.focused?._focusNode.becomeProvider(false);
+        this.focused?._focusNode.setOwnProvider(false);
+        this.focused = child;
+        child._focusNode.becomeProvider(true);
+        child._focusNode.setOwnProvider(true);
+    }
+
     public focusChild(child?: DomElement | undefined): DomElement | undefined {
+        if (!this.hasInitializedVisualMap && child) {
+            this.setFocusToChild(child);
+            return child;
+        }
+
         if (!child || !this.visualMap.has(child)) return;
         if (this.focused === child) return child;
 
@@ -240,11 +259,6 @@ export class FocusController {
     }
     private focusScrollRight(toScroll: number) {
         this.host._scrollManager.scrollRight(toScroll, true);
-    }
-    private setFocusToChild(child: DomElement) {
-        this.focused?._focusNode.setOwnProvider(false);
-        this.focused = child;
-        child._focusNode.setOwnProvider(true);
     }
     private getFocusItemRect() {
         return this.focused?.unclippedRect;

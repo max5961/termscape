@@ -52,7 +52,7 @@ export class ChildrenManager {
         this.host._focusNode.addChild(child._focusNode);
         child._childrenManager.parentElement = this.host;
 
-        this.onPostAppend?.();
+        this.onPostAppend?.(child);
     }
 
     /**
@@ -80,7 +80,7 @@ export class ChildrenManager {
         this.set.add(child);
         child._childrenManager.parentElement = this.host;
 
-        this.onPostAppend?.();
+        this.onPostAppend?.(child);
     }
 
     public removeChild(child: DomElement, freeRecursive = false) {
@@ -88,7 +88,7 @@ export class ChildrenManager {
             this.host._throwError(ErrorMessages.removeChild);
         }
 
-        this.onPreRemove?.();
+        this.onPreRemove?.(child, freeRecursive);
 
         const idx = this.children.indexOf(child);
         this.children.splice(idx, 1);

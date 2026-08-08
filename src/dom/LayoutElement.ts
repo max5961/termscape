@@ -249,7 +249,7 @@ export class LayoutElement extends FocusManager<{
 }
 
 export class LayoutNode extends BoxElement {
-    protected static override identity = new Set(ElementIdentities.LayoutNode);
+    protected override readonly identities = ElementIdentities.LayoutNode;
 
     /** @interal */
     public _parentLayout: LayoutElement | undefined;

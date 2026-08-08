@@ -18,7 +18,7 @@ export type TextContentNode = string | TextNode;
 export type TextContent = string | TextContentNode[];
 
 export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Text }> {
-    protected static override readonly identities = ElementIdentities.TextElement;
+    protected override readonly identities = ElementIdentities.TextElement;
 
     protected _childTextNodes = new Set<TextNode>();
     protected _textNodes: (string | TextNode)[] = [];

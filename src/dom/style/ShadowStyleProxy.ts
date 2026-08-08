@@ -1,3 +1,4 @@
+import { logger } from "../../shared/Logger.js";
 import { Yg } from "./../../Constants.js";
 import type { YogaNode, WriteOpts } from "./../../Types.js";
 import type { DomElement } from "./../DomElement.js";
@@ -23,8 +24,8 @@ export class ShadowStyleProxy {
         this.flexShrinkBlocked = false;
     }
 
-    public blockFlexShrink(b: boolean) {
-        this.flexShrinkBlocked = b;
+    public blockFlexShrink(blocked: boolean) {
+        this.flexShrinkBlocked = blocked;
         this.flexShrink = this.host._virtual.flexShrink;
     }
 

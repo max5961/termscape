@@ -1,5 +1,5 @@
 import { DomElement } from "./DomElement.js";
-import { ElementIdentities, TagNameIdentityMap } from "../Constants.js";
+import { ElementIdentities } from "../Constants.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { ErrorMessages } from "../shared/ErrorMessages.js";

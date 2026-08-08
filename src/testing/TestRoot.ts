@@ -5,9 +5,9 @@ import { Root } from "../dom/RootElement.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { getMockStdout, MockStdout, type MockStdoutConfig } from "./MockStdout.js";
 import { getMockStdin } from "./MockStdin.js";
-import { TEST_ROOT_ELEMENT } from "../Constants.js";
 import * as TestUtil from "./util.js";
 import type { TestScheduler } from "../shared/Scheduler.js";
+import { ElementIdentities } from "../Constants.js";
 
 // prettier-ignore
 export type TestRuntime = _Omit<
@@ -17,7 +17,7 @@ export type TestRuntime = _Omit<
 >
 
 export class TestRoot extends Root {
-    protected static override identity = TEST_ROOT_ELEMENT;
+    protected override readonly identities = ElementIdentities.TestRoot;
 
     private _lastFrame: string;
     private _frames: string[];
