@@ -14,10 +14,10 @@ export abstract class FocusStrategy {
 
 export class FocusController {
     private host: DomElement;
-    private focused: DomElement | undefined;
-    private visualMap: VisualNodeMap;
+    public focused: DomElement | undefined;
     private strategy: FocusStrategy;
-    private hasInitializedVisualMap: boolean;
+    public hasInitializedVisualMap: boolean;
+    public visualMap: VisualNodeMap;
 
     constructor(host: DomElement, strategy: FocusStrategy) {
         this.host = host;
@@ -71,6 +71,8 @@ export class FocusController {
     // Importantly, blurChild and focusChild need to handle cases where there is
     // no visual map and/or no focused child
 
+    // This should NOT be used for removing children from the tree.  When removing
+    // children from the tree, the child focusNode must become a consumer
     public blurChild(child: DomElement) {
         if (!this.hasInitializedVisualMap) {
             child._focusNode.becomeProvider(false);
