@@ -1,4 +1,9 @@
-import { Yg, type IdentityMap, TagNameIdentityMap } from "../Constants.js";
+import {
+    Yg,
+    type IdentityMap,
+    TagNameIdentityMap,
+    ElementIdentities,
+} from "../Constants.js";
 import type { Root } from "./RootElement.js";
 import type { Action, KeyMap } from "term-keymap";
 import type { DOMRect, YogaNode, StyleHandler } from "../Types.js";
@@ -71,11 +76,11 @@ export abstract class DomElement<
         this.registerPropEffect("titleBottomRight", this.registerTitleEffect);
     }
 
-    set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
+    public set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
         this._virtual._setStyle(stylesheet);
     }
 
-    get style(): Schema["Style"] {
+    public get style(): Schema["Style"] {
         return this._virtual as Schema["Style"];
     }
 
@@ -83,6 +88,30 @@ export abstract class DomElement<
     // public getComputedStyle(style: keyof Schema["Style"]) {
     //     return this._shadow[style];
     // }
+
+    public get tagName(): keyof typeof TagNameIdentityMap {
+        if (this.identities === ElementIdentities.BoxElement) {
+            return "box";
+        } else if (this.identities === ElementIdentities.TextElement) {
+            return "text";
+        } else if (this.identities === ElementIdentities.TextNode) {
+            return "text-node";
+        } else if (this.identities === ElementIdentities.ListElement) {
+            return "list";
+        } else if (this.identities === ElementIdentities.VirtualListElement) {
+            return "virtual-list";
+        } else if (this.identities === ElementIdentities.LayoutElement) {
+            return "layout";
+        } else if (this.identities === ElementIdentities.LayoutNode) {
+            return "layout-node";
+        } else if (this.identities === ElementIdentities.BookElement) {
+            return "book";
+        } else if (this.identities === ElementIdentities.CanvasElement) {
+            return "canvas";
+        } else {
+            return "root";
+        }
+    }
 
     /** @internal */
     public _is<T extends keyof IdentityMap>(sym: T): this is IdentityMap[T] {
