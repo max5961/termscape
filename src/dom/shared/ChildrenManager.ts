@@ -8,6 +8,10 @@ export class ChildrenManager {
     private set: Set<DomElement>;
     public children: DomElement[];
     public parentElement: DomElement | null;
+    public onPostAppend: ((child: DomElement) => unknown) | undefined;
+    public onPreRemove:
+        | ((child: DomElement, freeRecursive?: boolean) => unknown)
+        | undefined;
 
     constructor(host: DomElement) {
         this.host = host;
@@ -47,6 +51,8 @@ export class ChildrenManager {
         this.set.add(child);
         this.host._focusNode.addChild(child._focusNode);
         child._childrenManager.parentElement = this.host;
+
+        this.onPostAppend?.();
     }
 
     /**
@@ -73,12 +79,16 @@ export class ChildrenManager {
         this.node.insertChild(child._node, beforeChildIdx);
         this.set.add(child);
         child._childrenManager.parentElement = this.host;
+
+        this.onPostAppend?.();
     }
 
     public removeChild(child: DomElement, freeRecursive = false) {
         if (!this.set.has(child)) {
             this.host._throwError(ErrorMessages.removeChild);
         }
+
+        this.onPreRemove?.();
 
         const idx = this.children.indexOf(child);
         this.children.splice(idx, 1);

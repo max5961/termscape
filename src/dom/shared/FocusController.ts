@@ -9,6 +9,8 @@ export interface IFocusController {
 export abstract class FocusStrategy {
     public abstract getNavigableChildren(): DomElement[];
     public abstract buildVisualMap(children: DomElement[]): VisualNodeMap;
+    public abstract onPostAppend: (child: DomElement) => unknown;
+    public abstract onPreRemove: (child: DomElement, freeRecursive?: boolean) => unknown;
 }
 
 export class FocusController {
@@ -22,6 +24,19 @@ export class FocusController {
         this.focused = undefined;
         this.visualMap = new Map();
         this.strategy = strategy;
+        this.host._childrenManager.onPostAppend = (c) => strategy.onPostAppend(c);
+        this.host._childrenManager.onPreRemove = (c, freeRecursive) => {
+            strategy.onPreRemove(c, freeRecursive);
+            this.handleFocusChangeOnRemoval(c);
+        };
+    }
+
+    private handleFocusChangeOnRemoval(child: DomElement) {
+        if (this.focused === child) {
+            const data = this.getFocusedData();
+            const next = data?.up || data?.down || data?.left || data?.right;
+            this.focusChild(next);
+        }
     }
 
     public refreshVisualMap() {
