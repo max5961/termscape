@@ -1,11 +1,10 @@
 import { FocusManager } from "./FocusManager.js";
-import type { DomElement } from "./DomElement.js";
+import { DomElement } from "./DomElement.js";
 import type { VisualNodeMap } from "../Types.js";
-import { AbstractBoxElement } from "./BoxElement.js";
+import { BoxElement } from "./BoxElement.js";
 import type { Style } from "./style/Style.js";
 import { objectKeys } from "../Util.js";
-import { TagNameEnum } from "../Constants.js";
-import { LAYOUT_ELEMENT, LAYOUT_NODE } from "../Constants.js";
+import { ElementIdentities } from "../Constants.js";
 import type { Props } from "./props/Props.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
 
@@ -13,14 +12,10 @@ export class LayoutElement extends FocusManager<{
     Style: Style.Layout;
     Props: Props.Layout;
 }> {
-    protected static override identity = LAYOUT_ELEMENT;
+    protected override readonly identities = ElementIdentities.LayoutElement;
 
     constructor() {
         super(DefaultStyles.Layout);
-    }
-
-    public override get tagName(): typeof TagNameEnum.Layout {
-        return "layout";
     }
 
     public override focusUp() {
@@ -253,15 +248,14 @@ export class LayoutElement extends FocusManager<{
     }
 }
 
-export class LayoutNode extends AbstractBoxElement {
-    protected static override identity = LAYOUT_NODE;
+export class LayoutNode extends BoxElement {
+    protected static override identity = new Set(ElementIdentities.LayoutNode);
+
+    /** @interal */
+    public _parentLayout: LayoutElement | undefined;
 
     constructor() {
         super();
         this._becomeProvider(false);
-    }
-
-    override get tagName(): typeof TagNameEnum.LayoutNode {
-        return "layout-node";
     }
 }

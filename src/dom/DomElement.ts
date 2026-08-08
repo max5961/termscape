@@ -1,15 +1,10 @@
-import { Yg } from "../Constants.js";
+import { Yg, type IdentityMap, TagNameIdentityMap } from "../Constants.js";
 import type { Root } from "./RootElement.js";
 import type { Action, KeyMap } from "term-keymap";
-import type { DOMRect, YogaNode, StyleHandler, TagName } from "../Types.js";
+import type { DOMRect, YogaNode, StyleHandler } from "../Types.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import type { Canvas, Rect } from "../compositor/Canvas.js";
-import {
-    DOM_ELEMENT,
-    TagNameIdentityMap,
-    type ElementIdentityMap,
-} from "../Constants.js";
 import { Render, RequestInput } from "./util/decorators.js";
 import { FocusNode } from "./shared/FocusNode.js";
 import { throwError } from "../shared/ThrowError.js";
@@ -28,11 +23,10 @@ export abstract class DomElement<
         Props: Props.All;
     } = { Style: Style.All; Props: Props.All },
 > {
-    protected static readonly identity = DOM_ELEMENT;
+    protected abstract readonly identities: Set<symbol>;
 
-    protected readonly _identities: Set<symbol>;
+    /** @internal */
     public readonly _events: DomEvents;
-
     /** @internal */
     public readonly _metadata: MetaData;
     /** @internal */
@@ -55,9 +49,6 @@ export abstract class DomElement<
     public readonly _childrenManager: ChildrenManager;
 
     constructor(defaultStyles: Style.All) {
-        this._identities = new Set();
-        this.collectIdentities();
-
         this._node = Yg.Node.create();
         this._focusNode = new FocusNode(this);
         this._propsManager = new PropsManager(this);
@@ -80,8 +71,6 @@ export abstract class DomElement<
         this.registerPropEffect("titleBottomRight", this.registerTitleEffect);
     }
 
-    public abstract get tagName(): TagName;
-
     set style(stylesheet: Schema["Style"] | StyleHandler<Schema["Style"]>) {
         this._virtual._setStyle(stylesheet);
     }
@@ -95,29 +84,16 @@ export abstract class DomElement<
     //     return this._shadow[style];
     // }
 
-    private collectIdentities() {
-        let ctor: any = this.constructor;
-
-        while (ctor) {
-            if (typeof ctor.identity === "symbol") {
-                this._identities.add(ctor.identity);
-            }
-            ctor = Object.getPrototypeOf(ctor);
-        }
-    }
-
     /** @internal */
-    public _is<T extends keyof ElementIdentityMap>(
-        sym: T,
-    ): this is ElementIdentityMap[T] {
-        return this._identities.has(sym);
+    public _is<T extends keyof IdentityMap>(sym: T): this is IdentityMap[T] {
+        return this.identities.has(sym);
     }
 
     public instanceOf<T extends keyof typeof TagNameIdentityMap>(
         tag: T,
-    ): this is ElementIdentityMap[(typeof TagNameIdentityMap)[T]] {
+    ): this is IdentityMap[(typeof TagNameIdentityMap)[T]] {
         const identity = TagNameIdentityMap[tag];
-        return this._identities.has(identity);
+        return this.identities.has(identity);
     }
 
     public setProp<T extends keyof Schema["Props"]>(key: T, next: Schema["Props"][T]) {

@@ -1,4 +1,4 @@
-import { FOCUS_MANAGER } from "../Constants.js";
+import { ElementIdentities, FOCUS_MANAGER } from "../Constants.js";
 import type { Style } from "./style/Style.js";
 import { recalculateStyle } from "./util/recalculateStyle.js";
 import type { VisualNodeMap } from "../Types.js";
@@ -14,7 +14,7 @@ type FMSchema = {
 export abstract class FocusManager<
     Schema extends FMSchema = FMSchema,
 > extends DomElement<Schema> {
-    protected static override identity = FOCUS_MANAGER;
+    protected override readonly identities = ElementIdentities.FocusManager;
 
     private static RecalulateFlexShrink = (child: DomElement) => {
         recalculateStyle(child, "flexShrink");

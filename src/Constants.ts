@@ -1,19 +1,20 @@
-import type { BookElement } from "./dom/BookElement.js";
-import type { BoxElement } from "./dom/BoxElement.js";
-import type { CanvasElement } from "./dom/CanvasElement.js";
+import { BookElement } from "./dom/BookElement.js";
+import { BoxElement } from "./dom/BoxElement.js";
+import { CanvasElement } from "./dom/CanvasElement.js";
 import type { FocusManager } from "./dom/FocusManager.js";
-import type { LayoutElement, LayoutNode } from "./dom/LayoutElement.js";
-import type { ListElement } from "./dom/ListElement.js";
+import { LayoutElement, type LayoutNode } from "./dom/LayoutElement.js";
+import { ListElement } from "./dom/ListElement.js";
 import type { VirtualListElement } from "./dom/VirtualListElement.js";
 import type { Root } from "./dom/RootElement.js";
 import type { TestRoot } from "./testing/TestRoot.js";
-import type { TextElement, TextNode } from "./dom/TextElement.js";
-import type { DomElement } from "./dom/DomElement.js";
+import { TextElement, type TextNode } from "./dom/TextElement.js";
+import { DomElement } from "./dom/DomElement.js";
 import type { BgColor } from "ansi-escape-sequences";
 import type { Color, TextEffect } from "./Types.js";
 import type { Style } from "./dom/style/Style.js";
-import type { InputElement } from "./dom/InputElement.js";
+import { InputElement } from "./dom/InputElement.js";
 import Yoga from "yoga-wasm-web/auto";
+import type { FocusController, IFocusController } from "./dom/shared/FocusController.js";
 
 export const Yg = Yoga;
 
@@ -32,26 +33,12 @@ export const LAYOUT_NODE = Symbol.for("termscape.layout_node");
 export const LIST_ELEMENT = Symbol.for("termscape.list_element");
 export const VIRTUAL_LIST_ELEMENT = Symbol.for("termscape.virtual_list_element");
 export const FOCUS_MANAGER = Symbol.for("termscape.focus_manager");
+export const FOCUS_CONTROLLER = Symbol.for("termscape.focus_controller");
 export const ROOT_ELEMENT = Symbol.for("termscape.root_element");
 export const TEST_ROOT_ELEMENT = Symbol.for("termscape.test_root_element");
 export const INPUT_ELEMENT = Symbol.for("termscape.input_element");
 
-export const TagNameIdentityMap = {
-    root: ROOT_ELEMENT,
-    box: BOX_ELEMENT,
-    text: TEXT_ELEMENT,
-    book: BOOK_ELEMENT,
-    canvas: CANVAS_ELEMENT,
-    layout: LAYOUT_ELEMENT,
-    list: LIST_ELEMENT,
-    input: INPUT_ELEMENT,
-    ["text-node"]: TEXT_NODE,
-    ["layout-node"]: LAYOUT_NODE,
-    ["focus-manager"]: FOCUS_MANAGER,
-    ["virtual-list"]: VIRTUAL_LIST_ELEMENT,
-} as const;
-
-export type ElementIdentityMap = {
+export type IdentityMap = {
     [DOM_ELEMENT]: DomElement;
     [BOX_ELEMENT]: BoxElement;
     [TEXT_ELEMENT]: TextElement;
@@ -66,19 +53,40 @@ export type ElementIdentityMap = {
     [ROOT_ELEMENT]: Root;
     [TEST_ROOT_ELEMENT]: TestRoot;
     [INPUT_ELEMENT]: InputElement;
+
+    // shared by ListElement and LayoutElement
+    [FOCUS_CONTROLLER]: IFocusController;
 };
 
-export const TagNameEnum = {
-    Box: "box",
-    Text: "text",
-    Root: "root",
-    List: "list",
-    VirtualListElement: "virtual-list",
-    Layout: "layout",
-    LayoutNode: "layout-node",
-    Book: "book",
-    Canvas: "canvas",
-    Input: "input",
+export const TagNameIdentityMap = {
+    ["box"]: BOX_ELEMENT,
+    ["text"]: TEXT_ELEMENT,
+    ["text-node"]: TEXT_NODE,
+    ["book"]: BOOK_ELEMENT,
+    ["canvas"]: CANVAS_ELEMENT,
+    ["layout"]: LAYOUT_ELEMENT,
+    ["layout-node"]: LAYOUT_NODE,
+    ["list"]: LIST_ELEMENT,
+    ["virtual-list"]: VIRTUAL_LIST_ELEMENT,
+    ["root"]: ROOT_ELEMENT,
+    ["input"]: INPUT_ELEMENT,
+} as const;
+
+export const ElementIdentities = {
+    DomElement: new Set([DOM_ELEMENT]),
+    BoxElement: new Set([BOX_ELEMENT]),
+    TextElement: new Set([TEXT_ELEMENT]),
+    TextNode: new Set([TEXT_NODE, TEXT_ELEMENT]),
+    BookElement: new Set([BOOK_ELEMENT]),
+    CanvasElement: new Set([CANVAS_ELEMENT]),
+    LayoutElement: new Set([LAYOUT_ELEMENT, FOCUS_CONTROLLER]),
+    LayoutNode: new Set([LAYOUT_NODE]),
+    ListElement: new Set([LIST_ELEMENT, FOCUS_CONTROLLER]),
+    VirtualListElement: new Set([VIRTUAL_LIST_ELEMENT]),
+    FocusManager: new Set([FOCUS_MANAGER]),
+    Root: new Set([ROOT_ELEMENT]),
+    TestRoot: new Set([TEST_ROOT_ELEMENT]),
+    InputElement: new Set([INPUT_ELEMENT]),
 } as const;
 
 export const TextEffectSet = new Set<TextEffect>([

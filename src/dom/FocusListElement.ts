@@ -1,7 +1,11 @@
-import { TagNameEnum } from "../Constants.js";
+import { ElementIdentities } from "../Constants.js";
 import type { VisualNodeMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
-import { FocusStrategy, FocusController } from "./shared/FocusController.js";
+import {
+    FocusStrategy,
+    FocusController,
+    type IFocusController,
+} from "./shared/FocusController.js";
 
 class ListFocusStrategy extends FocusStrategy {
     private host: DomElement;
@@ -66,17 +70,16 @@ class ListFocusStrategy extends FocusStrategy {
     }
 }
 
-export class FocusListElement extends DomElement {
-    private controller: FocusController;
+export class FocusListElement extends DomElement implements IFocusController {
+    protected override readonly identities = ElementIdentities.ListElement;
+
+    /** @internal */
+    public _focusController: FocusController;
 
     constructor() {
         super({});
         const strategy = new ListFocusStrategy(this);
-        this.controller = new FocusController(this, strategy);
-    }
-
-    public override get tagName(): typeof TagNameEnum.List {
-        return "list";
+        this._focusController = new FocusController(this, strategy);
     }
 
     public override appendChild(child: DomElement): void {
@@ -99,10 +102,10 @@ export class FocusListElement extends DomElement {
     }
 
     public focusNext() {
-        this.controller.displaceDown();
+        this._focusController.displaceDown();
     }
 
     public focusPrev() {
-        this.controller.displaceUp();
+        this._focusController.displaceUp();
     }
 }

@@ -1,5 +1,5 @@
 import EventEmitter from "events";
-import { TEST_ROOT_ELEMENT, Yg, type TagNameEnum } from "../Constants.js";
+import { ElementIdentities, TEST_ROOT_ELEMENT, Yg } from "../Constants.js";
 import type { InputElement } from "./InputElement.js";
 import type { Runtime, WriteOpts, EventPayloadMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
@@ -7,7 +7,6 @@ import { Scheduler, TestScheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
 import { createRuntime, type RuntimeCtl } from "../shared/RuntimeFactory.js";
 import { HooksManager, type Hook, type HookHandler } from "../render/hooks/Hooks.js";
-import { ROOT_ELEMENT } from "../Constants.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { MetaData, MetaDataRegister } from "./shared/MetaData.js";
@@ -18,7 +17,7 @@ export class Root extends DomElement<{
     Style: Style.Root;
     Props: Props.Root;
 }> {
-    protected static override identity = ROOT_ELEMENT;
+    protected override readonly identities = ElementIdentities.Root;
 
     public runtime: RuntimeCtl["api"];
     public hooks: HooksManager;
@@ -59,10 +58,6 @@ export class Root extends DomElement<{
         if (config.startOnCreate !== false) {
             this.runtimeCtl.startRuntime();
         }
-    }
-
-    public override get tagName(): typeof TagNameEnum.Root {
-        return "root";
     }
 
     // CHORE - changed the Style.Root type so this needs to be changed to allow

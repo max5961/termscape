@@ -1,6 +1,6 @@
 import { DomElement } from "./DomElement.js";
 import { FocusManager } from "./FocusManager.js";
-import { TagNameEnum, LIST_ELEMENT } from "../Constants.js";
+import { ElementIdentities } from "../Constants.js";
 import type { VisualNodeMap } from "../Types.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
@@ -10,14 +10,10 @@ export class ListElement extends FocusManager<{
     Style: Style.List;
     Props: Props.List;
 }> {
-    protected static override identity = LIST_ELEMENT;
+    protected override readonly identities = ElementIdentities.ListElement;
 
     constructor() {
         super(DefaultStyles.List);
-    }
-
-    public override get tagName(): typeof TagNameEnum.List {
-        return "list";
     }
 
     public focusNext(units = 1) {

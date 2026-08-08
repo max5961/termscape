@@ -9,7 +9,7 @@ import {
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { Render } from "./util/decorators.js";
-import { TagNameEnum, TEXT_NODE, Yg } from "../Constants.js";
+import { ElementIdentities, TEXT_NODE, Yg } from "../Constants.js";
 import { TEXT_ELEMENT } from "../Constants.js";
 import { objectEntries } from "../Util.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
@@ -18,7 +18,7 @@ export type TextContentNode = string | TextNode;
 export type TextContent = string | TextContentNode[];
 
 export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Text }> {
-    protected static override identity = TEXT_ELEMENT;
+    protected static override readonly identities = ElementIdentities.TextElement;
 
     protected _childTextNodes = new Set<TextNode>();
     protected _textNodes: (string | TextNode)[] = [];
@@ -36,10 +36,6 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
         if (!this.isTextNode) {
             this._node.setMeasureFunc(this.getMeasureFunc());
         }
-    }
-
-    public override get tagName(): typeof TagNameEnum.Text {
-        return TagNameEnum.Text;
     }
 
     protected get isTextNode() {
@@ -221,7 +217,7 @@ export class TextElement extends DomElement<{ Style: Style.Text; Props: Props.Te
 }
 
 export class TextNode extends TextElement {
-    protected static override identity = TEXT_NODE;
+    protected override identities = ElementIdentities.TextNode;
 
     constructor(style: Style.Text, textContent: TextContent) {
         super();

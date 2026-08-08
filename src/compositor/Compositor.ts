@@ -1,7 +1,6 @@
-import { FOCUS_MANAGER, Yg } from "../Constants.js";
+import { FOCUS_MANAGER, LAYOUT_ELEMENT, LIST_ELEMENT, Yg } from "../Constants.js";
 import type { DomElement } from "../dom/DomElement.js";
 import type { Root } from "../dom/RootElement.js";
-import { logger } from "../shared/Logger.js";
 import type { WriteOpts } from "../Types.js";
 import { type Canvas, RootCanvas, SubCanvas } from "./Canvas.js";
 import { DomRects } from "./DomRects.js";
@@ -68,7 +67,7 @@ export class Compositor {
             return;
         }
 
-        if (canvas.canDraw() && elem._is(FOCUS_MANAGER)) {
+        if (canvas.canDraw() && (elem._is(LIST_ELEMENT) || elem._is(LAYOUT_ELEMENT))) {
             postLayout.push(() => {
                 elem._refreshVisualMap();
             });

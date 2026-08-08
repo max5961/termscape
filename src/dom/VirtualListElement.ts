@@ -1,6 +1,6 @@
 import type { Props } from "./props/Props.js";
 import type { Style } from "./style/Style.js";
-import { TagNameEnum, VIRTUAL_LIST_ELEMENT } from "../Constants.js";
+import { ElementIdentities } from "../Constants.js";
 import { DomElement } from "./DomElement.js";
 import { IndexBuffer } from "./shared/IndexBuffer.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
@@ -16,7 +16,7 @@ export class VirtualListElement<T = any> extends DomElement<{
     Style: Style.VirtualList;
     Props: Props.VirtualList<T>;
 }> {
-    protected static override identity = VIRTUAL_LIST_ELEMENT;
+    protected override readonly identities = ElementIdentities.VirtualListElement;
 
     /** @internal */
     public _buffer: IndexBuffer;
@@ -92,9 +92,6 @@ export class VirtualListElement<T = any> extends DomElement<{
                 }
             });
         });
-    }
-    public override get tagName(): typeof TagNameEnum.VirtualListElement {
-        return "virtual-list";
     }
 
     public focusNext(n: number = 1) {

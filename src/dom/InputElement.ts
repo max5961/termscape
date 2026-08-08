@@ -1,5 +1,5 @@
 import { ActionStore, InputState, type Action } from "term-keymap";
-import { INPUT_ELEMENT, type TagNameEnum } from "../Constants.js";
+import { ElementIdentities } from "../Constants.js";
 import { DomElement } from "./DomElement.js";
 import { TextElement } from "./TextElement.js";
 import type { Style } from "./style/Style.js";
@@ -10,7 +10,7 @@ export class InputElement extends DomElement<{
     Style: Style.Input; // includes TextStyle & BoxStyle
     Props: Props.Input;
 }> {
-    protected static override identity = INPUT_ELEMENT;
+    protected override readonly identities = ElementIdentities.InputElement;
 
     public hasClaimedStdin: boolean;
     /** @internal */
@@ -69,10 +69,6 @@ export class InputElement extends DomElement<{
             keymap: { key: "tab" },
             name: "tab",
         });
-    }
-
-    public override get tagName(): typeof TagNameEnum.Input {
-        return "input";
     }
 
     private registerProp(

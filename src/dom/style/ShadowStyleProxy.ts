@@ -1,4 +1,4 @@
-import { FOCUS_MANAGER, Yg } from "./../../Constants.js";
+import { Yg } from "./../../Constants.js";
 import type { YogaNode, WriteOpts } from "./../../Types.js";
 import type { DomElement } from "./../DomElement.js";
 import type { Shadow, Style } from "./Style.js";

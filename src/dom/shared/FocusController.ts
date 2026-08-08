@@ -2,6 +2,10 @@ import type { VisualNodeMap } from "../../Types.js";
 import type { DomElement } from "../DomElement.js";
 import type { Rect } from "../../compositor/Canvas.js";
 
+export interface IFocusController {
+    _focusController: FocusController;
+}
+
 export abstract class FocusStrategy {
     public abstract getNavigableChildren(): DomElement[];
     public abstract buildVisualMap(children: DomElement[]): VisualNodeMap;

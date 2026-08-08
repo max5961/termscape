@@ -1,8 +1,8 @@
 import { DomElement } from "./DomElement.js";
-import { TagNameEnum, BOOK_ELEMENT } from "../Constants.js";
+import { ElementIdentities, TagNameIdentityMap } from "../Constants.js";
 import type { Style } from "./style/Style.js";
-import { ErrorMessages } from "../shared/ErrorMessages.js";
 import type { Props } from "./props/Props.js";
+import { ErrorMessages } from "../shared/ErrorMessages.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
 
 /**
@@ -19,7 +19,7 @@ export class BookElement extends DomElement<{
     Style: Style.Book;
     Props: Props.Book;
 }> {
-    protected static override identity = BOOK_ELEMENT;
+    protected override readonly identities = ElementIdentities.BookElement;
 
     private _pages: DomElement[];
     private _pagesSet: Set<DomElement>;
@@ -28,10 +28,6 @@ export class BookElement extends DomElement<{
         super(DefaultStyles.Book);
         this._pages = [];
         this._pagesSet = new Set();
-    }
-
-    public override get tagName(): typeof TagNameEnum.Book {
-        return "book";
     }
 
     /*
