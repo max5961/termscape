@@ -1,5 +1,5 @@
 import type { DomElement } from "../DomElement.js";
-import type { DomEvents } from "./DomEvents.js";
+import type { DomEventService } from "./DomEventService.js";
 
 // CHORE - move to types
 export type FocusState = { focus: boolean; shallowFocus: boolean };
@@ -181,8 +181,10 @@ export class FocusNode {
     private dispatchChangeHandlers(prev: FocusState, next: FocusState) {
         if (!this._host.hasFocusChangeHandler) return;
 
-        const dispatch = (...[e, next]: Parameters<DomEvents["dispatchFocusEvent"]>) => {
-            this._host._events.dispatchFocusEvent(e, next);
+        const dispatch = (
+            ...[e, next]: Parameters<DomEventService["dispatchFocusEvent"]>
+        ) => {
+            this._host._domEventService.dispatchFocusEvent(e, next);
         };
 
         if (!prev.focus && next.focus) dispatch("focus", next);

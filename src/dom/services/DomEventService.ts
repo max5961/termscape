@@ -1,4 +1,3 @@
-import { logger } from "../../shared/Logger.js";
 import type {
     MouseEventType,
     MouseEvent,
@@ -13,7 +12,7 @@ import type { FocusState } from "./FocusNode.js";
 
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 
-export class DomEvents {
+export class DomEventService {
     private _host: DomElement;
 
     // private _emitter = new EventEmitter();
@@ -79,7 +78,7 @@ export class DomEvents {
         let canImmediatePropagate = true;
 
         const propagate = (curr: DomElement, target: DomElement) => {
-            const handlers = curr._events.getListeners(type);
+            const handlers = curr._domEventService.getListeners(type);
 
             if (handlers.length) {
                 const event: MouseEvent = {

@@ -155,8 +155,7 @@ export class Root extends DomElement<{
         const target = this.renderer.rects.findTargetElement(x, y);
         if (!target) return;
 
-        const eventmgr = target._events;
-        eventmgr.dispatchMouseEvent(x, y, type);
+        target._domEventService.dispatchMouseEvent(x, y, type);
     };
 
     /** @internal */

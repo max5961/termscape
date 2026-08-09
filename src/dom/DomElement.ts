@@ -15,7 +15,7 @@ import { Render, RequestInput } from "./util/decorators.js";
 import { FocusNode } from "./services/FocusNode.js";
 import { throwError } from "../shared/ThrowError.js";
 import { MetaData } from "./services/MetaData.js";
-import { DomEvents } from "./services/DomEvents.js";
+import { DomEventService } from "./services/DomEventService.js";
 import type { Event, EventHandler } from "../Types.js";
 import { ShadowStyleProxy } from "./style/ShadowStyleProxy.js";
 import { VirtualStyleProxy } from "./style/VirtualStyleProxy.js";
@@ -29,6 +29,8 @@ interface IDomElement extends ITreeService, IScrollService {
     _treeService: TreeService;
     /** @internal */
     _scrollService: ScrollService;
+    /** @internal */
+    _domEventService: DomEventService;
 }
 
 export abstract class DomElement<
@@ -40,8 +42,6 @@ export abstract class DomElement<
 {
     protected abstract readonly identities: Set<symbol>;
 
-    /** @internal */
-    public readonly _events: DomEvents;
     /** @internal */
     public readonly _metadata: MetaData;
     /** @internal */
@@ -56,7 +56,7 @@ export abstract class DomElement<
     public _canvas: Canvas | null;
     /** @internal */
     public _afterLayoutHandlers: Set<() => boolean>;
-    /** @internal */
+    public readonly _domEventService: DomEventService;
     public readonly _propsManager: PropsManager;
     public readonly _scrollService: ScrollService;
     public readonly _treeService: TreeService;
@@ -66,7 +66,7 @@ export abstract class DomElement<
         this._focusNode = new FocusNode(this);
         this._propsManager = new PropsManager(this);
         this._metadata = new MetaData(this);
-        this._events = new DomEvents(this);
+        this._domEventService = new DomEventService(this);
         this._scrollService = new ScrollService(this);
         this._treeService = new TreeService(this);
         this._afterLayoutHandlers = new Set();
@@ -435,21 +435,21 @@ export abstract class DomElement<
 
     @RequestInput()
     public addEventListener<T extends Event>(event: T, handler: EventHandler<T>) {
-        return this._events.addListener(event, handler);
+        return this._domEventService.addListener(event, handler);
     }
 
     public removeEventListener<T extends Event>(
         event: T,
         handler: EventHandler<T>,
     ): void {
-        this._events.removeListener(event, handler);
+        this._domEventService.removeListener(event, handler);
     }
 
     // We don't necessarily want input this for non-mouse events, even though it would be rare to have an onFocus and not
     // be using some sort of input
     @RequestInput()
-    private setSingle(...args: Parameters<DomEvents["setSingle"]>) {
-        return this._events.setSingle(...args);
+    private setSingle(...args: Parameters<DomEventService["setSingle"]>) {
+        return this._domEventService.setSingle(...args);
     }
 
     // LEFT BTN
@@ -510,68 +510,68 @@ export abstract class DomElement<
 
     // LEFT BTN
     public get onClick() {
-        return this._events.getSingle("click");
+        return this._domEventService.getSingle("click");
     }
     public get onDblClick() {
-        return this._events.getSingle("dblclick");
+        return this._domEventService.getSingle("dblclick");
     }
     public get onMouseDown() {
-        return this._events.getSingle("mousedown");
+        return this._domEventService.getSingle("mousedown");
     }
     public get onMouseUp() {
-        return this._events.getSingle("mouseup");
+        return this._domEventService.getSingle("mouseup");
     }
     // RIGHT BTN
     public get onRightClick() {
-        return this._events.getSingle("rightclick");
+        return this._domEventService.getSingle("rightclick");
     }
     public get onRightDblClick() {
-        return this._events.getSingle("rightdblclick");
+        return this._domEventService.getSingle("rightdblclick");
     }
     public get onRightMouseDown() {
-        return this._events.getSingle("rightmousedown");
+        return this._domEventService.getSingle("rightmousedown");
     }
     public get onRightMouseUp() {
-        return this._events.getSingle("rightmouseup");
+        return this._domEventService.getSingle("rightmouseup");
     }
     // SCROLL WHEEL
     public get onScrollUp() {
-        return this._events.getSingle("scrollup");
+        return this._domEventService.getSingle("scrollup");
     }
     public get onScrollDown() {
-        return this._events.getSingle("scrolldown");
+        return this._domEventService.getSingle("scrolldown");
     }
     public get onScrollClick() {
-        return this._events.getSingle("scrollclick");
+        return this._domEventService.getSingle("scrollclick");
     }
     public get onScrollBtnUp() {
-        return this._events.getSingle("scrollbtnup");
+        return this._domEventService.getSingle("scrollbtnup");
     }
     public get onScrollBtnDown() {
-        return this._events.getSingle("scrollbtndown");
+        return this._domEventService.getSingle("scrollbtndown");
     }
     public get onScrollDblClick() {
-        return this._events.getSingle("scrolldblclick");
+        return this._domEventService.getSingle("scrolldblclick");
     }
     // MOUSE MOVEMENT
     public get onMouseMove() {
-        return this._events.getSingle("mousemove");
+        return this._domEventService.getSingle("mousemove");
     }
     public get onDragEnd() {
-        return this._events.getSingle("dragend");
+        return this._domEventService.getSingle("dragend");
     }
     public get onDragStart() {
-        return this._events.getSingle("dragstart");
+        return this._domEventService.getSingle("dragstart");
     }
 
     // FOCUS/BLUR
     /** @internal */
     public get hasFocusChangeHandler() {
         return (
-            this._events.hasListeners("focus") ||
-            this._events.hasListeners("blur") ||
-            this._events.hasListeners("shallowfocus") ||
-            this._events.hasListeners("shallowblur")
+            this._domEventService.hasListeners("focus") ||
+            this._domEventService.hasListeners("blur") ||
+            this._domEventService.hasListeners("shallowfocus") ||
+            this._domEventService.hasListeners("shallowblur")
         );
     }
 
@@ -588,16 +588,16 @@ export abstract class DomElement<
         this.setSingle("shallowblur", cb);
     }
     public get onFocus() {
-        return this._events.getSingle("focus");
+        return this._domEventService.getSingle("focus");
     }
     public get onShallowFocus() {
-        return this._events.getSingle("shallowfocus");
+        return this._domEventService.getSingle("shallowfocus");
     }
     public get onBlur() {
-        return this._events.getSingle("blur");
+        return this._domEventService.getSingle("blur");
     }
     public get onShallowBlur() {
-        return this._events.getSingle("shallowblur");
+        return this._domEventService.getSingle("shallowblur");
     }
 
     // ========================================================================
