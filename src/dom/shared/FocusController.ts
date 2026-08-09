@@ -177,6 +177,36 @@ export class FocusController {
             }
         }
     }
+
+    /**
+     * Handle layout changes or first renders that have pushed the focused item
+     * out of visibility, and subsequently adjust the corner offset **without**
+     * causing a re-render since this will be handled during compositing.
+     *
+     * @returns `true` if the corner offset was adjusted
+     * */
+    public adjustOffsetToFocus(): boolean {
+        // Allow for non-focus scrolling to occur and obscure the focused child
+        if (!this.host._scrollManager.lastOffsetChangeWasFocus) return false;
+        if (!this.host._getAnyProp("keepFocusedVisible")) return false;
+
+        const windowRect = this.getWindowRect();
+        const focusRect = this.getFocusItemRect();
+        if (!windowRect || !focusRect) return false;
+
+        const { above, below } = this.getVertVisibility(windowRect, focusRect);
+        const { left, right } = this.getHorizVisibility(windowRect, focusRect);
+
+        // Focused item is visible - no need to adjust corner offset
+        if (!above && !below && !left && !right) {
+            return false;
+        }
+
+        if (above || below) this.scrollToFitFocus("up");
+        if (left || right) this.scrollToFitFocus("left");
+        return true;
+    }
+
     public getVertVisibility(
         windowRect: Rect,
         focusRect: Rect,

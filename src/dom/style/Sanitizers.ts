@@ -1,5 +1,4 @@
 import type { Style, Shadow } from "./Style.js";
-import type { FocusManager } from "./../FocusManager.js";
 import type { DomElement } from "./../DomElement.js";
 import type { ViewportStyle } from "./../../Types.js";
 
@@ -70,17 +69,5 @@ export class Sanitizers {
 
     public static overflowY(next: S<"overflowY">): SS<"overflowY"> {
         return next ?? "visible";
-    }
-
-    public static flexShrink(next: S<"flexShrink">, elem: DomElement): SS<"flexShrink"> {
-        const blockedByParent = (elem.parentElement as FocusManager)?.getProp(
-            "blockChildrenShrink",
-        );
-
-        if (blockedByParent) {
-            return 0;
-        } else {
-            return next;
-        }
     }
 }

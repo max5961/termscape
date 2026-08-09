@@ -1,13 +1,6 @@
-import {
-    FOCUS_CONTROLLER,
-    FOCUS_MANAGER,
-    LAYOUT_ELEMENT,
-    LIST_ELEMENT,
-    Yg,
-} from "../Constants.js";
+import { FOCUS_CONTROLLER, Yg } from "../Constants.js";
 import type { DomElement } from "../dom/DomElement.js";
 import type { Root } from "../dom/RootElement.js";
-import { logger } from "../shared/Logger.js";
 import type { WriteOpts } from "../Types.js";
 import { type Canvas, RootCanvas, SubCanvas } from "./Canvas.js";
 import { DomRects } from "./DomRects.js";

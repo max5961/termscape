@@ -1,8 +1,8 @@
 import { BookElement } from "./dom/BookElement.js";
 import { BoxElement } from "./dom/BoxElement.js";
 import { CanvasElement } from "./dom/CanvasElement.js";
-import type { FocusManager } from "./dom/FocusManager.js";
-import { LayoutElement, type LayoutNode } from "./dom/LayoutElement.js";
+import { LayoutElement } from "./dom/LayoutElement.js";
+import { LayoutNode } from "./dom/LayoutNode.js";
 import { ListElement } from "./dom/ListElement.js";
 import type { VirtualListElement } from "./dom/VirtualListElement.js";
 import type { Root } from "./dom/RootElement.js";
@@ -14,7 +14,7 @@ import type { Color, TextEffect } from "./Types.js";
 import type { Style } from "./dom/style/Style.js";
 import { InputElement } from "./dom/InputElement.js";
 import Yoga from "yoga-wasm-web/auto";
-import type { FocusController, IFocusController } from "./dom/shared/FocusController.js";
+import type { IFocusController } from "./dom/shared/FocusController.js";
 
 export const Yg = Yoga;
 
@@ -32,7 +32,6 @@ export const LAYOUT_ELEMENT = Symbol.for("termscape.layout_element");
 export const LAYOUT_NODE = Symbol.for("termscape.layout_node");
 export const LIST_ELEMENT = Symbol.for("termscape.list_element");
 export const VIRTUAL_LIST_ELEMENT = Symbol.for("termscape.virtual_list_element");
-export const FOCUS_MANAGER = Symbol.for("termscape.focus_manager");
 export const FOCUS_CONTROLLER = Symbol.for("termscape.focus_controller");
 export const ROOT_ELEMENT = Symbol.for("termscape.root_element");
 export const TEST_ROOT_ELEMENT = Symbol.for("termscape.test_root_element");
@@ -49,7 +48,6 @@ export type IdentityMap = {
     [LAYOUT_NODE]: LayoutNode;
     [LIST_ELEMENT]: ListElement;
     [VIRTUAL_LIST_ELEMENT]: VirtualListElement;
-    [FOCUS_MANAGER]: FocusManager;
     [ROOT_ELEMENT]: Root;
     [TEST_ROOT_ELEMENT]: TestRoot;
     [INPUT_ELEMENT]: InputElement;
@@ -83,7 +81,6 @@ export const ElementIdentities = {
     LayoutNode: new Set([LAYOUT_NODE]),
     ListElement: new Set([LIST_ELEMENT, FOCUS_CONTROLLER]),
     VirtualListElement: new Set([VIRTUAL_LIST_ELEMENT]),
-    FocusManager: new Set([FOCUS_MANAGER]),
     Root: new Set([ROOT_ELEMENT]),
     TestRoot: new Set([TEST_ROOT_ELEMENT]),
     InputElement: new Set([INPUT_ELEMENT]),

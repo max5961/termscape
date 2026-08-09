@@ -1,4 +1,4 @@
-import { FOCUS_MANAGER } from "../Constants.js";
+import { FOCUS_CONTROLLER } from "../Constants.js";
 import type { DomElement } from "../dom/DomElement.js";
 
 type Level = {
@@ -28,10 +28,10 @@ export class LayoutReconciler {
     }
 
     public handleElement(elem: DomElement, level: number) {
-        if (elem._is(FOCUS_MANAGER) && elem._lastOffsetChangeWasFocus) {
+        if (elem._is(FOCUS_CONTROLLER) && elem._lastOffsetChangeWasFocus) {
             this.prepareLevel(level);
             this.getLevel(level).focusManagers.push(() => {
-                return elem._adjustOffsetToFocus();
+                return elem._focusController.adjustOffsetToFocus();
             });
         }
 

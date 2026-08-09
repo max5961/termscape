@@ -1,5 +1,6 @@
 import type { BoxElement } from "../dom/BoxElement.js";
-import type { LayoutElement, LayoutNode } from "../dom/LayoutElement.js";
+import type { LayoutElement } from "../dom/LayoutElement.js";
+import type { LayoutNode } from "../dom/LayoutNode.js";
 import type { BookElement } from "../dom/BookElement.js";
 import type { InputElement } from "../dom/InputElement.js";
 import type { ListElement } from "../dom/ListElement.js";
