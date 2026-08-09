@@ -15,7 +15,7 @@ import { Ansi } from "./Ansi.js";
 import { Capture } from "log-goblin";
 import { MouseState } from "./MouseState.js";
 import { handleError } from "./ThrowError.js";
-import type { MetaDataRegister } from "../dom/shared/MetaData.js";
+import type { MetaDataRegister } from "../dom/services/MetaData.js";
 
 type Config = Required<Runtime>;
 export type RuntimeDependencies = {

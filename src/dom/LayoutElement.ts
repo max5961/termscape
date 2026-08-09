@@ -1,4 +1,4 @@
-import { FocusController, type IFocusController } from "./shared/FocusController.js";
+import { FocusController, type IFocusController } from "./services/FocusController.js";
 import { DomElement } from "./DomElement.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";

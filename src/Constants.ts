@@ -14,7 +14,7 @@ import type { Color, TextEffect } from "./Types.js";
 import type { Style } from "./dom/style/Style.js";
 import { InputElement } from "./dom/InputElement.js";
 import Yoga from "yoga-wasm-web/auto";
-import type { IFocusController } from "./dom/shared/FocusController.js";
+import type { IFocusController } from "./dom/services/FocusController.js";
 
 export const Yg = Yoga;
 

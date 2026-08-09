@@ -1,6 +1,6 @@
 import type { VisualNodeMap } from "./../Types.js";
 import type { DomElement } from "./DomElement.js";
-import { FocusStrategy } from "./shared/FocusController.js";
+import { FocusStrategy } from "./services/FocusController.js";
 
 export class ListFocusStrategy extends FocusStrategy {
     private host: DomElement;

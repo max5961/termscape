@@ -12,24 +12,30 @@ import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import type { Canvas, Rect } from "../compositor/Canvas.js";
 import { Render, RequestInput } from "./util/decorators.js";
-import { FocusNode } from "./shared/FocusNode.js";
+import { FocusNode } from "./services/FocusNode.js";
 import { throwError } from "../shared/ThrowError.js";
-import { MetaData } from "./shared/MetaData.js";
-import { DomEvents } from "./shared/DomEvents.js";
+import { MetaData } from "./services/MetaData.js";
+import { DomEvents } from "./services/DomEvents.js";
 import type { Event, EventHandler } from "../Types.js";
 import { ShadowStyleProxy } from "./style/ShadowStyleProxy.js";
 import { VirtualStyleProxy } from "./style/VirtualStyleProxy.js";
-import { PropsManager, type PropEffectHandler } from "./shared/PropsManager.js";
-import { ScrollManager } from "./shared/ScrollManager.js";
-import { ChildrenManager } from "./shared/ChildrenManager.js";
+import { PropsManager, type PropEffectHandler } from "./services/PropsManager.js";
+import { ScrollManager } from "./services/ScrollManager.js";
+import { TreeService, type ITreeService } from "./services/TreeService.js";
 import type { ListElement } from "./ListElement.js";
+
+interface IDomElement extends ITreeService {
+    /** @internal */
+    _treeService: TreeService;
+}
 
 export abstract class DomElement<
     Schema extends {
         Style: Style.All;
         Props: Props.All;
     } = { Style: Style.All; Props: Props.All },
-> {
+> implements IDomElement
+{
     protected abstract readonly identities: Set<symbol>;
 
     /** @internal */
@@ -52,8 +58,7 @@ export abstract class DomElement<
     public readonly _propsManager: PropsManager;
     /** @internal */
     public readonly _scrollManager: ScrollManager;
-    /** @internal */
-    public readonly _childrenManager: ChildrenManager;
+    public readonly _treeService: TreeService;
 
     constructor(defaultStyles: Style.All) {
         this._node = Yg.Node.create();
@@ -62,7 +67,7 @@ export abstract class DomElement<
         this._metadata = new MetaData(this);
         this._events = new DomEvents(this);
         this._scrollManager = new ScrollManager(this);
-        this._childrenManager = new ChildrenManager(this);
+        this._treeService = new TreeService(this);
         this._afterLayoutHandlers = new Set();
         this._canvas = null;
 
@@ -261,37 +266,37 @@ export abstract class DomElement<
     }
 
     public get parentElement() {
-        return this._childrenManager.getParentElement();
+        return this._treeService.parentElement;
     }
 
     public get children() {
-        return this._childrenManager.getChildren();
+        return [...this._treeService.children];
     }
 
     public get firstElementChild() {
-        return this._childrenManager.firstElementChild;
+        return this._treeService.firstElementChild;
     }
 
     public get lastElementChild() {
-        return this._childrenManager.lastElementChild;
+        return this._treeService.lastElementChild;
     }
 
     @Render({ layoutChange: true })
     public appendChild(child: DomElement) {
-        this._childrenManager.appendChild(child);
+        this._treeService.appendChild(child);
         child.afterAttached(this.getRoot());
     }
 
     @Render({ layoutChange: true })
     public insertBefore(child: DomElement, beforeChild: DomElement) {
-        this._childrenManager.insertBefore(child, beforeChild);
+        this._treeService.insertBefore(child, beforeChild);
         child.afterAttached(this.getRoot());
     }
 
     @Render({ layoutChange: true })
     public removeChild(child: DomElement, freeRecursive?: boolean) {
         child.beforeDetaching(this.getRoot());
-        this._childrenManager.removeChild(child, freeRecursive);
+        this._treeService.removeChild(child, freeRecursive);
     }
 
     @Render({ layoutChange: true })
@@ -664,13 +669,13 @@ export abstract class DomElement<
 
     protected dfs(elem: DomElement, cb: (elem: DomElement) => void) {
         cb(elem);
-        elem._childrenManager.children.forEach((child) => {
+        elem._treeService.children.forEach((child) => {
             this.dfs(child, cb);
         });
     }
 
     private reverseDfs<T>(
-        elem: DomElement | null,
+        elem: DomElement | undefined,
         cb: (elem: DomElement, stop: () => void) => T,
     ): T | undefined {
         if (!elem) {

@@ -3,7 +3,7 @@ import type { VisualNodeMap } from "./../Types.js";
 import { objectKeys } from "./../Util.js";
 import type { DomElement } from "./DomElement.js";
 import type { LayoutNode } from "./LayoutNode.js";
-import { FocusStrategy } from "./shared/FocusController.js";
+import { FocusStrategy } from "./services/FocusController.js";
 
 export class LayoutFocusStrategy extends FocusStrategy {
     private host: DomElement;
@@ -27,7 +27,7 @@ export class LayoutFocusStrategy extends FocusStrategy {
                 child.children.forEach((child) => dfs(child));
             }
         };
-        this.host._childrenManager.children.forEach((child) => dfs(child));
+        this.host._treeService.children.forEach((child) => dfs(child));
 
         return nodes;
     }

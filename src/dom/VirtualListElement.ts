@@ -2,7 +2,7 @@ import type { Props } from "./props/Props.js";
 import type { Style } from "./style/Style.js";
 import { ElementIdentities } from "../Constants.js";
 import { DomElement } from "./DomElement.js";
-import { IndexBuffer } from "./shared/IndexBuffer.js";
+import { IndexBuffer } from "./services/IndexBuffer.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
 
 // - override onFocus/onBlur/onShallow... so that children of VirtualList dispatch
@@ -121,7 +121,7 @@ export class VirtualListElement<T = any> extends DomElement<{
         const idx = this.getFocusedIndex();
         const buffer = this._buffer.read();
         const idxOf = buffer.indexOf(idx);
-        return this._childrenManager.children[idxOf];
+        return this._treeService.children[idxOf];
     }
 
     private reconcile(opts: { prevData: undefined | any[] } = { prevData: undefined }) {
@@ -136,7 +136,7 @@ export class VirtualListElement<T = any> extends DomElement<{
         let prevFocus: DomElement | undefined = undefined;
         for (let i = 0; i < prevIndexBuf.length; ++i) {
             const key = prevKeys[i];
-            const el = this._childrenManager.children[i];
+            const el = this._treeService.children[i];
             if (el) {
                 prevMap.set(key, el);
                 if (el.getFocus()) {
@@ -201,10 +201,10 @@ export class VirtualListElement<T = any> extends DomElement<{
 
         if (
             nextFocus ===
-            this._childrenManager.children[this._childrenManager.children.length - 1]
+            this._treeService.children[this._treeService.children.length - 1]
         ) {
             this.scrollDown(Infinity);
-        } else if (nextFocus === this._childrenManager.children[0]) {
+        } else if (nextFocus === this._treeService.children[0]) {
             this.scrollUp(Infinity);
         }
     }

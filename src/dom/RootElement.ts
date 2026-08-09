@@ -9,7 +9,7 @@ import { createRuntime, type RuntimeCtl } from "../shared/RuntimeFactory.js";
 import { HooksManager, type Hook, type HookHandler } from "../render/hooks/Hooks.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
-import { MetaData, MetaDataRegister } from "./shared/MetaData.js";
+import { MetaData, MetaDataRegister } from "./services/MetaData.js";
 import { Compositor } from "../compositor/Compositor.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
 

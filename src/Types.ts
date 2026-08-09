@@ -1,7 +1,7 @@
 import { configureStdin } from "term-keymap";
 import type { DomElement } from "./dom/DomElement.js";
 import type { Style } from "./dom/style/Style.js";
-import type { FocusState } from "./dom/shared/FocusNode.js";
+import type { FocusState } from "./dom/services/FocusNode.js";
 
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
 export type { Node as YogaNode, Edge } from "yoga-wasm-web/auto";

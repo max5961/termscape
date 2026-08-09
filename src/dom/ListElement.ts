@@ -2,7 +2,7 @@ import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { ElementIdentities } from "./../Constants.js";
 import { DomElement } from "./DomElement.js";
-import { FocusController, type IFocusController } from "./shared/FocusController.js";
+import { FocusController, type IFocusController } from "./services/FocusController.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
 import { ListFocusStrategy } from "./ListFocusStrategy.js";
 
@@ -36,7 +36,7 @@ export class ListElement
         //
         // ^ which is what we are doing right now but we will have to fix this later
 
-        const children = this._childrenManager.children;
+        const children = this._treeService.children;
         if (children.length === 1) {
             this._focusController.focusChild(child);
         } else {
