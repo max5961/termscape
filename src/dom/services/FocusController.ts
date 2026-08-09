@@ -187,7 +187,7 @@ export class FocusController {
      * */
     public adjustOffsetToFocus(): boolean {
         // Allow for non-focus scrolling to occur and obscure the focused child
-        if (!this.host._scrollManager.lastOffsetChangeWasFocus) return false;
+        if (!this.host._scrollService.lastOffsetChangeWasFocus) return false;
         if (!this.host._getAnyProp("keepFocusedVisible")) return false;
 
         const windowRect = this.getWindowRect();
@@ -281,16 +281,16 @@ export class FocusController {
     }
 
     private focusScrollDown(toScroll: number) {
-        this.host._scrollManager.scrollDown(toScroll, true);
+        this.host._scrollService.scrollDown(toScroll, true);
     }
     private focusScrollUp(toScroll: number) {
-        this.host._scrollManager.scrollUp(toScroll, true);
+        this.host._scrollService.scrollUp(toScroll, true);
     }
     private focusScrollLeft(toScroll: number) {
-        this.host._scrollManager.scrollLeft(toScroll, true);
+        this.host._scrollService.scrollLeft(toScroll, true);
     }
     private focusScrollRight(toScroll: number) {
-        this.host._scrollManager.scrollRight(toScroll, true);
+        this.host._scrollService.scrollRight(toScroll, true);
     }
     private getFocusItemRect() {
         return this.focused?.unclippedRect;

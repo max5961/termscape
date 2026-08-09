@@ -20,13 +20,15 @@ import type { Event, EventHandler } from "../Types.js";
 import { ShadowStyleProxy } from "./style/ShadowStyleProxy.js";
 import { VirtualStyleProxy } from "./style/VirtualStyleProxy.js";
 import { PropsManager, type PropEffectHandler } from "./services/PropsManager.js";
-import { ScrollManager } from "./services/ScrollManager.js";
+import { ScrollService, type IScrollService } from "./services/ScrollService.js";
 import { TreeService, type ITreeService } from "./services/TreeService.js";
 import type { ListElement } from "./ListElement.js";
 
-interface IDomElement extends ITreeService {
+interface IDomElement extends ITreeService, IScrollService {
     /** @internal */
     _treeService: TreeService;
+    /** @internal */
+    _scrollService: ScrollService;
 }
 
 export abstract class DomElement<
@@ -56,8 +58,7 @@ export abstract class DomElement<
     public _afterLayoutHandlers: Set<() => boolean>;
     /** @internal */
     public readonly _propsManager: PropsManager;
-    /** @internal */
-    public readonly _scrollManager: ScrollManager;
+    public readonly _scrollService: ScrollService;
     public readonly _treeService: TreeService;
 
     constructor(defaultStyles: Style.All) {
@@ -66,7 +67,7 @@ export abstract class DomElement<
         this._propsManager = new PropsManager(this);
         this._metadata = new MetaData(this);
         this._events = new DomEvents(this);
-        this._scrollManager = new ScrollManager(this);
+        this._scrollService = new ScrollService(this);
         this._treeService = new TreeService(this);
         this._afterLayoutHandlers = new Set();
         this._canvas = null;
@@ -640,27 +641,27 @@ export abstract class DomElement<
 
     /** @internal */
     public get _lastOffsetChangeWasFocus() {
-        return this._scrollManager.lastOffsetChangeWasFocus;
+        return this._scrollService.lastOffsetChangeWasFocus;
     }
 
     public scrollDown(units = 1) {
-        this._scrollManager.scrollDown(units);
+        this._scrollService.scrollDown(units);
     }
 
     public scrollUp(units = 1) {
-        this._scrollManager.scrollUp(units);
+        this._scrollService.scrollUp(units);
     }
 
     public scrollLeft(units = 1) {
-        this._scrollManager.scrollLeft(units);
+        this._scrollService.scrollLeft(units);
     }
 
     public scrollRight(units = 1) {
-        this._scrollManager.scrollRight(units);
+        this._scrollService.scrollRight(units);
     }
 
     public getScrollData() {
-        return this._scrollManager.getScrollData();
+        return this._scrollService.getScrollData();
     }
 
     // =========================================================================

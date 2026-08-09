@@ -168,14 +168,14 @@ export class DrawBox extends DrawContract<BoxLike> {
         if (side === "left" || side === "right") {
             contentUnits = elem.unclippedContentRect.height;
             unclippedContentUnits =
-                elem._scrollManager.contentRange.low -
-                elem._scrollManager.contentRange.high;
+                elem._scrollService.contentRange.low -
+                elem._scrollService.contentRange.high;
             pctScrolled = elem.getScrollData().y;
         } else {
             contentUnits = elem.unclippedContentRect.width;
             unclippedContentUnits =
-                elem._scrollManager.contentRange.right -
-                elem._scrollManager.contentRange.left;
+                elem._scrollService.contentRange.right -
+                elem._scrollService.contentRange.left;
             pctScrolled = elem.getScrollData().x;
         }
 

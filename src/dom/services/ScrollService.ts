@@ -1,6 +1,13 @@
 import type { Point } from "../../Types.js";
 import type { DomElement } from "../DomElement.js";
 
+export interface IScrollService {
+    scrollUp(units?: number): void;
+    scrollDown(units?: number): void;
+    scrollLeft(units?: number): void;
+    scrollRight(units?: number): void;
+}
+
 type ContentRange = {
     high: number;
     low: number;
@@ -8,7 +15,7 @@ type ContentRange = {
     right: number;
 };
 
-export class ScrollManager {
+export class ScrollService implements IScrollService {
     private host: DomElement;
     private _contentRange!: ContentRange;
     public get contentRange(): Readonly<ContentRange> {

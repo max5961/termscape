@@ -169,7 +169,7 @@ export class InputElement extends DomElement<{
             subscribe: false,
             handler: () => {
                 // Adjust the idx to its position relative to the content window
-                const idx = this._cursorIdx + this._scrollManager.scrollOffset.x;
+                const idx = this._cursorIdx + this._scrollService.scrollOffset.x;
                 const max = this.unclippedContentRect.width - 1;
                 if (idx > max) {
                     this.scrollRight(idx - max);

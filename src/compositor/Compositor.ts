@@ -72,12 +72,12 @@ export class Compositor {
                 elem._focusController.refreshVisualMap();
             });
         }
-        elem._scrollManager.resetContentRange();
+        elem._scrollService.resetContentRange();
 
         elem._treeService.children.forEach((child) => {
             this.updateChildCanvas(child, canvas);
             // this.updateContentRange(child, rangeContext);
-            rangeContext?._scrollManager.updateContentRange(child);
+            rangeContext?._scrollService.updateContentRange(child);
 
             // todo - this doesn't account for overflowX or overflowY without just overflow
             const chstyle = child._virtual.overflow;
