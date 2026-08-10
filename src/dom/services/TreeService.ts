@@ -87,6 +87,7 @@ export class TreeService implements ITreeService {
         this._children.splice(beforeChildIdx, 0, child);
         this._node.insertChild(child._node, beforeChildIdx);
         this._set.add(child);
+        this._host._focusNode.addChild(child._focusNode);
         child._treeService._parentElement = this._host;
     }
 
