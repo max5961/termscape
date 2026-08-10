@@ -1,3 +1,4 @@
+import type { DomElement } from "../DomElement.js";
 import { FocusNode } from "./FocusNode.js";
 
 export interface IFocusService {
@@ -8,10 +9,10 @@ export interface IFocusService {
 }
 
 export class FocusService implements IFocusService {
-    public node: FocusNode;
+    protected node: FocusNode;
 
-    constructor() {
-        this.node = new FocusNode();
+    constructor(host: DomElement) {
+        this.node = new FocusNode(host);
     }
 
     public focus() {
@@ -32,5 +33,9 @@ export class FocusService implements IFocusService {
     }
     public removeChild(child: FocusService) {
         this.node.removeChild(child.node);
+    }
+
+    protected getNode(service: FocusService) {
+        return service.node;
     }
 }

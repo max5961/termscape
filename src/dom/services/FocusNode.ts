@@ -1,3 +1,6 @@
+import type { DomElement } from "../DomElement.js";
+import type { FocusNodeController } from "./FocusNodeController.js";
+
 export class FocusNode {
     public controller: FocusNodeController | undefined;
     public providesContext: boolean;
@@ -5,8 +8,10 @@ export class FocusNode {
     public parent: FocusNode | undefined;
     public children: Set<FocusNode>;
     public focus: boolean;
+    public readonly host: DomElement;
 
-    constructor() {
+    constructor(host: DomElement) {
+        this.host = host;
         this.providesContext = false;
         this.nearestProvider = undefined;
         this.parent = undefined;
@@ -92,66 +97,5 @@ export class FocusNode {
     public dfs(cb: (node: FocusNode) => unknown, level = 0) {
         cb(this);
         for (const child of this.children) child.dfs(cb, level);
-    }
-}
-
-export class FocusNodeController extends FocusNode {
-    public controlledNodes: Set<FocusNode>;
-    public focused: FocusNode | undefined;
-
-    constructor() {
-        super();
-        this.controlledNodes = new Set();
-        this.focused = undefined;
-    }
-
-    public bindChild(node: FocusNode) {
-        this.controlledNodes.add(node);
-        node.controller = this;
-        node.focus = false;
-        this.createProvider(node);
-    }
-    public unbindChild(node: FocusNode) {
-        this.createConsumer(node);
-        node.controller = undefined;
-        this.controlledNodes.delete(node);
-        node.focus = true;
-
-        if (this.focused === node) {
-            this.focused = undefined;
-        }
-    }
-
-    private createProvider(node: FocusNode) {
-        if (!this.controlledNodes.has(node)) return;
-        node.providesContext = true;
-
-        node.propagateProviderChange();
-    }
-
-    private createConsumer(node: FocusNode) {
-        if (!this.controlledNodes.has(node)) return;
-        node.providesContext = false;
-
-        node.rippleConsumerChanges();
-    }
-
-    public focusNode(node: FocusNode) {
-        if (!this.controlledNodes.has(node)) return;
-        if (this.focused === node) return;
-
-        if (this.focused) {
-            this.focused.focus = false;
-        }
-        this.focused = node;
-        node.focus = true;
-    }
-
-    public blurNode(node: FocusNode) {
-        if (!this.controlledNodes.has(node)) return;
-        if (this.focused !== node) return;
-
-        this.focused = undefined;
-        node.focus = false;
     }
 }
