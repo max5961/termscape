@@ -60,7 +60,7 @@ export class TreeService implements ITreeService {
         this._children.push(child);
         this._node.insertChild(child._node, this._children.length - 1);
         this._set.add(child);
-        this._host._focusNode.addChild(child._focusNode);
+        this._host._focusService.addFocusNodeChild(child._focusService);
         child._treeService._parentElement = this._host;
     }
 
@@ -87,7 +87,7 @@ export class TreeService implements ITreeService {
         this._children.splice(beforeChildIdx, 0, child);
         this._node.insertChild(child._node, beforeChildIdx);
         this._set.add(child);
-        this._host._focusNode.addChild(child._focusNode);
+        this._host._focusService.addFocusNodeChild(child._focusService);
         child._treeService._parentElement = this._host;
     }
 
@@ -100,7 +100,7 @@ export class TreeService implements ITreeService {
         this._children.splice(idx, 1);
         this._node.removeChild(child._node);
         this._set.delete(child);
-        this._host._focusNode.removeChild(child._focusNode);
+        this._host._focusService.removeFocusNodeChild(child._focusService);
         child._treeService._parentElement = undefined;
 
         if (freeRecursive) {

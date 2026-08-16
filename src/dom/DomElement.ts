@@ -3,16 +3,14 @@ import {
     type IdentityMap,
     TagNameIdentityMap,
     ElementIdentities,
-    LIST_ELEMENT,
 } from "../Constants.js";
 import type { Root } from "./RootElement.js";
 import type { Action, KeyMap } from "term-keymap";
-import type { DOMRect, YogaNode, StyleHandler } from "../Types.js";
+import type { DOMRect, YogaNode, StyleHandler, FocusStatus } from "../Types.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import type { Canvas, Rect } from "../compositor/Canvas.js";
 import { Render, RequestInput } from "./util/decorators.js";
-import { FocusNode } from "./services/FocusNode.js";
 import { throwError } from "../shared/ThrowError.js";
 import { MetaData } from "./services/MetaData.js";
 import { DomEventService } from "./services/DomEventService.js";
@@ -22,15 +20,17 @@ import { VirtualStyleProxy } from "./style/VirtualStyleProxy.js";
 import { PropsManager, type PropEffectHandler } from "./services/PropsManager.js";
 import { ScrollService, type IScrollService } from "./services/ScrollService.js";
 import { TreeService, type ITreeService } from "./services/TreeService.js";
-import type { ListElement } from "./ListElement.js";
+import { FocusService, type IFocusService } from "./services/focus/FocusService.js";
 
-interface IDomElement extends ITreeService, IScrollService {
+interface IDomElement extends ITreeService, IScrollService, IFocusService {
     /** @internal */
     _treeService: TreeService;
     /** @internal */
     _scrollService: ScrollService;
     /** @internal */
     _domEventService: DomEventService;
+    /** @internal */
+    _focusService: FocusService;
 }
 
 export abstract class DomElement<
@@ -47,8 +47,6 @@ export abstract class DomElement<
     /** @internal */
     public readonly _node: YogaNode;
     /** @internal */
-    public readonly _focusNode: FocusNode;
-    /** @internal */
     public readonly _virtual!: VirtualStyleProxy;
     /** @internal */
     public readonly _shadow!: ShadowStyleProxy;
@@ -60,10 +58,11 @@ export abstract class DomElement<
     public readonly _propsManager: PropsManager;
     public readonly _scrollService: ScrollService;
     public readonly _treeService: TreeService;
+    public readonly _focusService: FocusService;
 
     constructor(defaultStyles: Style.All) {
         this._node = Yg.Node.create();
-        this._focusNode = new FocusNode(this);
+        this._focusService = new FocusService(this);
         this._propsManager = new PropsManager(this);
         this._metadata = new MetaData(this);
         this._domEventService = new DomEventService(this);
@@ -314,63 +313,24 @@ export abstract class DomElement<
     // Focus
     // =========================================================================
 
-    // TODO  add LayoutElement, and VirtualListElement to focus/blur
-
     public focus() {
-        let p = this.parentElement;
-        let ctlr: undefined | ListElement;
-        while (p) {
-            if (p._is(LIST_ELEMENT)) {
-                ctlr = p;
-                break;
-            }
-            p = p.parentElement;
-        }
-        ctlr?._focusController.focusChild(this);
+        this._focusService.focus();
     }
 
     public blur() {
-        let p = this.parentElement;
-        let ctlr: undefined | ListElement;
-
-        while (p) {
-            if (p._is(LIST_ELEMENT)) {
-                ctlr = p;
-                break;
-            }
-            p = p.parentElement;
-        }
-        ctlr?._focusController.blurChild(this);
+        this._focusService.blur();
     }
 
     public getFocus(): boolean {
-        return this._focusNode._getCurrFocus();
+        return this._focusService.getFocus();
     }
 
     public getShallowFocus(): boolean {
-        return this._focusNode._getCurrShallowFocus();
+        return this._focusService.getShallowFocus();
     }
 
-    public getFocusStatus() {
-        return this._focusNode._getCurrStatus();
-    }
-
-    // CHORE - Should these be _becomeFocusProvider for example since they are
-    // public APIs for FocusNode?
-
-    /** @internal */
-    public _becomeProvider(focused: boolean) {
-        this._focusNode.becomeProvider(focused);
-    }
-
-    /** @internal */
-    public _becomeConsumer(freeRecursive?: boolean) {
-        this._focusNode.becomeConsumer(freeRecursive);
-    }
-
-    /** @internal */
-    public _setOwnProvider(focused: boolean) {
-        this._focusNode.setOwnProvider(focused);
+    public getFocusStatus(): FocusStatus {
+        return this._focusService.getFocusStatus();
     }
 
     // ========================================================================
@@ -638,11 +598,6 @@ export abstract class DomElement<
     // =========================================================================
     // Scrolling
     // =========================================================================
-
-    /** @internal */
-    public get _lastOffsetChangeWasFocus() {
-        return this._scrollService.lastOffsetChangeWasFocus;
-    }
 
     public scrollDown(units = 1) {
         this._scrollService.scrollDown(units);

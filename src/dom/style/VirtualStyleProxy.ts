@@ -23,7 +23,6 @@ export class VirtualStyleProxy {
         this.__reconciler.reconcile(defaultStyles);
     }
 
-    /** @internal */
     public _recomputeStyleIfStyleHandlerExists() {
         if (this.__styleHandler) {
             this._setStyle(this.__styleHandler);
@@ -39,7 +38,6 @@ export class VirtualStyleProxy {
         return stylesheet;
     }
 
-    /** @internal */
     public _setStyle(stylesheet: Style.All | StyleHandler<Style.All>) {
         const styles = this._resolveStylesheet(stylesheet);
         this.__reconciler.reconcile(styles);

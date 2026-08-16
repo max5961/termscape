@@ -8,7 +8,7 @@ import type {
     EventPayloadMap,
 } from "../../Types.js";
 import type { DomElement } from "../DomElement.js";
-import type { FocusState } from "./FocusNode.js";
+import type { FocusStatus } from "../../Types.js";
 
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 
@@ -64,7 +64,7 @@ export class DomEventService {
         this.propagateMouseEvent(x, y, type);
     }
 
-    public dispatchFocusEvent(event: FocusEvent, state: FocusState) {
+    public dispatchFocusEvent(event: FocusEvent, state: FocusStatus) {
         const listeners = this.getListeners(event);
         listeners.forEach((cb) => cb(state));
     }

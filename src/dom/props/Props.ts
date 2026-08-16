@@ -108,6 +108,7 @@ export namespace Props {
         offset?: number;
         expandStrategy?: "fillStart" | "fillEnd" | "fillEqual";
         compressStrategy?: "clipStart" | "clipEnd" | "clipEqual";
+        keepFocusedVisible?: boolean;
     };
 
     // prettier-ignore

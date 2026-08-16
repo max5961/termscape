@@ -183,7 +183,7 @@ export class DrawBox extends DrawContract<BoxLike> {
 
         if (elem._is(VIRTUAL_LIST_ELEMENT)) {
             const data = elem.getProp("data") ?? [];
-            const buffer = elem._buffer.read();
+            const buffer = elem._getBuffer().read();
             const items = data?.length;
             const itemsShown = buffer.length;
             const start = buffer[0] ?? 0;

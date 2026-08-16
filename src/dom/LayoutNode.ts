@@ -6,6 +6,5 @@ export class LayoutNode extends BoxElement {
 
     constructor() {
         super();
-        this._focusNode.becomeProvider(false);
     }
 }

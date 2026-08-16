@@ -2,9 +2,9 @@ import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { ElementIdentities } from "./../Constants.js";
 import { DomElement } from "./DomElement.js";
-import { FocusController, type IFocusController } from "./services/FocusController.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
-import { ListFocusStrategy } from "./ListFocusStrategy.js";
+import type { IFocusController } from "./services/focus/IFocusController.js";
+import { VisualFocusControllerService } from "./services/focus/FocusControllerService.js";
 
 interface IListElement extends IFocusController {
     focusNext(units: number): DomElement | undefined;
@@ -22,29 +22,21 @@ export class ListElement
 {
     protected override readonly identities = ElementIdentities.ListElement;
 
-    public _focusController: FocusController;
+    public override _focusService: VisualFocusControllerService;
 
     constructor() {
         super(DefaultStyles.List);
-        const strategy = new ListFocusStrategy(this);
-        this._focusController = new FocusController(this, strategy);
+        this._focusService = new VisualFocusControllerService(this, "1d");
     }
 
     private handleAfterAppend(child: DomElement) {
-        // In order to satisfy FocusNode dispatching focus change handlers ONLY when provider status changes, its important
-        // to make sure NOT to use _setOwnProvider here.
-        //
-        // ^ which is what we are doing right now but we will have to fix this later
+        const blockFlexShrink = !!this._getAnyProp("blockChildrenShrink");
+        child._shadow.blockFlexShrink(blockFlexShrink);
 
-        const children = this._treeService.children;
-        if (children.length === 1) {
-            this._focusController.focusChild(child);
-        } else {
-            this._focusController.blurChild(child);
+        this._focusService.bindChild(child);
+        if (this._treeService.children.length === 1) {
+            child.focus();
         }
-
-        // recalculate flex shrink
-        child._shadow.blockFlexShrink(!!this._getAnyProp("blockChildrenShrink"));
     }
 
     public override appendChild(child: DomElement): void {
@@ -58,8 +50,7 @@ export class ListElement
     }
 
     public override removeChild(child: DomElement, freeRecursive?: boolean): void {
-        this._focusController.blurChild(child);
-
+        this._focusService.unbindChild(child);
         super.removeChild(child, freeRecursive);
 
         if (!freeRecursive) {
@@ -68,39 +59,65 @@ export class ListElement
     }
 
     public focusNext(units = 1) {
-        return this.isLTR()
-            ? this._focusController.displaceRight(units)
-            : this._focusController.displaceDown(units);
+        // const prev = this.getFocusedChild();
+        const child = this.isLTR()
+            ? this._focusService.displaceRight(units)
+            : this._focusService.displaceDown(units);
+
+        return child;
     }
     public focusPrev(units = 1) {
-        return this.isLTR()
-            ? this._focusController.displaceLeft(units)
-            : this._focusController.displaceUp(units);
+        // const prev = this.getFocusedChild();
+        const child = this.isLTR()
+            ? this._focusService.displaceLeft(units)
+            : this._focusService.displaceUp(units);
+
+        // if (child) {
+        //     prev._focusService.dispatchOnBlur();
+        //     child._focusService.dispatchOnFocus();
+        // }
+
+        return child;
     }
     public focusFirst() {
-        return this.isLTR()
-            ? this._focusController.focusFirstX()
-            : this._focusController.focusFirstY();
+        // const prev = this.getFocusedChild();
+        const child = this.isLTR()
+            ? this._focusService.focusFirstX()
+            : this._focusService.focusFirstY();
+
+        return child;
     }
     public focusLast() {
-        return this.isLTR()
-            ? this._focusController.focusLastX()
-            : this._focusController.focusLastY();
+        // const prev = this.getFocusedChild();
+        const child = this.isLTR()
+            ? this._focusService.focusLastX()
+            : this._focusService.focusLastY();
+
+        return child;
     }
     public focusIndex(idx: number) {
-        return this.isLTR()
-            ? this._focusController.focusXIdx(idx)
-            : this._focusController.focusYIdx(idx);
+        // const prev = this.getFocusedChild();
+        const child = this.isLTR()
+            ? this._focusService.focusXIdx(idx)
+            : this._focusService.focusYIdx(idx);
+
+        return child;
     }
     public focusChild(child: DomElement) {
-        return this._focusController.focusChild(child);
+        // const prev = this.getFocusedChild();
+        const nextFocused = this._focusService.focusChild(child);
+
+        return nextFocused;
     }
     public getFocusedIndex(): number {
-        const data = this._focusController.getFocusedData();
-        return data?.xIdx || data?.yIdx || 0;
+        return this._focusService.getFocusedIndex();
     }
 
     private isLTR(): boolean | undefined {
         return this.style.flexDirection?.includes("row");
+    }
+
+    private getFocusedChild() {
+        return this._focusService.focused;
     }
 }

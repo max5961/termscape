@@ -1,48 +1,117 @@
-import { LAYOUT_NODE } from "./../Constants.js";
-import type { VisualNodeMap } from "./../Types.js";
-import { objectKeys } from "./../Util.js";
-import type { DomElement } from "./DomElement.js";
-import type { LayoutNode } from "./LayoutNode.js";
-import { FocusStrategy } from "./services/FocusController.js";
+import type { VisualNodeMap } from "../../../Types.js";
+import { objectKeys } from "../../../Util.js";
+import type { DomElement } from "../../DomElement.js";
+import type { FocusControllerNode } from "./FocusControllerNode.js";
 
-export class LayoutFocusStrategy extends FocusStrategy {
-    private host: DomElement;
+export abstract class VisualFocusService {
+    protected readonly host: DomElement;
+    protected readonly controller: FocusControllerNode;
+    public visualMap: VisualNodeMap | undefined;
 
-    constructor(host: DomElement) {
-        super();
+    constructor(host: DomElement, controller: FocusControllerNode) {
         this.host = host;
+        this.controller = controller;
     }
 
-    // CHORE - this doesn't gaurd against nested LayoutElements.  A LayoutNode
-    // should be able to have a LayoutElement with its own LayoutNodes as children
-    // and there is no check to stop searching branches that are also LayoutElements
+    abstract buildVisualMap(controlledChildren: DomElement[]): VisualNodeMap;
 
-    public override getNavigableChildren(): DomElement[] {
-        const nodes: LayoutNode[] = [];
+    public refreshVisualMap() {
+        const controlledChildren = this.getControlledChildren();
+        this.visualMap = this.buildVisualMap(controlledChildren);
+    }
 
-        const dfs = (child: DomElement) => {
-            if (child._is(LAYOUT_NODE)) {
-                nodes.push(child);
-            } else {
-                child.children.forEach((child) => dfs(child));
+    public getVisualData(elem?: DomElement) {
+        if (elem && this.visualMap) {
+            return this.visualMap.get(elem);
+        }
+    }
+
+    public getFocusedVisualData() {
+        return this.getVisualData(this.controller.focused?.host);
+    }
+
+    private getControlledChildren() {
+        const elems: DomElement[] = [];
+        const controlledNodes = this.controller.controlledNodes;
+        for (const node of controlledNodes) {
+            elems.push(node.host);
+        }
+        return elems;
+    }
+}
+
+export class VisualFocusService1d extends VisualFocusService {
+    constructor(host: DomElement, controller: FocusControllerNode) {
+        super(host, controller);
+    }
+
+    override buildVisualMap(controlledChildren: DomElement[]): VisualNodeMap {
+        const visualMap = new Map() as VisualNodeMap;
+        const isColumn = this.host.style.flexDirection?.includes("column");
+
+        if (!isColumn) {
+            const sortedX = controlledChildren.sort((prev, curr) => {
+                const prevStart = prev.unclippedRect?.corner.x ?? 0;
+                const currStart = curr.unclippedRect?.corner.x ?? 0;
+                return prevStart - currStart;
+            });
+            for (let i = 0; i < sortedX.length; ++i) {
+                const curr = sortedX[i];
+                const prev = sortedX[i - 1] as DomElement | undefined;
+                const next = sortedX[i + 1] as DomElement | undefined;
+
+                if (!visualMap.has(curr)) {
+                    visualMap.set(curr, {});
+                }
+                const data = visualMap.get(curr)!;
+
+                data.xIdx = i;
+                data.xArr = sortedX;
+                data.left = prev;
+                data.right = next;
             }
-        };
-        this.host._treeService.children.forEach((child) => dfs(child));
+        } else {
+            const sortedY = controlledChildren.sort((prev, curr) => {
+                const prevStart = prev.unclippedRect?.corner.y ?? 0;
+                const currStart = curr.unclippedRect?.corner.y ?? 0;
+                return prevStart - currStart;
+            });
+            for (let i = 0; i < sortedY.length; ++i) {
+                const curr = sortedY[i];
+                const prev = sortedY[i - 1] as DomElement | undefined;
+                const next = sortedY[i + 1] as DomElement | undefined;
 
-        return nodes;
+                if (!visualMap.has(curr)) {
+                    visualMap.set(curr, {});
+                }
+                const data = visualMap.get(curr)!;
+                data.yIdx = i;
+                data.yArr = sortedY;
+                data.up = prev;
+                data.down = next;
+            }
+        }
+
+        return visualMap;
+    }
+}
+
+export class VisualFocusService2d extends VisualFocusService {
+    constructor(host: DomElement, controller: FocusControllerNode) {
+        super(host, controller);
     }
 
-    public override buildVisualMap(children: DomElement[]): VisualNodeMap {
-        const vmap: VisualNodeMap = new Map();
+    override buildVisualMap(controlledChildren: DomElement[]): VisualNodeMap {
+        const vmap = new Map() as VisualNodeMap;
 
         const xSort = this.bucketSort(
-            children,
+            controlledChildren,
             (child) => child.unclippedRect?.corner.x ?? 0,
             (child) => child.unclippedRect?.corner.y ?? 0,
         );
 
         const ySort = this.bucketSort(
-            children,
+            controlledChildren,
             (child) => child.unclippedRect?.corner.y ?? 0,
             (child) => child.unclippedRect?.corner.x ?? 0,
         );

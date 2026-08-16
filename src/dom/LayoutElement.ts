@@ -1,11 +1,11 @@
-import { FocusController, type IFocusController } from "./services/FocusController.js";
+import { type IFocusController } from "./services/focus/IFocusController.js";
 import { DomElement } from "./DomElement.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
 import { ElementIdentities, LAYOUT_NODE } from "./../Constants.js";
-import { LayoutFocusStrategy } from "./LayoutFocusStrategy.js";
 import type { LayoutNode } from "./LayoutNode.js";
+import { VisualFocusControllerService } from "./services/focus/FocusControllerService.js";
 
 interface ILayoutElement extends IFocusController {
     focusUp(): DomElement | undefined;
@@ -22,57 +22,62 @@ export class LayoutElement
 {
     protected override identities = ElementIdentities.LayoutElement;
 
-    public _focusController: FocusController;
+    public override _focusService: VisualFocusControllerService;
 
     constructor() {
         super(DefaultStyles.Layout);
-        const strategy = new LayoutFocusStrategy(this);
-        this._focusController = new FocusController(this, strategy);
+        this._focusService = new VisualFocusControllerService(this, "2d");
     }
 
     public focusUp() {
-        return this._focusController.focusUp();
+        return this._focusService.focusUp();
     }
     public focusDown() {
-        return this._focusController.focusDown();
+        return this._focusService.focusDown();
     }
     public focusLeft() {
-        return this._focusController.focusLeft();
+        return this._focusService.focusLeft();
     }
     public focusRight() {
-        return this._focusController.focusRight();
+        return this._focusService.focusRight();
     }
     public focusChild(child: LayoutNode) {
-        return this._focusController.focusChild(child);
+        return this._focusService.focusChild(child);
     }
     public focusById(id: string): DomElement | undefined {
-        const entries = Array.from(this._focusController.visualMap.entries());
-        let found: DomElement | undefined;
-        for (let i = 0; i < entries.length; ++i) {
-            const [elem] = entries[i];
-            if (elem.getProp("id") === id) {
-                found = elem;
-                break;
-            }
-        }
+        const controlledChildren = this._focusService.getControlledChildren();
 
-        if (found) {
-            return this._focusController.focusChild(found);
+        for (const child of controlledChildren) {
+            if (child.host._getAnyProp("id") === id) {
+                child.focusSelf();
+                return;
+            }
         }
     }
 
-    // This is garbage but whatever for now
+    /**
+     * It is possible to append a single child that has multiple LayoutNodes.
+     * */
     private handleAfterAppend(child: DomElement) {
-        if (this._focusController.focused) return;
-
-        let found = false;
+        const blockFlexShrink = !!this._getAnyProp("blockChildrenShrink");
         this.dfs(child, (child) => {
-            if (!found && child._is(LAYOUT_NODE)) {
-                this._focusController.focusChild(child);
-                if (this._getAnyProp("blockChildrenShrink")) {
-                    child._shadow.blockFlexShrink(true);
-                }
-                found = true;
+            if (!child._is(LAYOUT_NODE)) {
+                return;
+            }
+            // this is just ugly...the focusService should be designed to be more
+            // user friendly
+            if (this._focusService.node.controlledNodes.has(child._focusService.node)) {
+                return;
+            }
+
+            child._shadow.blockFlexShrink(blockFlexShrink);
+
+            // this is also ugly...bindChild should just accept a child as an argument
+            // as inject the inject the service itself
+            this._focusService.bindChild(child);
+
+            if (this._focusService.node.controlledNodes.size === 1) {
+                this._focusService.focusChild(child);
             }
         });
     }
@@ -88,12 +93,13 @@ export class LayoutElement
     }
 
     public override removeChild(child: DomElement, freeRecursive?: boolean): void {
-        let found = false;
         this.dfs(child, (child) => {
-            if (!found && child._is(LAYOUT_NODE)) {
-                this._focusController.blurChild(child);
-                child._becomeConsumer(freeRecursive);
-                found = true;
+            if (child._is(LAYOUT_NODE)) {
+                this._focusService.unbindChild(child);
+
+                if (!freeRecursive) {
+                    child._shadow.blockFlexShrink(false);
+                }
             }
         });
     }

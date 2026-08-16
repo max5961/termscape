@@ -48,5 +48,6 @@ export class DefaultProps {
         initialIndex: 0,
         expandStrategy: "fillEnd",
         compressStrategy: "clipEnd",
+        keepFocusedVisible: true,
     };
 }

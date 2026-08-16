@@ -1,5 +1,5 @@
-import type { DomElement } from "../DomElement.js";
-import type { DomEventService } from "./DomEventService.js";
+import type { DomElement } from "../../DomElement.js";
+import type { DomEventService } from "../DomEventService.js";
 
 // CHORE - move to types
 export type FocusState = { focus: boolean; shallowFocus: boolean };

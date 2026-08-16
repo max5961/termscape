@@ -14,7 +14,11 @@ import type { Color, TextEffect } from "./Types.js";
 import type { Style } from "./dom/style/Style.js";
 import { InputElement } from "./dom/InputElement.js";
 import Yoga from "yoga-wasm-web/auto";
-import type { IFocusController } from "./dom/services/FocusController.js";
+import type {
+    IFocusController,
+    IVirtualFocusController,
+    IVisualFocusController,
+} from "./dom/services/focus/IFocusController.js";
 
 export const Yg = Yoga;
 
@@ -32,10 +36,12 @@ export const LAYOUT_ELEMENT = Symbol.for("termscape.layout_element");
 export const LAYOUT_NODE = Symbol.for("termscape.layout_node");
 export const LIST_ELEMENT = Symbol.for("termscape.list_element");
 export const VIRTUAL_LIST_ELEMENT = Symbol.for("termscape.virtual_list_element");
-export const FOCUS_CONTROLLER = Symbol.for("termscape.focus_controller");
 export const ROOT_ELEMENT = Symbol.for("termscape.root_element");
 export const TEST_ROOT_ELEMENT = Symbol.for("termscape.test_root_element");
 export const INPUT_ELEMENT = Symbol.for("termscape.input_element");
+export const FOCUS_CONTROLLER = Symbol.for("termscape.focus_controller");
+export const VIRTUAL_FOCUS_CONTROLLER = Symbol.for("termscape.virtual_focus_controller");
+export const VISUAL_FOCUS_CONTROLLER = Symbol.for("termscape.visual_focus_controller");
 
 export type IdentityMap = {
     [DOM_ELEMENT]: DomElement;
@@ -52,8 +58,9 @@ export type IdentityMap = {
     [TEST_ROOT_ELEMENT]: TestRoot;
     [INPUT_ELEMENT]: InputElement;
 
-    // shared by ListElement and LayoutElement
     [FOCUS_CONTROLLER]: IFocusController;
+    [VIRTUAL_FOCUS_CONTROLLER]: IVirtualFocusController;
+    [VISUAL_FOCUS_CONTROLLER]: IVisualFocusController;
 };
 
 export const TagNameIdentityMap = {
@@ -77,10 +84,14 @@ export const ElementIdentities = {
     TextNode: new Set([TEXT_NODE, TEXT_ELEMENT]),
     BookElement: new Set([BOOK_ELEMENT]),
     CanvasElement: new Set([CANVAS_ELEMENT]),
-    LayoutElement: new Set([LAYOUT_ELEMENT, FOCUS_CONTROLLER]),
+    LayoutElement: new Set([LAYOUT_ELEMENT, FOCUS_CONTROLLER, VISUAL_FOCUS_CONTROLLER]),
     LayoutNode: new Set([LAYOUT_NODE]),
-    ListElement: new Set([LIST_ELEMENT, FOCUS_CONTROLLER]),
-    VirtualListElement: new Set([VIRTUAL_LIST_ELEMENT]),
+    ListElement: new Set([LIST_ELEMENT, FOCUS_CONTROLLER, VISUAL_FOCUS_CONTROLLER]),
+    VirtualListElement: new Set([
+        VIRTUAL_LIST_ELEMENT,
+        FOCUS_CONTROLLER,
+        VIRTUAL_FOCUS_CONTROLLER,
+    ]),
     Root: new Set([ROOT_ELEMENT]),
     TestRoot: new Set([TEST_ROOT_ELEMENT]),
     InputElement: new Set([INPUT_ELEMENT]),

@@ -79,7 +79,7 @@ export const create = {
     },
     layoutNode: (config?: Config<Style.LayoutNode, Props.LayoutNode>) => {
         const elem = new LayoutNode();
-        // applyDefaultProps(elem, DefaultProps.LayoutNode);
+        applyDefaultProps(elem, DefaultProps.LayoutNode);
         applyConfig(elem, config);
         return elem;
     },

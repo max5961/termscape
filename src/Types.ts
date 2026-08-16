@@ -1,7 +1,6 @@
 import { configureStdin } from "term-keymap";
 import type { DomElement } from "./dom/DomElement.js";
 import type { Style } from "./dom/style/Style.js";
-import type { FocusState } from "./dom/services/FocusNode.js";
 
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
 export type { Node as YogaNode, Edge } from "yoga-wasm-web/auto";
@@ -100,7 +99,9 @@ export type ConsoleEvent = "console";
 
 export type Event = MouseEventType | FocusEvent | ConsoleEvent;
 
-export type FocusEventHandler = (state: FocusState) => unknown;
+export type FocusStatus = { focus: boolean; shallowFocus: boolean };
+
+export type FocusEventHandler = (state: FocusStatus) => unknown;
 export type MouseEventHandler = (e: MouseEvent) => unknown;
 /** CHORE - match this to log-goblin `Data` type */
 export type ConsoleEventHandler = (stdout: string) => unknown;
@@ -129,13 +130,7 @@ export type ViewportStyle = keyof Pick<
     "height" | "width" | "minHeight" | "minWidth"
 >;
 
-export type StyleHandler<T extends Style.All> = ({
-    focus,
-    shallowFocus,
-}: {
-    focus: boolean;
-    shallowFocus: boolean;
-}) => T;
+export type StyleHandler<T extends Style.All> = (focusStatus: FocusStatus) => T;
 
 export type VisualNodeMap = Map<
     DomElement,

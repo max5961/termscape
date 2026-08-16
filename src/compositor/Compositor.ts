@@ -1,4 +1,9 @@
-import { FOCUS_CONTROLLER, Yg } from "../Constants.js";
+import {
+    FOCUS_CONTROLLER,
+    VIRTUAL_LIST_ELEMENT,
+    VISUAL_FOCUS_CONTROLLER,
+    Yg,
+} from "../Constants.js";
 import type { DomElement } from "../dom/DomElement.js";
 import type { Root } from "../dom/RootElement.js";
 import type { WriteOpts } from "../Types.js";
@@ -67,9 +72,9 @@ export class Compositor {
             return;
         }
 
-        if (canvas.canDraw() && elem._is(FOCUS_CONTROLLER)) {
+        if (canvas.canDraw() && elem._is(VISUAL_FOCUS_CONTROLLER)) {
             postLayout.push(() => {
-                elem._focusController.refreshVisualMap();
+                elem._focusService.refreshVisualMap();
             });
         }
         elem._scrollService.resetContentRange();
