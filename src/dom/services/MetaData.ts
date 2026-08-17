@@ -142,6 +142,8 @@ export class MetaDataRegister {
         if (host._is(TEXT_ELEMENT)) {
             this._root.runtime.stdout.off("resize", host._markNodeDirty);
         }
+
+        host._canvas = undefined;
     }
 
     public recalculateViewports() {

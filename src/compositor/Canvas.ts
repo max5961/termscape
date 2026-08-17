@@ -262,23 +262,54 @@ export class RootCanvas extends Canvas {
      * root starts out with limits of stdout dimensions
      */
     public override bindContext(_grid: Grid, _stdout: Stdout): void {}
+
+    public resetGrid() {
+        this.grid.length = 0;
+    }
+
+    public copyGrid() {
+        return this.grid.map((row) => row.slice());
+    }
+
+    public clearGrid() {
+        for (let i = 0; i < this.grid.length; ++i) {
+            this.grid[i].length = this.stdout.columns;
+            this.grid[i].fill(" ");
+        }
+    }
+
+    public removeTrailingWhitespace() {
+        this.grid.forEach((row) => {
+            let i = row.length - 1;
+            while (row[i--] === " ") {
+                row.pop();
+            }
+        });
+    }
 }
 
 export class SubCanvas extends Canvas {
+    private readonly root: RootCanvas;
     public override readonly host: DomElement;
-    public override grid: Grid;
-    public override stdout: Stdout;
+
     // set in constrainToLayout
     public override corner!: Point;
     public override limits!: Limits;
     public override ygHeight!: number;
     public override ygWidth!: number;
 
-    constructor(host: DomElement, parent: Canvas) {
+    public override get grid(): Grid {
+        return this.root.grid;
+    }
+
+    public override get stdout(): Stdout {
+        return this.root.stdout;
+    }
+
+    constructor(root: RootCanvas, host: DomElement, parent: Canvas) {
         super();
+        this.root = root;
         this.host = host;
-        this.grid = parent.grid;
-        this.stdout = parent.stdout;
         this.constrainToLayout(parent);
     }
 
@@ -288,6 +319,7 @@ export class SubCanvas extends Canvas {
         this.ygWidth = this.getYgWidth();
         this.corner = this.getCorner(parent);
         this.limits = this.getLimits(parent);
+        this.forceGridToAccomodate();
     }
 
     private getYgHeight() {

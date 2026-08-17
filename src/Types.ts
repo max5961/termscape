@@ -123,6 +123,7 @@ export type WriteOpts = {
     screenChange?: boolean;
     layoutChange?: boolean;
     styleChange?: boolean;
+    zIndexChange?: boolean;
 };
 
 export type ViewportStyle = keyof Pick<

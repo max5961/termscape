@@ -11,123 +11,73 @@ import { Ansi } from "../shared/Ansi.js";
 import { CellWriter } from "./writer/CellWriter.js";
 import { RefreshWriter } from "./writer/RefreshWriter.js";
 import { RowWriter } from "./writer/RowWriter.js";
+import { Draw } from "../compositor/draw/Draw.js";
 
 export class Renderer {
-    private readonly _host: Root;
-    private readonly _cursor: Cursor;
-    private readonly _cellWriter: CellWriter;
-    private readonly _refreshWriter: RefreshWriter;
-    private readonly _rowWriter: RowWriter;
-    private _sinceResize: number;
-    private _lastCompositor: Compositor | undefined;
-    private _lastGrid: Grid | undefined;
-    private _rects: Readonly<DomRects>;
+    private readonly root: Root;
+    private readonly cursor: Cursor;
+    private readonly cellWriter: CellWriter;
+    private readonly refreshWriter: RefreshWriter;
+    private readonly rowWriter: RowWriter;
+    private rects: DomRects;
+    private draw: Draw;
+    private rendersSinceLastResize: number;
+    private lastGrid: Grid | undefined;
 
-    public get rects() {
-        return this._rects;
-    }
-    public get lastGrid() {
-        return this._lastGrid;
-    }
-
-    constructor(host: Root) {
-        this._host = host;
-        this._cursor =
+    constructor(root: Root) {
+        this.root = root;
+        this.cursor =
             process.env.CURSOR_DEBUG === "true"
-                ? new DebugCursor(host)
-                : new Cursor(host);
-        this._cellWriter = new CellWriter(this._cursor, host);
-        this._rowWriter = new RowWriter(this._cursor, host);
-        this._refreshWriter = new RefreshWriter(this._cursor, host);
-        this._lastGrid = undefined;
-        this._lastCompositor = undefined;
-        this._rects = new DomRects();
-        this._sinceResize = 0;
+                ? new DebugCursor(root)
+                : new Cursor(root);
+        this.cellWriter = new CellWriter(this.cursor, root);
+        this.rowWriter = new RowWriter(this.cursor, root);
+        this.refreshWriter = new RefreshWriter(this.cursor, root);
+        this.rects = new DomRects();
+        this.draw = new Draw();
+        this.rendersSinceLastResize = 0;
+    }
+
+    private get canvas() {
+        return this.root._canvas;
+    }
+
+    public get layoutHeight() {
+        return this.lastGrid?.length ?? 0;
+    }
+
+    public getRects() {
+        return this.rects;
     }
 
     public renderTree(opts: WriteOpts) {
-        if (this.checkIfBlockedRender()) return;
-        this.handleResizeCounter(opts);
+        this.lastGrid = this.canvas.copyGrid();
+        this.updateResizeCounter(opts);
 
-        // Create layout/grid
-        this._host.hooks.exec("pre-layout", undefined);
-        const [layoutMs, compositor] = this.wrapPerf(() => this.getComposedLayout(opts));
-        this._host.hooks.exec("post-layout", compositor.canvas);
-
-        const lastGrid = this._lastGrid;
-        const nextGrid = compositor.canvas.grid;
-        this._lastCompositor = compositor;
-        this._lastGrid = nextGrid;
-        this._rects = compositor.rects;
-
-        // Load cursor with operations and execute
-        this._host.hooks.exec("pre-write", undefined);
-        const [diffMs, diffStrategy] = this.wrapPerf(() => {
-            return this.prepareCursorOps(opts, lastGrid, nextGrid);
-        });
-        this.executeCursorOps();
-        this._host.hooks.exec("post-write", undefined);
-
-        this._host.hooks.exec("performance", {
-            layoutMs,
-            diffMs,
-            diffStrategy,
-        });
-    }
-
-    private wrapPerf<T>(cb: () => T): [number, T] {
-        const start = performance.now();
-        const result = cb();
-        const end = performance.now();
-        return [end - start, result];
-    }
-
-    private getComposedLayout(opts: WriteOpts): Compositor {
-        let compositor: Compositor;
-        if (this.onlyStyleChange(opts) && this._lastCompositor) {
-            this._lastGrid = this._lastCompositor.redrawCanvas();
-            compositor = this._lastCompositor;
+        const scomposite = performance.now();
+        if (this.onlyStyleChange(opts)) {
+            this.canvas.clearGrid();
         } else {
-            compositor = this.composeNewLayout(opts);
+            this.draw = new Draw();
+            this.rects = new DomRects();
+            const compositor = new Compositor(this.root, opts, this.draw, this.rects);
+            compositor.buildLayout();
         }
-        return this.reconcileLayout(compositor);
-    }
 
-    private composeNewLayout(opts: WriteOpts): Compositor {
-        const compositor = new Compositor(this._host, opts);
-        compositor.buildLayout();
-        return compositor;
-    }
+        this.draw.performOps();
+        this.canvas.removeTrailingWhitespace();
+        const ecomposite = performance.now();
 
-    private reconcileLayout(compositor: Compositor): Compositor {
-        const recompose = (cb: () => boolean) => {
-            if (cb()) {
-                logger.write("RECOMPOSE");
-                compositor = this.composeNewLayout({ layoutChange: true });
-            }
-        };
+        this.prepareCursorOps(opts, this.lastGrid, this.canvas.grid);
+        this.executeCursorOps();
 
-        // Order Matters: CB -> Yoga -> Recompose
-        const withYoga = (cb: () => boolean) => {
-            recompose(() => {
-                const result = cb();
-                if (result) compositor.calculateYogaLayout();
-                return result;
-            });
-        };
-
-        const sorted = compositor.reconciler.getSorted();
-        sorted.afterLayout.forEach(withYoga);
-        sorted.scrollManagers.forEach(recompose);
-        sorted.focusManagers.forEach(recompose);
-
-        return compositor;
+        logger.write(`layoutMs: ${ecomposite - scomposite}`);
     }
 
     private executeCursorOps() {
-        const stdout = this._host.runtime.stdout;
+        const stdout = this.root.runtime.stdout;
         stdout.write(Ansi.beginSynchronizedUpdate);
-        this._cursor.execute();
+        this.cursor.execute();
         stdout.write(Ansi.endSynchronizedUpdate);
     }
 
@@ -140,20 +90,20 @@ export class Renderer {
 
         let strategy: PerformanceData["diffStrategy"] = "refresh";
         if (shouldRefresh || !lastGrid) {
-            this._refreshWriter.instructCursor(lastGrid, nextGrid, opts.capturedOutput);
+            this.refreshWriter.instructCursor(lastGrid, nextGrid, opts.capturedOutput);
         } else {
-            if (this._host.runtime.writeMode === "cell") {
-                this._cellWriter.instructCursor(lastGrid, nextGrid);
+            if (this.root.runtime.writeMode === "cell") {
+                this.cellWriter.instructCursor(lastGrid, nextGrid);
                 strategy = "cell";
             } else {
-                this._rowWriter.instructCursor(lastGrid, nextGrid);
+                this.rowWriter.instructCursor(lastGrid, nextGrid);
                 strategy = "row";
             }
 
-            this._refreshWriter.resetLastOutput();
+            this.refreshWriter.resetLastOutput();
         }
 
-        this._cursor.moveToRow(nextGrid.length - 1);
+        this.cursor.moveToRow(nextGrid.length - 1);
         return strategy;
     }
 
@@ -166,18 +116,18 @@ export class Renderer {
     }
 
     private shouldRefreshWrite(opts: WriteOpts, nextGrid: Grid) {
-        if (this._host.runtime.writeMode === "refresh") return true;
-        if (!this._lastCompositor) return true;
+        if (this.root.runtime.writeMode === "refresh") return true;
+        if (!this.lastGrid) return true;
         if (opts.resize) return true;
         if (opts.screenChange) return true;
         if (opts.capturedOutput && !this.isFullscreen(nextGrid)) return true;
-        if (this._sinceResize < 2) return true;
+        if (this.rendersSinceLastResize < 2) return true;
         if (!this.termSupportsAnsiCursor()) return true;
         return false;
     }
 
     private isFullscreen(grid: Grid): boolean {
-        return isFullscreen(grid, this._host.runtime.stdout);
+        return isFullscreen(grid, this.root.runtime.stdout);
     }
 
     /**
@@ -190,7 +140,7 @@ export class Renderer {
     }
 
     private checkIfBlockedRender(): boolean {
-        const handlers = this._host.hooks.getHookSet("block-render");
+        const handlers = this.root.hooks.getHookSet("block-render");
         if (handlers.size) {
             return Array.from(handlers).every((handler) => handler(undefined));
         } else {
@@ -199,11 +149,11 @@ export class Renderer {
     }
 
     /** For forcing a refresh write if less than 2 renders after a resize event */
-    private handleResizeCounter(opts: WriteOpts) {
+    private updateResizeCounter(opts: WriteOpts) {
         if (opts.resize) {
-            this._sinceResize = 0;
+            this.rendersSinceLastResize = 0;
         } else {
-            ++this._sinceResize;
+            ++this.rendersSinceLastResize;
         }
     }
 }

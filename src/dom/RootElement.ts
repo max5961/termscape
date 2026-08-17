@@ -10,8 +10,8 @@ import { HooksManager, type Hook, type HookHandler } from "../render/hooks/Hooks
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { MetaData, MetaDataRegister } from "./services/MetaData.js";
-import { Compositor } from "../compositor/Compositor.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
+import { RootCanvas } from "../compositor/Canvas.js";
 
 export class Root extends DomElement<{
     Style: Style.Root;
@@ -27,6 +27,8 @@ export class Root extends DomElement<{
     protected renderer: Renderer;
     protected runtimeCtl: RuntimeCtl["logic"];
     protected emitter: EventEmitter<EventPayloadMap>;
+    /** @internal */
+    public override readonly _canvas: RootCanvas;
 
     constructor(config: Runtime) {
         super(DefaultStyles.Root);
@@ -54,6 +56,9 @@ export class Root extends DomElement<{
 
         this.runtime = api;
         this.runtimeCtl = logic;
+        // What is stdout changes....runtime control would then have to update the canvas
+        // as it has it as a dependency
+        this._canvas = new RootCanvas(this, this.runtime.stdout);
 
         if (config.startOnCreate !== false) {
             this.runtimeCtl.startRuntime();
@@ -102,14 +107,6 @@ export class Root extends DomElement<{
         this._register.detach(metadata);
     }
 
-    /** @internal */
-    public _refreshLayout() {
-        const rootCanvas = this._canvas;
-        const compositor = new Compositor(this, {});
-        compositor.refreshLayout();
-        this._canvas = rootCanvas;
-    }
-
     public exit<T extends Error | undefined>(error?: T): T extends Error ? never : void {
         this.runtimeCtl.endRuntime(error);
         return undefined as T extends Error ? never : void;
@@ -125,7 +122,7 @@ export class Root extends DomElement<{
     }
 
     public getLayoutHeight() {
-        return this.renderer.lastGrid?.length ?? 0;
+        return this.renderer.layoutHeight;
     }
 
     // CHORE - underscore prefix these internals
@@ -152,7 +149,7 @@ export class Root extends DomElement<{
     }
 
     private handleMouseEvent = (...[x, y, type]: EventPayloadMap["MouseEvent"]) => {
-        const target = this.renderer.rects.findTargetElement(x, y);
+        const target = this.renderer.getRects().findTargetElement(x, y);
         if (!target) return;
 
         target._domEventService.dispatchMouseEvent(x, y, type);

@@ -51,7 +51,7 @@ export abstract class DomElement<
     /** @internal */
     public readonly _shadow!: ShadowStyleProxy;
     /** @internal */
-    public _canvas: Canvas | null;
+    public _canvas: Canvas | undefined;
     /** @internal */
     public _afterLayoutHandlers: Set<() => boolean>;
     public readonly _domEventService: DomEventService;
@@ -69,7 +69,6 @@ export abstract class DomElement<
         this._scrollService = new ScrollService(this);
         this._treeService = new TreeService(this);
         this._afterLayoutHandlers = new Set();
-        this._canvas = null;
 
         this._shadow = new ShadowStyleProxy(this);
         this._virtual = new VirtualStyleProxy(this, defaultStyles);
@@ -132,6 +131,7 @@ export abstract class DomElement<
         return this.identities.has(identity);
     }
 
+    @Render()
     public setProp<T extends keyof Schema["Props"]>(key: T, next: Schema["Props"][T]) {
         this._propsManager.setProp(key, next);
     }

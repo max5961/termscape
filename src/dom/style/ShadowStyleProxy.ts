@@ -491,7 +491,7 @@ export class ShadowStyleProxy {
         if (this.values["zIndex"] === v) return;
         this.values["zIndex"] = v;
 
-        this.scheduleRender({ layoutChange: true });
+        this.scheduleRender({ zIndexChange: true });
     }
 
     get backgroundColor(): Sha["backgroundColor"] {
