@@ -229,22 +229,27 @@ export abstract class Canvas {
 
 export class RootCanvas extends Canvas {
     public override readonly host: Root;
-    public override readonly ygHeight: number;
-    public override readonly ygWidth: number;
-    public override readonly grid: Grid;
-    public override readonly limits: Limits;
     public override readonly corner: Point;
-    public override readonly stdout: Stdout;
+    public override readonly grid: Grid;
+    public override ygHeight!: number;
+    public override ygWidth!: number;
+    public override limits!: Limits;
+    public override stdout!: Stdout;
 
-    constructor(host: Root, stdout: Stdout) {
+    constructor(host: Root) {
         super();
         this.host = host;
-        this.stdout = stdout;
         this.grid = [];
         this.corner = { x: 0, y: 0 };
+        this.updateRootConstraints();
+    }
 
-        const maxHeight = host.runtime.stdout.rows;
-        const maxWidth = host.runtime.stdout.columns;
+    public updateRootConstraints() {
+        const stdout = this.host.runtime.stdout;
+        this.stdout = stdout;
+
+        const maxHeight = stdout.rows;
+        const maxWidth = stdout.columns;
 
         this.ygHeight = maxHeight;
         this.ygWidth = maxWidth;

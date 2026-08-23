@@ -1,11 +1,4 @@
-import {
-    ActionStore,
-    InputState,
-    configureStdin,
-    setKittyProtocol,
-    setMouse,
-    type Action,
-} from "term-keymap";
+import { configureStdin, setKittyProtocol, setMouse, type Action } from "term-keymap";
 import type { Root } from "../dom/RootElement.js";
 import type { Scheduler } from "./Scheduler.js";
 import type { EventEmitter } from "stream";
@@ -13,7 +6,7 @@ import type { EventPayloadMap, Runtime } from "../Types.js";
 import type { InputElement } from "../dom/InputElement.js";
 import { Ansi } from "./Ansi.js";
 import { Capture } from "log-goblin";
-import { MouseState } from "./MouseState.js";
+// import { MouseState } from "./MouseState.js";
 import { handleError } from "./ThrowError.js";
 import type { MetaDataRegister } from "../dom/services/MetaData.js";
 
@@ -86,11 +79,11 @@ export function createRuntime(deps: RuntimeDependencies) {
 
     let exitResolvers = [] as (() => void)[];
     const capture = new Capture();
-    const inputState = new InputState();
-    const mouseState = new MouseState(root, deps.emitter);
+    // const inputState = new InputState();
+    // const mouseState = new MouseState(root, deps.emitter);
 
     /** Actions added through react layer (or the ctrl-c exit action) */
-    const actionStore = new ActionStore();
+    // const actionStore = new ActionStore();
 
     const exitAction: Readonly<Action> = {
         name: "internal_exit",
@@ -115,10 +108,10 @@ export function createRuntime(deps: RuntimeDependencies) {
                     return inputStreamOwner.handleData(buf);
                 }
 
-                const domActions = logic.getDomActions();
-                const actions = actionStore.getCombinedActions(domActions);
-                const { data } = inputState.process(buf, actions);
-                mouseState.process(data);
+                // const domActions = logic.getDomActions();
+                // const actions = actionStore.getCombinedActions(domActions);
+                // const { data } = inputState.process(buf, actions);
+                // mouseState.process(data);
             });
         },
 
@@ -229,13 +222,13 @@ export function createRuntime(deps: RuntimeDependencies) {
             config.stdin.off("data", logic.handleStdinBuffer);
         },
 
-        addKeyListener: (action: Action) => {
-            actionStore.subscribe(action);
-            return () => actionStore.unsubscribe(action);
+        addKeyListener: (_action: Action) => {
+            // actionStore.subscribe(action);
+            // return () => actionStore.unsubscribe(action);
         },
 
-        removeKeyListener: (action: Action) => {
-            actionStore.unsubscribe(action);
+        removeKeyListener: (_action: Action) => {
+            // actionStore.unsubscribe(action);
         },
 
         enterAltScreen() {
@@ -310,9 +303,9 @@ export function createRuntime(deps: RuntimeDependencies) {
         set exitOnCtrlC(val: Config["exitOnCtrlC"]) {
             config.exitOnCtrlC = val;
             if (val) {
-                actionStore.subscribe(exitAction);
+                // actionStore.subscribe(exitAction);
             } else {
-                actionStore.unsubscribe(exitAction);
+                // actionStore.unsubscribe(exitAction);
             }
         },
 

@@ -1,4 +1,4 @@
-import { ActionStore, InputState, type Action } from "term-keymap";
+import { KeyMapState, type Action } from "term-keymap";
 import { ElementIdentities } from "../Constants.js";
 import { DomElement } from "./DomElement.js";
 import { TextElement } from "./TextElement.js";
@@ -19,15 +19,13 @@ export class InputElement extends DomElement<{
     public _cursorIdx: number;
     /** @internal */
     private _textContent: string;
-    private _inputState: InputState | null;
-    private _actionStore: ActionStore;
+    private _keymapState: KeyMapState;
     private _actionsMap: Map<keyof Props.Input, Action[]>;
 
     constructor() {
         super(DefaultStyles.Input);
         this.hasClaimedStdin = false;
-        this._inputState = null;
-        this._actionStore = new ActionStore();
+        this._keymapState = new KeyMapState();
         this._actionsMap = new Map();
         this._cursorIdx = 0;
         this._textContent = "";
@@ -50,22 +48,22 @@ export class InputElement extends DomElement<{
         // this.registerProp("undoPrev", this.handleUndoPrev);
         // this.registerProp("redoPrev", this.handleRedoPrev);
 
-        this._actionStore.subscribe({
+        this._keymapState.addAction({
             keymap: { key: "backspace" },
             callback: this.handleBackspace,
         });
 
-        this._actionStore.subscribe({
+        this._keymapState.addAction({
             keymap: { key: "left" },
             callback: this.handleCursorLeft,
         });
 
-        this._actionStore.subscribe({
+        this._keymapState.addAction({
             keymap: { key: "right" },
             callback: this.handleCursorRight,
         });
 
-        this._actionStore.subscribe({
+        this._keymapState.addAction({
             keymap: { key: "tab" },
             name: "tab",
         });
@@ -81,7 +79,9 @@ export class InputElement extends DomElement<{
                 if (prop === "enter") {
                     prev.forEach((action) => this.removeKeyListener(action));
                 } else {
-                    this._actionStore.unsubscribe(...prev);
+                    prev.forEach((action) => {
+                        this._keymapState.removeAction(action);
+                    });
                 }
             }
 
@@ -97,19 +97,14 @@ export class InputElement extends DomElement<{
             if (prop === "enter") {
                 actions.forEach((action) => this.addKeyListener(action));
             } else {
-                this._actionStore.subscribe(...actions);
+                actions.forEach((action) => this._keymapState.addAction(action));
             }
         });
     }
 
     /** @internal */
     public handleData(buf: Buffer) {
-        if (!this._inputState) {
-            return;
-        }
-
-        const actions = this._actionStore.getActions();
-        const { keymap, data } = this._inputState.process(buf, actions);
+        const { keymap, data } = this._keymapState.process(buf);
 
         const isTab = data.key.has("tab");
         if (keymap) return;
@@ -187,7 +182,7 @@ export class InputElement extends DomElement<{
         if (this.getRoot()?.requestInputStreamOwnership(this)) {
             this.getRoot()?.scheduleRender();
             this.hasClaimedStdin = true;
-            this._inputState = new InputState();
+            this._keymapState.clearState();
             this.cursorRight(Infinity); // go to end of text when entering
         }
     };

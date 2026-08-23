@@ -1,5 +1,5 @@
 import { objectEntries, objectKeys } from "../Util.js";
-import type { Runtime, StyleHandler } from "../Types.js";
+import type { StyleHandler } from "../Types.js";
 import type { Props } from "../dom/props/Props.js";
 import type { Style } from "../dom/style/Style.js";
 import type { DomElement } from "../dom/DomElement.js";
@@ -14,6 +14,7 @@ import { CanvasElement } from "../dom/CanvasElement.js";
 import { VirtualListElement } from "../dom/VirtualListElement.js";
 import { InputElement } from "../dom/InputElement.js";
 import { DefaultProps } from "../dom/props/DefaultProps.js";
+import type { RuntimeConfig } from "./RuntimeService.js";
 
 type StyleHelper<T extends Style.All> = T | StyleHandler<T>;
 type Children = DomElement[];
@@ -49,7 +50,7 @@ function applyDefaultProps(el: DomElement, props: Props.All) {
 }
 
 export const create = {
-    root: (config?: Runtime) => {
+    root: (config?: RuntimeConfig) => {
         return new Root(config ?? {});
     },
     box: (config?: Config<Style.Box, Props.Box>) => {

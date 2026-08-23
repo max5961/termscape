@@ -1,17 +1,20 @@
 import EventEmitter from "events";
-import { ElementIdentities, TEST_ROOT_ELEMENT, Yg } from "../Constants.js";
+import { ElementIdentities, Yg } from "../Constants.js";
 import type { InputElement } from "./InputElement.js";
-import type { Runtime, WriteOpts, EventPayloadMap } from "../Types.js";
+import type { WriteOpts, EventPayloadMap } from "../Types.js";
 import { DomElement } from "./DomElement.js";
-import { Scheduler, TestScheduler } from "../shared/Scheduler.js";
 import { Renderer } from "../render/Renderer.js";
-import { createRuntime, type RuntimeCtl } from "../shared/RuntimeFactory.js";
 import { HooksManager, type Hook, type HookHandler } from "../render/hooks/Hooks.js";
 import type { Style } from "./style/Style.js";
 import type { Props } from "./props/Props.js";
 import { MetaData, MetaDataRegister } from "./services/MetaData.js";
 import { DefaultStyles } from "./style/DefaultStyles.js";
 import { RootCanvas } from "../compositor/Canvas.js";
+import {
+    RuntimeService,
+    type IRuntimeService,
+    type RuntimeConfig,
+} from "../shared/RuntimeService.js";
 
 export class Root extends DomElement<{
     Style: Style.Root;
@@ -19,25 +22,22 @@ export class Root extends DomElement<{
 }> {
     protected override readonly identities = ElementIdentities.Root;
 
-    public runtime: RuntimeCtl["api"];
+    protected runtimeService: RuntimeService;
     public hooks: HooksManager;
     protected hasRendered: boolean;
-    protected _register: MetaDataRegister;
-    protected scheduler: Scheduler;
+    /** @internal */
+    public _register: MetaDataRegister;
+    /** @internal */
     protected renderer: Renderer;
-    protected runtimeCtl: RuntimeCtl["logic"];
     protected emitter: EventEmitter<EventPayloadMap>;
     /** @internal */
     public override readonly _canvas: RootCanvas;
 
-    constructor(config: Runtime) {
+    constructor(config: RuntimeConfig) {
         super(DefaultStyles.Root);
         this._register = new MetaDataRegister(this);
         this.hooks = new HooksManager();
         this.renderer = new Renderer(this);
-        this.scheduler = this._is(TEST_ROOT_ELEMENT)
-            ? new TestScheduler(this)
-            : new Scheduler();
         this.emitter = new EventEmitter();
         this.emitter.on("MouseEvent", this.handleMouseEvent);
         this.hasRendered = false;
@@ -45,24 +45,21 @@ export class Root extends DomElement<{
         // attach root to itself
         this.afterAttached(this);
         this.setDefaultYogaStyles();
+        this.runtimeService = new RuntimeService(this, config);
 
-        const { api, logic } = createRuntime({
-            config: config,
-            root: this,
-            scheduler: this.scheduler,
-            emitter: this.emitter,
-            actions: this._register.actions,
-        });
+        this._canvas = new RootCanvas(this);
 
-        this.runtime = api;
-        this.runtimeCtl = logic;
-        // What is stdout changes....runtime control would then have to update the canvas
-        // as it has it as a dependency
-        this._canvas = new RootCanvas(this, this.runtime.stdout);
-
-        if (config.startOnCreate !== false) {
-            this.runtimeCtl.startRuntime();
+        if ((config.startOnCreate ??= true)) {
+            this.runtimeService.startRuntime();
         }
+    }
+
+    public get runtime(): IRuntimeService {
+        return this.runtimeService;
+    }
+
+    protected get scheduler() {
+        return this.runtimeService.scheduler;
     }
 
     // CHORE - changed the Style.Root type so this needs to be changed to allow
@@ -108,22 +105,30 @@ export class Root extends DomElement<{
     }
 
     public exit<T extends Error | undefined>(error?: T): T extends Error ? never : void {
-        this.runtimeCtl.endRuntime(error);
+        this.runtimeService.endRuntime(error);
         return undefined as T extends Error ? never : void;
     }
 
     public startRuntime() {
-        this.runtimeCtl.startRuntime();
+        this.runtimeService.startRuntime();
         this.scheduleRender();
     }
 
     public waitUntilExit() {
-        return this.runtimeCtl.createExitHandler();
+        return this.runtimeService.createExitResolver();
     }
 
     public getLayoutHeight() {
         return this.renderer.layoutHeight;
     }
+
+    // TODO
+    // public get onExit() {
+    //     return this._domEventService.getSingle("exit");
+    // }
+    // public set onExit(cb: () => unknown) {
+    //     this._domEventService.setSingle("exit");
+    // }
 
     // CHORE - underscore prefix these internals
 
@@ -143,7 +148,7 @@ export class Root extends DomElement<{
 
     /** @internal */
     public scheduleRender(opts: WriteOpts = {}) {
-        if (this.runtimeCtl.isStarted) {
+        if (this.runtimeService.getState().hasStarted) {
             this.scheduler.scheduleUpdate(this.render, opts);
         }
     }
@@ -157,23 +162,23 @@ export class Root extends DomElement<{
 
     /** @internal */
     public requestInputStream() {
-        this.runtimeCtl.resumeStdin();
+        this.runtimeService.requestStdin();
     }
 
     /** @internal */
     public requestInputStreamOwnership(elem: InputElement): boolean {
-        if (this.runtimeCtl.inputStreamOwner) {
+        if (this.runtimeService.getInputStreamOwner()) {
             return false;
         }
 
-        this.runtimeCtl.setInputStreamOwner(elem);
+        this.runtimeService.setInputStreamOwner(elem);
         return true;
     }
 
     /** @internal */
     public forfeitInputStreamOwnership(elem: InputElement) {
-        if (this.runtimeCtl.inputStreamOwner === elem) {
-            this.runtimeCtl.setInputStreamOwner(null);
+        if (this.runtimeService.getInputStreamOwner() === elem) {
+            this.runtimeService.setInputStreamOwner(undefined);
         }
     }
 }

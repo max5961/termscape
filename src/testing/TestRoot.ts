@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { MouseEventType, Runtime, _Omit } from "../Types.js";
+import type { MouseEventType, _Omit } from "../Types.js";
 import { Root } from "../dom/RootElement.js";
 import { Canvas } from "../compositor/Canvas.js";
 import { getMockStdout, MockStdout, type MockStdoutConfig } from "./MockStdout.js";
@@ -8,10 +8,11 @@ import { getMockStdin } from "./MockStdin.js";
 import * as TestUtil from "./util.js";
 import type { TestScheduler } from "../shared/Scheduler.js";
 import { ElementIdentities } from "../Constants.js";
+import type { RuntimeConfig } from "../shared/RuntimeService.js";
 
 // prettier-ignore
 export type TestRuntime = _Omit<
-    Runtime &
+    RuntimeConfig &
     MockStdoutConfig,
     "stdout" | "stdin"
 >
