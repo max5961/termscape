@@ -38,6 +38,10 @@ export class TreeService implements ITreeService<Kernel> {
         return this._children[this._children.length - 1];
     }
 
+    public get children() {
+        return this._children;
+    }
+
     /**
      * Rules:
      * - appendChild supports inserting a child that is already a child.  When this

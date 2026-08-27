@@ -12,7 +12,7 @@ export class RootEmulator implements IRootKernel {
     }
 
     public onDetach(_root: RootKernel) {
-        //
+        this.root = undefined;
     }
 
     public scheduleRender(): void {

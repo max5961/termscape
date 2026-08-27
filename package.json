@@ -18,7 +18,7 @@
         "dev": "npm run compile:dev && NODE_ENV=development LOGGER=true node ./dist/sandbox/index.js",
         "dev:debug": "npm run compile:dev && NODE_ENV=development LOGGER=true CURSOR_DEBUG=true node ./dist/sandbox/index.js",
         "dev:prodlike": "npm run compile && node ./dist/sandbox/index.js",
-        "test": "npm run compile && NODE_ENV=test LOGGER=true vitest",
+        "test": "vitest",
         "test:overwrite-snapshots": "./overwrite-snapshots.sh"
     },
     "type": "module",
@@ -31,8 +31,6 @@
     "dependencies": {
         "ansi-escape-sequences": "^6.2.4",
         "log-goblin": "^0.0.4",
-        "react": "^18.3.1",
-        "react-reconciler": "^0.29.2",
         "term-keymap": "^0.2.2",
         "yoga-wasm-web": "^0.3.3"
     },
