@@ -2,37 +2,40 @@ import type { BorderMap } from "../../shared/Boxes.js";
 import type { Color } from "../../Types.js";
 import type { Shorthand, BorderStyle } from "./types.js";
 
-interface IDimension {
+export interface IDimensionStyle {
     height?: number | string;
     width?: number | string;
-}
-
-interface IMinDimension {
     minHeight?: number | string;
     minWidth?: number | string;
 }
 
-interface IMargin {
-    margin?: number | Shorthand<number>;
-    marginX?: number;
-    marginY?: number;
+export interface IShadowMarginStyle {
     marginTop?: number;
     marginBottom?: number;
     marginLeft?: number;
     marginRight?: number;
 }
 
-interface IPadding {
-    padding?: number | Shorthand<number>;
-    paddingX?: number;
-    paddingY?: number;
+export interface IMarginStyle extends IShadowMarginStyle {
+    margin?: number | Shorthand<number>;
+    marginX?: number;
+    marginY?: number;
+}
+
+export interface IShadowPaddingStyle {
     paddingTop?: number;
     paddingBottom?: number;
     paddingLeft?: number;
     paddingRight?: number;
 }
 
-interface IFlex {
+export interface IPaddingStyle extends IShadowPaddingStyle {
+    padding?: number | Shorthand<number>;
+    paddingX?: number;
+    paddingY?: number;
+}
+
+export interface IFlexStyle {
     position?: "absolute" | "relative";
     display?: "flex" | "none";
     flexGrow?: number;
@@ -51,44 +54,53 @@ interface IFlex {
         | "center";
 }
 
-interface IGap {
-    gap?: number;
+export interface IShadowGapStyle {
     columnGap?: number;
     rowGap?: number;
 }
 
-interface IBackground {
+export interface IGapStyle extends IShadowGapStyle {
+    gap?: number;
+}
+
+export interface IBackgroundStyle {
     zIndex?: number;
     backgroundColor?: Color;
     backgroundStyle?: "dotted" | "dashed" | { char: string };
     backgroundStyleColor?: Color;
 }
 
-interface IOverflow {
-    overflow?: "visible" | "hidden" | "scroll";
+export interface IShadowOverflowStyle {
     overflowX?: "visible" | "hidden" | "scroll";
     overflowY?: "visible" | "hidden" | "scroll";
 }
 
-interface IEdge {
+export interface IOverflowStyle extends IShadowOverflowStyle {
+    overflow?: "visible" | "hidden" | "scroll";
+}
+
+export interface IShadowEdgeStyle {
     borderStyle?: BorderStyle | BorderMap;
     borderTop?: boolean;
     borderBottom?: boolean;
     borderLeft?: boolean;
     borderRight?: boolean;
-    borderColor?: Color;
     borderTopColor?: Color;
     borderBottomColor?: Color;
     borderLeftColor?: Color;
     borderRightColor?: Color;
-    borderDimColor?: boolean;
     borderTopDimColor?: boolean;
     borderBottomDimColor?: boolean;
     borderLeftDimColor?: boolean;
     borderRightDimColor?: boolean;
 }
 
-interface IText {
+export interface IEdgeStyle extends IShadowEdgeStyle {
+    borderColor?: Color;
+    borderDimColor?: boolean;
+}
+
+export interface ITextStyle {
     color?: Color;
     backgroundColor?: Color;
     dimColor?: boolean;
@@ -109,16 +121,47 @@ interface IText {
     font6?: boolean;
 }
 
-export namespace Style {
-    export type Box = IDimension &
-        IMinDimension &
-        IMargin &
-        IPadding &
-        IFlex &
-        IGap &
-        IBackground &
-        IOverflow &
-        IEdge;
+// prettier-ignore
+export interface IStyle extends
+    RequiredPartial<IDimensionStyle>,
+    RequiredPartial<IMarginStyle>,
+    RequiredPartial<IPaddingStyle>,
+    RequiredPartial<IFlexStyle>,
+    RequiredPartial<IGapStyle>,
+    RequiredPartial<IBackgroundStyle>,
+    RequiredPartial<IOverflowStyle>,
+    RequiredPartial<IEdgeStyle>,
+    RequiredPartial<ITextStyle> 
+{}
 
-    export type Text = IText;
+// prettier-ignore
+export interface IShadowStyle extends
+    RequiredPartial<IDimensionStyle>,
+    RequiredPartial<IShadowMarginStyle>,
+    RequiredPartial<IShadowPaddingStyle>,
+    RequiredPartial<IFlexStyle>,
+    RequiredPartial<IShadowGapStyle>,
+    RequiredPartial<IBackgroundStyle>,
+    RequiredPartial<IShadowOverflowStyle>,
+    RequiredPartial<IShadowEdgeStyle>,
+    RequiredPartial<ITextStyle>
+{}
+
+type RequiredPartial<T extends object> = {
+    [P in keyof Required<T>]: Required<T>[P] | undefined;
+};
+
+export namespace Style {
+    export type All = Partial<IStyle>;
+
+    export type Box = IDimensionStyle &
+        IMarginStyle &
+        IPaddingStyle &
+        IFlexStyle &
+        IGapStyle &
+        IBackgroundStyle &
+        IOverflowStyle &
+        IEdgeStyle;
+
+    export type Text = ITextStyle;
 }

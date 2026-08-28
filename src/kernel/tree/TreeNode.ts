@@ -1,8 +1,8 @@
 import type { YogaNode } from "../../Types.js";
 import type { Kernel } from "../Kernel.js";
-import { RootKernel } from "../RootKernel.js";
+import type { RootKernel } from "../RootKernel.js";
 
-export interface ITreeService<T> {
+export interface ITreeNode<T> {
     appendChild(child: T): void;
     insertBefore(child: T, beforeChild: T): void;
     removeChild(child: T, freeRecursive?: boolean): void;
@@ -12,12 +12,12 @@ export interface ITreeService<T> {
     get lastElementChild(): T | undefined;
 }
 
-export class TreeService implements ITreeService<Kernel> {
-    private readonly _kernel: Kernel;
-    private readonly _yogaNode: YogaNode;
-    private readonly _set: Set<Kernel>;
-    private readonly _children: Kernel[];
-    private _parentElement: Kernel | undefined;
+export class TreeNode implements ITreeNode<Kernel> {
+    protected readonly _kernel: Kernel;
+    protected readonly _yogaNode: YogaNode;
+    protected readonly _set: Set<Kernel>;
+    protected readonly _children: Kernel[];
+    protected _parentElement: Kernel | undefined;
 
     constructor(kernel: Kernel) {
         this._kernel = kernel;
@@ -57,10 +57,10 @@ export class TreeService implements ITreeService<Kernel> {
         this._set.add(child);
         this._children.push(child);
         this._yogaNode.insertChild(child.yogaNode, this._children.length - 1);
-        child.treeService._parentElement = this._kernel;
+        child.treeNode._parentElement = this._kernel;
 
         if (wasAttached) return;
-        const root = this._kernel.root.getKernel();
+        const root = this._kernel.root.getReference();
         this.handleChildRootAttach(child, root);
     }
 
@@ -89,10 +89,10 @@ export class TreeService implements ITreeService<Kernel> {
         this._children.splice(beforeChildIdx, 0, child);
         this._yogaNode.insertChild(child.yogaNode, beforeChildIdx);
         this._set.add(child);
-        child.treeService._parentElement = this._kernel;
+        child.treeNode._parentElement = this._kernel;
 
         if (wasAttached) return;
-        const root = this._kernel.root.getKernel();
+        const root = this._kernel.root.getReference();
         this.handleChildRootAttach(child, root);
     }
 
@@ -106,9 +106,9 @@ export class TreeService implements ITreeService<Kernel> {
         this._children.splice(idx, 1);
         this._yogaNode.removeChild(child.yogaNode);
         this._set.delete(child);
-        child.treeService._parentElement = undefined;
+        child.treeNode._parentElement = undefined;
 
-        const root = this._kernel.root.getKernel();
+        const root = this._kernel.root.getReference();
         this.handleChildRootDetach(child, root);
 
         if (freeRecursive) {
@@ -140,7 +140,7 @@ export class TreeService implements ITreeService<Kernel> {
 
     private dfs(kernel: Kernel, cb: (kernel: Kernel) => void) {
         cb(kernel);
-        kernel.treeService._children.forEach((child) => {
+        kernel.treeNode._children.forEach((child) => {
             this.dfs(child, cb);
         });
     }

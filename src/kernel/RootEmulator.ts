@@ -3,7 +3,7 @@ import type { IRootKernel, RootKernel } from "./RootKernel.js";
 export class RootEmulator implements IRootKernel {
     protected root: RootKernel | undefined;
 
-    public getKernel() {
+    public getReference() {
         return this.root;
     }
 
@@ -19,6 +19,10 @@ export class RootEmulator implements IRootKernel {
         if (this.root) {
             this.root.scheduleRender();
         }
+    }
+
+    get stdout() {
+        return this.root?.stdout ?? process.stdout;
     }
 }
 
