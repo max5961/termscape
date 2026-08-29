@@ -3,6 +3,7 @@ import type { YogaNode } from "../Types.js";
 import type { DomElement } from "../dom/DomElement.js";
 import { RootEmulator } from "./RootEmulator.js";
 import { TreeNode } from "./TreeNode.js";
+import type { IStyle } from "./style/IStyle.js";
 import { ShadowStyle } from "./style/ShadowStyle.js";
 import { VirtualStyle } from "./style/VirtualStyle.js";
 
@@ -15,12 +16,12 @@ export class CoreElement {
     public readonly shadow: ShadowStyle;
     public readonly virtual: VirtualStyle;
 
-    constructor(shell?: DomElement) {
+    constructor(defaults: IStyle, shell?: DomElement) {
         this.shell = shell;
         this.root = new RootEmulator();
         this.yogaNode = Yg.Node.create();
         this.treeNode = new TreeNode(this);
         this.shadow = new ShadowStyle(this);
-        this.virtual = new VirtualStyle({}, this.shadow);
+        this.virtual = new VirtualStyle(defaults, this.shadow);
     }
 }

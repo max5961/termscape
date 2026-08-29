@@ -8,8 +8,8 @@ export abstract class DomElement<T extends keyof IStyle = keyof IStyle>
 {
     protected readonly _core: CoreElement;
 
-    constructor() {
-        this._core = new CoreElement(this);
+    constructor(defaultStyle: IStyle) {
+        this._core = new CoreElement(defaultStyle, this);
     }
 
     public get style(): Style<T> {
