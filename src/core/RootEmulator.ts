@@ -1,17 +1,17 @@
-import type { IRootKernel, RootKernel } from "./RootKernel.js";
+import type { ICoreRootElement, CoreRootElement } from "./CoreRootElement.js";
 
-export class RootEmulator implements IRootKernel {
-    protected root: RootKernel | undefined;
+export class RootEmulator implements ICoreRootElement {
+    protected root: CoreRootElement | undefined;
 
     public getReference() {
         return this.root;
     }
 
-    public onAttach(root: RootKernel) {
+    public onAttach(root: CoreRootElement) {
         this.root = root;
     }
 
-    public onDetach(_root: RootKernel) {
+    public onDetach(_root: CoreRootElement) {
         this.root = undefined;
     }
 
@@ -27,9 +27,9 @@ export class RootEmulator implements IRootKernel {
 }
 
 export class RealRoot extends RootEmulator {
-    protected override readonly root: RootKernel;
+    protected override readonly root: CoreRootElement;
 
-    constructor(root: RootKernel) {
+    constructor(root: CoreRootElement) {
         super();
         this.root = root;
     }

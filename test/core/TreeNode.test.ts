@@ -1,19 +1,24 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { Kernel } from "../../src/kernel/Kernel.js";
-import { RootKernel } from "../../src/kernel/RootKernel.js";
+import { CoreElement } from "../../src/core/CoreElement.js";
+import { CoreRootElement } from "../../src/core/CoreRootElement.js";
 
 describe("TreeNode", () => {
-    let root: RootKernel;
-    let a: Kernel, b: Kernel, c: Kernel, d: Kernel, e: Kernel, f: Kernel;
+    let root: CoreRootElement;
+    let a: CoreElement,
+        b: CoreElement,
+        c: CoreElement,
+        d: CoreElement,
+        e: CoreElement,
+        f: CoreElement;
 
     beforeEach(() => {
-        root = new RootKernel();
-        a = new Kernel();
-        b = new Kernel();
-        c = new Kernel();
-        d = new Kernel();
-        e = new Kernel();
-        f = new Kernel();
+        root = new CoreRootElement();
+        a = new CoreElement();
+        b = new CoreElement();
+        c = new CoreElement();
+        d = new CoreElement();
+        e = new CoreElement();
+        f = new CoreElement();
     });
 
     describe("appendChild", () => {
@@ -122,7 +127,7 @@ describe("TreeNode", () => {
     });
 
     describe("Integrates with RootEmulator", () => {
-        test("nodes detached from root have undefined root kernel references", () => {
+        test("nodes detached from root have undefined root core references", () => {
             // A -> B -> C
             b.treeNode.appendChild(c);
             a.treeNode.appendChild(b);

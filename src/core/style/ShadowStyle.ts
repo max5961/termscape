@@ -1,16 +1,17 @@
 import { Yg } from "../../Constants.js";
 import type { YogaNode } from "../../Types.js";
-import type { Kernel } from "../Kernel.js";
-import type { IShadowStyle } from "./Style.js";
+import type { CoreElement } from "../CoreElement.js";
+import type { IShadowStyle } from "./IStyle.js";
+import type { RequiredPartial } from "./types.js";
 
-export class ShadowStyle implements IShadowStyle {
-    private kernel: Kernel;
+export class ShadowStyle implements RequiredPartial<IShadowStyle> {
+    private core: CoreElement;
     private yogaNode: YogaNode;
     private values: Partial<IShadowStyle>;
 
-    constructor(kernel: Kernel) {
-        this.kernel = kernel;
-        this.yogaNode = kernel.yogaNode;
+    constructor(core: CoreElement) {
+        this.core = core;
+        this.yogaNode = core.yogaNode;
         this.values = {};
     }
 
@@ -19,7 +20,7 @@ export class ShadowStyle implements IShadowStyle {
         dim = dim.trimEnd();
         const vh = dim.endsWith("vh");
         const vw = dim.endsWith("vw");
-        const stdout = this.kernel.root.stdout;
+        const stdout = this.core.root.stdout;
         if (vh || vw) {
             const pct = Number.parseInt(dim, 10) / 100;
             const stdoutDim = vh ? stdout.rows : stdout.columns;
@@ -44,7 +45,7 @@ export class ShadowStyle implements IShadowStyle {
             this.yogaNode.setHeightAuto();
         }
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get width() {
@@ -63,7 +64,7 @@ export class ShadowStyle implements IShadowStyle {
             this.yogaNode.setWidthAuto();
         }
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get minHeight() {
@@ -80,7 +81,7 @@ export class ShadowStyle implements IShadowStyle {
             this.yogaNode.setMinHeight(resolved ?? 0);
         }
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get minWidth() {
@@ -97,7 +98,7 @@ export class ShadowStyle implements IShadowStyle {
             this.yogaNode.setMinWidth(resolved ?? 0);
         }
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get marginTop() {
@@ -112,7 +113,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.marginTop = v;
         this.yogaNode.setMargin(Yg.EDGE_TOP, v ?? 0);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get marginBottom() {
@@ -127,7 +128,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.marginBottom = v;
         this.yogaNode.setMargin(Yg.EDGE_BOTTOM, v ?? 0);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get marginLeft() {
@@ -142,7 +143,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.marginLeft = v;
         this.yogaNode.setMargin(Yg.EDGE_LEFT, v ?? 0);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get marginRight() {
@@ -157,7 +158,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.marginRight = v;
         this.yogaNode.setMargin(Yg.EDGE_RIGHT, v ?? 0);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get paddingTop() {
@@ -172,7 +173,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.paddingTop = v;
         this.yogaNode.setPadding(Yg.EDGE_TOP, v ?? 0);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get paddingBottom() {
@@ -187,7 +188,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.paddingBottom = v;
         this.yogaNode.setPadding(Yg.EDGE_BOTTOM, v ?? 0);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get paddingLeft() {
@@ -202,7 +203,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.paddingLeft = v;
         this.yogaNode.setPadding(Yg.EDGE_LEFT, v ?? 0);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get paddingRight() {
@@ -217,7 +218,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.paddingRight = v;
         this.yogaNode.setPadding(Yg.EDGE_RIGHT, v ?? 0);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get position() {
@@ -231,7 +232,7 @@ export class ShadowStyle implements IShadowStyle {
             v === "absolute" ? Yg.POSITION_TYPE_ABSOLUTE : Yg.POSITION_TYPE_RELATIVE,
         );
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get display() {
@@ -246,7 +247,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.display = v;
         this.yogaNode.setDisplay(v === "flex" ? Yg.DISPLAY_FLEX : Yg.DISPLAY_NONE);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get flexGrow() {
@@ -261,7 +262,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.flexGrow = v;
         this.yogaNode.setFlexGrow(v ?? 0);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get flexShrink() {
@@ -277,7 +278,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.flexShrink = v;
         this.yogaNode.setFlexShrink(v ?? 0);
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get flexDirection() {
@@ -309,7 +310,7 @@ export class ShadowStyle implements IShadowStyle {
             this.yogaNode.setFlexDirection(Yg.FLEX_DIRECTION_COLUMN_REVERSE);
         }
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get flexBasis() {
@@ -330,7 +331,7 @@ export class ShadowStyle implements IShadowStyle {
             this.yogaNode.setFlexBasis(Number.NaN);
         }
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get flexWrap() {
@@ -358,7 +359,7 @@ export class ShadowStyle implements IShadowStyle {
             this.yogaNode.setFlexWrap(Yg.WRAP_WRAP_REVERSE);
         }
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get alignItems() {
@@ -392,7 +393,7 @@ export class ShadowStyle implements IShadowStyle {
             this.yogaNode.setAlignItems(Yg.ALIGN_FLEX_END);
         }
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get alignSelf() {
@@ -416,7 +417,7 @@ export class ShadowStyle implements IShadowStyle {
             this.yogaNode.setAlignSelf(Yg.ALIGN_CENTER);
         }
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get justifyContent() {
@@ -444,7 +445,7 @@ export class ShadowStyle implements IShadowStyle {
             this.yogaNode.setJustifyContent(Yg.JUSTIFY_SPACE_EVENLY);
         }
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get columnGap() {
@@ -459,7 +460,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.columnGap = v;
 
         this.yogaNode.setGap(Yg.GUTTER_COLUMN, v ?? 0);
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get rowGap() {
@@ -474,7 +475,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.rowGap = v;
 
         this.yogaNode.setGap(Yg.GUTTER_ROW, v ?? 0);
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get zIndex() {
@@ -484,7 +485,7 @@ export class ShadowStyle implements IShadowStyle {
         if (this.values.zIndex === v) return;
         this.values.zIndex = v;
 
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get backgroundColor() {
@@ -493,7 +494,7 @@ export class ShadowStyle implements IShadowStyle {
     set backgroundColor(v) {
         if (this.values.backgroundColor === v) return;
         this.values.backgroundColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get backgroundStyle() {
@@ -502,7 +503,7 @@ export class ShadowStyle implements IShadowStyle {
     set backgroundStyle(v) {
         if (this.values.backgroundStyle === v) return;
         this.values.backgroundStyle = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get backgroundStyleColor() {
@@ -511,7 +512,7 @@ export class ShadowStyle implements IShadowStyle {
     set backgroundStyleColor(v) {
         if (this.values.backgroundStyleColor === v) return;
         this.values.backgroundStyleColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get overflowX() {
@@ -520,7 +521,7 @@ export class ShadowStyle implements IShadowStyle {
     set overflowX(v) {
         if (this.values.overflowX === v) return;
         this.values.overflowX = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get overflowY() {
@@ -529,7 +530,7 @@ export class ShadowStyle implements IShadowStyle {
     set overflowY(v) {
         if (this.values.overflowY === v) return;
         this.values.overflowY = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderStyle() {
@@ -538,7 +539,7 @@ export class ShadowStyle implements IShadowStyle {
     set borderStyle(v) {
         if (this.values.borderStyle === v) return;
         this.values.borderStyle = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderTop() {
@@ -549,7 +550,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.borderTop = v;
 
         this.yogaNode.setBorder(Yg.EDGE_TOP, 1);
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderBottom() {
@@ -560,7 +561,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.borderBottom = v;
 
         this.yogaNode.setBorder(Yg.EDGE_BOTTOM, 1);
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderLeft() {
@@ -571,7 +572,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.borderLeft = v;
 
         this.yogaNode.setBorder(Yg.EDGE_LEFT, 1);
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderRight() {
@@ -582,7 +583,7 @@ export class ShadowStyle implements IShadowStyle {
         this.values.borderRight = v;
 
         this.yogaNode.setBorder(Yg.EDGE_RIGHT, 1);
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderTopColor() {
@@ -591,7 +592,7 @@ export class ShadowStyle implements IShadowStyle {
     set borderTopColor(v) {
         if (this.values.borderTopColor === v) return;
         this.values.borderTopColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderBottomColor() {
@@ -600,7 +601,7 @@ export class ShadowStyle implements IShadowStyle {
     set borderBottomColor(v) {
         if (this.values.borderBottomColor === v) return;
         this.values.borderBottomColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderLeftColor() {
@@ -609,7 +610,7 @@ export class ShadowStyle implements IShadowStyle {
     set borderLeftColor(v) {
         if (this.values.borderLeftColor === v) return;
         this.values.borderLeftColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderRightColor() {
@@ -618,7 +619,7 @@ export class ShadowStyle implements IShadowStyle {
     set borderRightColor(v) {
         if (this.values.borderRightColor === v) return;
         this.values.borderRightColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderTopDimColor() {
@@ -627,7 +628,7 @@ export class ShadowStyle implements IShadowStyle {
     set borderTopDimColor(v) {
         if (this.values.borderTopDimColor === v) return;
         this.values.borderTopDimColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderBottomDimColor() {
@@ -636,7 +637,7 @@ export class ShadowStyle implements IShadowStyle {
     set borderBottomDimColor(v) {
         if (this.values.borderBottomDimColor === v) return;
         this.values.borderBottomDimColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderLeftDimColor() {
@@ -645,7 +646,7 @@ export class ShadowStyle implements IShadowStyle {
     set borderLeftDimColor(v) {
         if (this.values.borderLeftDimColor === v) return;
         this.values.borderLeftDimColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get borderRightDimColor() {
@@ -654,7 +655,7 @@ export class ShadowStyle implements IShadowStyle {
     set borderRightDimColor(v) {
         if (this.values.borderRightDimColor === v) return;
         this.values.borderRightDimColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get color() {
@@ -663,7 +664,7 @@ export class ShadowStyle implements IShadowStyle {
     set color(v) {
         if (this.values.color === v) return;
         this.values.color = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get dimColor() {
@@ -672,7 +673,7 @@ export class ShadowStyle implements IShadowStyle {
     set dimColor(v) {
         if (this.values.dimColor === v) return;
         this.values.dimColor = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get bold() {
@@ -681,7 +682,7 @@ export class ShadowStyle implements IShadowStyle {
     set bold(v) {
         if (this.values.bold === v) return;
         this.values.bold = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get italic() {
@@ -690,7 +691,7 @@ export class ShadowStyle implements IShadowStyle {
     set italic(v) {
         if (this.values.italic === v) return;
         this.values.italic = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get underline() {
@@ -699,7 +700,7 @@ export class ShadowStyle implements IShadowStyle {
     set underline(v) {
         if (this.values.underline === v) return;
         this.values.underline = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get strikethrough() {
@@ -708,7 +709,7 @@ export class ShadowStyle implements IShadowStyle {
     set strikethrough(v) {
         if (this.values.strikethrough === v) return;
         this.values.strikethrough = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get wrap() {
@@ -717,7 +718,7 @@ export class ShadowStyle implements IShadowStyle {
     set wrap(v) {
         if (this.values.wrap === v) return;
         this.values.wrap = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get align() {
@@ -726,7 +727,7 @@ export class ShadowStyle implements IShadowStyle {
     set align(v) {
         if (this.values.align === v) return;
         this.values.align = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get imagePositive() {
@@ -735,7 +736,7 @@ export class ShadowStyle implements IShadowStyle {
     set imagePositive(v) {
         if (this.values.imagePositive === v) return;
         this.values.imagePositive = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get imageNegative() {
@@ -744,7 +745,7 @@ export class ShadowStyle implements IShadowStyle {
     set imageNegative(v) {
         if (this.values.imageNegative === v) return;
         this.values.imageNegative = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get fontDefault() {
@@ -753,7 +754,7 @@ export class ShadowStyle implements IShadowStyle {
     set fontDefault(v) {
         if (this.values.fontDefault === v) return;
         this.values.fontDefault = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get font1() {
@@ -762,7 +763,7 @@ export class ShadowStyle implements IShadowStyle {
     set font1(v) {
         if (this.values.font1 === v) return;
         this.values.font1 = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get font2() {
@@ -771,7 +772,7 @@ export class ShadowStyle implements IShadowStyle {
     set font2(v) {
         if (this.values.font2 === v) return;
         this.values.font2 = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get font3() {
@@ -780,7 +781,7 @@ export class ShadowStyle implements IShadowStyle {
     set font3(v) {
         if (this.values.font3 === v) return;
         this.values.font3 = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get font4() {
@@ -789,7 +790,7 @@ export class ShadowStyle implements IShadowStyle {
     set font4(v) {
         if (this.values.font4 === v) return;
         this.values.font4 = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get font5() {
@@ -798,7 +799,7 @@ export class ShadowStyle implements IShadowStyle {
     set font5(v) {
         if (this.values.font5 === v) return;
         this.values.font5 = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 
     get font6() {
@@ -807,6 +808,6 @@ export class ShadowStyle implements IShadowStyle {
     set font6(v) {
         if (this.values.font6 === v) return;
         this.values.font6 = v;
-        this.kernel.root.scheduleRender();
+        this.core.root.scheduleRender();
     }
 }

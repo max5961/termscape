@@ -1,14 +1,14 @@
 import type { Stdout } from "../Types.js";
-import type { DomElement } from "./Kernel.js";
-import { Kernel } from "./Kernel.js";
+import type { DomElement } from "../dom/DomElement.js";
+import { CoreElement } from "./CoreElement.js";
 import { RealRoot } from "./RootEmulator.js";
 
-export interface IRootKernel {
+export interface ICoreRootElement {
     scheduleRender(): void;
     readonly stdout: Stdout;
 }
 
-export class RootKernel extends Kernel implements IRootKernel {
+export class CoreRootElement extends CoreElement implements ICoreRootElement {
     public override root: RealRoot;
 
     constructor(shell?: DomElement) {
