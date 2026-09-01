@@ -84,11 +84,11 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
         }
     }
 
-    private __setNarrowShadow<T extends keyof IShadowStyle>(
+    private __setIndependent<T extends keyof IShadowStyle>(
         style: T,
         value: IShadowStyle[T],
     ) {
-        const resolved = this.__resolveNarrowShadow(style, value);
+        const resolved = this.__resolveIndependent(style, value);
         if (this.__values[style] !== resolved) {
             this.__values[style] = resolved;
             this.__shadow[style] = resolved;
@@ -125,7 +125,7 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
         return value;
     }
 
-    private __resolveNarrowShadow<T extends keyof IShadowStyle>(
+    private __resolveIndependent<T extends keyof IShadowStyle>(
         style: T,
         value: IShadowStyle[T],
     ) {
@@ -193,6 +193,10 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
         }
     }
 
+    public __getValues() {
+        return this.__values;
+    }
+
     public __getActiveKeys() {
         return [...this.__active.values()];
     }
@@ -231,28 +235,28 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
         return this.__values.height;
     }
     set height(v) {
-        this.__setNarrowShadow("height", v);
+        this.__setIndependent("height", v);
     }
 
     get width() {
         return this.__values.width;
     }
     set width(v) {
-        this.__setNarrowShadow("width", v);
+        this.__setIndependent("width", v);
     }
 
     get minHeight() {
         return this.__values.minHeight;
     }
     set minHeight(v) {
-        this.__setNarrowShadow("minHeight", v);
+        this.__setIndependent("minHeight", v);
     }
 
     get minWidth() {
         return this.__values.minWidth;
     }
     set minWidth(v) {
-        this.__setNarrowShadow("minWidth", v);
+        this.__setIndependent("minWidth", v);
     }
 
     get margin() {
@@ -395,21 +399,21 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
         return this.__values.position;
     }
     set position(v) {
-        this.__setNarrowShadow("position", v);
+        this.__setIndependent("position", v);
     }
 
     get display() {
         return this.__values.display;
     }
     set display(v) {
-        this.__setNarrowShadow("display", v);
+        this.__setIndependent("display", v);
     }
 
     get flexGrow() {
         return this.__values.flexGrow;
     }
     set flexGrow(v) {
-        this.__setNarrowShadow("flexGrow", v);
+        this.__setIndependent("flexGrow", v);
     }
 
     get flexShrink() {
@@ -417,7 +421,7 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
     }
     set flexShrink(v) {
         // `flexShrink` must always be recalculated
-        const resolved = this.__resolveNarrowShadow("flexShrink", v);
+        const resolved = this.__resolveIndependent("flexShrink", v);
         this.__values.flexShrink = resolved;
         this.__shadow.flexShrink = resolved;
     }
@@ -426,42 +430,42 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
         return this.__values.flexDirection;
     }
     set flexDirection(v) {
-        this.__setNarrowShadow("flexDirection", v);
+        this.__setIndependent("flexDirection", v);
     }
 
     get flexBasis() {
         return this.__values.flexBasis;
     }
     set flexBasis(v) {
-        this.__setNarrowShadow("flexBasis", v);
+        this.__setIndependent("flexBasis", v);
     }
 
     get flexWrap() {
         return this.__values.flexWrap;
     }
     set flexWrap(v) {
-        this.__setNarrowShadow("flexWrap", v);
+        this.__setIndependent("flexWrap", v);
     }
 
     get alignItems() {
         return this.__values.alignItems;
     }
     set alignItems(v) {
-        this.__setNarrowShadow("alignItems", v);
+        this.__setIndependent("alignItems", v);
     }
 
     get alignSelf() {
         return this.__values.alignSelf;
     }
     set alignSelf(v) {
-        this.__setNarrowShadow("alignSelf", v);
+        this.__setIndependent("alignSelf", v);
     }
 
     get justifyContent() {
         return this.__values.justifyContent;
     }
     set justifyContent(v) {
-        this.__setNarrowShadow("justifyContent", v);
+        this.__setIndependent("justifyContent", v);
     }
 
     get gap() {
@@ -494,28 +498,28 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
         return this.__values.zIndex;
     }
     set zIndex(v) {
-        this.__setNarrowShadow("zIndex", v);
+        this.__setIndependent("zIndex", v);
     }
 
     get backgroundColor() {
         return this.__values.backgroundColor;
     }
     set backgroundColor(v) {
-        this.__setNarrowShadow("backgroundColor", v);
+        this.__setIndependent("backgroundColor", v);
     }
 
     get backgroundStyle() {
         return this.__values.backgroundStyle;
     }
     set backgroundStyle(v) {
-        this.__setNarrowShadow("backgroundStyle", v);
+        this.__setIndependent("backgroundStyle", v);
     }
 
     get backgroundStyleColor() {
         return this.__values.backgroundStyleColor;
     }
     set backgroundStyleColor(v) {
-        this.__setNarrowShadow("backgroundStyleColor", v);
+        this.__setIndependent("backgroundStyleColor", v);
     }
 
     get overflow() {
@@ -534,14 +538,14 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
         return this.__values.overflowX;
     }
     set overflowX(v) {
-        this.__setNarrowShadow("overflowX", v);
+        this.__setIndependent("overflowX", v);
     }
 
     get overflowY() {
         return this.__values.overflowY;
     }
     set overflowY(v) {
-        this.__setNarrowShadow("overflowY", v);
+        this.__setIndependent("overflowY", v);
     }
 
     get borderStyle() {
@@ -677,7 +681,7 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
         return this.__values.color;
     }
     set color(v) {
-        this.__setNarrowShadow("color", v);
+        this.__setIndependent("color", v);
     }
     //
     // backgroundColor overlaps that of regular styles
@@ -686,111 +690,111 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
         return this.__values.dimColor;
     }
     set dimColor(v) {
-        this.__setNarrowShadow("dimColor", v);
+        this.__setIndependent("dimColor", v);
     }
 
     get bold() {
         return this.__values.bold;
     }
     set bold(v) {
-        this.__setNarrowShadow("bold", v);
+        this.__setIndependent("bold", v);
     }
 
     get italic() {
         return this.__values.italic;
     }
     set italic(v) {
-        this.__setNarrowShadow("italic", v);
+        this.__setIndependent("italic", v);
     }
 
     get underline() {
         return this.__values.underline;
     }
     set underline(v) {
-        this.__setNarrowShadow("underline", v);
+        this.__setIndependent("underline", v);
     }
 
     get strikethrough() {
         return this.__values.strikethrough;
     }
     set strikethrough(v) {
-        this.__setNarrowShadow("strikethrough", v);
+        this.__setIndependent("strikethrough", v);
     }
 
     get wrap() {
         return this.__values.wrap;
     }
     set wrap(v) {
-        this.__setNarrowShadow("wrap", v);
+        this.__setIndependent("wrap", v);
     }
 
     get align() {
         return this.__values.align;
     }
     set align(v) {
-        this.__setNarrowShadow("align", v);
+        this.__setIndependent("align", v);
     }
 
     get imagePositive() {
         return this.__values.imagePositive;
     }
     set imagePositive(v) {
-        this.__setNarrowShadow("imagePositive", v);
+        this.__setIndependent("imagePositive", v);
     }
 
     get imageNegative() {
         return this.__values.imageNegative;
     }
     set imageNegative(v) {
-        this.__setNarrowShadow("imageNegative", v);
+        this.__setIndependent("imageNegative", v);
     }
 
     get fontDefault() {
         return this.__values.fontDefault;
     }
     set fontDefault(v) {
-        this.__setNarrowShadow("fontDefault", v);
+        this.__setIndependent("fontDefault", v);
     }
 
     get font1() {
         return this.__values.font1;
     }
     set font1(v) {
-        this.__setNarrowShadow("font1", v);
+        this.__setIndependent("font1", v);
     }
 
     get font2() {
         return this.__values.font2;
     }
     set font2(v) {
-        this.__setNarrowShadow("font2", v);
+        this.__setIndependent("font2", v);
     }
 
     get font3() {
         return this.__values.font3;
     }
     set font3(v) {
-        this.__setNarrowShadow("font3", v);
+        this.__setIndependent("font3", v);
     }
 
     get font4() {
         return this.__values.font4;
     }
     set font4(v) {
-        this.__setNarrowShadow("font4", v);
+        this.__setIndependent("font4", v);
     }
 
     get font5() {
         return this.__values.font5;
     }
     set font5(v) {
-        this.__setNarrowShadow("font5", v);
+        this.__setIndependent("font5", v);
     }
 
     get font6() {
         return this.__values.font6;
     }
     set font6(v) {
-        this.__setNarrowShadow("font6", v);
+        this.__setIndependent("font6", v);
     }
 }

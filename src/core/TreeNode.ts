@@ -13,15 +13,15 @@ export interface ITreeNode<T> {
 }
 
 export class TreeNode implements ITreeNode<CoreElement> {
-    protected readonly _kernel: CoreElement;
-    protected readonly _yogaNode: YogaNode;
-    protected readonly _set: Set<CoreElement>;
-    protected readonly _children: CoreElement[];
-    protected _parentElement: CoreElement | undefined;
+    private readonly _core: CoreElement;
+    private readonly _yogaNode: YogaNode;
+    private readonly _set: Set<CoreElement>;
+    private readonly _children: CoreElement[];
+    private _parentElement: CoreElement | undefined;
 
-    constructor(kernel: CoreElement) {
-        this._kernel = kernel;
-        this._yogaNode = kernel.yogaNode;
+    constructor(core: CoreElement) {
+        this._core = core;
+        this._yogaNode = core.yogaNode;
         this._set = new Set();
         this._children = [];
     }
@@ -57,10 +57,10 @@ export class TreeNode implements ITreeNode<CoreElement> {
         this._set.add(child);
         this._children.push(child);
         this._yogaNode.insertChild(child.yogaNode, this._children.length - 1);
-        child.treeNode._parentElement = this._kernel;
+        child.treeNode._parentElement = this._core;
 
         if (wasAttached) return;
-        const root = this._kernel.root.getReference();
+        const root = this._core.root.getAttachedRoot();
         this.handleChildRootAttach(child, root);
     }
 
@@ -89,10 +89,10 @@ export class TreeNode implements ITreeNode<CoreElement> {
         this._children.splice(beforeChildIdx, 0, child);
         this._yogaNode.insertChild(child.yogaNode, beforeChildIdx);
         this._set.add(child);
-        child.treeNode._parentElement = this._kernel;
+        child.treeNode._parentElement = this._core;
 
         if (wasAttached) return;
-        const root = this._kernel.root.getReference();
+        const root = this._core.root.getAttachedRoot();
         this.handleChildRootAttach(child, root);
     }
 
@@ -108,7 +108,7 @@ export class TreeNode implements ITreeNode<CoreElement> {
         this._set.delete(child);
         child.treeNode._parentElement = undefined;
 
-        const root = this._kernel.root.getReference();
+        const root = this._core.root.getAttachedRoot();
         this.handleChildRootDetach(child, root);
 
         if (freeRecursive) {
@@ -138,9 +138,9 @@ export class TreeNode implements ITreeNode<CoreElement> {
         this._yogaNode.removeChild(child.yogaNode);
     }
 
-    private dfs(kernel: CoreElement, cb: (kernel: CoreElement) => void) {
-        cb(kernel);
-        kernel.treeNode._children.forEach((child) => {
+    private dfs(core: CoreElement, cb: (core: CoreElement) => void) {
+        cb(core);
+        core.treeNode._children.forEach((child) => {
             this.dfs(child, cb);
         });
     }

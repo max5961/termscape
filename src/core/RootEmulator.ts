@@ -1,9 +1,15 @@
-import type { ICoreRootElement, CoreRootElement } from "./CoreRootElement.js";
+import type { StdoutLike } from "../Types.js";
+import type { CoreRootElement } from "./CoreRootElement.js";
 
-export class RootEmulator implements ICoreRootElement {
+export interface IRootEmulator {
+    scheduleRender(): void;
+    readonly stdout: StdoutLike;
+}
+
+export class RootEmulator implements IRootEmulator {
     protected root: CoreRootElement | undefined;
 
-    public getReference() {
+    public getAttachedRoot() {
         return this.root;
     }
 
@@ -13,6 +19,7 @@ export class RootEmulator implements ICoreRootElement {
 
     public onDetach(_root: CoreRootElement) {
         this.root = undefined;
+        // should be either using events or subscribing detach cbs here
     }
 
     public scheduleRender(): void {

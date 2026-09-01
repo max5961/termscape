@@ -1,3 +1,3 @@
-import { BoxElement } from "./dom/BoxElement.js";
+import { create } from "./dom/create.js";
 
-export { BoxElement };
+export { create };

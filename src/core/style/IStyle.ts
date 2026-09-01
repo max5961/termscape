@@ -31,7 +31,7 @@ export interface IWideEdgeStyle {
     borderDimColor?: boolean;
 }
 export interface IWideOverflowStyle {
-    overflow?: "visible" | "hidden" | "scroll";
+    overflow?: "visible" | "hidden";
 }
 export interface IWideGapStyle {
     gap?: number;
@@ -96,8 +96,8 @@ export interface INarrowGapStyle {
 }
 
 export interface INarrowOverflowStyle {
-    overflowX?: "visible" | "hidden" | "scroll";
-    overflowY?: "visible" | "hidden" | "scroll";
+    overflowX?: "visible" | "hidden";
+    overflowY?: "visible" | "hidden";
 }
 
 export interface INarrowEdgeStyle {

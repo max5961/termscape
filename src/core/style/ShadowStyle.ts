@@ -29,8 +29,15 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         return dim;
     }
 
+    public getValues() {
+        return this.values;
+    }
+
     get height() {
         return this.values.height;
+    }
+    get computedHeight() {
+        return this.yogaNode.getComputedHeight();
     }
     set height(v) {
         const resolved = this.resolveDimension(v);
@@ -51,6 +58,9 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     get width() {
         return this.values.width;
     }
+    get computedWidth() {
+        return this.yogaNode.getComputedWidth();
+    }
     set width(v) {
         const resolved = this.resolveDimension(v);
         if (this.values.width === v) return;
@@ -70,6 +80,9 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     get minHeight() {
         return this.values.minHeight;
     }
+    get computedMinHeight() {
+        return this.yogaNode.getMinHeight();
+    }
     set minHeight(v) {
         const resolved = this.resolveDimension(v);
         if (this.values.minHeight === v) return;
@@ -86,6 +99,9 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
 
     get minWidth() {
         return this.values.minWidth;
+    }
+    get computedMinWidth() {
+        return this.yogaNode.getMinWidth();
     }
     set minWidth(v) {
         const resolved = this.resolveDimension(v);
@@ -479,7 +495,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     }
 
     get zIndex() {
-        return this.values.zIndex;
+        return this.values.zIndex ?? 0;
     }
     set zIndex(v) {
         if (this.values.zIndex === v) return;

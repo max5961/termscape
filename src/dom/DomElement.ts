@@ -6,11 +6,7 @@ import { CoreElement } from "../core/CoreElement.js";
 export abstract class DomElement<T extends keyof IStyle = keyof IStyle>
     implements ITreeNode<DomElement>
 {
-    protected readonly _core: CoreElement;
-
-    constructor(defaultStyle: IStyle) {
-        this._core = new CoreElement(defaultStyle, this);
-    }
+    protected abstract readonly _core: CoreElement;
 
     public get style(): Style<T> {
         return this._core.virtual;

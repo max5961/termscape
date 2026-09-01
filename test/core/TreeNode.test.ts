@@ -1,8 +1,10 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { CoreElement } from "../../src/core/CoreElement.js";
 import { CoreRootElement } from "../../src/core/CoreRootElement.js";
+import { DomElement } from "../../src/dom/DomElement.js";
 
 describe("TreeNode", () => {
+    const shell = undefined as unknown as DomElement;
     let root: CoreRootElement;
     let a: CoreElement,
         b: CoreElement,
@@ -12,13 +14,13 @@ describe("TreeNode", () => {
         f: CoreElement;
 
     beforeEach(() => {
-        root = new CoreRootElement();
-        a = new CoreElement();
-        b = new CoreElement();
-        c = new CoreElement();
-        d = new CoreElement();
-        e = new CoreElement();
-        f = new CoreElement();
+        root = new CoreRootElement(shell, {});
+        a = new CoreElement(shell, {});
+        b = new CoreElement(shell, {});
+        c = new CoreElement(shell, {});
+        d = new CoreElement(shell, {});
+        e = new CoreElement(shell, {});
+        f = new CoreElement(shell, {});
     });
 
     describe("appendChild", () => {
@@ -132,9 +134,9 @@ describe("TreeNode", () => {
             b.treeNode.appendChild(c);
             a.treeNode.appendChild(b);
 
-            expect(a.root.getReference()).toBe(undefined);
-            expect(b.root.getReference()).toBe(undefined);
-            expect(c.root.getReference()).toBe(undefined);
+            expect(a.root.getAttachedRoot()).toBe(undefined);
+            expect(b.root.getAttachedRoot()).toBe(undefined);
+            expect(c.root.getAttachedRoot()).toBe(undefined);
         });
 
         test("once a node is attached to the root, it propagates the root reference", () => {
@@ -142,9 +144,9 @@ describe("TreeNode", () => {
             b.treeNode.appendChild(c);
             a.treeNode.appendChild(b);
             root.treeNode.appendChild(a);
-            expect(a.root.getReference()).toBe(root);
-            expect(b.root.getReference()).toBe(root);
-            expect(c.root.getReference()).toBe(root);
+            expect(a.root.getAttachedRoot()).toBe(root);
+            expect(b.root.getAttachedRoot()).toBe(root);
+            expect(c.root.getAttachedRoot()).toBe(root);
         });
 
         test("once a node is detached from the root, it propagates the severed root reference", () => {
@@ -153,9 +155,9 @@ describe("TreeNode", () => {
             a.treeNode.appendChild(b);
             root.treeNode.appendChild(a);
             a.treeNode.removeChild(b);
-            expect(a.root.getReference()).toBe(root);
-            expect(b.root.getReference()).toBe(undefined);
-            expect(c.root.getReference()).toBe(undefined);
+            expect(a.root.getAttachedRoot()).toBe(root);
+            expect(b.root.getAttachedRoot()).toBe(undefined);
+            expect(c.root.getAttachedRoot()).toBe(undefined);
         });
     });
 });

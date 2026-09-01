@@ -116,6 +116,13 @@ export const TitleBorders = {
         "▀": { left: "", right: "" },
         "-": { left: "]", right: "[" },
     },
+} as const;
+
+export const getBorder = (key: keyof typeof Borders | BorderMap) => {
+    if (Array.isArray(key)) {
+        return createBox(key);
+    }
+    return Borders[key];
 };
 
 export const BackgroundCharacters = {
