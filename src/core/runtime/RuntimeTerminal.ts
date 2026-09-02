@@ -22,6 +22,7 @@ export class RuntimeTerminal {
     >;
     private readonly waitingOps: Map<keyof IRuntimeTerminal, () => unknown>;
     private active: boolean;
+    private activeStdin: boolean;
 
     constructor(
         root: CoreRootElement,
@@ -35,6 +36,7 @@ export class RuntimeTerminal {
         this.cleanupOps = new Map();
         this.waitingOps = new Map();
         this.active = false;
+        this.activeStdin = false;
 
         const defaultState: IRuntimeTerminal = {
             altScreen: setup.altScreen ?? false,
@@ -50,14 +52,26 @@ export class RuntimeTerminal {
 
     public start() {
         this.active = true;
-        this.waitingOps.forEach((cb) => cb());
-        this.waitingOps.clear();
+        this.performWaitingOp("altScreen");
     }
 
     public end() {
         this.active = false;
-        this.cleanupOps.forEach((cb) => cb(true));
-        this.cleanupOps.clear();
+        this.performCleanupOp("altScreen", true);
+    }
+
+    public setupStdin() {
+        this.activeStdin = true;
+        this.performWaitingOp("kittyKeyboardProtocol");
+        this.performWaitingOp("mouse");
+        this.performWaitingOp("mouseMode");
+    }
+
+    public cleanupStdin() {
+        this.activeStdin = false;
+        this.performCleanupOp("kittyKeyboardProtocol", false);
+        this.performCleanupOp("mouse", false);
+        this.performCleanupOp("mouseMode", false);
     }
 
     public set = <T extends keyof IRuntimeTerminal>(
@@ -68,10 +82,15 @@ export class RuntimeTerminal {
         if (prev === value) return;
         this.state[prop] = value;
 
-        let operation: () => unknown;
         if (prop === "altScreen") {
-            operation = this.performAltScreenOperation;
-        } else if (prop === "kittyKeyboardProtocol") {
+            if (!this.active) {
+                return this.waitingOps.set("altScreen", this.performAltScreenOperation);
+            }
+            return this.performAltScreenOperation();
+        }
+
+        let operation: () => unknown;
+        if (prop === "kittyKeyboardProtocol") {
             operation = this.performKittyOperation;
         } else if (prop === "mouse") {
             operation = this.performEnableMouseOperation;
@@ -79,7 +98,7 @@ export class RuntimeTerminal {
             operation = this.performMouseModeOperation;
         }
 
-        if (!this.active) {
+        if (!this.activeStdin) {
             return this.waitingOps.set(prop, operation);
         }
         operation();
@@ -167,5 +186,24 @@ export class RuntimeTerminal {
      * */
     private isApplied = <T extends keyof IRuntimeTerminal>(prop: T) => {
         return !!this.cleanupOps.get(prop);
+    };
+
+    private performWaitingOp = <T extends keyof IRuntimeTerminal>(prop: T) => {
+        const op = this.waitingOps.get(prop);
+        if (op) {
+            op();
+            this.waitingOps.delete(prop);
+        }
+    };
+
+    private performCleanupOp = <T extends keyof IRuntimeTerminal>(
+        prop: T,
+        endRuntime: boolean,
+    ) => {
+        const op = this.cleanupOps.get(prop);
+        if (op) {
+            op(endRuntime);
+            this.cleanupOps.delete(prop);
+        }
     };
 }

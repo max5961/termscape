@@ -1,6 +1,7 @@
 export type { Node as YogaNode, Edge } from "yoga-wasm-web/auto";
 export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
 export type Point = { x: number; y: number };
+export type WriteMode = "refresh" | "row" | "cell";
 
 export interface ProcessLike {
     stdout: StdoutLike;
@@ -20,6 +21,7 @@ export interface StdinLike {
     off(e: "data", cb: (bf: Buffer) => unknown): void;
     pause(): void;
     resume(): void;
+    setRawMode(v: boolean): void;
 }
 
 type _ExtendsProcessLike<T extends ProcessLike> = T;
@@ -28,5 +30,3 @@ type _ExtendsStdinLike<T extends StdinLike> = T;
 type _ProcessLikeTypeCheck = _ExtendsProcessLike<typeof process>;
 type _StdoutLikeTypeCheck = _ExtendsStdoutLike<typeof process.stdout>;
 type _StdinLikeTypeCheck = _ExtendsStdinLike<typeof process.stdin>;
-
-export type WriteMode = "refresh" | "row" | "cell";

@@ -19,8 +19,8 @@ export class CoreElement {
 
     constructor(shell: DomElement, defaults: IStyle) {
         this.shell = shell;
-        this.root = new RootEmulator();
         this.yogaNode = Yg.Node.create();
+        this.root = new RootEmulator();
         this.treeNode = new TreeNode(this);
         this.shadow = new ShadowStyle(this);
         this.virtual = new VirtualStyle(defaults, this.shadow);

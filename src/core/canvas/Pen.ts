@@ -112,11 +112,3 @@ export class Pen {
         return true;
     };
 }
-
-type Char<S extends string> = S extends `${infer _}${infer Rest}`
-    ? Rest extends ""
-        ? S extends ""
-            ? never
-            : S
-        : never
-    : never;

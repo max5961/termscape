@@ -21,7 +21,7 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
         this.canvas = new RootCanvas(this);
         this.renderer = new Renderer(this);
 
-        if (setup.startOnCreate) {
+        if (setup.startOnCreate ?? true) {
             this.runtime.startRuntime();
         }
     }
