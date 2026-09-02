@@ -1,6 +1,7 @@
 import type { YogaNode } from "../Types.js";
 import type { CoreElement } from "./CoreElement.js";
 import type { CoreRootElement } from "./CoreRootElement.js";
+import { StateChange } from "./renderer/RenderStateChange.js";
 
 export interface ITreeNode<T> {
     appendChild(child: T): void;
@@ -147,6 +148,7 @@ export class TreeNode implements ITreeNode<CoreElement> {
 
     private handleChildRootAttach(child: CoreElement, root: CoreRootElement | undefined) {
         if (root) {
+            root.scheduleRender(StateChange.Layout);
             this.dfs(child, (child) => {
                 child.root.onAttach(root);
             });
@@ -155,6 +157,7 @@ export class TreeNode implements ITreeNode<CoreElement> {
 
     private handleChildRootDetach(child: CoreElement, root: CoreRootElement | undefined) {
         if (root) {
+            root.scheduleRender(StateChange.Layout);
             this.dfs(child, (child) => {
                 child.root.onDetach(root);
             });

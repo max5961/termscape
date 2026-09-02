@@ -33,30 +33,20 @@ export class RuntimeConstants implements IRuntimeConstants {
     }
 
     public start() {
-        this.stdout.on("resize", this.handleResize);
+        this.stdout.on("resize", this.root.handleResize);
         this.stdout.setMaxListeners(Infinity);
 
         const capture = new Capture();
-        capture.on("output", this.handleCapturedOutput);
+        capture.on("output", this.root.handleCapturedOutput);
 
         this.cleanup = () => {
-            this.stdout.off("resize", this.handleResize);
+            this.stdout.off("resize", this.root.handleResize);
             this.stdout.setMaxListeners(10);
-            capture.off("output", this.handleCapturedOutput);
+            capture.off("output", this.root.handleCapturedOutput);
         };
     }
 
     public end() {
         this.cleanup?.();
     }
-
-    private handleResize = () => {
-        this.root.canvas.updateRootConstraints();
-        this.root.scheduleRender();
-    };
-
-    private handleCapturedOutput = (_data: string) => {
-        // this.root.scheduleRender({ capturedOutput: data });
-        this.root.scheduleRender();
-    };
 }

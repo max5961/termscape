@@ -7,6 +7,7 @@ export interface ProcessLike {
     stdout: StdoutLike;
     stdin: StdinLike;
     env?: Record<string, string | undefined>;
+    nextTick(cb: () => unknown, ...args: any[]): void;
 }
 export interface StdoutLike {
     on(e: "resize", cb: () => unknown): void;

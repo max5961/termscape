@@ -1,5 +1,6 @@
 import { Yg } from "../../Constants.js";
 import type { YogaNode } from "../../Types.js";
+import { StateChange } from "../renderer/RenderStateChange.js";
 import type { CoreElement } from "../CoreElement.js";
 import type { IShadowStyle } from "./IStyle.js";
 import type { RequiredPartial } from "./types.js";
@@ -52,7 +53,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             this.yogaNode.setHeightAuto();
         }
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get width() {
@@ -74,7 +75,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             this.yogaNode.setWidthAuto();
         }
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get minHeight() {
@@ -94,7 +95,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             this.yogaNode.setMinHeight(resolved ?? 0);
         }
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get minWidth() {
@@ -114,7 +115,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             this.yogaNode.setMinWidth(resolved ?? 0);
         }
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get marginTop() {
@@ -129,7 +130,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.marginTop = v;
         this.yogaNode.setMargin(Yg.EDGE_TOP, v ?? 0);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get marginBottom() {
@@ -144,7 +145,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.marginBottom = v;
         this.yogaNode.setMargin(Yg.EDGE_BOTTOM, v ?? 0);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get marginLeft() {
@@ -159,7 +160,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.marginLeft = v;
         this.yogaNode.setMargin(Yg.EDGE_LEFT, v ?? 0);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get marginRight() {
@@ -174,7 +175,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.marginRight = v;
         this.yogaNode.setMargin(Yg.EDGE_RIGHT, v ?? 0);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get paddingTop() {
@@ -189,7 +190,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.paddingTop = v;
         this.yogaNode.setPadding(Yg.EDGE_TOP, v ?? 0);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get paddingBottom() {
@@ -204,7 +205,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.paddingBottom = v;
         this.yogaNode.setPadding(Yg.EDGE_BOTTOM, v ?? 0);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get paddingLeft() {
@@ -219,7 +220,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.paddingLeft = v;
         this.yogaNode.setPadding(Yg.EDGE_LEFT, v ?? 0);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get paddingRight() {
@@ -234,7 +235,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.paddingRight = v;
         this.yogaNode.setPadding(Yg.EDGE_RIGHT, v ?? 0);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get position() {
@@ -248,7 +249,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             v === "absolute" ? Yg.POSITION_TYPE_ABSOLUTE : Yg.POSITION_TYPE_RELATIVE,
         );
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get display() {
@@ -263,7 +264,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.display = v;
         this.yogaNode.setDisplay(v === "flex" ? Yg.DISPLAY_FLEX : Yg.DISPLAY_NONE);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get flexGrow() {
@@ -278,7 +279,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.flexGrow = v;
         this.yogaNode.setFlexGrow(v ?? 0);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get flexShrink() {
@@ -294,7 +295,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.flexShrink = v;
         this.yogaNode.setFlexShrink(v ?? 0);
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get flexDirection() {
@@ -326,7 +327,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             this.yogaNode.setFlexDirection(Yg.FLEX_DIRECTION_COLUMN_REVERSE);
         }
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get flexBasis() {
@@ -347,7 +348,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             this.yogaNode.setFlexBasis(Number.NaN);
         }
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get flexWrap() {
@@ -375,7 +376,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             this.yogaNode.setFlexWrap(Yg.WRAP_WRAP_REVERSE);
         }
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get alignItems() {
@@ -409,7 +410,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             this.yogaNode.setAlignItems(Yg.ALIGN_FLEX_END);
         }
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get alignSelf() {
@@ -433,7 +434,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             this.yogaNode.setAlignSelf(Yg.ALIGN_CENTER);
         }
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get justifyContent() {
@@ -461,7 +462,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
             this.yogaNode.setJustifyContent(Yg.JUSTIFY_SPACE_EVENLY);
         }
 
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get columnGap() {
@@ -476,7 +477,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.columnGap = v;
 
         this.yogaNode.setGap(Yg.GUTTER_COLUMN, v ?? 0);
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get rowGap() {
@@ -491,7 +492,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         this.values.rowGap = v;
 
         this.yogaNode.setGap(Yg.GUTTER_ROW, v ?? 0);
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get zIndex() {
@@ -501,7 +502,9 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         if (this.values.zIndex === v) return;
         this.values.zIndex = v;
 
-        this.core.root.scheduleRender();
+        // not yet implemented zindex only changes
+        // this.core.root.scheduleRender(StateChange.ZIndex);
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get backgroundColor() {
@@ -510,7 +513,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set backgroundColor(v) {
         if (this.values.backgroundColor === v) return;
         this.values.backgroundColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get backgroundStyle() {
@@ -519,7 +522,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set backgroundStyle(v) {
         if (this.values.backgroundStyle === v) return;
         this.values.backgroundStyle = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get backgroundStyleColor() {
@@ -528,7 +531,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set backgroundStyleColor(v) {
         if (this.values.backgroundStyleColor === v) return;
         this.values.backgroundStyleColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get overflowX() {
@@ -537,7 +540,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set overflowX(v) {
         if (this.values.overflowX === v) return;
         this.values.overflowX = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get overflowY() {
@@ -546,7 +549,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set overflowY(v) {
         if (this.values.overflowY === v) return;
         this.values.overflowY = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get borderStyle() {
@@ -555,7 +558,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set borderStyle(v) {
         if (this.values.borderStyle === v) return;
         this.values.borderStyle = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get borderTop() {
@@ -565,8 +568,8 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         if (this.values.borderTop === v) return;
         this.values.borderTop = v;
 
-        this.yogaNode.setBorder(Yg.EDGE_TOP, 1);
-        this.core.root.scheduleRender();
+        this.yogaNode.setBorder(Yg.EDGE_TOP, v ? 1 : 0);
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get borderBottom() {
@@ -576,8 +579,8 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         if (this.values.borderBottom === v) return;
         this.values.borderBottom = v;
 
-        this.yogaNode.setBorder(Yg.EDGE_BOTTOM, 1);
-        this.core.root.scheduleRender();
+        this.yogaNode.setBorder(Yg.EDGE_BOTTOM, v ? 1 : 0);
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get borderLeft() {
@@ -587,8 +590,8 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         if (this.values.borderLeft === v) return;
         this.values.borderLeft = v;
 
-        this.yogaNode.setBorder(Yg.EDGE_LEFT, 1);
-        this.core.root.scheduleRender();
+        this.yogaNode.setBorder(Yg.EDGE_LEFT, v ? 1 : 0);
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get borderRight() {
@@ -598,8 +601,8 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
         if (this.values.borderRight === v) return;
         this.values.borderRight = v;
 
-        this.yogaNode.setBorder(Yg.EDGE_RIGHT, 1);
-        this.core.root.scheduleRender();
+        this.yogaNode.setBorder(Yg.EDGE_RIGHT, v ? 1 : 0);
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get borderTopColor() {
@@ -608,7 +611,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set borderTopColor(v) {
         if (this.values.borderTopColor === v) return;
         this.values.borderTopColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get borderBottomColor() {
@@ -617,7 +620,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set borderBottomColor(v) {
         if (this.values.borderBottomColor === v) return;
         this.values.borderBottomColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get borderLeftColor() {
@@ -626,7 +629,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set borderLeftColor(v) {
         if (this.values.borderLeftColor === v) return;
         this.values.borderLeftColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get borderRightColor() {
@@ -635,7 +638,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set borderRightColor(v) {
         if (this.values.borderRightColor === v) return;
         this.values.borderRightColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get borderTopDimColor() {
@@ -644,7 +647,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set borderTopDimColor(v) {
         if (this.values.borderTopDimColor === v) return;
         this.values.borderTopDimColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get borderBottomDimColor() {
@@ -653,7 +656,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set borderBottomDimColor(v) {
         if (this.values.borderBottomDimColor === v) return;
         this.values.borderBottomDimColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get borderLeftDimColor() {
@@ -662,7 +665,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set borderLeftDimColor(v) {
         if (this.values.borderLeftDimColor === v) return;
         this.values.borderLeftDimColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get borderRightDimColor() {
@@ -671,7 +674,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set borderRightDimColor(v) {
         if (this.values.borderRightDimColor === v) return;
         this.values.borderRightDimColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get color() {
@@ -680,7 +683,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set color(v) {
         if (this.values.color === v) return;
         this.values.color = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get dimColor() {
@@ -689,7 +692,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set dimColor(v) {
         if (this.values.dimColor === v) return;
         this.values.dimColor = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get bold() {
@@ -698,7 +701,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set bold(v) {
         if (this.values.bold === v) return;
         this.values.bold = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get italic() {
@@ -707,7 +710,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set italic(v) {
         if (this.values.italic === v) return;
         this.values.italic = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get underline() {
@@ -716,7 +719,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set underline(v) {
         if (this.values.underline === v) return;
         this.values.underline = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get strikethrough() {
@@ -725,7 +728,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set strikethrough(v) {
         if (this.values.strikethrough === v) return;
         this.values.strikethrough = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get wrap() {
@@ -734,7 +737,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set wrap(v) {
         if (this.values.wrap === v) return;
         this.values.wrap = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get align() {
@@ -743,7 +746,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set align(v) {
         if (this.values.align === v) return;
         this.values.align = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Layout);
     }
 
     get imagePositive() {
@@ -752,7 +755,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set imagePositive(v) {
         if (this.values.imagePositive === v) return;
         this.values.imagePositive = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get imageNegative() {
@@ -761,7 +764,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set imageNegative(v) {
         if (this.values.imageNegative === v) return;
         this.values.imageNegative = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get fontDefault() {
@@ -770,7 +773,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set fontDefault(v) {
         if (this.values.fontDefault === v) return;
         this.values.fontDefault = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get font1() {
@@ -779,7 +782,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set font1(v) {
         if (this.values.font1 === v) return;
         this.values.font1 = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get font2() {
@@ -788,7 +791,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set font2(v) {
         if (this.values.font2 === v) return;
         this.values.font2 = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get font3() {
@@ -797,7 +800,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set font3(v) {
         if (this.values.font3 === v) return;
         this.values.font3 = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get font4() {
@@ -806,7 +809,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set font4(v) {
         if (this.values.font4 === v) return;
         this.values.font4 = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get font5() {
@@ -815,7 +818,7 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set font5(v) {
         if (this.values.font5 === v) return;
         this.values.font5 = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 
     get font6() {
@@ -824,6 +827,6 @@ export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     set font6(v) {
         if (this.values.font6 === v) return;
         this.values.font6 = v;
-        this.core.root.scheduleRender();
+        this.core.root.scheduleRender(StateChange.Style);
     }
 }

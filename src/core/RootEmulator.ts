@@ -1,8 +1,9 @@
 import type { StdoutLike } from "../Types.js";
+import type { StateChange } from "./renderer/RenderStateChange.js";
 import type { CoreRootElement } from "./CoreRootElement.js";
 
 export interface IRootEmulator {
-    scheduleRender(): void;
+    scheduleRender(change: StateChange): void;
     readonly stdout: StdoutLike;
 }
 
@@ -22,9 +23,9 @@ export class RootEmulator implements IRootEmulator {
         // should be either using events or subscribing detach cbs here
     }
 
-    public scheduleRender(): void {
+    public scheduleRender(change: StateChange): void {
         if (this.root) {
-            this.root.scheduleRender();
+            this.root.scheduleRender(change);
         }
     }
 

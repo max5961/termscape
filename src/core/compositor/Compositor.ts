@@ -5,20 +5,26 @@ import type { Canvas } from "../canvas/Canvas.js";
 import type { RootCanvas } from "../canvas/RootCanvas.js";
 import type { Grid } from "../canvas/types.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
+import { StateChange } from "../renderer/RenderStateChange.js";
 
 export class Compositor {
     private readonly root: CoreRootElement;
     private readonly canvas: RootCanvas;
     private readonly draw: Draw;
+    private hasComposed: boolean;
 
     constructor(root: CoreRootElement) {
         this.root = root;
         this.canvas = root.canvas;
         this.draw = new Draw();
+        this.hasComposed = false;
     }
 
-    public compose(opts: { layoutChange: boolean }): Readonly<Grid> {
-        if (!opts.layoutChange) {
+    public compose(bitmask: StateChange): Readonly<Grid> {
+        bitmask = this.stripRendererSpecificFlags(bitmask);
+        bitmask = this.resolveLayoutChangeFlag(bitmask);
+
+        if (this.styleChange(bitmask)) {
             this.canvas.clearGrid();
             this.draw.performDrawOps();
             return this.canvas.grid;
@@ -62,5 +68,42 @@ export class Compositor {
 
             this.build(child.canvas, zIndex);
         }
+    }
+
+    /**
+     * Removes Resize and Screen flags so that the we can rely on strict equality
+     * checking the flags.  For example, a style change should only be composited
+     * as a style change if no other flags are present.
+     * */
+    private stripRendererSpecificFlags(bitmask: number) {
+        bitmask &= ~StateChange.Resize;
+        bitmask &= ~StateChange.Screen;
+        return bitmask;
+    }
+
+    private resolveLayoutChangeFlag(bitmask: number) {
+        if (!this.hasComposed) {
+            this.hasComposed = true;
+            bitmask |= StateChange.Layout;
+        }
+        return bitmask;
+    }
+
+    private styleChange(bitmask: number) {
+        return !bitmask || bitmask === StateChange.Style;
+    }
+
+    private scrollChange(bitmask: number) {
+        return (
+            bitmask === StateChange.Scroll ||
+            bitmask === (StateChange.Scroll | StateChange.Style)
+        );
+    }
+
+    private zIndexChange(bitmask: number) {
+        return (
+            bitmask === StateChange.ZIndex ||
+            bitmask === (StateChange.ZIndex | StateChange.Style)
+        );
     }
 }

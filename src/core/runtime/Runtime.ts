@@ -1,3 +1,4 @@
+import type { WriteMode } from "../../Types.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
 import { RuntimeConstants, type IRuntimeConstants } from "./RuntimeConstants.js";
 import { RuntimeTerminal, type IRuntimeTerminal } from "./RuntimeTerminal.js";
@@ -8,6 +9,7 @@ export interface IRuntime {
     // TODO
     // exitForcesEndProc: boolean;
     debounceMs: number;
+    writeMode: WriteMode;
 }
 
 export interface RuntimeOptions extends IRuntimeConstants, IRuntimeTerminal, IRuntime {}
@@ -16,12 +18,13 @@ export type RuntimeSetup = Partial<RuntimeOptions> & {
     startOnCreate?: boolean;
 };
 
-export class Runtime implements IRuntime {
+export class Runtime {
     private readonly root: CoreRootElement;
     private readonly runtimeConstants: RuntimeConstants;
     private readonly runtimeTerminal: RuntimeTerminal;
     private active: boolean;
-    public debounceMs: number;
+    private debounceMs: number;
+    private writeMode: WriteMode;
 
     constructor(root: CoreRootElement, setup: RuntimeSetup) {
         this.root = root;
@@ -33,6 +36,7 @@ export class Runtime implements IRuntime {
             setup,
         );
         this.debounceMs = setup.debounceMs ?? 16;
+        this.writeMode = setup.writeMode ?? "cell";
         this.active = false;
     }
 
@@ -98,6 +102,13 @@ export class Runtime implements IRuntime {
             },
             set debounceMs(v) {
                 runtime.debounceMs = v;
+            },
+
+            get writeMode() {
+                return runtime.writeMode;
+            },
+            set writeMode(v) {
+                runtime.writeMode = v;
             },
         };
     }

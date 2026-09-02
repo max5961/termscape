@@ -2,7 +2,9 @@ import { DefaultStyles } from "../dom/DefaultStyles.js";
 import type { DomElement } from "../dom/DomElement.js";
 import { CoreElement } from "./CoreElement.js";
 import { RealRoot, type IRootEmulator } from "./RootEmulator.js";
+import { Scheduler } from "./Scheduler.js";
 import { RootCanvas } from "./canvas/RootCanvas.js";
+import { StateChange } from "./renderer/RenderStateChange.js";
 import { Renderer } from "./renderer/Renderer.js";
 import { Runtime, type RuntimeSetup } from "./runtime/Runtime.js";
 
@@ -12,6 +14,7 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
     public readonly renderer: Renderer;
     public readonly runtime: Runtime;
     public readonly runtimeControl: ReturnType<Runtime["createController"]>;
+    private readonly scheduler: Scheduler;
 
     constructor(shell: DomElement, setup: RuntimeSetup) {
         super(shell, DefaultStyles.Root);
@@ -20,17 +23,28 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
         this.runtimeControl = this.runtime.createController();
         this.canvas = new RootCanvas(this);
         this.renderer = new Renderer(this);
+        this.scheduler = new Scheduler(this, this.renderer.render);
 
         if (setup.startOnCreate ?? true) {
             this.runtime.startRuntime();
         }
     }
 
-    public scheduleRender(): void {
-        // this.scheduler.scheduleRender(this.render);
+    public scheduleRender(change: StateChange): void {
+        this.scheduler.scheduleRender(change);
     }
 
     public get stdout() {
         return this.runtimeControl.stdout;
     }
+
+    public handleResize = () => {
+        this.canvas.updateRootConstraints();
+        this.scheduler.scheduleRender(StateChange.Resize);
+    };
+
+    public handleCapturedOutput = (data: string) => {
+        this.renderer.pushCapturedOutput(data);
+        this.scheduler.scheduleRender();
+    };
 }

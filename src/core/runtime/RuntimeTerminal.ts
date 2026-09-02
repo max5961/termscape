@@ -3,6 +3,7 @@ import type { StdinLike, StdoutLike } from "../../Types.js";
 import { Ansi } from "../Ansi.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
 import { objectKeys } from "../../util.js";
+import { StateChange } from "../renderer/RenderStateChange.js";
 
 export interface IRuntimeTerminal {
     altScreen: boolean;
@@ -155,13 +156,13 @@ export class RuntimeTerminal {
     private enterAltScreen = () => {
         this.stdout.write(Ansi.enterAltScreen);
         this.stdout.write(Ansi.cursor.position(1, 1));
-        this.root.scheduleRender();
+        this.root.scheduleRender(StateChange.Screen);
     };
 
     private exitAltScreen = (endRuntime?: boolean) => {
         this.stdout.write(Ansi.exitAltScreen);
         if (!endRuntime) {
-            this.root.scheduleRender();
+            this.root.scheduleRender(StateChange.Screen);
         }
     };
 
