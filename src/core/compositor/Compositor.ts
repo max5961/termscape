@@ -21,6 +21,12 @@ export class Compositor {
     }
 
     public compose(bitmask: StateChange): Readonly<Grid> {
+        this.getComposedGrid(bitmask);
+        this.canvas.removeTrailingWhitespace();
+        return this.canvas.grid;
+    }
+
+    private getComposedGrid(bitmask: StateChange): Grid {
         bitmask = this.stripRendererSpecificFlags(bitmask);
         bitmask = this.resolveLayoutChangeFlag(bitmask);
 

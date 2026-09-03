@@ -12,6 +12,7 @@
     ],
     "scripts": {
         "dev": "[ -d ./dev/dist ] && rm -r ./dev/dist; tsc -p ./dev && node ./dev/dist/dev/index.js",
+        "log": "touch console.log && tail --follow console.log",
         "test": "vitest"
     },
     "type": "module",

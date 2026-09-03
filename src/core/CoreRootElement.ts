@@ -47,4 +47,8 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
         this.renderer.pushCapturedOutput(data);
         this.scheduler.scheduleRender();
     };
+
+    public exit = () => {
+        this.runtime.endRuntime();
+    };
 }

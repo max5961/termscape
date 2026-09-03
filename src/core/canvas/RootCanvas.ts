@@ -11,18 +11,19 @@ export class RootCanvas extends Canvas {
     public override ygHeight!: number;
     public override ygWidth!: number;
     public override limits!: PenLimits;
-    public override stdout!: StdoutLike;
+    public override stdout: StdoutLike;
 
     constructor(core: CoreRootElement) {
         super();
         this.core = core;
+        this.stdout = core.stdout;
         this.grid = [];
         this.corner = { x: 0, y: 0 };
         this.updateRootConstraints();
     }
 
     public updateRootConstraints() {
-        const stdout = this.core.root.stdout;
+        const stdout = this.core.stdout;
         const maxHeight = stdout.rows;
         const maxWidth = stdout.columns;
 

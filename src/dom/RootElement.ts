@@ -1,10 +1,10 @@
 import { CoreRootElement } from "../core/CoreRootElement.js";
 import { DomElement } from "./DomElement.js";
-import type { RuntimeOptions, RuntimeSetup } from "../core/runtime/Runtime.js";
+import type { RuntimeControl, RuntimeSetup } from "../core/runtime/Runtime.js";
 import type { DomStyle } from "./types.js";
 
 interface IRootElement {
-    readonly runtime: RuntimeOptions;
+    readonly runtime: RuntimeControl;
 }
 
 export class RootElement extends DomElement<DomStyle.Box> implements IRootElement {

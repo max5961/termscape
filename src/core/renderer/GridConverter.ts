@@ -3,7 +3,7 @@ import type { Grid, GridToken } from "../canvas/types.js";
 
 export class GridConverter {
     public static stringifyRowSegment(
-        grid: Grid,
+        grid: Readonly<Grid>,
         y: number,
         start?: number,
         end?: number,
@@ -34,11 +34,14 @@ export class GridConverter {
         return result.join("") + Ansi.style.reset;
     }
 
-    public static stringifyRow(grid: Grid, y: number) {
+    public static stringifyRow(grid: Readonly<Grid>, y: number) {
         return this.stringifyRowSegment(grid, y);
     }
 
-    public static stringifyGrid(grid: Grid): { newLines: number; output: string } {
+    public static stringifyGrid(grid: Readonly<Grid>): {
+        newLines: number;
+        output: string;
+    } {
         let newLines = 0;
         const output = grid
             .map((_row, y) => {

@@ -48,6 +48,8 @@ export class Scheduler {
         if (change) this.bitmask |= change;
 
         this.process.nextTick(() => {
+            this.phase = P.Busy;
+
             const bitmask = this.bitmask;
             this.bitmask = 0;
             this.dispatchWaiter();
@@ -56,7 +58,6 @@ export class Scheduler {
     }
 
     private dispatchWaiter() {
-        this.phase = P.Busy;
         setTimeout(() => {
             this.phase = P.Idle;
 

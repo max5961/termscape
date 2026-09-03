@@ -1,7 +1,7 @@
 import { setKittyProtocol, setMouse } from "term-keymap";
 import type { StdinLike, StdoutLike } from "../../Types.js";
-import { Ansi } from "../Ansi.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
+import { Ansi } from "../Ansi.js";
 import { objectKeys } from "../../util.js";
 import { StateChange } from "../renderer/RenderStateChange.js";
 

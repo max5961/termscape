@@ -46,4 +46,10 @@ export const Ansi = {
 
     /** Clear from cursor to end of terminal */
     eraseDisplay: "\x1b[J",
+
+    /** Clear all stdout rows and move cursor to top row */
+    clearTerminal: "\x1b[2J\x1b[H",
+
+    /** Clear all stdout rows including scrollback and move cursor to top row */
+    clearTerminalScrollback: "\x1b[3J\x1b[H",
 } as const;

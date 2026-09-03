@@ -1,4 +1,5 @@
 import type { WriteMode } from "../../Types.js";
+import { logger } from "../../util.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
 import { RuntimeConstants, type IRuntimeConstants } from "./RuntimeConstants.js";
 import { RuntimeTerminal, type IRuntimeTerminal } from "./RuntimeTerminal.js";
@@ -12,9 +13,9 @@ export interface IRuntime {
     writeMode: WriteMode;
 }
 
-export interface RuntimeOptions extends IRuntimeConstants, IRuntimeTerminal, IRuntime {}
+export interface RuntimeControl extends IRuntimeConstants, IRuntimeTerminal, IRuntime {}
 
-export type RuntimeSetup = Partial<RuntimeOptions> & {
+export type RuntimeSetup = Partial<RuntimeControl> & {
     startOnCreate?: boolean;
 };
 
@@ -41,6 +42,7 @@ export class Runtime {
     }
 
     public startRuntime() {
+        logger.write("starting runtime");
         if (this.active) return;
         this.active = true;
         this.runtimeConstants.start();
@@ -48,13 +50,15 @@ export class Runtime {
     }
 
     public endRuntime() {
+        logger.write("ending runtime");
         if (!this.active) return;
         this.active = false;
         this.runtimeConstants.end();
         this.runtimeConstants.end();
+        this.runtimeConstants.stdout.write("\n");
     }
 
-    public createController(): RuntimeOptions {
+    public createController(): RuntimeControl {
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const runtime = this;
 

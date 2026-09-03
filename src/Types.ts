@@ -8,6 +8,8 @@ export interface ProcessLike {
     stdin: StdinLike;
     env?: Record<string, string | undefined>;
     nextTick(cb: () => unknown, ...args: any[]): void;
+    on(e: "exit" | "SIGINT", cb: () => unknown): void;
+    off(e: "exit" | "SIGINT", cb: () => unknown): void;
 }
 export interface StdoutLike {
     on(e: "resize", cb: () => unknown): void;

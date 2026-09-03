@@ -39,10 +39,15 @@ export class RuntimeConstants implements IRuntimeConstants {
         const capture = new Capture();
         capture.on("output", this.root.handleCapturedOutput);
 
+        this.process.on("exit", this.root.exit);
+        this.process.on("SIGINT", this.root.exit);
+
         this.cleanup = () => {
             this.stdout.off("resize", this.root.handleResize);
             this.stdout.setMaxListeners(10);
             capture.off("output", this.root.handleCapturedOutput);
+            this.process.off("exit", this.root.exit);
+            this.process.off("SIGINT", this.root.exit);
         };
     }
 
