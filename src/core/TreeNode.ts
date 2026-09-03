@@ -1,6 +1,7 @@
 import type { YogaNode } from "../Types.js";
 import type { CoreElement } from "./CoreElement.js";
 import type { CoreRootElement } from "./CoreRootElement.js";
+import { throwError } from "./Errors.js";
 import { StateChange } from "./renderer/RenderStateChange.js";
 
 export interface ITreeNode<T> {
@@ -74,9 +75,9 @@ export class TreeNode implements ITreeNode<CoreElement> {
     public insertBefore(child: CoreElement, beforeChild: CoreElement): void {
         if (!this._set.has(beforeChild)) {
             if (beforeChild === undefined) {
-                // throw insertBefore error
+                throwError((m) => m.insertBefore.invalidArgs);
             } else {
-                // throw insertBefore error
+                throwError((m) => m.insertBefore.beforeChildNotChild);
             }
         }
 
@@ -99,8 +100,7 @@ export class TreeNode implements ITreeNode<CoreElement> {
 
     public removeChild(child: CoreElement, freeRecursive?: boolean): void {
         if (!this._set.has(child)) {
-            // throw error
-            return;
+            throwError((m) => m.removeChild.childNotChild);
         }
 
         const idx = this._children.indexOf(child);

@@ -1,6 +1,7 @@
 import type { WriteMode } from "../../Types.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
 import { StateChange } from "../renderer/RenderStateChange.js";
+import { CurrentRuntime } from "./CurrentRuntime.js";
 import { RuntimeConstants, type IRuntimeConstants } from "./RuntimeConstants.js";
 import { RuntimeTerminal, type IRuntimeTerminal } from "./RuntimeTerminal.js";
 
@@ -47,18 +48,24 @@ export class Runtime {
 
     public startRuntime() {
         if (this.active) return;
+        CurrentRuntime.ref = this;
         this.active = true;
         this.runtimeConstants.start();
         this.runtimeTerminal.start();
         this.root.scheduleRender(StateChange.StartRuntime);
     }
 
-    public endRuntime() {
+    public endRuntime(error?: Error) {
         if (!this.active) return;
         this.active = false;
         this.runtimeConstants.end();
         this.runtimeConstants.end();
         this.runtimeConstants.stdout.write("\n");
+        CurrentRuntime.ref = undefined;
+
+        if (error) {
+            throw error;
+        }
     }
 
     public createController(): RuntimeControl {
