@@ -1,6 +1,6 @@
 import type { WriteMode } from "../../Types.js";
-import { logger } from "../../util.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
+import { StateChange } from "../renderer/RenderStateChange.js";
 import { RuntimeConstants, type IRuntimeConstants } from "./RuntimeConstants.js";
 import { RuntimeTerminal, type IRuntimeTerminal } from "./RuntimeTerminal.js";
 
@@ -41,16 +41,19 @@ export class Runtime {
         this.active = false;
     }
 
+    public get isActive() {
+        return this.active;
+    }
+
     public startRuntime() {
-        logger.write("starting runtime");
         if (this.active) return;
         this.active = true;
         this.runtimeConstants.start();
         this.runtimeTerminal.start();
+        this.root.scheduleRender(StateChange.StartRuntime);
     }
 
     public endRuntime() {
-        logger.write("ending runtime");
         if (!this.active) return;
         this.active = false;
         this.runtimeConstants.end();

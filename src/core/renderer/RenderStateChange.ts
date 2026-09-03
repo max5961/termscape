@@ -5,4 +5,5 @@ export const enum StateChange {
     ZIndex = 1 << 3,
     Resize = 1 << 4,
     Screen = 1 << 5,
+    StartRuntime = 1 << 6,
 }

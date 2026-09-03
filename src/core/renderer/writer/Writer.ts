@@ -62,6 +62,9 @@ export class Writer {
         if (bitmask & StateChange.Screen) {
             return this.refresh;
         }
+        if (bitmask & StateChange.StartRuntime) {
+            return this.refresh;
+        }
         if (this.writesSinceLastResize < 2) {
             return this.refresh;
         }

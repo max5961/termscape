@@ -3,17 +3,21 @@ import { Compositor } from "../compositor/Compositor.js";
 import { Writer } from "./writer/Writer.js";
 
 export class Renderer {
+    private readonly root: CoreRootElement;
     private readonly compositor: Compositor;
     private readonly writer: Writer;
     private capturedOutput: string[];
 
     constructor(root: CoreRootElement) {
+        this.root = root;
         this.compositor = new Compositor(root);
         this.writer = new Writer(root);
         this.capturedOutput = [];
     }
 
     public render = (bitmask: number) => {
+        if (!this.root.runtime.isActive) return;
+
         const grid = this.compositor.compose(bitmask);
         const capturedOutput = this.getCapturedOutput();
         this.writer.write(grid, bitmask, capturedOutput);
