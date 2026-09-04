@@ -66,10 +66,11 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
     }
 
     public addAction(action: Action): void {
-        this.runtime.runtimeStdin.addAction(action);
+        this.runtime.requestStdinStream();
+        this.runtime.stdinProcessor.addAction(action);
     }
 
     public removeAction(action: Action): void {
-        this.runtime.runtimeStdin.removeAction(action);
+        this.runtime.stdinProcessor.removeAction(action);
     }
 }

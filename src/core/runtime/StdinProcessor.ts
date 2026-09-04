@@ -1,26 +1,21 @@
-import type { StdinLike, StdoutLike } from "../../Types.js";
-import type { CoreRootElement } from "../CoreRootElement.js";
 import { KeyMapState, MouseState, type Action } from "term-keymap";
-import type { RuntimeConstants } from "./RuntimeConstants.js";
+import type { CoreRootElement } from "../CoreRootElement.js";
+import type { StdinLike, StdoutLike } from "../../Types.js";
 import type { IActions } from "../ActionStore.js";
 
-export class RuntimeStdin implements IActions {
+export class StdinProcessor implements IActions {
     private readonly root: CoreRootElement;
     private readonly keymapState: KeyMapState;
     private readonly mouseState: MouseState;
     private readonly stdout: StdoutLike;
     private readonly stdin: StdinLike;
 
-    constructor(root: CoreRootElement, constants: RuntimeConstants) {
+    constructor(root: CoreRootElement, stdout: StdoutLike, stdin: StdinLike) {
         this.root = root;
+        this.stdout = stdout;
+        this.stdin = stdin;
         this.keymapState = new KeyMapState();
         this.mouseState = new MouseState();
-        this.stdout = constants.stdout;
-        this.stdin = constants.stdin;
-    }
-
-    public get isTTY() {
-        return this.stdin.isTTY;
     }
 
     public start() {
@@ -47,6 +42,8 @@ export class RuntimeStdin implements IActions {
     private handleStdin = (buf: Buffer) => {
         const { data } = this.keymapState.process(buf);
         const { resolveMousePosition } = this.mouseState.process(data);
+
+        if (data.key.only("ctrl") && data.input.only("c")) process.exit();
 
         resolveMousePosition(
             this.root.getLayoutHeight(),

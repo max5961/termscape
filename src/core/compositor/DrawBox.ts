@@ -2,9 +2,12 @@ import { DrawOperation } from "./DrawOperation.js";
 import type { Canvas } from "../canvas/Canvas.js";
 import type { CoreElement } from "../CoreElement.js";
 import { getBorder } from "../Boxes.js";
+import { logger } from "../../util.js";
 
 export class DrawBox extends DrawOperation {
     public override compose(core: CoreElement, canvas: Canvas): void {
+        logger.write("composing box", { bgColor: core.shadow.backgroundColor });
+
         if (core.shadow.backgroundColor) {
             this.drawBackground(core, canvas);
         }
