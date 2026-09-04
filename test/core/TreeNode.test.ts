@@ -14,7 +14,7 @@ describe("TreeNode", () => {
         f: CoreElement;
 
     beforeEach(() => {
-        root = new CoreRootElement(shell, {});
+        root = new CoreRootElement(shell, { startOnCreate: false });
         a = new CoreElement(shell, {});
         b = new CoreElement(shell, {});
         c = new CoreElement(shell, {});

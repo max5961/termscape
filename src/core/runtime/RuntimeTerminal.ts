@@ -16,8 +16,7 @@ export class RuntimeTerminal {
     private readonly root: CoreRootElement;
     private readonly stdout: StdoutLike;
     private readonly stdin: StdinLike;
-    private readonly state: IRuntimeTerminal;
-    private readonly cleanupOps: Map<keyof IRuntimeTerminal, () => unknown>;
+    private state: IRuntimeTerminal;
     private readonly waitingOps: Map<keyof IRuntimeTerminal, () => unknown>;
     private active: boolean;
     private activeStdin: boolean;
@@ -31,35 +30,46 @@ export class RuntimeTerminal {
         this.root = root;
         this.stdout = stdout;
         this.stdin = stdin;
-        this.cleanupOps = new Map();
         this.waitingOps = new Map();
         this.active = false;
         this.activeStdin = false;
 
-        const defaultState: IRuntimeTerminal = {
+        const initialState: IRuntimeTerminal = {
             altScreen: setup.altScreen ?? false,
             kittyKeyboardProtocol: setup.kittyKeyboardProtocol ?? true,
             mouse: setup.mouse ?? true,
             mouseMode: setup.mouseMode ?? 3,
         };
-        this.state = {} as IRuntimeTerminal;
-        for (const key of objectKeys(defaultState)) {
-            this.set(key, defaultState[key]);
+
+        this.state = {
+            altScreen: false,
+            kittyKeyboardProtocol: false,
+            mouse: false,
+            mouseMode: 3,
+        };
+
+        for (const key of objectKeys(initialState)) {
+            this.set(key, initialState[key]);
         }
     }
 
     public start() {
         this.active = true;
-        this.performWaitingOp("altScreen");
         this.stdout.write(Ansi.cursor.hide);
+        this.performWaitingOp("altScreen");
     }
 
     public end() {
         this.active = false;
-        this.performCleanupOp("altScreen");
-        this.stdout.write(Ansi.cursor.show);
+        const prev = { ...this.state };
 
-        if (!this.state.altScreen) {
+        // return to normal screen.  if stdin is setup again the operation to
+        // return to previous state is deferred until next start
+        this.setAltScreen(false, { shouldDefer: false });
+        this.setAltScreen(prev.altScreen, { shouldDefer: true });
+
+        this.stdout.write(Ansi.cursor.show);
+        if (!prev.altScreen) {
             this.stdout.write("\n");
         }
     }
@@ -68,93 +78,127 @@ export class RuntimeTerminal {
         this.activeStdin = true;
         this.performWaitingOp("kittyKeyboardProtocol");
         this.performWaitingOp("mouse");
-        this.performWaitingOp("mouseMode");
     }
 
     public cleanupStdin() {
         this.activeStdin = false;
-        this.performCleanupOp("kittyKeyboardProtocol");
-        this.performCleanupOp("mouse");
-        this.performCleanupOp("mouseMode");
+        const prev = { ...this.state };
+
+        this.setKittyKeyboard(false, { shouldDefer: false });
+        this.setMouse(false, { shouldDefer: false });
+
+        this.setKittyKeyboard(prev.kittyKeyboardProtocol, { shouldDefer: true });
+        this.setMouse(prev.mouse, { shouldDefer: true });
     }
 
     public set = <T extends keyof IRuntimeTerminal>(
         prop: T,
         value: IRuntimeTerminal[T],
     ) => {
-        const prev = this.state[prop];
-        if (prev === value) return;
-        this.state[prop] = value;
-
         if (prop === "altScreen") {
-            if (!this.active) {
-                return this.waitingOps.set("altScreen", this.performAltScreenOperation);
-            }
-            return this.performAltScreenOperation();
+            return this.setAltScreen(value as IRuntimeTerminal["altScreen"]);
         }
-
-        let operation: () => unknown;
+        if (prop === "mouse") {
+            return this.setMouse(value as IRuntimeTerminal["mouse"]);
+        }
+        if (prop === "mouseMode") {
+            return this.setMouseMode(value as IRuntimeTerminal["mouseMode"]);
+        }
         if (prop === "kittyKeyboardProtocol") {
-            operation = this.performKittyOperation;
-        } else if (prop === "mouse") {
-            operation = this.performEnableMouseOperation;
-        } else {
-            operation = this.performMouseModeOperation;
+            return this.setKittyKeyboard(
+                value as IRuntimeTerminal["kittyKeyboardProtocol"],
+            );
         }
-
-        if (!this.activeStdin) {
-            return this.waitingOps.set(prop, operation);
-        }
-        operation();
     };
 
-    public get = <T extends keyof IRuntimeTerminal>(prop: T): IRuntimeTerminal[T] => {
+    public get = <T extends keyof IRuntimeTerminal>(prop: T) => {
         return this.state[prop];
     };
 
-    private performAltScreenOperation = () => {
-        if (this.state.altScreen) {
-            this.enterAltScreen();
-            this.cleanupOps.set("altScreen", this.exitAltScreen);
-        } else if (this.isApplied("altScreen")) {
-            this.exitAltScreen();
-            this.cleanupOps.delete("altScreen");
-        }
-    };
+    private setAltScreen(
+        v: IRuntimeTerminal["altScreen"],
+        opts?: { shouldDefer: boolean },
+    ) {
+        const wrapper = (v: IRuntimeTerminal["altScreen"]) => {
+            if (this.state.altScreen === v) return;
+            this.state.altScreen = v;
 
-    private performKittyOperation = () => {
-        const setKitty = (v: boolean) => {
+            if (v) {
+                this.enterAltScreen();
+            } else {
+                this.exitAltScreen();
+            }
+        };
+        const deferWrapper = () => this.waitingOps.set("altScreen", () => wrapper(v));
+
+        if (opts && !opts.shouldDefer) {
+            return wrapper(v);
+        }
+        if (opts && opts.shouldDefer) {
+            return deferWrapper();
+        }
+        if (this.active) {
+            return wrapper(v);
+        }
+        return deferWrapper();
+    }
+
+    private setKittyKeyboard(
+        v: IRuntimeTerminal["kittyKeyboardProtocol"],
+        opts?: { shouldDefer: boolean },
+    ) {
+        const wrapper = (v: IRuntimeTerminal["kittyKeyboardProtocol"]) => {
+            if (this.state.kittyKeyboardProtocol === v) return;
+            this.state.kittyKeyboardProtocol = v;
             setKittyProtocol(
                 v,
                 this.stdout as NodeJS.WriteStream,
                 this.stdin as NodeJS.ReadStream & { fd: 0 },
             );
         };
+        const deferWrapper = () =>
+            this.waitingOps.set("kittyKeyboardProtocol", () => wrapper(v));
 
-        if (this.state.kittyKeyboardProtocol) {
-            setKitty(true);
-            this.cleanupOps.set("kittyKeyboardProtocol", () => setKitty(false));
-        } else if (this.isApplied("kittyKeyboardProtocol")) {
-            setKitty(false);
-            this.cleanupOps.delete("kittyKeyboardProtocol");
+        if (opts && !opts.shouldDefer) {
+            return wrapper(v);
         }
-    };
+        if (opts && opts.shouldDefer) {
+            return deferWrapper();
+        }
+        if (this.activeStdin) {
+            return wrapper(v);
+        }
+        return deferWrapper();
+    }
 
-    private performEnableMouseOperation = () => {
-        if (this.state.mouse) {
-            this.setMouse(true);
-            this.cleanupOps.set("mouse", () => this.setMouse(false));
-        } else if (this.isApplied("mouse")) {
-            this.setMouse(false);
-            this.cleanupOps.delete("mouse");
-        }
-    };
+    private setMouse(v: IRuntimeTerminal["mouse"], opts?: { shouldDefer: boolean }) {
+        const wrapper = (v: IRuntimeTerminal["mouse"]) => {
+            if (this.state.mouse === v) return;
+            this.state.mouse = v;
+            this.__setMouseHelper(v);
+        };
+        const deferWrapper = () => this.waitingOps.set("mouse", () => wrapper(v));
 
-    private performMouseModeOperation = () => {
-        if (this.state.mouse) {
-            this.setMouse(this.state.mouse);
+        if (opts && !opts.shouldDefer) {
+            return wrapper(v);
         }
-    };
+        if (opts && opts.shouldDefer) {
+            return deferWrapper();
+        }
+        if (this.activeStdin) {
+            return wrapper(v);
+        }
+        return deferWrapper();
+    }
+
+    private setMouseMode(v: IRuntimeTerminal["mouseMode"]) {
+        if (this.state.mouseMode === v) return;
+        this.state.mouseMode = v;
+
+        if (this.activeStdin && this.state.mouse) {
+            this.__setMouseHelper(this.state.mouse);
+        }
+    }
 
     private enterAltScreen = () => {
         this.stdout.write(Ansi.enterAltScreen);
@@ -166,42 +210,13 @@ export class RuntimeTerminal {
         this.stdout.write(Ansi.exitAltScreen);
     };
 
-    private setMouse = (enable: boolean) => {
+    private __setMouseHelper = (enable: boolean) => {
         setMouse(enable, this.stdout as NodeJS.WriteStream, this.state.mouseMode);
-    };
-
-    /**
-     * A cleanup only exists when an operation is performed and sets a cleanup
-     * operation. Therefore, if a cleanup operation does not exist, then we know
-     * we are in the default terminal state.  This means that we don't need to
-     * exit the alt screen for example if there is no cleanup.  Suppose we did:
-     *
-     * runtime.altScreen = true;
-     * runtime.altScreen = false;
-     * runtime.start();
-     *
-     * There would be a waiting op for altScreen from setting to false.  Then,
-     * since the op enter the altscreen was never actually performed there is no
-     * cleanup and no need to send escape codes to bring back to the state we are
-     * already in.
-     * */
-    private isApplied = <T extends keyof IRuntimeTerminal>(prop: T) => {
-        return !!this.cleanupOps.get(prop);
     };
 
     private performWaitingOp = <T extends keyof IRuntimeTerminal>(prop: T) => {
         const op = this.waitingOps.get(prop);
-        if (op) {
-            op();
-            this.waitingOps.delete(prop);
-        }
-    };
-
-    private performCleanupOp = <T extends keyof IRuntimeTerminal>(prop: T) => {
-        const op = this.cleanupOps.get(prop);
-        if (op) {
-            op();
-            this.cleanupOps.delete(prop);
-        }
+        op?.();
+        this.waitingOps.delete(prop);
     };
 }
