@@ -1,5 +1,5 @@
 import type { BorderMap } from "../Boxes.js";
-import type { Color } from "../../Types.js";
+import type { ColorValue } from "../../Types.js";
 import type { Shorthand, BorderStyle } from "./types.js";
 
 // -----------------------------------------------------------------------------
@@ -27,7 +27,7 @@ export interface IWidePaddingStyle {
 }
 export interface IWideEdgeStyle {
     borderStyle?: BorderStyle | BorderMap;
-    borderColor?: Color;
+    borderColor?: ColorValue;
     borderDimColor?: boolean;
 }
 export interface IWideOverflowStyle {
@@ -105,10 +105,10 @@ export interface INarrowEdgeStyle {
     borderBottom?: boolean;
     borderLeft?: boolean;
     borderRight?: boolean;
-    borderTopColor?: Color;
-    borderBottomColor?: Color;
-    borderLeftColor?: Color;
-    borderRightColor?: Color;
+    borderTopColor?: ColorValue;
+    borderBottomColor?: ColorValue;
+    borderLeftColor?: ColorValue;
+    borderRightColor?: ColorValue;
     borderTopDimColor?: boolean;
     borderBottomDimColor?: boolean;
     borderLeftDimColor?: boolean;
@@ -183,30 +183,26 @@ export interface IFlexStyle {
 
 export interface IBackgroundStyle {
     zIndex?: number;
-    backgroundColor?: Color;
+    backgroundColor?: ColorValue;
     backgroundStyle?: "dotted" | "dashed" | { char: string };
-    backgroundStyleColor?: Color;
+    backgroundStyleColor?: ColorValue;
 }
 
-export interface ITextStyle {
-    color?: Color;
-    backgroundColor?: Color;
+export interface IAnsiEffectStyle {
+    color?: ColorValue;
     dimColor?: boolean;
+    backgroundColor?: ColorValue;
     bold?: boolean;
     italic?: boolean;
     underline?: boolean;
     strikethrough?: boolean;
-    wrap?: "overflow" | "wrap" | "truncate-start" | "truncate-middle" | "truncate-end";
-    align?: "left" | "center" | "right";
     imagePositive?: boolean;
     imageNegative?: boolean;
-    fontDefault?: boolean;
-    font1?: boolean;
-    font2?: boolean;
-    font3?: boolean;
-    font4?: boolean;
-    font5?: boolean;
-    font6?: boolean;
+}
+
+export interface ITextStyle extends IAnsiEffectStyle {
+    wrap?: "overflow" | "wrap" | "truncate-start" | "truncate-middle" | "truncate-end";
+    align?: "left" | "center" | "right";
 }
 
 // prettier-ignore

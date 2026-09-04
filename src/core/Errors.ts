@@ -4,7 +4,7 @@ import { CurrentRuntime } from "./runtime/CurrentRuntime.js";
 export class TermscapeError extends Error {
     constructor(msg?: string) {
         super(msg);
-        this.name = Ansi.style.cyan + "TermscapeError" + Ansi.style.reset;
+        this.name = Ansi.color.cyan + "TermscapeError" + Ansi.reset;
     }
 }
 

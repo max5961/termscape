@@ -1,5 +1,6 @@
+import type { Ansi } from "./core/Ansi.js";
+
 export type { Node as YogaNode, Edge } from "yoga-wasm-web/auto";
-export type { Color, BgColor, TextEffect, AnsiStyle } from "ansi-escape-sequences";
 export type Point = { x: number; y: number };
 export type WriteMode = "refresh" | "row" | "cell";
 
@@ -33,3 +34,8 @@ type _ExtendsStdinLike<T extends StdinLike> = T;
 type _ProcessLikeTypeCheck = _ExtendsProcessLike<typeof process>;
 type _StdoutLikeTypeCheck = _ExtendsStdoutLike<typeof process.stdout>;
 type _StdinLikeTypeCheck = _ExtendsStdinLike<typeof process.stdin>;
+
+export type Color = keyof typeof Ansi.color;
+export type HexColor = `#${string}`;
+export type RgbColor = `rgb(${string}`;
+export type ColorValue = Color | HexColor | RgbColor;

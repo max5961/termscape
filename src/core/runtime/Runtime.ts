@@ -1,4 +1,6 @@
 import type { WriteMode } from "../../Types.js";
+import { logger } from "../../util.js";
+import { Ansi } from "../Ansi.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
 import { StateChange } from "../renderer/RenderStateChange.js";
 import { CurrentRuntime } from "./CurrentRuntime.js";
@@ -53,14 +55,16 @@ export class Runtime {
         this.runtimeConstants.start();
         this.runtimeTerminal.start();
         this.root.scheduleRender(StateChange.StartRuntime);
+
+        logger.write("ayo this is new");
     }
 
     public endRuntime(error?: Error) {
         if (!this.active) return;
         this.active = false;
         this.runtimeConstants.end();
-        this.runtimeConstants.end();
-        this.runtimeConstants.stdout.write("\n");
+        this.runtimeTerminal.end();
+        this.runtimeTerminal.cleanupStdin();
         CurrentRuntime.ref = undefined;
 
         if (error) {

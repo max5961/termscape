@@ -22,6 +22,8 @@ export function isFullscreen(grid: Readonly<Grid> | undefined, stdout: StdoutLik
 
 export const logger = {
     write: (...data: any[]) => {
+        if (process.env.NODE_ENV !== "development") return;
+
         const date = new Date();
         const h = date.getHours().toString().padStart(2, "0");
         const m = date.getMinutes().toString().padStart(2, "0");

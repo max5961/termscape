@@ -5,6 +5,10 @@ import { getBorder } from "../Boxes.js";
 
 export class DrawBox extends DrawOperation {
     public override compose(core: CoreElement, canvas: Canvas): void {
+        if (core.shadow.backgroundColor) {
+            this.drawBackground(core, canvas);
+        }
+
         if (core.shadow.borderStyle) {
             this.drawBorder(core, canvas);
         }
@@ -43,5 +47,18 @@ export class DrawBox extends DrawOperation {
             color: core.shadow.borderLeftColor,
             dimColor: core.shadow.borderLeftDimColor,
         }).draw(map.left, "u", height - 2);
+    }
+
+    private drawBackground(core: CoreElement, canvas: Canvas): void {
+        const pen = canvas.getPen();
+        const height = canvas.ygHeight;
+        const width = canvas.ygWidth;
+
+        pen.setStyle({ backgroundColor: core.shadow.backgroundColor });
+
+        for (let y = 0; y < height; ++y) {
+            pen.moveTo(0, y);
+            pen.draw(" ", "r", width);
+        }
     }
 }

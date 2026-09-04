@@ -22,4 +22,8 @@ export class RootElement extends DomElement<DomStyle.Box> implements IRootElemen
     public start() {
         return this._core.runtime.startRuntime();
     }
+
+    public exit() {
+        return this._core.runtime.endRuntime();
+    }
 }

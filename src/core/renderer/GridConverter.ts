@@ -16,7 +16,7 @@ export class GridConverter {
 
         const length = end - start;
         const result = new Array(length + 1);
-        result[0] = Ansi.style.reset;
+        result[0] = Ansi.reset;
 
         for (let i = 0; i < length; ++i) {
             const token = row[i + start];
@@ -31,7 +31,7 @@ export class GridConverter {
             result[i + 1] = this.convertToken(token, leftAnsi, rightAnsi);
         }
 
-        return result.join("") + Ansi.style.reset;
+        return result.join("") + Ansi.reset;
     }
 
     public static stringifyRow(grid: Readonly<Grid>, y: number) {
@@ -75,11 +75,11 @@ export class GridConverter {
 
             // Only left shares ansi - CLOSE ANSI
         } else if (token.ansi === leftAnsi && token.ansi !== rightAnsi) {
-            return token.char + Ansi.style.reset;
+            return token.char + Ansi.reset;
 
             // Left and right share no ansi similarities - OPEN AND CLOSE ANSI
         } else {
-            return token.ansi + token.char + Ansi.style.reset;
+            return token.ansi + token.char + Ansi.reset;
         }
     }
 }

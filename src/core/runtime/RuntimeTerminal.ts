@@ -17,10 +17,7 @@ export class RuntimeTerminal {
     private readonly stdout: StdoutLike;
     private readonly stdin: StdinLike;
     private readonly state: IRuntimeTerminal;
-    private readonly cleanupOps: Map<
-        keyof IRuntimeTerminal,
-        (endRuntime: boolean) => unknown
-    >;
+    private readonly cleanupOps: Map<keyof IRuntimeTerminal, () => unknown>;
     private readonly waitingOps: Map<keyof IRuntimeTerminal, () => unknown>;
     private active: boolean;
     private activeStdin: boolean;
@@ -54,11 +51,17 @@ export class RuntimeTerminal {
     public start() {
         this.active = true;
         this.performWaitingOp("altScreen");
+        this.stdout.write(Ansi.cursor.hide);
     }
 
     public end() {
         this.active = false;
-        this.performCleanupOp("altScreen", true);
+        this.performCleanupOp("altScreen");
+        this.stdout.write(Ansi.cursor.show);
+
+        if (!this.state.altScreen) {
+            this.stdout.write("\n");
+        }
     }
 
     public setupStdin() {
@@ -70,9 +73,9 @@ export class RuntimeTerminal {
 
     public cleanupStdin() {
         this.activeStdin = false;
-        this.performCleanupOp("kittyKeyboardProtocol", false);
-        this.performCleanupOp("mouse", false);
-        this.performCleanupOp("mouseMode", false);
+        this.performCleanupOp("kittyKeyboardProtocol");
+        this.performCleanupOp("mouse");
+        this.performCleanupOp("mouseMode");
     }
 
     public set = <T extends keyof IRuntimeTerminal>(
@@ -155,15 +158,12 @@ export class RuntimeTerminal {
 
     private enterAltScreen = () => {
         this.stdout.write(Ansi.enterAltScreen);
-        this.stdout.write(Ansi.cursor.position(1, 1));
+        this.stdout.write(Ansi.cursor.position(0, 0));
         this.root.scheduleRender(StateChange.Screen);
     };
 
-    private exitAltScreen = (endRuntime?: boolean) => {
+    private exitAltScreen = () => {
         this.stdout.write(Ansi.exitAltScreen);
-        if (!endRuntime) {
-            this.root.scheduleRender(StateChange.Screen);
-        }
     };
 
     private setMouse = (enable: boolean) => {
@@ -197,13 +197,10 @@ export class RuntimeTerminal {
         }
     };
 
-    private performCleanupOp = <T extends keyof IRuntimeTerminal>(
-        prop: T,
-        endRuntime: boolean,
-    ) => {
+    private performCleanupOp = <T extends keyof IRuntimeTerminal>(prop: T) => {
         const op = this.cleanupOps.get(prop);
         if (op) {
-            op(endRuntime);
+            op();
             this.cleanupOps.delete(prop);
         }
     };

@@ -32,6 +32,7 @@ export class Writer {
 
     public write(nextGrid: Readonly<Grid>, bitmask: number, capturedOutput: string) {
         this.handleResizeCounter(bitmask);
+        this.runSetupForPossibleScreenChange(bitmask);
         this.lastGrid = this.nextGrid;
         this.nextGrid = nextGrid;
 
@@ -79,6 +80,12 @@ export class Writer {
             this.writesSinceLastResize = -1;
         }
         ++this.writesSinceLastResize;
+    }
+
+    private runSetupForPossibleScreenChange(bitmask: number) {
+        if (bitmask & StateChange.Screen) {
+            this.refresh.resetLastOutput();
+        }
     }
 
     private getTermSupportsAnsiCursor() {

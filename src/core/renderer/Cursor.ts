@@ -67,7 +67,7 @@ export class Cursor {
         if (rows <= 0) return;
 
         this.updateCurrentRow(-rows);
-        this.pushAnsi(Ansi.cursor.previousLine(rows));
+        this.pushAnsi(Ansi.cursor.prevLine(rows));
     }
 
     /** Move to col 0 of the next row down - `\x1b[<rows>E` */
@@ -80,16 +80,14 @@ export class Cursor {
 
     /**
      * Move cursor to col - `\x1b[<columns>G`
-     * [NOTE] - Assume zero based indexing for the column, but in actuality the
-     * terminal is 1 based. This fn adds 1 to the col value.
      * */
     public moveToCol(col: number): void {
-        this.pushAnsi(Ansi.cursor.horizontalAbsolute(col + 1));
+        this.pushAnsi(Ansi.cursor.moveToCol(col));
     }
 
     /** Clear rest of line from cursor column. */
     public clearFromCursor() {
-        this.pushAnsi(Ansi.erase.inLine(0));
+        this.pushAnsi(Ansi.clear.fromCursorToEdge);
     }
 
     /** Provide a negative number when the current row has moved **UP**. */
@@ -126,7 +124,7 @@ export class Cursor {
      * Immediately executes the operation (does not batch).
      */
     public clearRowsBelow() {
-        this.pushAnsi(Ansi.eraseDisplay);
+        this.pushAnsi(Ansi.clear.display);
         this.execute();
     }
 }
