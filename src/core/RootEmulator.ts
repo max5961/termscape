@@ -1,14 +1,22 @@
 import type { StdoutLike } from "../Types.js";
 import type { StateChange } from "./renderer/RenderStateChange.js";
 import type { CoreRootElement } from "./CoreRootElement.js";
+import type { Action } from "term-keymap";
+import type { IActions } from "./ActionStore.js";
+import type { CoreElement } from "./CoreElement.js";
 
-export interface IRootEmulator {
-    scheduleRender(change: StateChange): void;
+export interface IRootEmulator extends IActions {
     readonly stdout: StdoutLike;
+    scheduleRender(change: StateChange): void;
 }
 
 export class RootEmulator implements IRootEmulator {
     protected root: CoreRootElement | undefined;
+    protected readonly core: CoreElement;
+
+    constructor(core: CoreElement) {
+        this.core = core;
+    }
 
     public getAttachedRoot() {
         return this.root;
@@ -16,11 +24,17 @@ export class RootEmulator implements IRootEmulator {
 
     public onAttach(root: CoreRootElement) {
         this.root = root;
+        this.core.actions.attachRootActions(root);
     }
 
-    public onDetach(_root: CoreRootElement) {
+    public onDetach(root: CoreRootElement) {
         this.root = undefined;
-        // should be either using events or subscribing detach cbs here
+        this.core.actions.detachRootActions(root);
+        this.core.canvas = undefined;
+    }
+
+    get stdout() {
+        return this.root?.stdout ?? process.stdout;
     }
 
     public scheduleRender(change: StateChange): void {
@@ -29,16 +43,25 @@ export class RootEmulator implements IRootEmulator {
         }
     }
 
-    get stdout() {
-        return this.root?.stdout ?? process.stdout;
+    public addAction(action: Action): void {
+        if (this.root) {
+            this.root.addAction(action);
+        }
+    }
+
+    public removeAction(action: Action): void {
+        if (this.root) {
+            this.root.removeAction(action);
+        }
     }
 }
 
 export class RealRoot extends RootEmulator {
     protected override readonly root: CoreRootElement;
+    protected declare readonly core: CoreRootElement;
 
-    constructor(root: CoreRootElement) {
-        super();
-        this.root = root;
+    constructor(core: CoreRootElement) {
+        super(core);
+        this.root = core;
     }
 }

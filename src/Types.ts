@@ -26,6 +26,7 @@ export interface StdinLike {
     pause(): void;
     resume(): void;
     setRawMode(v: boolean): void;
+    isTTY: boolean;
 }
 
 type _ExtendsProcessLike<T extends ProcessLike> = T;

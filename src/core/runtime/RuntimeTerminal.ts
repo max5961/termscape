@@ -4,6 +4,7 @@ import type { CoreRootElement } from "../CoreRootElement.js";
 import { Ansi } from "../Ansi.js";
 import { objectKeys } from "../../util.js";
 import { StateChange } from "../renderer/RenderStateChange.js";
+import type { RuntimeConstants } from "./RuntimeConstants.js";
 
 export interface IRuntimeTerminal {
     altScreen: boolean;
@@ -23,13 +24,12 @@ export class RuntimeTerminal {
 
     constructor(
         root: CoreRootElement,
-        stdout: StdoutLike,
-        stdin: StdinLike,
+        constants: RuntimeConstants,
         setup: Partial<IRuntimeTerminal>,
     ) {
         this.root = root;
-        this.stdout = stdout;
-        this.stdin = stdin;
+        this.stdout = constants.stdout;
+        this.stdin = constants.stdin;
         this.waitingOps = new Map();
         this.active = false;
         this.activeStdin = false;

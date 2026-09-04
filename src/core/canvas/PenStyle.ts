@@ -3,8 +3,8 @@ import { Ansi } from "../Ansi.js";
 import type { Color } from "../../Types.js";
 import type { IAnsiEffectStyle } from "../style/IStyle.js";
 
-const colorToAnsi = toAnsi(Ansi.rgb);
-const backgroundColorToAnsi = toAnsi(Ansi.backgroundRgb);
+const colorToAnsi = toAnsi(Ansi.rgb, Ansi.color);
+const backgroundColorToAnsi = toAnsi(Ansi.backgroundRgb, Ansi.backgroundColor);
 
 export class PenStyle {
     private prevAnsi: string | undefined;
@@ -26,11 +26,11 @@ export class PenStyle {
 
     public getAnsi() {
         if (this.prevAnsi) return this.prevAnsi;
-        this.prevAnsi = this.toString(this._style);
+        this.prevAnsi = this.styleToAnsi(this._style);
         return this.prevAnsi;
     }
 
-    public toString(style: IAnsiEffectStyle) {
+    private styleToAnsi(style: IAnsiEffectStyle) {
         let res = "";
         for (const key of objectKeys(style)) {
             if (key === "color") {
@@ -45,12 +45,15 @@ export class PenStyle {
     }
 }
 
-function toAnsi(rgbConverter: typeof Ansi.rgb) {
+function toAnsi(
+    rgbConverter: typeof Ansi.rgb,
+    ansiMap: typeof Ansi.color | typeof Ansi.backgroundColor,
+) {
     return (color: string | Color | undefined) => {
         if (!color) return "";
 
-        if (Ansi.color[color as Color]) {
-            return Ansi.color[color as Color];
+        if (ansiMap[color as Color]) {
+            return ansiMap[color as Color];
         }
         const rgbarr = toRgbColorCodeArray(color);
         if (rgbarr) {

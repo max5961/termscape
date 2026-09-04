@@ -1,3 +1,4 @@
+import type { Action } from "term-keymap";
 import { DefaultStyles } from "../dom/DefaultStyles.js";
 import type { DomElement } from "../dom/DomElement.js";
 import { CoreElement } from "./CoreElement.js";
@@ -38,6 +39,14 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
         return this.runtimeControl.stdout;
     }
 
+    public get stdin() {
+        return this.runtimeControl.stdin;
+    }
+
+    public get process() {
+        return this.runtimeControl.process;
+    }
+
     public handleResize = () => {
         this.canvas.updateRootConstraints();
         this.scheduler.scheduleRender(StateChange.Resize);
@@ -51,4 +60,16 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
     public exit = () => {
         this.runtime.endRuntime();
     };
+
+    public getLayoutHeight() {
+        return this.renderer.layoutHeight;
+    }
+
+    public addAction(action: Action): void {
+        this.runtime.runtimeStdin.addAction(action);
+    }
+
+    public removeAction(action: Action): void {
+        this.runtime.runtimeStdin.removeAction(action);
+    }
 }

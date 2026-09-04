@@ -1,10 +1,9 @@
 import type { WriteMode } from "../../Types.js";
-import { logger } from "../../util.js";
-import { Ansi } from "../Ansi.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
 import { StateChange } from "../renderer/RenderStateChange.js";
 import { CurrentRuntime } from "./CurrentRuntime.js";
 import { RuntimeConstants, type IRuntimeConstants } from "./RuntimeConstants.js";
+import { RuntimeStdin } from "./RuntimeStdin.js";
 import { RuntimeTerminal, type IRuntimeTerminal } from "./RuntimeTerminal.js";
 
 export interface IRuntime {
@@ -24,8 +23,9 @@ export type RuntimeSetup = Partial<RuntimeControl> & {
 
 export class Runtime {
     private readonly root: CoreRootElement;
-    private readonly runtimeConstants: RuntimeConstants;
+    public readonly runtimeConstants: RuntimeConstants;
     private readonly runtimeTerminal: RuntimeTerminal;
+    public readonly runtimeStdin: RuntimeStdin;
     private active: boolean;
     private debounceMs: number;
     private writeMode: WriteMode;
@@ -33,10 +33,10 @@ export class Runtime {
     constructor(root: CoreRootElement, setup: RuntimeSetup) {
         this.root = root;
         this.runtimeConstants = new RuntimeConstants(this.root, setup);
+        this.runtimeStdin = new RuntimeStdin(this.root, this.runtimeConstants);
         this.runtimeTerminal = new RuntimeTerminal(
             this.root,
-            this.runtimeConstants.stdout,
-            this.runtimeConstants.stdin,
+            this.runtimeConstants,
             setup,
         );
         this.debounceMs = setup.debounceMs ?? 16;
@@ -55,8 +55,6 @@ export class Runtime {
         this.runtimeConstants.start();
         this.runtimeTerminal.start();
         this.root.scheduleRender(StateChange.StartRuntime);
-
-        logger.write("ayo this is new");
     }
 
     public endRuntime(error?: Error) {
@@ -70,6 +68,10 @@ export class Runtime {
         if (error) {
             throw error;
         }
+    }
+
+    public requestStdinStream() {
+        //
     }
 
     public createController(): RuntimeControl {

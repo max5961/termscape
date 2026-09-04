@@ -2,6 +2,7 @@ import type { IStyle } from "../core/style/IStyle.js";
 import type { ITreeNode } from "../core/TreeNode.js";
 import type { Style } from "./types.js";
 import { CoreElement } from "../core/CoreElement.js";
+import type { Action } from "term-keymap";
 
 export abstract class DomElement<T extends keyof IStyle = keyof IStyle>
     implements ITreeNode<DomElement>
@@ -48,5 +49,19 @@ export abstract class DomElement<T extends keyof IStyle = keyof IStyle>
 
     public get lastElementChild(): DomElement | undefined {
         return this._core.treeNode.lastElementChild?.shell;
+    }
+
+    public addKeyListener(
+        keymap: Action["keymap"],
+        callback: (element: typeof this) => unknown,
+    ) {
+        const wrapper = () => {
+            callback(this);
+        };
+
+        this._core.actions.addAction({
+            keymap,
+            callback: wrapper,
+        });
     }
 }

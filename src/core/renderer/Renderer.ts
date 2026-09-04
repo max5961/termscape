@@ -7,6 +7,10 @@ export class Renderer {
     private readonly compositor: Compositor;
     private readonly writer: Writer;
     private capturedOutput: string[];
+    private _layoutHeight = 0;
+    public get layoutHeight() {
+        return this._layoutHeight;
+    }
 
     constructor(root: CoreRootElement) {
         this.root = root;
@@ -20,6 +24,7 @@ export class Renderer {
 
         const grid = this.compositor.compose(bitmask);
         const capturedOutput = this.getCapturedOutput();
+        this._layoutHeight = grid.length;
         this.writer.write(grid, bitmask, capturedOutput);
     };
 
