@@ -54,7 +54,7 @@ export class Writer {
     }
 
     private getWriteMethod(bitmask: number, capturedOutput?: string): WriteMethod {
-        if (this.root.runtimeControl.writeMode === "refresh") {
+        if (this.root.runtime.writeMode === "refresh") {
             return this.refresh;
         }
         if (capturedOutput && !isFullscreen(this.nextGrid, this.root.stdout)) {
@@ -72,7 +72,7 @@ export class Writer {
         if (!this.termSupportsAnsiCursor) {
             return this.refresh;
         }
-        return this.root.runtimeControl.writeMode === "cell" ? this.cell : this.row;
+        return this.root.runtime.writeMode === "cell" ? this.cell : this.row;
     }
 
     private handleResizeCounter(bitmask: number) {
@@ -89,7 +89,7 @@ export class Writer {
     }
 
     private getTermSupportsAnsiCursor() {
-        const term = this.root.runtimeControl.process.env?.["TERM"];
+        const term = this.root.runtime.process.env?.["TERM"];
         return !!term?.match(/xterm|kitty|alacritty|ghostty|konsole/);
     }
 }

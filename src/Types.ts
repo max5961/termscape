@@ -11,6 +11,7 @@ export interface ProcessLike {
     nextTick(cb: () => unknown, ...args: any[]): void;
     on(e: "exit" | "SIGINT", cb: () => unknown): void;
     off(e: "exit" | "SIGINT", cb: () => unknown): void;
+    exit(code?: number | string | null | undefined): never;
 }
 export interface StdoutLike {
     on(e: "resize", cb: () => unknown): void;
@@ -37,6 +38,7 @@ type _StdoutLikeTypeCheck = _ExtendsStdoutLike<typeof process.stdout>;
 type _StdinLikeTypeCheck = _ExtendsStdinLike<typeof process.stdin>;
 
 export type Color = keyof typeof Ansi.color;
-export type HexColor = `#${string}`;
-export type RgbColor = `rgb(${string}`;
-export type ColorValue = Color | HexColor | RgbColor;
+export type ColorHint = "#" | "rgb()";
+export type ColorValue = Color | ColorHint | (string & {});
+
+process.exit;

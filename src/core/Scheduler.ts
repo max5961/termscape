@@ -21,7 +21,7 @@ export class Scheduler {
 
     constructor(root: CoreRootElement, render: RenderFn) {
         this.root = root;
-        this.process = root.runtimeControl.process;
+        this.process = root.runtime.process;
         this.render = render;
         this.bitmask = 0;
         this.phase = P.Idle;
@@ -70,6 +70,6 @@ export class Scheduler {
     }
 
     private get debounceMs() {
-        return this.root.runtimeControl.debounceMs;
+        return this.root.runtime.debounceMs;
     }
 }

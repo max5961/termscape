@@ -1,34 +1,34 @@
-import { KeyMapState, MouseState, type Action } from "term-keymap";
+import { KeyMapState, MouseState, type Action, type Data } from "term-keymap";
 import type { CoreRootElement } from "../CoreRootElement.js";
-import type { StdinLike, StdoutLike } from "../../Types.js";
 import type { IActions } from "../ActionStore.js";
 
 export class StdinProcessor implements IActions {
     private readonly root: CoreRootElement;
     private readonly keymapState: KeyMapState;
     private readonly mouseState: MouseState;
-    private readonly stdout: StdoutLike;
-    private readonly stdin: StdinLike;
+    private active: boolean;
 
-    constructor(root: CoreRootElement, stdout: StdoutLike, stdin: StdinLike) {
+    constructor(root: CoreRootElement) {
         this.root = root;
-        this.stdout = stdout;
-        this.stdin = stdin;
         this.keymapState = new KeyMapState();
         this.mouseState = new MouseState();
+        this.active = false;
     }
 
     public start() {
-        if (!this.stdin.isTTY) return;
+        if (this.active || !this.root.runtime.stdin.isTTY) return;
+        this.active = true;
 
-        this.stdin.setRawMode(true);
-        this.stdin.resume();
-        this.stdin.on("data", this.handleStdin);
+        this.root.runtime.stdin.setRawMode(true);
+        this.root.runtime.stdin.resume();
+        this.root.runtime.stdin.on("data", this.handleStdin);
     }
 
     public stop() {
-        this.stdin.off("data", this.handleStdin);
-        this.stdin.pause();
+        if (!this.active || !this.root.runtime.stdin.isTTY) return;
+        this.active = false;
+        this.root.runtime.stdin.pause();
+        this.root.runtime.stdin.off("data", this.handleStdin);
     }
 
     public addAction(action: Action) {
@@ -43,11 +43,11 @@ export class StdinProcessor implements IActions {
         const { data } = this.keymapState.process(buf);
         const { resolveMousePosition } = this.mouseState.process(data);
 
-        if (data.key.only("ctrl") && data.input.only("c")) process.exit();
+        this.handlePossibleSigInt(data);
 
         resolveMousePosition(
             this.root.getLayoutHeight(),
-            this.stdout as typeof process.stdout,
+            this.root.runtime.stdout as typeof process.stdout,
         ).then((events) => {
             if (!events) return;
 
@@ -56,4 +56,19 @@ export class StdinProcessor implements IActions {
             });
         });
     };
+
+    private handlePossibleSigInt(data: Data) {
+        if (!this.root.runtime.exitOnCtrlC) {
+            return;
+        }
+        if (!data.key.only("ctrl") && !data.input.only("c")) {
+            return;
+        }
+
+        if (this.root.runtime.exitForcesEndProc) {
+            this.root.process.exit();
+        } else {
+            this.root.exit();
+        }
+    }
 }

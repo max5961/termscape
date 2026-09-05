@@ -435,4 +435,28 @@ describe("VirtualStyle & ShadowStyle", () => {
             });
         });
     });
+
+    describe("toggle", () => {
+        let core: CoreElement;
+        beforeEach(() => {
+            core = new CoreElement(shell, {});
+        });
+
+        test("toggle backgroundColor", () => {
+            core.virtual.backgroundColor = "red";
+
+            expect(core.virtual.backgroundColor).toBe("red");
+            expect(core.shadow.backgroundColor).toBe("red");
+
+            core.virtual.backgroundColor = "blue";
+
+            expect(core.virtual.backgroundColor).toBe("blue");
+            expect(core.shadow.backgroundColor).toBe("blue");
+
+            core.virtual.backgroundColor = "green";
+
+            expect(core.virtual.backgroundColor).toBe("green");
+            expect(core.shadow.backgroundColor).toBe("blue");
+        });
+    });
 });

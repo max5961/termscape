@@ -40,7 +40,7 @@ export class RootCanvas extends Canvas {
         this.grid.length = 0;
     }
 
-    public copyGrid() {
+    public cloneGrid() {
         return this.grid.map((row) => row.slice());
     }
 

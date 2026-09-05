@@ -4,6 +4,7 @@ import { StateChange } from "../renderer/RenderStateChange.js";
 import type { CoreElement } from "../CoreElement.js";
 import type { IShadowStyle } from "./IStyle.js";
 import type { RequiredPartial } from "./types.js";
+import { logger } from "../../util.js";
 
 export class ShadowStyle implements RequiredPartial<IShadowStyle> {
     private core: CoreElement;

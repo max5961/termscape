@@ -183,6 +183,7 @@ export interface IFlexStyle {
 
 export interface IBackgroundStyle {
     zIndex?: number;
+    /** @type ColorValue */
     backgroundColor?: ColorValue;
     backgroundStyle?: "dotted" | "dashed" | { char: string };
     backgroundStyleColor?: ColorValue;
@@ -191,7 +192,7 @@ export interface IBackgroundStyle {
 export interface IAnsiEffectStyle {
     color?: ColorValue;
     dimColor?: boolean;
-    backgroundColor?: ColorValue;
+    backgroundColor?: IBackgroundStyle["backgroundColor"];
     bold?: boolean;
     italic?: boolean;
     underline?: boolean;

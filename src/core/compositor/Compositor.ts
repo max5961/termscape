@@ -21,19 +21,19 @@ export class Compositor {
     }
 
     public compose(bitmask: StateChange): Readonly<Grid> {
-        this.getComposedGrid(bitmask);
+        this.composeGrid(bitmask);
         this.canvas.removeTrailingWhitespace();
-        return this.canvas.grid;
+        return this.canvas.cloneGrid();
     }
 
-    private getComposedGrid(bitmask: StateChange): Grid {
+    private composeGrid(bitmask: StateChange) {
         bitmask = this.stripRendererSpecificFlags(bitmask);
         bitmask = this.resolveLayoutChangeFlag(bitmask);
 
         if (this.styleChange(bitmask)) {
             this.canvas.clearGrid();
             this.draw.performDrawOps();
-            return this.canvas.grid;
+            return;
         }
 
         this.calculateYogaLayout();
@@ -41,7 +41,7 @@ export class Compositor {
         this.draw.reset();
         this.build();
         this.draw.performDrawOps();
-        return this.canvas.grid;
+        return;
     }
 
     public getDomRects() {
@@ -93,6 +93,10 @@ export class Compositor {
             bitmask |= StateChange.Layout;
         }
         return bitmask;
+    }
+
+    private getClonedGrid() {
+        return this.canvas.grid.map((r) => r.map((c) => c));
     }
 
     private styleChange(bitmask: number) {

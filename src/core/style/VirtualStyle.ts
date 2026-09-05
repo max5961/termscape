@@ -8,6 +8,7 @@ import type {
     IWideStyle,
 } from "./IStyle.js";
 import type { RequiredPartial } from "./types.js";
+import { logger } from "../../util.js";
 
 type Setter = 3 | 2 | 1;
 

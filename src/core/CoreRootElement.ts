@@ -7,21 +7,21 @@ import { Scheduler } from "./Scheduler.js";
 import { RootCanvas } from "./canvas/RootCanvas.js";
 import { StateChange } from "./renderer/RenderStateChange.js";
 import { Renderer } from "./renderer/Renderer.js";
-import { Runtime, type RuntimeSetup } from "./runtime/Runtime.js";
+import { Runtime, type RuntimeControl } from "./runtime/Runtime.js";
+
+export type RuntimeSetup = Partial<RuntimeControl & { startOnCreate: boolean }>;
 
 export class CoreRootElement extends CoreElement implements IRootEmulator {
     public override readonly root: RealRoot;
     public override readonly canvas: RootCanvas;
     public readonly renderer: Renderer;
     public readonly runtime: Runtime;
-    public readonly runtimeControl: ReturnType<Runtime["createController"]>;
     private readonly scheduler: Scheduler;
 
     constructor(shell: DomElement, setup: RuntimeSetup) {
         super(shell, DefaultStyles.Root);
         this.root = new RealRoot(this);
         this.runtime = new Runtime(this, setup);
-        this.runtimeControl = this.runtime.createController();
         this.canvas = new RootCanvas(this);
         this.renderer = new Renderer(this);
         this.scheduler = new Scheduler(this, this.renderer.render);
@@ -36,15 +36,15 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
     }
 
     public get stdout() {
-        return this.runtimeControl.stdout;
+        return this.runtime.stdout;
     }
 
     public get stdin() {
-        return this.runtimeControl.stdin;
+        return this.runtime.stdin;
     }
 
     public get process() {
-        return this.runtimeControl.process;
+        return this.runtime.process;
     }
 
     public handleResize = () => {

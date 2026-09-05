@@ -1,44 +1,54 @@
 import { setKittyProtocol, setMouse } from "term-keymap";
 import { RuntimeEffect, type RuntimeOperations } from "./RuntimeEffect.js";
-import type { StdinLike, StdoutLike } from "../../Types.js";
+import type { RuntimeControl } from "./Runtime.js";
+import type { CoreRootElement } from "../CoreRootElement.js";
+import type { _Pick } from "../../util.js";
 
-export interface IRuntimeStdinEffect {
-    kittyKeyboard: boolean;
-    mouse: boolean;
-    mouseMode: 0 | 3;
-}
+type Effect = _Pick<RuntimeControl, "kittyKeyboard" | "mouse" | "mouseMode">;
 
-export class RuntimeStdinEffect extends RuntimeEffect<IRuntimeStdinEffect> {
-    private stdin: StdinLike;
-    private stdout: StdoutLike;
+export class RuntimeStdinEffect extends RuntimeEffect<Effect> {
+    protected override readonly setupState: Effect;
+    private root: CoreRootElement;
 
-    constructor(stdin: StdinLike, stdout: StdoutLike) {
+    constructor(root: CoreRootElement, setup: Partial<RuntimeControl>) {
         super();
-        this.stdin = stdin;
-        this.stdout = stdout;
+        this.root = root;
+        this.setupState = {
+            kittyKeyboard: setup.kittyKeyboard ?? true,
+            mouse: setup.mouse ?? true,
+            mouseMode: setup.mouseMode ?? 3,
+        };
     }
 
-    protected override initialState: IRuntimeStdinEffect = {
-        kittyKeyboard: true,
-        mouse: true,
-        mouseMode: 3,
-    };
-
-    protected override operations: RuntimeOperations<IRuntimeStdinEffect> = {
+    protected override operations: RuntimeOperations<Effect> = {
         kittyKeyboard: {
             set: (v) => {
                 this.setKitty(v);
             },
-            disable: () => {
-                this.setKitty(false);
+            disable: (v) => {
+                if (v) {
+                    this.setKitty(false);
+                }
+            },
+            initialize: (v) => {
+                if (v) {
+                    this.setKitty(v);
+                }
             },
         },
         mouse: {
             set: (v) => {
                 this.setMouse(v, this.get("mouseMode"));
             },
-            disable: () => {
-                this.setMouse(false, this.get("mouseMode"));
+            disable: (v) => {
+                if (v) {
+                    this.setMouse(false, this.get("mouseMode"));
+                }
+            },
+            initialize: (v) => {
+                if (v) {
+                    this.setMouse(v, this.get("mouseMode"));
+                }
             },
         },
         mouseMode: {
@@ -47,18 +57,23 @@ export class RuntimeStdinEffect extends RuntimeEffect<IRuntimeStdinEffect> {
                 this.setMouse(true, v);
             },
             disable: () => {},
+            initialize: (v) => {
+                if (v !== undefined && this.get("mouse")) {
+                    this.setMouse(true, v);
+                }
+            },
         },
     };
 
     private setKitty(v: boolean) {
         setKittyProtocol(
             v,
-            this.stdout as NodeJS.WriteStream,
-            this.stdin as NodeJS.ReadStream & { fd: 0 },
+            this.root.runtime.stdout as NodeJS.WriteStream,
+            this.root.runtime.stdin as NodeJS.ReadStream & { fd: 0 },
         );
     }
 
     private setMouse(v: boolean, mode: 0 | 3) {
-        setMouse(v, this.stdout as NodeJS.WriteStream, mode);
+        setMouse(v, this.root.runtime.stdout as NodeJS.WriteStream, mode);
     }
 }
