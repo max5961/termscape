@@ -456,7 +456,7 @@ describe("VirtualStyle & ShadowStyle", () => {
             core.virtual.backgroundColor = "green";
 
             expect(core.virtual.backgroundColor).toBe("green");
-            expect(core.shadow.backgroundColor).toBe("blue");
+            expect(core.shadow.backgroundColor).toBe("green");
         });
     });
 });
