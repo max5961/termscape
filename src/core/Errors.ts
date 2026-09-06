@@ -33,4 +33,8 @@ const messages = {
         childNotChild:
             "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
     },
+    textNodeRemove: {
+        childNotChild:
+            "Failed to execute 'remove' on 'TextNode': The node to be removed is not a child of this node.",
+    },
 } as const;

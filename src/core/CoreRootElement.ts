@@ -31,9 +31,25 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
         }
     }
 
-    public scheduleRender(change: StateChange): void {
-        this.scheduler.scheduleRender(change);
+    public exit = () => {
+        this.runtime.endRuntime();
+    };
+
+    public getLayoutHeight() {
+        return this.renderer.layoutHeight;
     }
+
+    public handleResize = () => {
+        this.canvas.updateRootConstraints();
+        this.scheduler.scheduleRender(StateChange.Resize);
+    };
+
+    public handleCapturedOutput = (data: string) => {
+        this.renderer.pushCapturedOutput(data);
+        this.scheduler.scheduleRender();
+    };
+
+    // ***** EMULATOR METHODS *****
 
     public get stdout() {
         return this.runtime.stdout;
@@ -47,22 +63,8 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
         return this.runtime.process;
     }
 
-    public handleResize = () => {
-        this.canvas.updateRootConstraints();
-        this.scheduler.scheduleRender(StateChange.Resize);
-    };
-
-    public handleCapturedOutput = (data: string) => {
-        this.renderer.pushCapturedOutput(data);
-        this.scheduler.scheduleRender();
-    };
-
-    public exit = () => {
-        this.runtime.endRuntime();
-    };
-
-    public getLayoutHeight() {
-        return this.renderer.layoutHeight;
+    public scheduleRender(change: StateChange): void {
+        this.scheduler.scheduleRender(change);
     }
 
     public addAction(action: Action): void {
