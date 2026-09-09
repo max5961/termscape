@@ -1,7 +1,6 @@
 import { Yg } from "../Constants.js";
 import type { YogaNode } from "../Types.js";
 import type { DomElement } from "../dom/DomElement.js";
-import { ActionStore } from "./ActionStore.js";
 import { RootEmulator } from "./RootEmulator.js";
 import { TreeNode } from "./TreeNode.js";
 import type { Canvas } from "./canvas/Canvas.js";
@@ -16,7 +15,6 @@ export class CoreElement {
     public readonly treeNode: TreeNode;
     public readonly shadow: ShadowStyle;
     public readonly virtual: VirtualStyle;
-    public readonly actions: ActionStore;
     public canvas: Canvas | undefined;
 
     constructor(shell: DomElement, defaults: IStyle) {
@@ -26,6 +24,5 @@ export class CoreElement {
         this.treeNode = new TreeNode(this);
         this.shadow = new ShadowStyle(this);
         this.virtual = new VirtualStyle(defaults, this.shadow);
-        this.actions = new ActionStore(this);
     }
 }

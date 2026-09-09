@@ -1,6 +1,6 @@
 import { KeyMapState, MouseState, type Action, type Data } from "term-keymap";
 import type { CoreRootElement } from "../CoreRootElement.js";
-import type { IActions } from "../ActionStore.js";
+import type { IActions } from "../RootEmulator.js";
 
 export class StdinProcessor implements IActions {
     private readonly root: CoreRootElement;

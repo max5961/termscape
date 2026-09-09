@@ -3,7 +3,6 @@ import type { ITreeNode } from "../core/TreeNode.js";
 import type { Style } from "./types.js";
 import { CoreElement } from "../core/CoreElement.js";
 import type { Action } from "term-keymap";
-import { logger } from "../util.js";
 
 export abstract class DomElement<T extends keyof IStyle = keyof IStyle>
     implements ITreeNode<DomElement>
@@ -60,7 +59,7 @@ export abstract class DomElement<T extends keyof IStyle = keyof IStyle>
             callback(this);
         };
 
-        this._core.actions.addAction({
+        this._core.root.addAction({
             keymap,
             callback: wrapper,
         });

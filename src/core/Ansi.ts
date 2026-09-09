@@ -30,9 +30,6 @@
  * SOFTWARE.
  * */
 
-import { objectKeys } from "../util.js";
-import type { IAnsiEffectStyle } from "./style/IStyle.js";
-
 export const Ansi = {
     reset: "\x1b[0m",
 
@@ -65,6 +62,12 @@ export const Ansi = {
 
     /** Exit alt term screen */
     exitAltScreen: "\x1b[?1049l",
+
+    /** Disables the terminal from wrapping text wider than stdout cols onto the next line */
+    disableAutoWrap: "\x1b[?7l",
+
+    /** Enables the terminal to wrap text wider than stdout cols onto the next line */
+    enableAutoWrap: "\x1b[?7h",
 
     color: {
         black: "\x1b[30m",

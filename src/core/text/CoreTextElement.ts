@@ -6,6 +6,8 @@ import { Text, TextNode } from "./TextNode.js";
 import type { MeasureFunction } from "yoga-wasm-web";
 import { textWrap } from "./textwrap.js";
 
+const WORK_BUDGET = 1000;
+
 export class CoreTextElement extends CoreElement {
     private textNode: TextNode;
     private readonly wrapped: Map<number, string[]>;
@@ -44,6 +46,7 @@ export class CoreTextElement extends CoreElement {
         if (!this.flattened) {
             this.flattened = this.textNode.flatten();
         }
+
         if (this.wrapped.get(width)) {
             return {
                 width,
@@ -65,5 +68,25 @@ export class CoreTextElement extends CoreElement {
             raw += text.content;
         });
         return raw;
+    }
+
+    private wrapLargeText(text: string, width: number) {
+        const start = performance.now();
+        const chunks: string[][] = [];
+
+        while (performance.now() - start < WORK_BUDGET) {
+            const textChunk = text.slice(0, 10_000);
+
+            // the difficult part here is that it would be rare that an arbitrary
+            // string slice would land cleanly on the right index. So what we really
+            // need is a specialized textWrap that bails out after set number of lines
+            // is created and returns the correct index.  The problem with that is it
+            // would require seriously breaking down textWrap into more composable
+            // sub functions so that you could have an easy way of doing it.  Either
+            // that or simply add an option for max lines, but I fear if you do that,
+            // then the normal implementation becomes overly hard to follow and a wrapping
+            // function is already not the easiest to follow
+            chunks.push(textWrap(textChunk, width));
+        }
     }
 }
