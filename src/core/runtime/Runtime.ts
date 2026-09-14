@@ -1,6 +1,6 @@
 import type { ProcessLike, StdinLike, StdoutLike, WriteMode } from "../../Types.js";
-import type { _Pick, _Writable } from "../../util.js";
-import type { CoreRootElement } from "../CoreRootElement.js";
+import type { _Pick } from "../../util.js";
+import type { CoreRootElement, RuntimeSetup } from "../CoreRootElement.js";
 import { StateChange } from "../renderer/RenderStateChange.js";
 import { CurrentRuntime } from "./CurrentRuntime.js";
 import { RuntimeLifecycle } from "./RuntimeLifecycle.js";
@@ -12,37 +12,35 @@ export interface IRuntime {
     readonly process: ProcessLike;
     readonly stdout: StdoutLike;
     readonly stdin: StdinLike;
-    readonly altScreen: boolean;
-    readonly mouse: boolean;
-    readonly mouseMode: 0 | 3;
-    readonly kittyKeyboard: boolean;
-    readonly debounceMs: number;
-    readonly writeMode: WriteMode;
-    readonly exitOnCtrlC: boolean;
-    readonly exitForcesEndProc: boolean;
-    readonly ambiWidth: 1 | 2;
+    altScreen: boolean;
+    mouse: boolean;
+    mouseMode: 0 | 3;
+    kittyKeyboard: boolean;
+    debounceMs: number;
+    writeMode: WriteMode;
+    exitOnCtrlC: boolean;
+    exitForcesEndProc: boolean;
+    ambiWidth: 1 | 2;
 }
 
-export type RuntimeControl = _Writable<IRuntime>;
-
-// prettier-ignore
 /**
  * runtime state that can be read by internal library code, but does not effect
  * terminal state by sending ANSI escape codes, and has little to no side effects
  * on runtime other than the intended effect of changing the option.
  * */
-type PureRuntimeState = 
-    _Pick<
-        RuntimeControl,
-        "debounceMs" | "writeMode" | "exitOnCtrlC" | "exitForcesEndProc" | "ambiWidth"
-    >
-    &
-    _Pick<
-        Readonly<RuntimeControl>, 
-        "process" | "stdin" | "stdout"
-    >;
+type PureRuntimeState = _Pick<
+    IRuntime,
+    | "debounceMs"
+    | "writeMode"
+    | "exitOnCtrlC"
+    | "exitForcesEndProc"
+    | "ambiWidth"
+    | "process"
+    | "stdin"
+    | "stdout"
+>;
 
-export class Runtime implements IRuntime {
+export class Runtime implements Readonly<IRuntime> {
     private readonly root: CoreRootElement;
     private active: boolean;
     private hasRequestedStdin: boolean;
@@ -52,7 +50,7 @@ export class Runtime implements IRuntime {
     private readonly lifecycle: RuntimeLifecycle;
     public readonly stdinProcessor: StdinProcessor;
 
-    constructor(root: CoreRootElement, setup: Partial<RuntimeControl>) {
+    constructor(root: CoreRootElement, setup: RuntimeSetup) {
         this.root = root;
         this.active = false;
         this.hasRequestedStdin = false;
@@ -123,7 +121,7 @@ export class Runtime implements IRuntime {
         this.stdinEffect.start();
     }
 
-    public createController(): RuntimeControl {
+    public createController(): IRuntime {
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const runtime = this;
 

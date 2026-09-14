@@ -1,16 +1,16 @@
 import { setKittyProtocol, setMouse } from "term-keymap";
 import { RuntimeEffect, type RuntimeOperations } from "./RuntimeEffect.js";
-import type { RuntimeControl } from "./Runtime.js";
+import type { IRuntime } from "./Runtime.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
 import type { _Pick } from "../../util.js";
 
-type Effect = _Pick<RuntimeControl, "kittyKeyboard" | "mouse" | "mouseMode">;
+type Effect = _Pick<IRuntime, "kittyKeyboard" | "mouse" | "mouseMode">;
 
 export class RuntimeStdinEffect extends RuntimeEffect<Effect> {
     protected override readonly setupState: Effect;
     private root: CoreRootElement;
 
-    constructor(root: CoreRootElement, setup: Partial<RuntimeControl>) {
+    constructor(root: CoreRootElement, setup: Partial<IRuntime>) {
         super();
         this.root = root;
         this.setupState = {

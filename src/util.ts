@@ -21,23 +21,26 @@ export function isFullscreen(grid: Readonly<Grid> | undefined, stdout: StdoutLik
     return grid && grid.length >= stdout.rows;
 }
 
-export const logger = {
-    write: (...data: any[]) => {
-        if (process.env.NODE_ENV === "production") return;
+export const createLogger = (file: string) => {
+    return {
+        write: (...data: any[]) => {
+            if (process.env.NODE_ENV === "production") return;
 
-        const date = new Date();
-        const h = date.getHours().toString().padStart(2, "0");
-        const m = date.getMinutes().toString().padStart(2, "0");
-        const s = date.getSeconds().toString().padStart(2, "0");
-        const ms = date.getMilliseconds().toString().padStart(3, "0");
+            const date = new Date();
+            const h = date.getHours().toString().padStart(2, "0");
+            const m = date.getMinutes().toString().padStart(2, "0");
+            const s = date.getSeconds().toString().padStart(2, "0");
+            const ms = date.getMilliseconds().toString().padStart(3, "0");
 
-        const formattedData = data.reduce((a, c) => {
-            return a ? `${a}, ${format(c)}` : format(c);
-        }, "");
+            const formattedData = data.reduce((a, c) => {
+                return a ? `${a}, ${format(c)}` : format(c);
+            }, "");
 
-        const str = `${h}:${m}:${s}:${ms}: ${formattedData}\n`;
-        fs.appendFileSync("console.log", str, {
-            encoding: "utf8",
-        });
-    },
+            const str = `${h}:${m}:${s}:${ms}: ${formattedData}\n`;
+            fs.appendFileSync(file, str, {
+                encoding: "utf8",
+            });
+        },
+    };
 };
+export const logger = createLogger("console.log");

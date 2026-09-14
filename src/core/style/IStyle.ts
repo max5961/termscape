@@ -1,5 +1,5 @@
 import type { BorderMap } from "../Boxes.js";
-import type { ColorValue } from "../../Types.js";
+import type { Color } from "../../Types.js";
 import type { Shorthand, BorderStyle } from "./types.js";
 
 // -----------------------------------------------------------------------------
@@ -27,7 +27,7 @@ export interface IWidePaddingStyle {
 }
 export interface IWideEdgeStyle {
     borderStyle?: BorderStyle | BorderMap;
-    borderColor?: ColorValue;
+    borderColor?: Color;
     borderDimColor?: boolean;
 }
 export interface IWideOverflowStyle {
@@ -105,10 +105,10 @@ export interface INarrowEdgeStyle {
     borderBottom?: boolean;
     borderLeft?: boolean;
     borderRight?: boolean;
-    borderTopColor?: ColorValue;
-    borderBottomColor?: ColorValue;
-    borderLeftColor?: ColorValue;
-    borderRightColor?: ColorValue;
+    borderTopColor?: Color;
+    borderBottomColor?: Color;
+    borderLeftColor?: Color;
+    borderRightColor?: Color;
     borderTopDimColor?: boolean;
     borderBottomDimColor?: boolean;
     borderLeftDimColor?: boolean;
@@ -183,14 +183,13 @@ export interface IFlexStyle {
 
 export interface IBackgroundStyle {
     zIndex?: number;
-    /** @type ColorValue */
-    backgroundColor?: ColorValue;
+    backgroundColor?: Color;
     backgroundStyle?: "dotted" | "dashed" | { char: string };
-    backgroundStyleColor?: ColorValue;
+    backgroundStyleColor?: Color;
 }
 
 export interface IAnsiEffectStyle {
-    color?: ColorValue;
+    color?: Color;
     dimColor?: boolean;
     backgroundColor?: IBackgroundStyle["backgroundColor"];
     bold?: boolean;

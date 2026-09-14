@@ -1,15 +1,15 @@
 import { CoreRootElement, type RuntimeSetup } from "../core/CoreRootElement.js";
 import { DomElement } from "./DomElement.js";
-import type { RuntimeControl } from "../core/runtime/Runtime.js";
+import type { IRuntime } from "../core/runtime/Runtime.js";
 import type { DomStyle } from "./types.js";
 
 interface IRootElement {
-    readonly runtime: RuntimeControl;
+    readonly runtime: IRuntime;
 }
 
 export class RootElement extends DomElement<DomStyle.Box> implements IRootElement {
     protected override readonly _core: CoreRootElement;
-    private readonly _runtimeController: RuntimeControl;
+    private readonly _runtimeController: IRuntime;
 
     constructor(setup: RuntimeSetup) {
         super();

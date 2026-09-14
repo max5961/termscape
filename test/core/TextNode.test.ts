@@ -42,13 +42,12 @@ describe("TextNode", () => {
         expect(flattened).toBe("abcde");
     });
 
-    test("bro", () => {
+    test("defined parent node style changes single Text child style", () => {
         root.style = { color: "blue" };
         root.append(new Text({}, "foo"));
 
-        expect(root.__flattenToTestable()).toEqual([
-            { text: "foo", style: { color: "blue" } },
-        ]);
+        const flattened = root.__flattenToTestable();
+        expect(flattened).toEqual([{ text: "foo", style: { color: "blue" } }]);
     });
 
     test("defined parent node styles change all undefined descendent styles", () => {
@@ -77,7 +76,8 @@ describe("TextNode", () => {
         //    /    \   /
         //   b     c  d
 
-        expect(root.__flattenToTestable()).toEqual([
+        const flattened = root.__flattenToTestable();
+        expect(flattened).toEqual([
             { text: "a", style: { color: "blue" } },
             { text: "b", style: { color: "blue", dimColor: true } },
             { text: "c", style: { color: "red", dimColor: true } },

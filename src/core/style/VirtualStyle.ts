@@ -1,4 +1,4 @@
-import { NarrowFallbackMap, MiddleFallbackMap } from "./FallbackMap.js";
+import { NarrowFallbackMap, MiddleFallbackMap, Fallback } from "./FallbackMap.js";
 import type { ShadowStyle } from "./ShadowStyle.js";
 import type {
     IMiddleStyle,
@@ -8,7 +8,6 @@ import type {
     IWideStyle,
 } from "./IStyle.js";
 import type { RequiredPartial } from "./types.js";
-import { logger } from "../../util.js";
 
 type Setter = 3 | 2 | 1;
 
@@ -110,13 +109,15 @@ export class VirtualStyle implements RequiredPartial<IStyle> {
             const dft = this.__defaults[style];
             if (dft !== undefined) return dft;
 
-            const middleFallbackStyle = NarrowFallbackMap[style][2];
+            const middleFallbackStyle = NarrowFallbackMap[style][Fallback.Middle];
             if (middleFallbackStyle && this.__values[middleFallbackStyle]) {
                 return this.__values[middleFallbackStyle] as INarrowStyle[T];
             }
 
             // @ts-expect-error some styles do not have a wide fallback, but we explicitly check for this.
-            const wideFallbackStyle = NarrowFallbackMap[style][3] as keyof IWideStyle;
+            const wideFallbackStyle = NarrowFallbackMap[style][
+                Fallback.Wide
+            ] as keyof IWideStyle;
             if (wideFallbackStyle) {
                 return this.__values[wideFallbackStyle] as INarrowStyle[T];
             }

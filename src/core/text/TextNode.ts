@@ -23,6 +23,7 @@ export class Text {
     }
     public set style(style) {
         this._original = style;
+        this._style = { ...style };
         this.mutation(StateChange.Style);
     }
 
@@ -71,6 +72,7 @@ export class TextNode extends Text implements ITextNode {
     constructor(style: IAnsiEffectStyle) {
         super(style, "");
         this.children = [];
+
     }
 
     public append(text: string | Text | TextNode, style: IAnsiEffectStyle = {}): TextNode {
@@ -127,3 +129,18 @@ export class TextNode extends Text implements ITextNode {
 //     .append("foo", { bold: true })
 //     .append(new TextNode({})
 //         .append("bar", { italic: true }));
+
+// const text = textNode({
+//      style: { color: "red" },
+//      children: [
+//          "foo",
+//          text("bar", { italic: true }),
+//          "baz",
+//          textNode({
+//              style: { color: "blue" }
+//              chidlren: [
+//                  "ban",
+//              ]
+//          })
+//      ]
+// })

@@ -1,5 +1,10 @@
 import type { IMiddleStyle, INarrowStyle, IWideStyle } from "./IStyle.js";
 
+export const enum Fallback {
+    Wide = 3,
+    Middle = 2,
+}
+
 export const MiddleFallbackMap = {
     marginX: "margin",
     marginY: "margin",
@@ -11,88 +16,88 @@ export const MiddleFallbackMap = {
 
 export const NarrowFallbackMap = {
     marginTop: {
-        3: "margin",
-        2: "marginY",
+        [Fallback.Wide]: "margin",
+        [Fallback.Middle]: "marginY",
     },
     marginBottom: {
-        3: "margin",
-        2: "marginY",
+        [Fallback.Wide]: "margin",
+        [Fallback.Middle]: "marginY",
     },
     marginLeft: {
-        3: "margin",
-        2: "marginX",
+        [Fallback.Wide]: "margin",
+        [Fallback.Middle]: "marginX",
     },
     marginRight: {
-        3: "margin",
-        2: "marginX",
+        [Fallback.Wide]: "margin",
+        [Fallback.Middle]: "marginX",
     },
     paddingTop: {
-        3: "padding",
-        2: "paddingY",
+        [Fallback.Wide]: "padding",
+        [Fallback.Middle]: "paddingY",
     },
     paddingBottom: {
-        3: "padding",
-        2: "paddingY",
+        [Fallback.Wide]: "padding",
+        [Fallback.Middle]: "paddingY",
     },
     paddingLeft: {
-        3: "padding",
-        2: "paddingX",
+        [Fallback.Wide]: "padding",
+        [Fallback.Middle]: "paddingX",
     },
     paddingRight: {
-        3: "padding",
-        2: "paddingX",
+        [Fallback.Wide]: "padding",
+        [Fallback.Middle]: "paddingX",
     },
     columnGap: {
-        2: "gap",
+        [Fallback.Middle]: "gap",
     },
     rowGap: {
-        2: "gap",
+        [Fallback.Middle]: "gap",
     },
     overflowX: {
-        2: "overflow",
+        [Fallback.Middle]: "overflow",
     },
     overflowY: {
-        2: "overflow",
+        [Fallback.Middle]: "overflow",
     },
     borderTop: {
-        2: "borderStyle",
+        [Fallback.Middle]: "borderStyle",
     },
     borderBottom: {
-        2: "borderStyle",
+        [Fallback.Middle]: "borderStyle",
     },
     borderLeft: {
-        2: "borderStyle",
+        [Fallback.Middle]: "borderStyle",
     },
     borderRight: {
-        2: "borderStyle",
+        [Fallback.Middle]: "borderStyle",
     },
     borderTopColor: {
-        2: "borderColor",
+        [Fallback.Middle]: "borderColor",
     },
     borderBottomColor: {
-        2: "borderColor",
+        [Fallback.Middle]: "borderColor",
     },
     borderLeftColor: {
-        2: "borderColor",
+        [Fallback.Middle]: "borderColor",
     },
     borderRightColor: {
-        2: "borderColor",
+        [Fallback.Middle]: "borderColor",
     },
     borderTopDimColor: {
-        2: "borderDimColor",
+        [Fallback.Middle]: "borderDimColor",
     },
     borderBottomDimColor: {
-        2: "borderDimColor",
+        [Fallback.Middle]: "borderDimColor",
     },
     borderLeftDimColor: {
-        2: "borderDimColor",
+        [Fallback.Middle]: "borderDimColor",
     },
     borderRightDimColor: {
-        2: "borderDimColor",
+        [Fallback.Middle]: "borderDimColor",
     },
 } as const satisfies {
     [_ in keyof Required<INarrowStyle>]: {
-        3?: keyof IWideStyle;
-        2?: keyof IMiddleStyle | keyof IWideStyle;
+        [Fallback.Wide]?: keyof IWideStyle;
+        [Fallback.Middle]: keyof IMiddleStyle | keyof IWideStyle;
     };
 };

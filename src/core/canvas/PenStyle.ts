@@ -1,6 +1,6 @@
 import { objectKeys } from "../../util.js";
 import { Ansi } from "../Ansi.js";
-import type { Color } from "../../Types.js";
+import type { AnsiColor } from "../../Types.js";
 import type { IAnsiEffectStyle } from "../style/IStyle.js";
 
 const colorToAnsi = toAnsi(Ansi.rgb, Ansi.color);
@@ -49,11 +49,11 @@ function toAnsi(
     rgbConverter: typeof Ansi.rgb,
     ansiMap: typeof Ansi.color | typeof Ansi.backgroundColor,
 ) {
-    return (color: string | Color | undefined) => {
+    return (color: string | AnsiColor | undefined) => {
         if (!color) return "";
 
-        if (ansiMap[color as Color]) {
-            return ansiMap[color as Color];
+        if (ansiMap[color as AnsiColor]) {
+            return ansiMap[color as AnsiColor];
         }
         const rgbarr = toRgbColorCodeArray(color);
         if (rgbarr) {

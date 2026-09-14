@@ -7,9 +7,9 @@ import { Scheduler } from "./Scheduler.js";
 import { RootCanvas } from "./canvas/RootCanvas.js";
 import { StateChange } from "./renderer/RenderStateChange.js";
 import { Renderer } from "./renderer/Renderer.js";
-import { Runtime, type RuntimeControl } from "./runtime/Runtime.js";
+import { Runtime, type IRuntime } from "./runtime/Runtime.js";
 
-export type RuntimeSetup = Partial<RuntimeControl & { startOnCreate: boolean }>;
+export type RuntimeSetup = Partial<IRuntime & { startOnCreate: boolean }>;
 
 export class CoreRootElement extends CoreElement implements IRootEmulator {
     public override readonly root: RealRoot;

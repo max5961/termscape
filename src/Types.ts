@@ -36,9 +36,13 @@ type _ExtendsStdinLike<T extends StdinLike> = T;
 type _ProcessLikeTypeCheck = _ExtendsProcessLike<typeof process>;
 type _StdoutLikeTypeCheck = _ExtendsStdoutLike<typeof process.stdout>;
 type _StdinLikeTypeCheck = _ExtendsStdinLike<typeof process.stdin>;
+const _processLikeTypeCheck = (_process: ProcessLike) => {};
+_processLikeTypeCheck(process);
+const _stdoutLikeTypeCheck = (_stdout: StdoutLike) => {};
+_stdoutLikeTypeCheck(process.stdout);
+const _stdinLikeTypeCheck = (_stdin: StdinLike) => {};
+_stdinLikeTypeCheck(process.stdin);
 
-export type Color = keyof typeof Ansi.color;
 export type ColorHint = "#" | "rgb()";
-export type ColorValue = Color | ColorHint | (string & {});
-
-process.exit;
+export type AnsiColor = keyof typeof Ansi.color;
+export type Color = ColorHint | AnsiColor | (string & {});

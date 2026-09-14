@@ -2,16 +2,16 @@ import type { _Pick } from "../../util.js";
 import { Ansi } from "../Ansi.js";
 import type { CoreRootElement } from "../CoreRootElement.js";
 import { StateChange } from "../renderer/RenderStateChange.js";
-import type { RuntimeControl } from "./Runtime.js";
+import type { IRuntime } from "./Runtime.js";
 import { RuntimeEffect, type RuntimeOperations } from "./RuntimeEffect.js";
 
-type Effect = _Pick<RuntimeControl, "altScreen">;
+type Effect = _Pick<IRuntime, "altScreen">;
 
 export class RuntimeMutableEffect extends RuntimeEffect<Effect> {
     private readonly root: CoreRootElement;
     protected override readonly setupState: Effect;
 
-    constructor(root: CoreRootElement, setup: Partial<RuntimeControl>) {
+    constructor(root: CoreRootElement, setup: Partial<IRuntime>) {
         super();
         this.root = root;
         this.setupState = {
