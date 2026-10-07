@@ -1,5 +1,7 @@
 import type { Ansi } from "./core/Ansi.js";
 import type { Canvas } from "./core/canvas/Canvas.js";
+import type { CoreElement } from "./core/CoreElement.js";
+import type { DomElement } from "./dom/DomElement.js";
 
 export type { Node as YogaNode, Edge } from "yoga-wasm-web/auto";
 export type Point = { x: number; y: number };
@@ -24,7 +26,7 @@ export interface StdoutLike {
 }
 export interface StdinLike {
     on(e: "data", cb: (buf: Buffer) => unknown): void;
-    off(e: "data", cb: (bf: Buffer) => unknown): void;
+    off(e: "data", cb: (buf: Buffer) => unknown): void;
     pause(): void;
     resume(): void;
     setRawMode(v: boolean): void;
@@ -47,6 +49,8 @@ _stdinLikeTypeCheck(process.stdin);
 export type CoreRootEvents = {
     "post-layout": [Canvas];
 };
+
+export type CreateCore<T extends CoreElement> = (shell: DomElement) => T;
 
 export type ColorHint = "#" | "rgb()";
 export type AnsiColor = keyof typeof Ansi.color;
