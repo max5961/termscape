@@ -1,4 +1,5 @@
 import type { Ansi } from "./core/Ansi.js";
+import type { Canvas } from "./core/canvas/Canvas.js";
 
 export type { Node as YogaNode, Edge } from "yoga-wasm-web/auto";
 export type Point = { x: number; y: number };
@@ -42,6 +43,10 @@ const _stdoutLikeTypeCheck = (_stdout: StdoutLike) => {};
 _stdoutLikeTypeCheck(process.stdout);
 const _stdinLikeTypeCheck = (_stdin: StdinLike) => {};
 _stdinLikeTypeCheck(process.stdin);
+
+export type CoreRootEvents = {
+    "post-layout": [Canvas];
+};
 
 export type ColorHint = "#" | "rgb()";
 export type AnsiColor = keyof typeof Ansi.color;

@@ -51,8 +51,8 @@ export class StdinProcessor implements IActions {
         ).then((events) => {
             if (!events) return;
 
-            events.forEach((_e) => {
-                // this.root.emit(e.type, e);
+            events.forEach((e) => {
+                this.root.dispatchMouseEvent(e);
             });
         });
     };
@@ -61,7 +61,7 @@ export class StdinProcessor implements IActions {
         if (!this.root.runtime.exitOnCtrlC) {
             return;
         }
-        if (!data.key.only("ctrl") && !data.input.only("c")) {
+        if (!data.key.only("ctrl") || !data.input.only("c")) {
             return;
         }
 

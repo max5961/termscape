@@ -18,6 +18,7 @@ export class RuntimeLifecycle {
         this.root.runtime.process.on("exit", this.root.exit);
         this.root.runtime.process.on("SIGINT", this.root.exit);
 
+        this.capture.start();
         this.capture.on("output", this.root.handleCapturedOutput);
 
         this.root.runtime.stdout.write(Ansi.cursor.hide);
@@ -29,6 +30,7 @@ export class RuntimeLifecycle {
         this.root.runtime.process.off("exit", this.root.exit);
         this.root.runtime.process.off("SIGINT", this.root.exit);
         this.capture.off("output", this.root.handleCapturedOutput);
+        this.capture.stop();
         this.root.runtime.stdout.write(Ansi.cursor.show);
 
         if (!this.root.runtime.altScreen) {
