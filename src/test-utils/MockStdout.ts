@@ -1,13 +1,6 @@
 import type { StdoutLike } from "../Types.js";
 
-export interface IMockStdout {
-    emitResizeEvent(
-        type: "set" | "offset",
-        { rows, columns }: { rows: number; columns: number },
-    ): void;
-}
-
-export class MockStdout implements StdoutLike, IMockStdout {
+export class MockStdout implements StdoutLike {
     private _rows: number;
     public get rows() {
         return this._rows;

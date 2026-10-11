@@ -107,6 +107,8 @@ export class Runtime implements Readonly<IRuntime> {
         if (error) {
             throw error;
         }
+
+        this.root.events.dispatch("end-runtime");
     }
 
     public requestStdinStream() {

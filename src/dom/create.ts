@@ -17,7 +17,7 @@ class Create {
     /** @internal for snapshot testing */
     testRoot = (setup?: RuntimeSetup) => {
         return new TestRootElement((shell) => {
-            return new CoreTestRootElement(shell, setup ?? {}, { rows: 10, columns: 20 });
+            return new CoreTestRootElement(shell, setup ?? {}, { rows: 20, columns: 40 });
         });
     };
 

@@ -25,6 +25,8 @@ export class Renderer {
         const grid = this.compositor.compose(bitmask);
         const capturedOutput = this.getCapturedOutput();
         this._layoutHeight = grid.length;
+
+        this.root.events.dispatch("post-layout", grid);
         this.writer.write(grid, bitmask, capturedOutput);
     };
 

@@ -18,7 +18,7 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
     public override readonly canvas: RootCanvas;
     public readonly renderer: Renderer;
     public readonly runtime: Runtime;
-    public readonly hooks: Events<CoreRootEvents>;
+    public readonly events: Events<CoreRootEvents>;
     private readonly scheduler: Scheduler;
 
     constructor(shell: DomElement, setup: RuntimeSetup) {
@@ -27,7 +27,7 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
         this.runtime = new Runtime(this, setup);
         this.canvas = new RootCanvas(this);
         this.renderer = new Renderer(this);
-        this.hooks = new Events<CoreRootEvents>();
+        this.events = new Events<CoreRootEvents>();
         this.scheduler = new Scheduler(this, this.renderer.render);
 
         if (setup.startOnCreate ?? true) {
@@ -89,13 +89,13 @@ export class CoreRootElement extends CoreElement implements IRootEmulator {
         event: K,
         cb: EventsCallback<K, CoreRootEvents>,
     ): void {
-        this.hooks.addMulti(event, cb);
+        this.events.addMulti(event, cb);
     }
 
     public off<K extends keyof CoreRootEvents>(
         event: K,
         cb: EventsCallback<K, CoreRootEvents>,
     ): void {
-        this.hooks.deleteMulti(event, cb);
+        this.events.deleteMulti(event, cb);
     }
 }

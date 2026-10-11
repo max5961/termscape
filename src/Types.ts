@@ -1,5 +1,6 @@
 import type { Ansi } from "./core/Ansi.js";
 import type { Canvas } from "./core/canvas/Canvas.js";
+import type { Grid } from "./core/canvas/types.js";
 import type { CoreElement } from "./core/CoreElement.js";
 import type { DomElement } from "./dom/DomElement.js";
 
@@ -47,7 +48,8 @@ const _stdinLikeTypeCheck = (_stdin: StdinLike) => {};
 _stdinLikeTypeCheck(process.stdin);
 
 export type CoreRootEvents = {
-    "post-layout": [Canvas];
+    "post-layout": [Readonly<Grid>];
+    "end-runtime": [];
 };
 
 export type CreateCore<T extends CoreElement> = (shell: DomElement) => T;
